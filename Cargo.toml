@@ -1,0 +1,7 @@
+[package]
+name = "cucumber"
+version = "0.1.0"
+authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
+
+[dependencies]
+gherkin = { path = "../gherkin-rust" }
