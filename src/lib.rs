@@ -282,12 +282,27 @@ macro_rules! cucumber {
         #[allow(unused_imports)]
         fn main() {
             use std::path::Path;
+            use std::process;
             use $crate::regex::Regex;
             use $crate::{CucumberTests, TestCase, RegexTestCase, HashableRegex};
 
+            let path = match Path::new($featurepath).canonicalize() {
+                Ok(p) => p,
+                Err(e) => {
+                    eprintln!("{}", e);
+                    eprintln!("There was an error parsing \"{}\"; aborting.", $featurepath);
+                    process::exit(1);
+                }
+            };
+
+            if !&path.exists() {
+                eprintln!("Path {:?} does not exist; aborting.", &path);
+                process::exit(1);
+            }
+
             let mut tests: CucumberTests<$worldtype> = CucumberTests::new();
             cucumber!(@gather_steps, $worldtype, tests, $( $items )*);
-            tests.run(Path::new($featurepath));
+            tests.run(&path);
         }
     };
 }
