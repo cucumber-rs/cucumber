@@ -138,13 +138,6 @@ impl<T: Default> CucumberTests<T> {
         use std::sync::Arc;
 
         let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
-        let last_panic_hook = last_panic.clone();
-
-        panic::set_hook(Box::new(move |info| {
-            let mut state = last_panic_hook.lock().expect("last_panic unpoisoned");
-            *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
-        }));
-
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
 
         let mut scenarios = 0;
@@ -177,6 +170,12 @@ impl<T: Default> CucumberTests<T> {
                             continue;
                         }
                     };
+                    
+                    let last_panic_hook = last_panic.clone();
+                    panic::set_hook(Box::new(move |info| {
+                        let mut state = last_panic_hook.lock().expect("last_panic unpoisoned");
+                        *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
+                    }));
 
                     let result = panic::catch_unwind(|| {
                         match world.lock() {
@@ -193,6 +192,8 @@ impl<T: Default> CucumberTests<T> {
 
                         return Ok(())
                     });
+
+                    let _ = panic::take_hook();
 
                     println!("    {:<40}", &step.to_string());
 
@@ -228,8 +229,6 @@ impl<T: Default> CucumberTests<T> {
                 println!("");
             }
         }
-
-        let _ = panic::take_hook();
 
         println!("# Scenarios: {}", scenarios);
         println!("# Steps: {}", steps);
