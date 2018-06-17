@@ -238,7 +238,7 @@ impl<T: Default> CucumberTests<T> {
 #[macro_export]
 macro_rules! cucumber {
     (
-        @gather_steps, $worldtype:ident, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr;
     ) => {
         $tests.regex.$ty.insert(
@@ -247,7 +247,7 @@ macro_rules! cucumber {
     };
 
     (
-        @gather_steps, $worldtype:ident, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr; $( $items:tt )*
     ) => {
         $tests.regex.$ty.insert(
@@ -258,14 +258,14 @@ macro_rules! cucumber {
     };
 
     (
-        @gather_steps, $worldtype:ident, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr;
     ) => {
         $tests.$ty.insert($name, TestCase::new($body));
     };
 
     (
-        @gather_steps, $worldtype:ident, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr; $( $items:tt )*
     ) => {
         $tests.$ty.insert($name, TestCase::new($body));
@@ -275,18 +275,61 @@ macro_rules! cucumber {
 
     (
         features: $featurepath:tt;
-        world: $worldtype:ident;
+        world: $worldtype:path;
         $( $items:tt )*
     ) => {
         fn main() {
             use regex::Regex;
             use std::path::Path;
             use $crate::{CucumberTests, TestCase, RegexTestCase, HashableRegex};
-            use $worldtype;
 
             let mut tests: CucumberTests<$worldtype> = CucumberTests::new();
             cucumber!(@gather_steps, $worldtype, tests, $( $items )*);
             tests.run(Path::new($featurepath));
         }
+    };
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::default::Default;
+
+    pub struct World {
+        pub thing: bool
+    }
+
+    impl Default for World {
+        fn default() -> World {
+            World {
+                thing: false
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+cucumber! {
+    features: "./features";
+    world: tests::World;
+
+    when regex "^test (.*) regex$" |world, matches| {
+        println!("{}", matches[1]);
+    };
+
+    given "a thing" |world| {
+        assert!(true);
+    };
+
+    when "another thing" |world| {
+        assert!(true);
+    };
+
+    when "something goes right" |world| { 
+        assert!(true);
+    };
+
+    then "another thing" |world| {
+        assert!(true)
     };
 }
