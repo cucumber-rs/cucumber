@@ -2,10 +2,16 @@
 name = "cucumber_rust"
 version = "0.1.0"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
+description = "An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/bbqsrc/cucumber-rust"
+documentation = "https://docs.rs/cucumber_rust"
+homepage = "https://github.com/bbqsrc/cucumber-rust"
 
 [lib]
 harness = false
 
 [dependencies]
-gherkin_rust = { git = "https://github.com/bbqsrc/gherkin-rust.git", branch = "master" }
+gherkin_rust = "^0.1"
 regex = "^1.0"
