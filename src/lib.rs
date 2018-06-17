@@ -40,6 +40,7 @@ struct TestCase<T: Default> {
 }
 
 impl<T: Default> TestCase<T> {
+    #[allow(dead_code)]
     fn new(test: fn(&mut T) -> ()) -> TestCase<T> {
         TestCase {
             test: test
@@ -52,6 +53,7 @@ struct RegexTestCase<T: Default> {
 }
 
 impl<T: Default> RegexTestCase<T> {
+    #[allow(dead_code)]
     fn new(test: fn(&mut T, &[String]) -> ()) -> RegexTestCase<T> {
         RegexTestCase {
             test: test
@@ -78,6 +80,7 @@ enum TestType<'a, T> where T: 'a, T: Default {
 }
 
 impl<T: Default> CucumberTests<T> {
+    #[allow(dead_code)]
     fn new() -> CucumberTests<T> {
         let regex_tests = CucumberRegexTests {
             given: HashMap::new(),
@@ -95,6 +98,7 @@ impl<T: Default> CucumberTests<T> {
         tests
     }
 
+    #[allow(dead_code)]
     fn test_type<'a>(&'a self, step: &Step, value: &str) -> Option<TestType<'a, T>> {
         let test_bag = match step.ty {
             StepType::Given => &self.given,
@@ -128,6 +132,7 @@ impl<T: Default> CucumberTests<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn run(&mut self, feature_path: &Path) {
         use std::sync::Arc;
 
@@ -230,7 +235,7 @@ impl<T: Default> CucumberTests<T> {
     }
 }
 
-
+#[macro_export]
 macro_rules! cucumber {
     (
         @gather_steps, $worldtype:ident, $tests:tt,
@@ -283,44 +288,5 @@ macro_rules! cucumber {
             cucumber!(@gather_steps, $worldtype, tests, $( $items )*);
             tests.run(Path::new($featurepath));
         }
-    };
-}
-
-use std::default::Default;
-
-struct World {
-    thing: bool
-}
-
-impl Default for World {
-    fn default() -> World {
-        World {
-            thing: false
-        }
-    }
-}
-
-cucumber! {
-    features: "./features";
-    world: World;
-
-    when regex "^test (.*) regex$" |world, matches| {
-        println!("{}", matches[1]);
-    };
-
-    given "a thing" |world| {
-        assert!(true);
-    };
-
-    when "another thing" |world| {
-        assert!(true);
-    };
-
-    when "something goes right" |world| { 
-        assert!(true);
-    };
-
-    then "another thing" |world| {
-        assert!(true)
     };
 }
