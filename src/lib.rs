@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub extern crate gherkin;
+pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 
 use gherkin::{Step, StepType, Feature};

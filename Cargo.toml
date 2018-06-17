@@ -1,5 +1,5 @@
 [package]
-name = "cucumber"
+name = "cucumber_rust"
 version = "0.1.0"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 
@@ -7,5 +7,5 @@ authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 harness = false
 
 [dependencies]
-gherkin = { git = "https://github.com/bbqsrc/gherkin-rust.git", branch = "master" }
+gherkin_rust = { git = "https://github.com/bbqsrc/gherkin-rust.git", branch = "master" }
 regex = "^1.0"
