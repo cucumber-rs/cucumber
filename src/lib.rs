@@ -1,5 +1,5 @@
 pub extern crate gherkin;
-extern crate regex;
+pub extern crate regex;
 
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
@@ -12,7 +12,8 @@ use std::panic;
 use std::path::Path;
 use std::sync::Mutex;
 
-struct HashableRegex(Regex);
+pub struct HashableRegex(Regex);
+
 impl Hash for HashableRegex {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.as_str().hash(state);
@@ -35,40 +36,40 @@ impl Deref for HashableRegex {
     }
 }
 
-struct TestCase<T: Default> {
+pub struct TestCase<T: Default> {
     pub test: fn(&mut T) -> ()
 }
 
 impl<T: Default> TestCase<T> {
     #[allow(dead_code)]
-    fn new(test: fn(&mut T) -> ()) -> TestCase<T> {
+    pub fn new(test: fn(&mut T) -> ()) -> TestCase<T> {
         TestCase {
             test: test
         }
     }
 }
 
-struct RegexTestCase<T: Default> {
+pub struct RegexTestCase<T: Default> {
     pub test: fn(&mut T, &[String]) -> ()
 }
 
 impl<T: Default> RegexTestCase<T> {
     #[allow(dead_code)]
-    fn new(test: fn(&mut T, &[String]) -> ()) -> RegexTestCase<T> {
+    pub fn new(test: fn(&mut T, &[String]) -> ()) -> RegexTestCase<T> {
         RegexTestCase {
             test: test
         }
     }
 }
 
-struct CucumberTests<T: Default> {
+pub struct CucumberTests<T: Default> {
     pub given: HashMap<&'static str, TestCase<T>>,
     pub when: HashMap<&'static str, TestCase<T>>,
     pub then: HashMap<&'static str, TestCase<T>>,
     pub regex: CucumberRegexTests<T>
 }
 
-struct CucumberRegexTests<T: Default> {
+pub struct CucumberRegexTests<T: Default> {
     pub given: HashMap<HashableRegex, RegexTestCase<T>>,
     pub when: HashMap<HashableRegex, RegexTestCase<T>>,
     pub then: HashMap<HashableRegex, RegexTestCase<T>>,
@@ -81,7 +82,7 @@ enum TestType<'a, T> where T: 'a, T: Default {
 
 impl<T: Default> CucumberTests<T> {
     #[allow(dead_code)]
-    fn new() -> CucumberTests<T> {
+    pub fn new() -> CucumberTests<T> {
         let regex_tests = CucumberRegexTests {
             given: HashMap::new(),
             when: HashMap::new(),
@@ -278,9 +279,10 @@ macro_rules! cucumber {
         world: $worldtype:path;
         $( $items:tt )*
     ) => {
+        #[allow(unused_imports)]
         fn main() {
-            use regex::Regex;
             use std::path::Path;
+            use $crate::regex::Regex;
             use $crate::{CucumberTests, TestCase, RegexTestCase, HashableRegex};
 
             let mut tests: CucumberTests<$worldtype> = CucumberTests::new();
