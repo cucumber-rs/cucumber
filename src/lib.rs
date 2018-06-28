@@ -46,13 +46,17 @@ impl Deref for HashableRegex {
     }
 }
 
+type TestFn<T> = fn(&mut T, &Step) -> ();
+type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
+
+
 pub struct TestCase<T: Default> {
-    pub test: fn(&mut T) -> ()
+    pub test: TestFn<T>
 }
 
 impl<T: Default> TestCase<T> {
     #[allow(dead_code)]
-    pub fn new(test: fn(&mut T) -> ()) -> TestCase<T> {
+    pub fn new(test: TestFn<T>) -> TestCase<T> {
         TestCase {
             test: test
         }
@@ -60,12 +64,12 @@ impl<T: Default> TestCase<T> {
 }
 
 pub struct RegexTestCase<T: Default> {
-    pub test: fn(&mut T, &[String]) -> ()
+    pub test: TestRegexFn<T>
 }
 
 impl<T: Default> RegexTestCase<T> {
     #[allow(dead_code)]
-    pub fn new(test: fn(&mut T, &[String]) -> ()) -> RegexTestCase<T> {
+    pub fn new(test: TestRegexFn<T>) -> RegexTestCase<T> {
         RegexTestCase {
             test: test
         }
@@ -142,8 +146,7 @@ impl<T: Default> Steps<T> {
             }
         }
     }
-
-    #[allow(dead_code)]
+    
     pub fn run(&self, feature_path: &Path) {
         use std::sync::Arc;
 
@@ -151,7 +154,7 @@ impl<T: Default> Steps<T> {
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
 
         let mut scenarios = 0;
-        let mut steps = 0;
+        let mut step_count = 0;
 
         for entry in feature_path {
             let mut file = File::open(entry.unwrap().path()).expect("file to open");
@@ -167,9 +170,16 @@ impl<T: Default> Steps<T> {
                 println!("  Scenario: {}", scenario.name);
 
                 let mut world = Mutex::new(T::default());
+                
+                let mut steps = vec![];
+                if let Some(ref bg) = &feature.background {
+                    steps.append(&mut bg.steps.clone());
+                }
+                
+                steps.append(&mut scenario.steps.clone());
 
-                for step in scenario.steps {
-                    steps += 1;
+                for step in steps.into_iter() {
+                    step_count += 1;
 
                     let value = step.value.to_string();
                     
@@ -191,8 +201,8 @@ impl<T: Default> Steps<T> {
                         match world.lock() {
                             Ok(mut world) => {
                                 match test_type {
-                                    TestCaseType::Normal(t) => (t.test)(&mut *world),
-                                    TestCaseType::Regex(t, c) => (t.test)(&mut *world, &c)
+                                    TestCaseType::Normal(t) => (t.test)(&mut *world, &step),
+                                    TestCaseType::Regex(t, c) => (t.test)(&mut *world, &c, &step)
                                 }
                             },
                             Err(e) => {
@@ -206,6 +216,9 @@ impl<T: Default> Steps<T> {
                     let _ = panic::take_hook();
 
                     println!("    {:<40}", &step.to_string());
+                    if let Some(ref docstring) = &step.docstring {
+                        println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
+                    }
 
                     match result {
                         Ok(inner) => {
@@ -215,7 +228,6 @@ impl<T: Default> Steps<T> {
                             }
                         }
                         Err(any) => {
-                            println!("      # Step failed:");
                             let mut state = last_panic.lock().expect("unpoisoned");
 
                             {
@@ -224,10 +236,24 @@ impl<T: Default> Steps<T> {
                                     None => "unknown"
                                 };
 
-                                if let Some(s) = any.downcast_ref::<String>() {
-                                    println!("      # {}  [{}]", &s, loc);
+                                let s = if let Some(s) = any.downcast_ref::<String>() {
+                                    Some(s.as_str())
                                 } else if let Some(s) = any.downcast_ref::<&str>() {
-                                    println!("      # {}  [{}]", &s, loc);
+                                    Some(*s)
+                                } else {
+                                    None
+                                };
+                                
+                                if let Some(s) = s {
+                                    if s == "not yet implemented" {
+                                        println!("      # Not yet implemented");
+                                    } else {
+                                        println!("      # Step failed:");
+                                        println!("      # {}  [{}]", &s, loc);
+                                    }
+                                } else {
+                                    println!("      # Step failed:");
+                                    println!("      # Unknown reason [{}]", loc)
                                 }
                             }
 
@@ -241,7 +267,7 @@ impl<T: Default> Steps<T> {
         }
 
         println!("# Scenarios: {}", scenarios);
-        println!("# Steps: {}", steps);
+        println!("# Steps: {}", step_count);
     }
 }
 
