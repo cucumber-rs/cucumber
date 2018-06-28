@@ -1,13 +1,5 @@
-Feature: test feature
+Feature: Basic functionality
 
-  Scenario: Testing a scenario
+  Scenario: foo
     Given a thing
-    When another thing
-    And test exciting regex
-    And test another regex
-    Then done a thing
-
-  Scenario: Foo
-    When something goes right
-    Then another thing
-    
+    When nothing

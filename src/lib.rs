@@ -20,6 +20,8 @@ use std::panic;
 use std::path::Path;
 use std::sync::Mutex;
 
+pub trait World: Default {}
+
 pub struct HashableRegex(Regex);
 
 impl Hash for HashableRegex {
@@ -70,34 +72,34 @@ impl<T: Default> RegexTestCase<T> {
     }
 }
 
-pub struct CucumberTests<T: Default> {
+pub struct Steps<T: Default> {
     pub given: HashMap<&'static str, TestCase<T>>,
     pub when: HashMap<&'static str, TestCase<T>>,
     pub then: HashMap<&'static str, TestCase<T>>,
-    pub regex: CucumberRegexTests<T>
+    pub regex: RegexSteps<T>
 }
 
-pub struct CucumberRegexTests<T: Default> {
+pub struct RegexSteps<T: Default> {
     pub given: HashMap<HashableRegex, RegexTestCase<T>>,
     pub when: HashMap<HashableRegex, RegexTestCase<T>>,
     pub then: HashMap<HashableRegex, RegexTestCase<T>>,
 }
 
-enum TestType<'a, T> where T: 'a, T: Default {
+enum TestCaseType<'a, T> where T: 'a, T: Default {
     Normal(&'a TestCase<T>),
     Regex(&'a RegexTestCase<T>, Vec<String>)
 }
 
-impl<T: Default> CucumberTests<T> {
+impl<T: Default> Steps<T> {
     #[allow(dead_code)]
-    pub fn new() -> CucumberTests<T> {
-        let regex_tests = CucumberRegexTests {
+    pub fn new() -> Steps<T> {
+        let regex_tests = RegexSteps {
             given: HashMap::new(),
             when: HashMap::new(),
             then: HashMap::new()
         };
 
-        let tests = CucumberTests {
+        let tests = Steps {
             given: HashMap::new(),
             when: HashMap::new(),
             then: HashMap::new(),
@@ -108,7 +110,7 @@ impl<T: Default> CucumberTests<T> {
     }
 
     #[allow(dead_code)]
-    fn test_type<'a>(&'a self, step: &Step, value: &str) -> Option<TestType<'a, T>> {
+    fn test_type<'a>(&'a self, step: &Step, value: &str) -> Option<TestCaseType<'a, T>> {
         let test_bag = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
@@ -116,7 +118,7 @@ impl<T: Default> CucumberTests<T> {
         };
 
         match test_bag.get(value) {
-            Some(v) => Some(TestType::Normal(v)),
+            Some(v) => Some(TestCaseType::Normal(v)),
             None => {
                 let regex_bag = match step.ty {
                     StepType::Given => &self.regex.given,
@@ -131,7 +133,7 @@ impl<T: Default> CucumberTests<T> {
                     Some((regex, tc)) => {
                         let thing = regex.0.captures(&value).unwrap();
                         let matches: Vec<String> = thing.iter().map(|x| x.unwrap().as_str().to_string()).collect();
-                        Some(TestType::Regex(tc, matches))
+                        Some(TestCaseType::Regex(tc, matches))
                     },
                     None => {
                         None
@@ -142,7 +144,7 @@ impl<T: Default> CucumberTests<T> {
     }
 
     #[allow(dead_code)]
-    pub fn run(&mut self, feature_path: &Path) {
+    pub fn run(&self, feature_path: &Path) {
         use std::sync::Arc;
 
         let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
@@ -189,8 +191,8 @@ impl<T: Default> CucumberTests<T> {
                         match world.lock() {
                             Ok(mut world) => {
                                 match test_type {
-                                    TestType::Normal(t) => (t.test)(&mut *world),
-                                    TestType::Regex(t, c) => (t.test)(&mut *world, &c)
+                                    TestCaseType::Normal(t) => (t.test)(&mut *world),
+                                    TestCaseType::Regex(t, c) => (t.test)(&mut *world, &c)
                                 }
                             },
                             Err(e) => {
@@ -246,52 +248,15 @@ impl<T: Default> CucumberTests<T> {
 #[macro_export]
 macro_rules! cucumber {
     (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt $body:expr;
-    ) => {
-        $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-            RegexTestCase::new($body));
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt $body:expr; $( $items:tt )*
-    ) => {
-        $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-            RegexTestCase::new($body));
-
-        cucumber!(@gather_steps, $worldtype, $tests, $( $items )*);
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident $name:tt $body:expr;
-    ) => {
-        $tests.$ty.insert($name, TestCase::new($body));
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident $name:tt $body:expr; $( $items:tt )*
-    ) => {
-        $tests.$ty.insert($name, TestCase::new($body));
-
-        cucumber!(@gather_steps, $worldtype, $tests, $( $items )*);
-    };
-
-    (
         features: $featurepath:tt;
         world: $worldtype:path;
-        $( $items:tt )*
+        steps: $vec:expr
     ) => {
         #[allow(unused_imports)]
         fn main() {
             use std::path::Path;
             use std::process;
-            use $crate::regex::Regex;
-            use $crate::{CucumberTests, TestCase, RegexTestCase, HashableRegex};
+            use $crate::World;
 
             let path = match Path::new($featurepath).canonicalize() {
                 Ok(p) => p,
@@ -307,9 +272,79 @@ macro_rules! cucumber {
                 process::exit(1);
             }
 
-            let mut tests: CucumberTests<$worldtype> = CucumberTests::new();
-            cucumber!(@gather_steps, $worldtype, tests, $( $items )*);
+            let tests = {
+                let step_groups: Vec<Steps<$worldtype>> = $vec.iter().map(|f| f()).collect();
+                let mut combined_steps = Steps::new();
+
+                for step_group in step_groups.into_iter() {
+                    combined_steps.given.extend(step_group.given);
+                    combined_steps.when.extend(step_group.when);
+                    combined_steps.then.extend(step_group.then);
+
+                    combined_steps.regex.given.extend(step_group.regex.given);
+                    combined_steps.regex.when.extend(step_group.regex.when);
+                    combined_steps.regex.then.extend(step_group.regex.then);
+                }
+
+                combined_steps
+            };
+            
             tests.run(&path);
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! steps {
+    (
+        @gather_steps, $tests:tt,
+        $ty:ident regex $name:tt $body:expr;
+    ) => {
+        $tests.regex.$ty.insert(
+            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+            RegexTestCase::new($body));
+    };
+
+    (
+        @gather_steps, $tests:tt,
+        $ty:ident regex $name:tt $body:expr; $( $items:tt )*
+    ) => {
+        $tests.regex.$ty.insert(
+            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+            RegexTestCase::new($body));
+
+        steps!(@gather_steps, $tests, $( $items )*);
+    };
+
+    (
+        @gather_steps, $tests:tt,
+        $ty:ident $name:tt $body:expr;
+    ) => {
+        $tests.$ty.insert($name, TestCase::new($body));
+    };
+
+    (
+        @gather_steps, $tests:tt,
+        $ty:ident $name:tt $body:expr; $( $items:tt )*
+    ) => {
+        $tests.$ty.insert($name, TestCase::new($body));
+
+        steps!(@gather_steps, $tests, $( $items )*);
+    };
+
+    (
+        $( $items:tt )*
+    ) => {
+        #[allow(unused_imports)]
+        pub fn steps<T: Default>() -> $crate::Steps<T> {
+            use std::path::Path;
+            use std::process;
+            use $crate::regex::Regex;
+            use $crate::{Steps, TestCase, RegexTestCase, HashableRegex};
+
+            let mut tests: Steps<T> = Steps::new();
+            steps!(@gather_steps, tests, $( $items )*);
+            tests
         }
     };
 }
@@ -323,6 +358,8 @@ mod tests {
         pub thing: bool
     }
 
+    impl ::World for World {}
+
     impl Default for World {
         fn default() -> World {
             World {
@@ -333,27 +370,61 @@ mod tests {
 }
 
 #[cfg(test)]
+mod tests2 {
+    use std::default::Default;
+
+    pub struct World {
+        pub thing2: bool
+    }
+
+    impl ::World for World {}
+
+    impl Default for World {
+        fn default() -> World {
+            World {
+                thing2: true
+            }
+        }
+    }
+
+    steps! {
+        when "nothing" |world| {
+            assert!(true);
+        };
+    }
+}
+
+#[cfg(test)]
+mod tests1 {
+    steps! {
+        when regex "^test (.*) regex$" |world, matches| {
+            println!("{}", matches[1]);
+        };
+
+        given "a thing" |world| {
+            assert!(true);
+        };
+
+        when "another thing" |world| {
+            assert!(false);
+        };
+
+        when "something goes right" |world| { 
+            assert!(true);
+        };
+
+        then "another thing" |world| {
+            assert!(true)
+        };
+    }
+}
+
+#[cfg(test)]
 cucumber! {
     features: "./features";
     world: tests::World;
-
-    when regex "^test (.*) regex$" |world, matches| {
-        println!("{}", matches[1]);
-    };
-
-    given "a thing" |world| {
-        assert!(true);
-    };
-
-    when "another thing" |world| {
-        assert!(true);
-    };
-
-    when "something goes right" |world| { 
-        assert!(true);
-    };
-
-    then "another thing" |world| {
-        assert!(true)
-    };
+    steps: &[
+        tests1::steps,
+        tests2::steps
+    ]
 }
