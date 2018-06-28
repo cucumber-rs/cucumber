@@ -22,7 +22,7 @@ use std::sync::Mutex;
 
 pub trait World: Default {}
 
-pub struct HashableRegex(Regex);
+pub struct HashableRegex(pub Regex);
 
 impl Hash for HashableRegex {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -85,7 +85,7 @@ pub struct RegexSteps<T: Default> {
     pub then: HashMap<HashableRegex, RegexTestCase<T>>,
 }
 
-enum TestCaseType<'a, T> where T: 'a, T: Default {
+pub enum TestCaseType<'a, T> where T: 'a, T: Default {
     Normal(&'a TestCase<T>),
     Regex(&'a RegexTestCase<T>, Vec<String>)
 }
@@ -256,7 +256,7 @@ macro_rules! cucumber {
         fn main() {
             use std::path::Path;
             use std::process;
-            use $crate::World;
+            use $crate::{Steps, World};
 
             let path = match Path::new($featurepath).canonicalize() {
                 Ok(p) => p,
@@ -302,7 +302,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-            RegexTestCase::new($body));
+                RegexTestCase::new($body));
     };
 
     (
@@ -311,7 +311,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-            RegexTestCase::new($body));
+                RegexTestCase::new($body));
 
         steps!(@gather_steps, $tests, $( $items )*);
     };
@@ -390,6 +390,9 @@ mod tests2 {
     steps! {
         when "nothing" |world| {
             assert!(true);
+        };
+        when regex "^nothing$" |world, matches| {
+            assert!(true)
         };
     }
 }
