@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![feature(set_stdio)]
+
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 
@@ -14,11 +16,12 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
+use std::io;
 use std::io::prelude::*;
 use std::ops::Deref;
 use std::panic;
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub trait World: Default {}
 
@@ -92,6 +95,16 @@ pub struct RegexSteps<T: Default> {
 pub enum TestCaseType<'a, T> where T: 'a, T: Default {
     Normal(&'a TestCase<T>),
     Regex(&'a RegexTestCase<T>, Vec<String>)
+}
+
+struct Sink(Arc<Mutex<Vec<u8>>>);
+impl Write for Sink {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        Write::write(&mut *self.0.lock().unwrap(), data)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 impl<T: Default> Steps<T> {
@@ -197,6 +210,14 @@ impl<T: Default> Steps<T> {
                         *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
                     }));
 
+                    let data = Arc::new(Mutex::new(Vec::new()));
+                    let data2 = data.clone();
+
+                    let old_io = (
+                        io::set_print(Some(Box::new(Sink(data2.clone())))),
+                        io::set_panic(Some(Box::new(Sink(data2))))
+                    );
+
                     let result = panic::catch_unwind(|| {
                         match world.lock() {
                             Ok(mut world) => {
@@ -214,6 +235,8 @@ impl<T: Default> Steps<T> {
                     });
 
                     let _ = panic::take_hook();
+                    io::set_print(old_io.0);
+                    io::set_panic(old_io.1);
 
                     println!("    {:<40}", &step.to_string());
                     if let Some(ref docstring) = &step.docstring {
