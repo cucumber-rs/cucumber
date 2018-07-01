@@ -11,6 +11,7 @@
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 extern crate termcolor;
+extern crate pathdiff;
 
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
@@ -26,12 +27,14 @@ use std::sync::{Arc, Mutex};
 use std::any::Any;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use pathdiff::diff_paths;
+use std::env;
 
 pub trait World: Default {}
 
 pub trait OutputVisitor : Default {
     fn visit_start(&mut self);
-    fn visit_feature(&mut self, feature: &gherkin::Feature);
+    fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path);
     fn visit_feature_end(&mut self, feature: &gherkin::Feature);
     fn visit_scenario(&mut self, scenario: &gherkin::Scenario);
     fn visit_scenario_end(&mut self, scenario: &gherkin::Scenario);
@@ -42,6 +45,7 @@ pub trait OutputVisitor : Default {
 
 pub struct DefaultOutput {
     stdout: StandardStream,
+    cur_feature: String,
     scenario_count: u32,
     scenario_fail_count: u32,
     step_count: u32,
@@ -53,6 +57,7 @@ impl std::default::Default for DefaultOutput {
     fn default() -> DefaultOutput {
         DefaultOutput {
             stdout: StandardStream::stdout(ColorChoice::Always),
+            cur_feature: "".to_string(),
             scenario_count: 0,
             scenario_fail_count: 0,
             step_count: 0,
@@ -63,26 +68,42 @@ impl std::default::Default for DefaultOutput {
 }
 
 impl DefaultOutput {
-    fn write(&mut self, s: &str, c: Color, bold: bool) {
+    fn writeln(&mut self, s: &str, c: Color, bold: bool) {
         self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
         writeln!(&mut self.stdout, "{}", s).unwrap();
+        self.stdout.set_color(ColorSpec::new().set_fg(None).set_bold(false)).unwrap();
+    }
+
+    fn writeln_cmt(&mut self, s: &str, cmt: &str, c: Color, bold: bool) {
+        self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
+        write!(&mut self.stdout, "{:<40} ", s).unwrap();
+        self.stdout.set_color(ColorSpec::new().set_fg(None).set_bold(false)).unwrap();
+        writeln!(&mut self.stdout, "# {}", cmt).unwrap();
         self.stdout.set_color(ColorSpec::new().set_fg(None)).unwrap();
     }
 
     fn red(&mut self, s: &str) {
-        self.write(s, Color::Red, false);
+        self.writeln(s, Color::Red, false);
     }
 
-    fn green(&mut self, s: &str) {
-        self.write(s, Color::Green, false);
+    fn green_comment(&mut self, s: &str, c: &str) {
+        self.writeln_cmt(s, c, Color::Green, false);
     }
 
     fn bold_green(&mut self, s: &str) {
-        self.write(s, Color::Green, true);
+        self.writeln(s, Color::Green, true);
     }
 
     fn cyan(&mut self, s: &str) {
-        self.write(s, Color::Cyan, false);
+        self.writeln(s, Color::Cyan, false);
+    }
+
+    fn bold_green_comment(&mut self, s: &str, c: &str) {
+        self.writeln_cmt(s, c, Color::Green, true);
+    }
+
+    fn relpath(&self, target: &Path) -> std::path::PathBuf {
+        diff_paths(&target, &env::current_dir().unwrap()).unwrap()
     }
 }
 
@@ -90,15 +111,19 @@ impl OutputVisitor for DefaultOutput {
     fn visit_start(&mut self) {
         self.bold_green(&format!("[Cucumber v{}]\n", env!("CARGO_PKG_VERSION")))
     }
-    
-    fn visit_feature(&mut self, feature: &gherkin::Feature) {
-        self.bold_green(&format!("Feature: {}\n", &feature.name));
+
+    fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path) {
+        self.cur_feature = self.relpath(&path).to_string_lossy().to_string();
+        let msg = &format!("Feature: {}", &feature.name);
+        let cmt = &format!("{}:{}:{}", &self.cur_feature, feature.position.0, feature.position.1);
+        self.bold_green_comment(msg, cmt);
     }
     
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
     fn visit_scenario(&mut self, scenario: &gherkin::Scenario) {
-        self.bold_green(&format!("  Scenario: {}", &scenario.name));
+        let cmt = &format!("{}:{}:{}", &self.cur_feature, scenario.position.0, scenario.position.1);
+        self.bold_green_comment(&format!("  Scenario: {}", &scenario.name), cmt);
         self.scenario_count += 1;
     }
     
@@ -111,31 +136,42 @@ impl OutputVisitor for DefaultOutput {
     }
     
     fn visit_step_result(&mut self, step: &gherkin::Step, result: &TestResult) {
+        let cmt = &format!("{}:{}:{}", &self.cur_feature, step.position.0, step.position.1);
+        let msg = &format!("    {}", &step.to_string());
+        let ds = || {
+            if let Some(ref docstring) = &step.docstring {
+                println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
+            }
+        };
+
         match result {
             TestResult::Pass => {
-                self.green(&format!("    {:<60}", &step.to_string()));
-                if let Some(ref docstring) = &step.docstring {
-                    println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
-                }
+                self.writeln_cmt(msg, cmt, Color::Green, false);
+                ds();
             },
-            TestResult::Fail(msg, loc) => {
-                self.red(&format!("    {:<60}", &step.to_string()));
-                self.red(&format!("{}  [{}]", msg, loc));
+            TestResult::Fail(err_msg, loc) => {
+                self.writeln_cmt(msg, cmt, Color::Red, false);
+                ds();
+                self.writeln_cmt(&format!("{:<40}", "      [!] Step failed:"), loc, Color::Red, true);
+                self.red(err_msg);
                 self.fail_count += 1;
                 self.scenario_fail_count += 1;
             },
             TestResult::MutexPoisoned => {
-                self.cyan(&format!("    {:<60}", &step.to_string()));
-                self.cyan("      # Skipped due to previous error (poisoned)");
+                self.writeln_cmt(msg, cmt, Color::Cyan, false);
+                ds();
+                println!("      # Skipped due to previous error (poisoned)");
                 self.fail_count += 1;
             },
             TestResult::Skipped => {
-                self.cyan(&format!("    {:<60}", &step.to_string()));
+                self.writeln_cmt(msg, cmt, Color::Cyan, false);
+                ds();
                 self.skipped_count += 1;
             }
             TestResult::Unimplemented => {
-                self.cyan(&format!("    {:<60}", &step.to_string()));
-                self.cyan("      # Not yet implemented (skipped)");
+                self.writeln_cmt(msg, cmt, Color::Cyan, false);
+                ds();
+                println!("      # Not yet implemented (skipped)");
                 self.skipped_count += 1;
             }
         };
@@ -265,7 +301,12 @@ impl Write for Sink {
     }
 }
 
-fn capture_io<T, F: FnOnce() -> T>(callback: F) -> Result<T, Box<dyn Any + Send>>{
+struct CapturedIo<T> {
+    stdout: Vec<u8>,
+    result: Result<T, Box<dyn Any + Send>>
+}
+
+fn capture_io<T, F: FnOnce() -> T>(callback: F) -> CapturedIo<T> {
     let data = Arc::new(Mutex::new(Vec::new()));
     let data2 = data.clone();
 
@@ -278,10 +319,15 @@ fn capture_io<T, F: FnOnce() -> T>(callback: F) -> Result<T, Box<dyn Any + Send>
         panic::AssertUnwindSafe(callback)
     );
 
+    let captured_io = CapturedIo {
+        stdout: data.lock().unwrap().to_vec(),
+        result: result
+    };
+
     io::set_print(old_io.0);
     io::set_panic(old_io.1);
 
-    result
+    captured_io
 }
 
 
@@ -365,13 +411,13 @@ impl<'s, T: Default> Steps<'s, T> {
         }));
 
 
-        let result = capture_io(move || {
+        let captured_io = capture_io(move || {
             self.run_test_inner(world, test_type, &step)
         });
 
         let _ = panic::take_hook();
         
-        match result {
+        match captured_io.result {
             Ok(_) => TestResult::Pass,
             Err(any) => {
                 let mut state = last_panic_hook.lock().expect("unpoisoned");
@@ -393,7 +439,12 @@ impl<'s, T: Default> Steps<'s, T> {
                 if s == "not yet implemented" {
                     TestResult::Unimplemented
                 } else {
-                    TestResult::Fail(s.to_owned(), loc.to_owned())
+                    let panic_str = if &captured_io.stdout.len() > &0usize {
+                        String::from_utf8_lossy(&captured_io.stdout).to_string()
+                    } else {
+                        format!("Panicked with: {}", s)
+                    };
+                    TestResult::Fail(panic_str, loc.to_owned())
                 }
             }
         }
@@ -408,10 +459,16 @@ impl<'s, T: Default> Steps<'s, T> {
     ) {
         output.visit_scenario(&scenario);
 
-        let mut world = match capture_io(|| T::default()) {
+        let captured_io = capture_io(|| T::default());
+        let mut world = match captured_io.result {
             Ok(v) => v,
             Err(e) => {
-                panic!(e);
+                if &captured_io.stdout.len() > &0usize {
+                    let msg = String::from_utf8_lossy(&captured_io.stdout).to_string();
+                    panic!(msg);
+                } else {
+                    panic!(e);
+                }
             }
         };
         
@@ -461,12 +518,13 @@ impl<'s, T: Default> Steps<'s, T> {
         let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
         for entry in feature_path {
-            let mut file = File::open(entry.unwrap().path()).expect("file to open");
+            let path = entry.unwrap().path();
+            let mut file = File::open(&path).expect("file to open");
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
             
             let feature = Feature::from(&*buffer);
-            output.visit_feature(&feature);
+            output.visit_feature(&feature, &path);
 
             for scenario in (&feature.scenarios).iter() {
                 self.run_scenario(&feature, &scenario, last_panic.clone(), output);
@@ -627,6 +685,10 @@ mod tests1 {
 
         then "another thing" |_world, _step| {
             assert!(true)
+        };
+
+        when "nothing" |world, step| {
+            panic!("oh shit");
         };
     }
 }

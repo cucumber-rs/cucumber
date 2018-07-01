@@ -13,6 +13,7 @@ homepage = "https://github.com/bbqsrc/cucumber-rust"
 harness = false
 
 [dependencies]
-gherkin_rust = "^0.1"
+gherkin_rust = "^0.2.0"
 regex = "^1.0"
 termcolor = "^0.3.6"
+pathdiff = "^0.1.0"
