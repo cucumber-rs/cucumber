@@ -85,17 +85,9 @@ impl DefaultOutput {
     fn red(&mut self, s: &str) {
         self.writeln(s, Color::Red, false);
     }
-
-    fn green_comment(&mut self, s: &str, c: &str) {
-        self.writeln_cmt(s, c, Color::Green, false);
-    }
-
+    
     fn bold_green(&mut self, s: &str) {
         self.writeln(s, Color::Green, true);
-    }
-
-    fn cyan(&mut self, s: &str) {
-        self.writeln(s, Color::Cyan, false);
     }
 
     fn bold_green_comment(&mut self, s: &str, c: &str) {
