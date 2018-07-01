@@ -10,6 +10,7 @@
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
+extern crate termcolor;
 
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
@@ -23,8 +24,154 @@ use std::panic;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::any::Any;
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub trait World: Default {}
+
+pub trait OutputVisitor : Default {
+    fn visit_start(&mut self);
+    fn visit_feature(&mut self, feature: &gherkin::Feature);
+    fn visit_feature_end(&mut self, feature: &gherkin::Feature);
+    fn visit_scenario(&mut self, scenario: &gherkin::Scenario);
+    fn visit_scenario_end(&mut self, scenario: &gherkin::Scenario);
+    fn visit_step(&mut self, step: &gherkin::Step);
+    fn visit_step_result(&mut self, step: &gherkin::Step, result: &TestResult);
+    fn visit_finish(&mut self);
+}
+
+pub struct DefaultOutput {
+    stdout: StandardStream,
+    scenario_count: u32,
+    scenario_fail_count: u32,
+    step_count: u32,
+    skipped_count: u32,
+    fail_count: u32
+}
+
+impl std::default::Default for DefaultOutput {
+    fn default() -> DefaultOutput {
+        DefaultOutput {
+            stdout: StandardStream::stdout(ColorChoice::Always),
+            scenario_count: 0,
+            scenario_fail_count: 0,
+            step_count: 0,
+            skipped_count: 0,
+            fail_count: 0
+        }
+    }
+}
+
+impl DefaultOutput {
+    fn write(&mut self, s: &str, c: Color, bold: bool) {
+        self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
+        writeln!(&mut self.stdout, "{}", s).unwrap();
+        self.stdout.set_color(ColorSpec::new().set_fg(None)).unwrap();
+    }
+
+    fn red(&mut self, s: &str) {
+        self.write(s, Color::Red, false);
+    }
+
+    fn green(&mut self, s: &str) {
+        self.write(s, Color::Green, false);
+    }
+
+    fn bold_green(&mut self, s: &str) {
+        self.write(s, Color::Green, true);
+    }
+
+    fn cyan(&mut self, s: &str) {
+        self.write(s, Color::Cyan, false);
+    }
+}
+
+impl OutputVisitor for DefaultOutput {
+    fn visit_start(&mut self) {
+        self.bold_green(&format!("[Cucumber v{}]\n", env!("CARGO_PKG_VERSION")))
+    }
+    
+    fn visit_feature(&mut self, feature: &gherkin::Feature) {
+        self.bold_green(&format!("Feature: {}\n", &feature.name));
+    }
+    
+    fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
+
+    fn visit_scenario(&mut self, scenario: &gherkin::Scenario) {
+        self.bold_green(&format!("  Scenario: {}", &scenario.name));
+        self.scenario_count += 1;
+    }
+    
+    fn visit_scenario_end(&mut self, _scenario: &gherkin::Scenario) {
+        println!("");
+    }
+    
+    fn visit_step(&mut self, _step: &gherkin::Step) {
+        self.step_count += 1;
+    }
+    
+    fn visit_step_result(&mut self, step: &gherkin::Step, result: &TestResult) {
+        match result {
+            TestResult::Pass => {
+                self.green(&format!("    {:<60}", &step.to_string()));
+                if let Some(ref docstring) = &step.docstring {
+                    println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
+                }
+            },
+            TestResult::Fail(msg, loc) => {
+                self.red(&format!("    {:<60}", &step.to_string()));
+                self.red(&format!("{}  [{}]", msg, loc));
+                self.fail_count += 1;
+                self.scenario_fail_count += 1;
+            },
+            TestResult::MutexPoisoned => {
+                self.cyan(&format!("    {:<60}", &step.to_string()));
+                self.cyan("      # Skipped due to previous error (poisoned)");
+                self.fail_count += 1;
+            },
+            TestResult::Skipped => {
+                self.cyan(&format!("    {:<60}", &step.to_string()));
+                self.skipped_count += 1;
+            }
+            TestResult::Unimplemented => {
+                self.cyan(&format!("    {:<60}", &step.to_string()));
+                self.cyan("      # Not yet implemented (skipped)");
+                self.skipped_count += 1;
+            }
+        };
+    }
+
+    fn visit_finish(&mut self) {
+        self.stdout.set_color(ColorSpec::new()
+            .set_fg(Some(Color::Green))
+            .set_bold(true)).unwrap();
+            
+        // Do scenario count
+        write!(&mut self.stdout, "{} scenarios", &self.scenario_count).unwrap();
+        if self.scenario_fail_count > 0 {
+            write!(&mut self.stdout, " ({} failed)", &self.scenario_fail_count).unwrap();
+        }
+        println!();
+
+        // Do steps
+        let mut o = vec![];
+        if self.fail_count > 0 {
+            o.push(format!("{} failed", self.fail_count));
+        }
+        if self.skipped_count > 0 {
+            o.push(format!("{} skipped", self.skipped_count));
+        }
+        let passed_count = self.step_count - self.skipped_count - self.fail_count;
+        o.push(format!("{} passed", passed_count));
+
+        let msg = format!("{} steps ({})", &self.step_count, o.join(", "));
+        writeln!(&mut self.stdout, "{}\n", &msg).unwrap();
+        
+        self.stdout.set_color(ColorSpec::new()
+            .set_fg(None)
+            .set_bold(false)).unwrap();
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct HashableRegex(pub Regex);
@@ -210,14 +357,7 @@ impl<'s, T: Default> Steps<'s, T> {
         };
     }
 
-    fn run_test<'a>(&'s self, world: &mut T, step: &'a Step, last_panic: Arc<Mutex<Option<String>>>) -> TestResult {
-        let test_type = match self.test_type(&step) {
-            Some(v) => v,
-            None => {
-                return TestResult::Unimplemented;
-            }
-        };
-        
+    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, last_panic: Arc<Mutex<Option<String>>>) -> TestResult {
         let last_panic_hook = last_panic.clone();
         panic::set_hook(Box::new(move |info| {
             let mut state = last_panic.lock().expect("last_panic unpoisoned");
@@ -263,11 +403,10 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         feature: &'a gherkin::Feature,
         scenario: &'a gherkin::Scenario,
-        last_panic: Arc<Mutex<Option<String>>>
-    ) -> u32 {
-        println!("  Scenario: {}", scenario.name);
-
-        let mut step_count = 0u32;
+        last_panic: Arc<Mutex<Option<String>>>,
+        output: &mut impl OutputVisitor
+    ) {
+        output.visit_scenario(&scenario);
 
         let mut world = match capture_io(|| T::default()) {
             Ok(v) => v,
@@ -287,48 +426,39 @@ impl<'s, T: Default> Steps<'s, T> {
             steps.push(&s);
         }
 
+        let mut is_skipping = false;
+
         for step in steps.iter() {
-            step_count += 1;
-            
-            let result = self.run_test(&mut world, &step, last_panic.clone());
+            output.visit_step(&step);
 
-            println!("    {:<40}", &step.to_string());
-            if let Some(ref docstring) = &step.docstring {
-                println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
-            }
-
-            match result {
-                TestResult::Pass => {
-                    println!("      # Pass")
-                },
-                TestResult::Fail(msg, loc) => {
-                    println!("      # Step failed:");
-                    println!("      # {}  [{}]", msg, loc);
-                },
-                TestResult::MutexPoisoned => {
-                    println!("      # Skipped due to previous error (poisoned)")
-                },
-                TestResult::Skipped => {
-                    println!("      # Skipped")
-                }
-                TestResult::Unimplemented => {
-                    println!("      # Not yet implemented")
+            let test_type = match self.test_type(&step) {
+                Some(v) => v,
+                None => {
+                    output.visit_step_result(&step, &TestResult::Unimplemented);
+                    continue;
                 }
             };
+
+            if is_skipping {
+                output.visit_step_result(&step, &TestResult::Skipped);
+            } else {
+                let result = self.run_test(&mut world, test_type, &step, last_panic.clone());
+                output.visit_step_result(&step, &result);
+                match result {
+                    TestResult::Pass => {}
+                    _ => { is_skipping = true; }
+                };
+            }
         }
 
-        println!("");
-        step_count
+        output.visit_scenario_end(&scenario);
     }
     
-    pub fn run<'a>(&'s self, feature_path: &Path) {
-        use std::sync::Arc;
-
-        let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    pub fn run<'a>(&'s self, feature_path: &Path, output: &mut impl OutputVisitor) {
+        output.visit_start();
+        
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
-
-        let mut scenarios = 0;
-        let mut step_count = 0;
+        let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
         for entry in feature_path {
             let mut file = File::open(entry.unwrap().path()).expect("file to open");
@@ -336,16 +466,16 @@ impl<'s, T: Default> Steps<'s, T> {
             file.read_to_string(&mut buffer).unwrap();
             
             let feature = Feature::from(&*buffer);
-            println!("Feature: {}\n", &feature.name);
+            output.visit_feature(&feature);
 
             for scenario in (&feature.scenarios).iter() {
-                scenarios += 1;
-                step_count += self.run_scenario(&feature, &scenario, last_panic.clone());
+                self.run_scenario(&feature, &scenario, last_panic.clone(), output);
             }
-        }
 
-        println!("# Scenarios: {}", scenarios);
-        println!("# Steps: {}", step_count);
+            output.visit_feature_end(&feature);
+        }
+        
+        output.visit_finish();
     }
 }
 
@@ -360,7 +490,7 @@ macro_rules! cucumber {
         fn main() {
             use std::path::Path;
             use std::process;
-            use $crate::{Steps, World};
+            use $crate::{Steps, World, DefaultOutput};
 
             let path = match Path::new($featurepath).canonicalize() {
                 Ok(p) => p,
@@ -393,7 +523,8 @@ macro_rules! cucumber {
                 combined_steps
             };
             
-            tests.run(&path);
+            let mut output = DefaultOutput::default();
+            tests.run(&path, &mut output);
         }
     }
 }
@@ -475,53 +606,26 @@ mod tests {
 }
 
 #[cfg(test)]
-mod tests2 {
-    use std::default::Default;
-
-    pub struct World {
-        pub thing2: bool
-    }
-
-    impl ::World for World {}
-
-    impl Default for World {
-        fn default() -> World {
-            World {
-                thing2: true
-            }
-        }
-    }
-
-    steps! {
-        when "nothing" |world| {
-            assert!(true);
-        };
-        when regex "^nothing$" |world, matches| {
-            assert!(true)
-        };
-    }
-}
-
-#[cfg(test)]
 mod tests1 {
     steps! {
-        when regex "^test (.*) regex$" |world, matches| {
+        world: ::tests::World;
+        when regex "^test (.*) regex$" |_world, matches, _step| {
             println!("{}", matches[1]);
         };
 
-        given "a thing" |world| {
+        given "a thing" |_world, _step| {
             assert!(true);
         };
 
-        when "another thing" |world| {
+        when "another thing" |_world, _step| {
             assert!(false);
         };
 
-        when "something goes right" |world| { 
+        when "something goes right" |_world, _step| { 
             assert!(true);
         };
 
-        then "another thing" |world| {
+        then "another thing" |_world, _step| {
             assert!(true)
         };
     }
@@ -532,7 +636,6 @@ cucumber! {
     features: "./features";
     world: tests::World;
     steps: &[
-        tests1::steps,
-        tests2::steps
+        tests1::steps
     ]
 }
