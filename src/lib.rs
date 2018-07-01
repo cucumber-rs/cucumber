@@ -7,12 +7,14 @@
 // except according to those terms.
 
 #![feature(set_stdio)]
+#![feature(fnbox)]
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 extern crate termcolor;
 extern crate pathdiff;
 
+use std::boxed::FnBox;
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
 use std::collections::HashMap;
@@ -534,7 +536,22 @@ macro_rules! cucumber {
     (
         features: $featurepath:tt;
         world: $worldtype:path;
+        steps: $vec:expr;
+        before: $beforefn:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; Some(Box::new($beforefn)));
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
         steps: $vec:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; None);
+    };
+
+    (
+        @finish; $featurepath:tt; $worldtype:path; $vec:expr; $beforefn:expr
     ) => {
         #[allow(unused_imports)]
         fn main() {
@@ -574,6 +591,14 @@ macro_rules! cucumber {
             };
             
             let mut output = DefaultOutput::default();
+
+            let before_fn: Option<Box<FnBox() -> ()>> = $beforefn;
+
+            match before_fn {
+                Some(f) => f(),
+                None => {}
+            };
+
             tests.run(&path, &mut output);
         }
     }
