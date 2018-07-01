@@ -22,9 +22,11 @@ use std::ops::Deref;
 use std::panic;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::any::Any;
 
 pub trait World: Default {}
 
+#[derive(Debug, Clone)]
 pub struct HashableRegex(pub Regex);
 
 impl Hash for HashableRegex {
@@ -52,7 +54,6 @@ impl Deref for HashableRegex {
 type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
 
-
 pub struct TestCase<T: Default> {
     pub test: TestFn<T>
 }
@@ -66,35 +67,45 @@ impl<T: Default> TestCase<T> {
     }
 }
 
-pub struct RegexTestCase<T: Default> {
-    pub test: TestRegexFn<T>
+pub struct RegexTestCase<'a, T: 'a + Default> {
+    pub test: TestRegexFn<T>,
+    _marker: std::marker::PhantomData<&'a T>
 }
 
-impl<T: Default> RegexTestCase<T> {
+impl<'a, T: Default> RegexTestCase<'a, T> {
     #[allow(dead_code)]
-    pub fn new(test: TestRegexFn<T>) -> RegexTestCase<T> {
+    pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
         RegexTestCase {
-            test: test
+            test: test,
+            _marker: std::marker::PhantomData
         }
     }
 }
 
-pub struct Steps<T: Default> {
+pub struct Steps<'s, T: 's + Default> {
     pub given: HashMap<&'static str, TestCase<T>>,
     pub when: HashMap<&'static str, TestCase<T>>,
     pub then: HashMap<&'static str, TestCase<T>>,
-    pub regex: RegexSteps<T>
+    pub regex: RegexSteps<'s, T>
 }
 
-pub struct RegexSteps<T: Default> {
-    pub given: HashMap<HashableRegex, RegexTestCase<T>>,
-    pub when: HashMap<HashableRegex, RegexTestCase<T>>,
-    pub then: HashMap<HashableRegex, RegexTestCase<T>>,
+pub struct RegexSteps<'s, T: 's + Default> {
+    pub given: HashMap<HashableRegex, RegexTestCase<'s, T>>,
+    pub when: HashMap<HashableRegex, RegexTestCase<'s, T>>,
+    pub then: HashMap<HashableRegex, RegexTestCase<'s, T>>,
 }
 
 pub enum TestCaseType<'a, T> where T: 'a, T: Default {
     Normal(&'a TestCase<T>),
-    Regex(&'a RegexTestCase<T>, Vec<String>)
+    Regex(&'a RegexTestCase<'a, T>, Vec<String>)
+}
+
+pub enum TestResult {
+    MutexPoisoned,
+    Skipped,
+    Unimplemented,
+    Pass,
+    Fail(String, String)
 }
 
 struct Sink(Arc<Mutex<Vec<u8>>>);
@@ -107,9 +118,29 @@ impl Write for Sink {
     }
 }
 
-impl<T: Default> Steps<T> {
+fn capture_io<T, F: FnOnce() -> T>(callback: F) -> Result<T, Box<dyn Any + Send>>{
+    let data = Arc::new(Mutex::new(Vec::new()));
+    let data2 = data.clone();
+
+    let old_io = (
+        io::set_print(Some(Box::new(Sink(data2.clone())))),
+        io::set_panic(Some(Box::new(Sink(data2))))
+    );
+
+    let result = panic::catch_unwind(
+        panic::AssertUnwindSafe(callback)
+    );
+
+    io::set_print(old_io.0);
+    io::set_panic(old_io.1);
+
+    result
+}
+
+
+impl<'s, T: Default> Steps<'s, T> {
     #[allow(dead_code)]
-    pub fn new() -> Steps<T> {
+    pub fn new() -> Steps<'s, T> {
         let regex_tests = RegexSteps {
             given: HashMap::new(),
             when: HashMap::new(),
@@ -126,30 +157,37 @@ impl<T: Default> Steps<T> {
         tests
     }
 
-    #[allow(dead_code)]
-    fn test_type<'a>(&'a self, step: &Step, value: &str) -> Option<TestCaseType<'a, T>> {
-        let test_bag = match step.ty {
+    fn test_bag_for<'a>(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
+        match ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
             StepType::Then => &self.then
-        };
+        }
+    }
 
-        match test_bag.get(value) {
+    fn regex_bag_for<'a>(&'a self, ty: StepType) -> &HashMap<HashableRegex, RegexTestCase<'a, T>> {
+        match ty {
+            StepType::Given => &self.regex.given,
+            StepType::When => &self.regex.when,
+            StepType::Then => &self.regex.then
+        }
+    }
+
+    fn test_type(&'s self, step: &Step) -> Option<TestCaseType<'s, T>> {
+        let test_bag = self.test_bag_for(step.ty);
+
+        match test_bag.get(&*step.value) {
             Some(v) => Some(TestCaseType::Normal(v)),
             None => {
-                let regex_bag = match step.ty {
-                    StepType::Given => &self.regex.given,
-                    StepType::When => &self.regex.when,
-                    StepType::Then => &self.regex.then
-                };
+                let regex_bag = self.regex_bag_for(step.ty);
 
                 let result = regex_bag.iter()
-                    .find(|(regex, _)| regex.is_match(&value));
+                    .find(|(regex, _)| regex.is_match(&step.value));
 
                 match result {
                     Some((regex, tc)) => {
-                        let thing = regex.0.captures(&value).unwrap();
-                        let matches: Vec<String> = thing.iter().map(|x| x.unwrap().as_str().to_string()).collect();
+                        let matches = regex.0.captures(&step.value).unwrap();
+                        let matches: Vec<String> = matches.iter().map(|x| x.unwrap().as_str().to_string()).collect();
                         Some(TestCaseType::Regex(tc, matches))
                     },
                     None => {
@@ -159,8 +197,131 @@ impl<T: Default> Steps<T> {
             }
         }
     }
+
+    fn run_test_inner<'a>(
+        &'s self,
+        world: &mut T,
+        test_type: TestCaseType<'s, T>,
+        step: &'a gherkin::Step
+    ) {
+        match test_type {
+            TestCaseType::Normal(t) => (t.test)(world, &step),
+            TestCaseType::Regex(t, ref c) => (t.test)(world, c, &step)
+        };
+    }
+
+    fn run_test<'a>(&'s self, world: &mut T, step: &'a Step, last_panic: Arc<Mutex<Option<String>>>) -> TestResult {
+        let test_type = match self.test_type(&step) {
+            Some(v) => v,
+            None => {
+                return TestResult::Unimplemented;
+            }
+        };
+        
+        let last_panic_hook = last_panic.clone();
+        panic::set_hook(Box::new(move |info| {
+            let mut state = last_panic.lock().expect("last_panic unpoisoned");
+            *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
+        }));
+
+
+        let result = capture_io(move || {
+            self.run_test_inner(world, test_type, &step)
+        });
+
+        let _ = panic::take_hook();
+        
+        match result {
+            Ok(_) => TestResult::Pass,
+            Err(any) => {
+                let mut state = last_panic_hook.lock().expect("unpoisoned");
+                let loc = match &*state {
+                    Some(v) => &v,
+                    None => "unknown"
+                };
+
+                let s = {
+                    if let Some(s) = any.downcast_ref::<String>() {
+                        s.as_str()
+                    } else if let Some(s) = any.downcast_ref::<&str>() {
+                        *s
+                    } else {
+                        ""
+                    }
+                };
+
+                if s == "not yet implemented" {
+                    TestResult::Unimplemented
+                } else {
+                    TestResult::Fail(s.to_owned(), loc.to_owned())
+                }
+            }
+        }
+    }
+
+    fn run_scenario<'a>(
+        &'s self,
+        feature: &'a gherkin::Feature,
+        scenario: &'a gherkin::Scenario,
+        last_panic: Arc<Mutex<Option<String>>>
+    ) -> u32 {
+        println!("  Scenario: {}", scenario.name);
+
+        let mut step_count = 0u32;
+
+        let mut world = match capture_io(|| T::default()) {
+            Ok(v) => v,
+            Err(e) => {
+                panic!(e);
+            }
+        };
+        
+        let mut steps: Vec<&'a Step> = vec![];
+        if let Some(ref bg) = &feature.background {
+            for s in &bg.steps {
+                steps.push(&s);
+            }
+        }
+
+        for s in &scenario.steps {
+            steps.push(&s);
+        }
+
+        for step in steps.iter() {
+            step_count += 1;
+            
+            let result = self.run_test(&mut world, &step, last_panic.clone());
+
+            println!("    {:<40}", &step.to_string());
+            if let Some(ref docstring) = &step.docstring {
+                println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
+            }
+
+            match result {
+                TestResult::Pass => {
+                    println!("      # Pass")
+                },
+                TestResult::Fail(msg, loc) => {
+                    println!("      # Step failed:");
+                    println!("      # {}  [{}]", msg, loc);
+                },
+                TestResult::MutexPoisoned => {
+                    println!("      # Skipped due to previous error (poisoned)")
+                },
+                TestResult::Skipped => {
+                    println!("      # Skipped")
+                }
+                TestResult::Unimplemented => {
+                    println!("      # Not yet implemented")
+                }
+            };
+        }
+
+        println!("");
+        step_count
+    }
     
-    pub fn run(&self, feature_path: &Path) {
+    pub fn run<'a>(&'s self, feature_path: &Path) {
         use std::sync::Arc;
 
         let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
@@ -173,119 +334,13 @@ impl<T: Default> Steps<T> {
             let mut file = File::open(entry.unwrap().path()).expect("file to open");
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
-            let feature = Feature::from(&*buffer);
             
-            println!("Feature: {}\n", feature.name);
+            let feature = Feature::from(&*buffer);
+            println!("Feature: {}\n", &feature.name);
 
-            for scenario in feature.scenarios {
+            for scenario in (&feature.scenarios).iter() {
                 scenarios += 1;
-
-                println!("  Scenario: {}", scenario.name);
-
-                let mut world = Mutex::new(T::default());
-                
-                let mut steps = vec![];
-                if let Some(ref bg) = &feature.background {
-                    steps.append(&mut bg.steps.clone());
-                }
-                
-                steps.append(&mut scenario.steps.clone());
-
-                for step in steps.into_iter() {
-                    step_count += 1;
-
-                    let value = step.value.to_string();
-                    
-                    let test_type = match self.test_type(&step, &value) {
-                        Some(v) => v,
-                        None => {
-                            println!("    {}\n      # No test found", &step.to_string());
-                            continue;
-                        }
-                    };
-                    
-                    let last_panic_hook = last_panic.clone();
-                    panic::set_hook(Box::new(move |info| {
-                        let mut state = last_panic_hook.lock().expect("last_panic unpoisoned");
-                        *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
-                    }));
-
-                    let data = Arc::new(Mutex::new(Vec::new()));
-                    let data2 = data.clone();
-
-                    let old_io = (
-                        io::set_print(Some(Box::new(Sink(data2.clone())))),
-                        io::set_panic(Some(Box::new(Sink(data2))))
-                    );
-
-                    let result = panic::catch_unwind(|| {
-                        match world.lock() {
-                            Ok(mut world) => {
-                                match test_type {
-                                    TestCaseType::Normal(t) => (t.test)(&mut *world, &step),
-                                    TestCaseType::Regex(t, c) => (t.test)(&mut *world, &c, &step)
-                                }
-                            },
-                            Err(e) => {
-                                return Err(e);
-                            }
-                        };
-
-                        return Ok(())
-                    });
-
-                    let _ = panic::take_hook();
-                    io::set_print(old_io.0);
-                    io::set_panic(old_io.1);
-
-                    println!("    {:<40}", &step.to_string());
-                    if let Some(ref docstring) = &step.docstring {
-                        println!("      \"\"\"\n      {}\n      \"\"\"", docstring);
-                    }
-
-                    match result {
-                        Ok(inner) => {
-                            match inner {
-                                Ok(_) => {},
-                                Err(_) => println!("      # Skipped due to previous error")
-                            }
-                        }
-                        Err(any) => {
-                            let mut state = last_panic.lock().expect("unpoisoned");
-
-                            {
-                                let loc = match &*state {
-                                    Some(v) => &v,
-                                    None => "unknown"
-                                };
-
-                                let s = if let Some(s) = any.downcast_ref::<String>() {
-                                    Some(s.as_str())
-                                } else if let Some(s) = any.downcast_ref::<&str>() {
-                                    Some(*s)
-                                } else {
-                                    None
-                                };
-                                
-                                if let Some(s) = s {
-                                    if s == "not yet implemented" {
-                                        println!("      # Not yet implemented");
-                                    } else {
-                                        println!("      # Step failed:");
-                                        println!("      # {}  [{}]", &s, loc);
-                                    }
-                                } else {
-                                    println!("      # Step failed:");
-                                    println!("      # Unknown reason [{}]", loc)
-                                }
-                            }
-
-                            *state = None;
-                        }
-                    };
-                }
-
-                println!("");
+                step_count += self.run_scenario(&feature, &scenario, last_panic.clone());
             }
         }
 
@@ -382,16 +437,17 @@ macro_rules! steps {
     };
 
     (
+        world: $worldtype:path;
         $( $items:tt )*
     ) => {
         #[allow(unused_imports)]
-        pub fn steps<T: Default>() -> $crate::Steps<T> {
+        pub fn steps<'a>() -> $crate::Steps<'a, $worldtype> {
             use std::path::Path;
             use std::process;
             use $crate::regex::Regex;
             use $crate::{Steps, TestCase, RegexTestCase, HashableRegex};
 
-            let mut tests: Steps<T> = Steps::new();
+            let mut tests: Steps<'a, $worldtype> = Steps::new();
             steps!(@gather_steps, tests, $( $items )*);
             tests
         }
