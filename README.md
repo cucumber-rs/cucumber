@@ -14,7 +14,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = "^0.1"
+cucumber = "^0.3.2"
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
@@ -34,41 +34,55 @@ And here's an example of implementing those steps using our `tests/cucumber.rs` 
 
 ```rust
 #[macro_use]
-extern crate cucumber;
+extern crate cucumber_rust;
 
 pub struct World {
     // You can use this struct for mutable context in scenarios.
 }
 
-impl std::default::Default for World {
-    fn default() -> World {
+impl cucumber_rust::World for MyWorld {}
+impl std::default::Default for MyWorld {
+    fn default() -> MyWorld {
         // This function is called every time a new scenario is started
-        World { }
+        MyWorld { }
+    }
+}
+
+mod example_steps {
+    steps! {
+        world: ::MyWorld; // Any type that implements Default can be the world
+
+        given "I am trying out Cucumber" |world, step| {
+            // Set up your context in given steps
+        };
+
+        when "I consider what I am doing" |world, step| {
+            // Take actions
+        };
+
+        then "I am interested in ATDD" |world, step| {
+            // Check that the outcomes to be observed have occurred
+        };
+
+        then regex r"^we can (.*) rules with regex$" |world, matches, step| {
+            // And access them as an array
+            assert_eq!(matches[1], "implement");
+        };
     }
 }
 
 cucumber! {
     features: "./features"; // Path to our feature files
-    world: World; // Any type that implements Default can be the world
-
-    given "I am trying out Cucumber" |world| {
-        // Set up your context in given steps
-    };
-
-    when "I consider what I am doing" |world| {
-        // Take actions
-    };
-
-    then "I am interested in ATDD" |world| {
-        // Check that the outcomes to be observed have occurred
-    };
-
-    then regex r"^we can (.*) rules with regex$" |world, matches| {
-        // And access them as an array
-        assert!(matches[1] == "implement");
-    };
+    world: ::MyWorld; // The world needs to be the same for steps and the main cucumber call
+    steps: &[
+        example_steps::steps
+    ]
 }
 ```
+
+The `steps!` macro creates a function named `steps` with the correct in the module it is defined in.
+
+The `cucumber!` creates the `main` function to be run.
 
 The full gamut of Cucumber's Gherkin language is implemented by the 
 [gherkin-rust](https://github.com/bbqsrc/gherkin-rust) project. Features such
