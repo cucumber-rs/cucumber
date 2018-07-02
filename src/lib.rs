@@ -14,7 +14,6 @@ pub extern crate regex;
 extern crate termcolor;
 extern crate pathdiff;
 
-use std::boxed::FnBox;
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
 use std::collections::HashMap;
@@ -78,7 +77,7 @@ impl DefaultOutput {
 
     fn writeln_cmt(&mut self, s: &str, cmt: &str, c: Color, bold: bool) {
         self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
-        write!(&mut self.stdout, "{:<40} ", s).unwrap();
+        write!(&mut self.stdout, "{:<80} ", s).unwrap();
         self.stdout.set_color(ColorSpec::new().set_fg(None).set_bold(false)).unwrap();
         writeln!(&mut self.stdout, "# {}", cmt).unwrap();
         self.stdout.set_color(ColorSpec::new().set_fg(None)).unwrap();
@@ -146,7 +145,7 @@ impl OutputVisitor for DefaultOutput {
             TestResult::Fail(err_msg, loc) => {
                 self.writeln_cmt(msg, cmt, Color::Red, false);
                 ds();
-                self.writeln_cmt(&format!("{:<40}", "      [!] Step failed:"), loc, Color::Red, true);
+                self.writeln_cmt(&format!("{:<80}", "      [!] Step failed:"), loc, Color::Red, true);
                 self.red(err_msg);
                 self.fail_count += 1;
                 self.scenario_fail_count += 1;
@@ -557,6 +556,7 @@ macro_rules! cucumber {
         fn main() {
             use std::path::Path;
             use std::process;
+            use std::boxed::FnBox;
             use $crate::{Steps, World, DefaultOutput};
 
             let path = match Path::new($featurepath).canonicalize() {
