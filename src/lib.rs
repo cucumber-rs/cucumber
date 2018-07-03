@@ -170,7 +170,7 @@ impl OutputVisitor for DefaultOutput {
                 ds();
             },
             TestResult::Fail(err_msg, loc) => {
-                self.writeln_cmt(&format!("❌ {}", msg), cmt, indent, Color::Red, false);
+                self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
                 ds();
                 self.writeln_cmt(&format!("{:-<1$}", "🚨 Step failed: ", textwrap::termwidth() - loc.chars().count() - 7), loc, "---- ", Color::Red, true);
                 self.red(&textwrap::indent(&textwrap::fill(err_msg, textwrap::termwidth() - 4), "  ").trim_right());
@@ -181,7 +181,7 @@ impl OutputVisitor for DefaultOutput {
             TestResult::MutexPoisoned => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 ds();
-                println!("      ⚠️ Skipped due to previous error (poisoned)");
+                println!("      ⚡ Skipped due to previous error (poisoned)");
                 self.fail_count += 1;
             },
             TestResult::Skipped => {
@@ -192,7 +192,7 @@ impl OutputVisitor for DefaultOutput {
             TestResult::Unimplemented => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 ds();
-                println!("      ⚠️ Not yet implemented (skipped)");
+                println!("      ⚡ Not yet implemented (skipped)");
                 self.skipped_count += 1;
             }
         };
