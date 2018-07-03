@@ -75,14 +75,19 @@ cucumber! {
     features: "./features"; // Path to our feature files
     world: ::MyWorld; // The world needs to be the same for steps and the main cucumber call
     steps: &[
-        example_steps::steps
-    ]
+        example_steps::steps // the `steps!` macro creates a `steps` function in a module
+    ],
+    before: || {
+      // Called once before everything; optional.
+    }
 }
 ```
 
-The `steps!` macro creates a function named `steps` with the correct in the module it is defined in.
-
 The `cucumber!` creates the `main` function to be run.
+
+The `steps!` macro generates a function named `steps` with all the declared steps in the module
+it is defined in. Ordinarily you would create something like a `steps/` directory to hold your 
+steps modules instead of inline like the given example.
 
 The full gamut of Cucumber's Gherkin language is implemented by the 
 [gherkin-rust](https://github.com/bbqsrc/gherkin-rust) project. Features such
