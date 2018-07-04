@@ -747,7 +747,14 @@ impl<'s, T: Default> Steps<'s, T> {
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
             
-            let feature = Feature::from(&*buffer);
+            let feature = match Feature::try_from(&*buffer) {
+                Ok(v) => v,
+                Err(e) => {
+                    output.visit_feature_error(&path, &e);
+                    continue;
+                }
+            };
+
             output.visit_feature(&feature, &path);
 
             for scenario in (&feature.scenarios).iter() {
