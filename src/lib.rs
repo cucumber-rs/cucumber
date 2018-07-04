@@ -673,8 +673,10 @@ impl<'s, T: Default> Steps<'s, T> {
         scenario: &'a gherkin::Scenario,
         last_panic: Arc<Mutex<Option<String>>>,
         output: &mut impl OutputVisitor
-    ) {
+    ) -> bool {
         output.visit_scenario(&scenario);
+
+        let mut has_failures = false;
 
         let captured_io = capture_io(|| T::default());
         let mut world = match captured_io.result {
@@ -724,6 +726,7 @@ impl<'s, T: Default> Steps<'s, T> {
                 output.visit_step_result(&scenario, &step, &result);
                 match result {
                     TestResult::Pass => {}
+                    TestResult::Fail(_, _) => { has_failures = true; }
                     _ => {
                         is_skipping = true;
                         output.visit_scenario_skipped(&scenario);
@@ -733,13 +736,16 @@ impl<'s, T: Default> Steps<'s, T> {
         }
 
         output.visit_scenario_end(&scenario);
+
+        has_failures
     }
     
-    pub fn run<'a>(&'s self, feature_path: &Path, output: &mut impl OutputVisitor) {
+    pub fn run<'a>(&'s self, feature_path: &Path, output: &mut impl OutputVisitor) -> bool {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
         let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+        let mut has_failures = false;
 
         for entry in feature_path {
             let path = entry.unwrap().path();
@@ -751,6 +757,7 @@ impl<'s, T: Default> Steps<'s, T> {
                 Ok(v) => v,
                 Err(e) => {
                     output.visit_feature_error(&path, &e);
+                    has_failures = true;
                     continue;
                 }
             };
@@ -758,13 +765,17 @@ impl<'s, T: Default> Steps<'s, T> {
             output.visit_feature(&feature, &path);
 
             for scenario in (&feature.scenarios).iter() {
-                self.run_scenario(&feature, &scenario, last_panic.clone(), output);
+                if !self.run_scenario(&feature, &scenario, last_panic.clone(), output) {
+                    has_failures = true;
+                }
             }
 
             output.visit_feature_end(&feature);
         }
         
         output.visit_finish();
+
+        has_failures
     }
 }
 
@@ -837,7 +848,9 @@ macro_rules! cucumber {
                 None => {}
             };
 
-            tests.run(&path, &mut output);
+            if !tests.run(&path, &mut output) {
+                process::exit(1);
+            }
         }
     }
 }
