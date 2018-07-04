@@ -38,20 +38,27 @@ pub trait OutputVisitor : Default {
     fn visit_start(&mut self);
     fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path);
     fn visit_feature_end(&mut self, feature: &gherkin::Feature);
+    fn visit_feature_error<'a>(&mut self, path: &Path, error: &gherkin::Error<'a>);
     fn visit_scenario(&mut self, scenario: &gherkin::Scenario);
     fn visit_scenario_end(&mut self, scenario: &gherkin::Scenario);
     fn visit_scenario_skipped(&mut self, scenario: &gherkin::Scenario);
-    fn visit_step(&mut self, step: &gherkin::Step);
-    fn visit_step_result(&mut self, step: &gherkin::Step, result: &TestResult);
+    fn visit_step(&mut self, scenario: &gherkin::Scenario, step: &gherkin::Step);
+    fn visit_step_result(&mut self, scenario: &gherkin::Scenario, step: &gherkin::Step, result: &TestResult);
     fn visit_finish(&mut self);
+}
+
+enum ScenarioResult {
+    Pass,
+    Fail,
+    Skip
 }
 
 pub struct DefaultOutput {
     stdout: StandardStream,
     cur_feature: String,
-    scenario_count: u32,
-    scenario_skipped_count: u32,
-    scenario_fail_count: u32,
+    feature_count: u32,
+    feature_error_count: u32,
+    scenarios: HashMap<gherkin::Scenario, ScenarioResult>,
     step_count: u32,
     skipped_count: u32,
     fail_count: u32
@@ -62,9 +69,9 @@ impl std::default::Default for DefaultOutput {
         DefaultOutput {
             stdout: StandardStream::stdout(ColorChoice::Always),
             cur_feature: "".to_string(),
-            scenario_count: 0,
-            scenario_skipped_count: 0,
-            scenario_fail_count: 0,
+            feature_count: 0,
+            feature_error_count: 0,
+            scenarios: HashMap::new(),
             step_count: 0,
             skipped_count: 0,
             fail_count: 0
@@ -90,6 +97,18 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
 }
 
 impl DefaultOutput {
+    fn set_color(&mut self, c: Color, b: bool) {
+        self.stdout.set_color(ColorSpec::new()
+            .set_fg(Some(c))
+            .set_bold(b)).unwrap();
+    }
+
+    fn write(&mut self, s: &str, c: Color, bold: bool) {
+        self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
+        write!(&mut self.stdout, "{}", s).unwrap();
+        self.stdout.set_color(ColorSpec::new().set_fg(None).set_bold(false)).unwrap();
+    }
+
     fn writeln(&mut self, s: &str, c: Color, bold: bool) {
         self.stdout.set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold)).unwrap();
         writeln!(&mut self.stdout, "{}", s).unwrap();
@@ -119,6 +138,168 @@ impl DefaultOutput {
     fn relpath(&self, target: &Path) -> std::path::PathBuf {
         diff_paths(&target, &env::current_dir().unwrap()).unwrap()
     }
+
+    fn print_step_extras(&mut self, step: &gherkin::Step) {
+        let indent = "      ";
+        if let Some(ref table) = &step.table {
+            // Find largest sized item per column
+            let mut max_size: Vec<usize> = (&table.header).iter().map(|h| h.len()).collect();
+
+            for row in &table.rows {
+                for (n, field) in row.iter().enumerate() {
+                    if field.len() > max_size[n] {
+                        max_size[n] = field.len();
+                    }
+                }
+            }
+
+            // If number print in a number way
+            let formatted_header_fields: Vec<String> = (&table.header).iter()
+                .enumerate()
+                .map(|(n, field)| {
+                    format!(" {: <1$} ", field, max_size[n])
+                }).collect();
+
+            let formatted_row_fields: Vec<Vec<String>> = (&table.rows).iter()
+                .map(|row| {
+                    row.iter().enumerate().map(|(n, field)| {
+                        if field.parse::<f64>().is_ok() {
+                            format!(" {: >1$} ", field, max_size[n])
+                        } else {
+                            format!(" {: <1$} ", field, max_size[n])
+                        }
+                    }).collect()
+                }).collect();
+
+            print!("{}", indent);
+            let border_color = Color::Magenta;
+            self.write("|", border_color.clone(), true);
+            for field in formatted_header_fields {
+                self.write(&field, Color::White, true);
+                self.write("|", border_color.clone(), true);
+            }
+            println!();
+
+            for row in formatted_row_fields {
+                print!("{}", indent);
+                self.write("|", border_color.clone(), false);
+                for field in row {
+                    print!("{}", field);
+                    self.write("|", border_color.clone(), false);
+                }
+                println!();
+            }
+        };
+
+        if let Some(ref docstring) = &step.docstring {
+            self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
+            println!("{}", textwrap::indent(docstring, indent).trim_right());
+            self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
+        }
+    }
+
+    fn print_finish(&mut self) -> Result<(), std::io::Error> {
+        self.set_color(Color::White, true);
+
+        // Do feature count
+        write!(&mut self.stdout, "{} features", &self.feature_count)?;
+        if self.feature_error_count > 0 {
+            write!(&mut self.stdout, " (")?;
+            self.set_color(Color::Red, true);
+            write!(&mut self.stdout, "{} errored", self.feature_error_count)?;
+            self.set_color(Color::White, true);
+            write!(&mut self.stdout, ")")?;
+        }
+
+        println!();
+            
+        // Do scenario count
+        let scenario_passed_count = self.scenarios.values().filter(|v| {
+            match v {
+                ScenarioResult::Pass => true,
+                _ => false
+            }
+        }).count();
+        let scenario_fail_count = self.scenarios.values().filter(|v| {
+            match v {
+                ScenarioResult::Fail => true,
+                _ => false
+            }
+        }).count();
+        let scenario_skipped_count = self.scenarios.values().filter(|v| {
+            match v {
+                ScenarioResult::Skip => true,
+                _ => false
+            }
+        }).count();
+        
+        write!(&mut self.stdout, "{} scenarios (", &self.scenarios.len())?;
+        
+        if scenario_fail_count > 0 {
+            self.set_color(Color::Red, true);
+            write!(&mut self.stdout, "{} failed", scenario_fail_count)?;
+            self.set_color(Color::White, true);
+        }
+
+        if scenario_skipped_count > 0 {
+            if scenario_fail_count > 0 {
+                write!(&mut self.stdout, ", ")?;
+            }
+            self.set_color(Color::Cyan, true);
+            write!(&mut self.stdout, "{} skipped", scenario_skipped_count)?;
+            self.set_color(Color::White, true);
+        }
+
+
+        if scenario_fail_count > 0 || scenario_skipped_count > 0 {
+            write!(&mut self.stdout, ", ")?;
+        }
+
+        self.set_color(Color::Green, true);
+        write!(&mut self.stdout, "{} passed", scenario_passed_count)?;
+        self.set_color(Color::White, true);
+
+        write!(&mut self.stdout, ")")?;
+
+        println!();
+
+        // Do steps
+        let passed_count = self.step_count - self.skipped_count - self.fail_count;
+
+        write!(&mut self.stdout, "{} steps (", &self.step_count)?;
+
+        if self.fail_count > 0 {
+            self.set_color(Color::Red, true);
+            write!(&mut self.stdout, "{} failed", self.fail_count)?;
+            self.set_color(Color::White, true);
+        }
+
+        if self.skipped_count > 0 {
+            if self.fail_count > 0 {
+                write!(&mut self.stdout, ", ")?;
+            }
+            self.set_color(Color::Cyan, true);
+            write!(&mut self.stdout, "{} skipped", self.skipped_count)?;
+            self.set_color(Color::White, true);
+        }
+
+        if self.fail_count > 0 || self.skipped_count > 0 {
+            write!(&mut self.stdout, ", ")?;
+        }
+
+        self.set_color(Color::Green, true);
+        write!(&mut self.stdout, "{} passed", passed_count)?;
+        self.set_color(Color::White, true);
+        write!(&mut self.stdout, ")")?;
+        println!();
+
+        self.stdout.set_color(ColorSpec::new()
+            .set_fg(None)
+            .set_bold(false))?;
+        println!();
+
+        Ok(())
+    }
 }
 
 impl OutputVisitor for DefaultOutput {
@@ -132,108 +313,116 @@ impl OutputVisitor for DefaultOutput {
         let cmt = &format!("{}:{}:{}", &self.cur_feature, feature.position.0, feature.position.1);
         self.bold_white_comment(msg, cmt, "");
         println!("");
+
+        self.feature_count += 1;
     }
     
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
+    fn visit_feature_error<'r>(&mut self, path: &Path, error: &gherkin::Error<'r>) {
+        let position = gherkin::error_position(error);
+        let relpath = self.relpath(&path).to_string_lossy().to_string();
+        let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
+
+        self.writeln_cmt(
+            &format!(
+                "{:—<1$}", "! Parsing feature failed: ",
+                textwrap::termwidth() - loc.chars().count() - 7
+            ),
+            &loc,
+            "———— ",
+            Color::Red,
+            true);
+        
+        self.red(
+            &textwrap::indent(
+                &textwrap::fill(
+                    &format!("{}", error),
+                    textwrap::termwidth() - 4
+                ),
+                "  "
+            ).trim_right()
+        );
+
+        self.writeln(&format!("{:-<1$}\n", "", textwrap::termwidth()), Color::Red, true);
+
+        self.feature_error_count += 1;  
+    }
+
     fn visit_scenario(&mut self, scenario: &gherkin::Scenario) {
         let cmt = &format!("{}:{}:{}", &self.cur_feature, scenario.position.0, scenario.position.1);
         self.bold_white_comment(&format!("Scenario: {}", &scenario.name), cmt, " ");
-        self.scenario_count += 1;
     }
 
-    fn visit_scenario_skipped(&mut self, _scenario: &gherkin::Scenario) {
-        self.scenario_skipped_count += 1;
-   }
-    
-    fn visit_scenario_end(&mut self, _scenario: &gherkin::Scenario) {
-        println!("");
+    fn visit_scenario_skipped(&mut self, scenario: &gherkin::Scenario) {
+        if !self.scenarios.contains_key(scenario) {
+            self.scenarios.insert(scenario.clone(), ScenarioResult::Skip);
+        }
     }
     
-    fn visit_step(&mut self, _step: &gherkin::Step) {
+    fn visit_scenario_end(&mut self, scenario: &gherkin::Scenario) {
+        if !self.scenarios.contains_key(scenario) {
+            self.scenarios.insert(scenario.clone(), ScenarioResult::Pass);
+        }
+        println!();
+    }
+    
+    fn visit_step(&mut self, _scenario: &gherkin::Scenario, _step: &gherkin::Step) {
         self.step_count += 1;
     }
     
-    fn visit_step_result(&mut self, step: &gherkin::Step, result: &TestResult) {
+    fn visit_step_result(&mut self, scenario: &gherkin::Scenario, step: &gherkin::Step, result: &TestResult) {
         let cmt = &format!("{}:{}:{}", &self.cur_feature, step.position.0, step.position.1);
         let msg = &format!("{}", &step.to_string());
         let indent = "  ";
-        let ds = || {
-            if let Some(ref docstring) = &step.docstring {
-                println!("    \"\"\"\n    {}\n    \"\"\"", docstring);
-            }
-        };
 
         match result {
             TestResult::Pass => {
                 self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
-                ds();
+                self.print_step_extras(step);
             },
             TestResult::Fail(err_msg, loc) => {
                 self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
-                ds();
-                self.writeln_cmt(&format!("{:-<1$}", "🚨 Step failed: ", textwrap::termwidth() - loc.chars().count() - 7), loc, "---- ", Color::Red, true);
+                self.print_step_extras(step);
+                self.writeln_cmt(
+                    &format!(
+                        "{:—<1$}", "! Step failed: ",
+                        textwrap::termwidth() - loc.chars().count() - 7
+                    ),
+                    loc,
+                    "———— ",
+                    Color::Red,
+                    true);
                 self.red(&textwrap::indent(&textwrap::fill(err_msg, textwrap::termwidth() - 4), "  ").trim_right());
-                self.writeln(&format!("{:-<1$}", "", textwrap::termwidth()), Color::Red, true);
+                self.writeln(&format!("{:—<1$}", "", textwrap::termwidth()), Color::Red, true);
                 self.fail_count += 1;
-                self.scenario_fail_count += 1;
+                self.scenarios.insert(scenario.clone(), ScenarioResult::Fail);
             },
             TestResult::MutexPoisoned => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                ds();
-                println!("      ⚡ Skipped due to previous error (poisoned)");
+                self.print_step_extras(step);
+
+                self.write("    ⚡ ", Color::Yellow, false);
+                println!("Skipped due to previous error (poisoned)");
                 self.fail_count += 1;
             },
             TestResult::Skipped => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                ds();
+                self.print_step_extras(step);
                 self.skipped_count += 1;
             }
             TestResult::Unimplemented => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                ds();
-                println!("      ⚡ Not yet implemented (skipped)");
+                self.print_step_extras(step);
+                self.write("    ⚡ ", Color::Yellow, false);
+                println!("Not yet implemented (skipped)");
                 self.skipped_count += 1;
             }
         };
     }
 
     fn visit_finish(&mut self) {
-        self.stdout.set_color(ColorSpec::new()
-            .set_fg(Some(Color::Green))
-            .set_bold(true)).unwrap();
-            
-        // Do scenario count
-        let mut o = vec![];
-        if self.fail_count > 0 {
-            o.push(format!("{} failed", self.scenario_fail_count));
-        }
-        if self.skipped_count > 0 {
-            o.push(format!("{} skipped", self.scenario_skipped_count));
-        }
-        write!(&mut self.stdout, "{} scenarios", &self.scenario_count).unwrap();
-        if o.len() > 0 {
-            write!(&mut self.stdout, " ({})", o.join(", ")).unwrap();
-        }
-        println!();
-
-        // Do steps
-        let mut o = vec![];
-        if self.fail_count > 0 {
-            o.push(format!("{} failed", self.fail_count));
-        }
-        if self.skipped_count > 0 {
-            o.push(format!("{} skipped", self.skipped_count));
-        }
-        let passed_count = self.step_count - self.skipped_count - self.fail_count;
-        o.push(format!("{} passed", passed_count));
-
-        let msg = format!("{} steps ({})", &self.step_count, o.join(", "));
-        writeln!(&mut self.stdout, "{}\n", &msg).unwrap();
-        
-        self.stdout.set_color(ColorSpec::new()
-            .set_fg(None)
-            .set_bold(false)).unwrap();
+        self.print_finish().unwrap();
     }
 }
 
@@ -514,12 +703,12 @@ impl<'s, T: Default> Steps<'s, T> {
         let mut is_skipping = false;
 
         for step in steps.iter() {
-            output.visit_step(&step);
+            output.visit_step(&scenario, &step);
 
             let test_type = match self.test_type(&step) {
                 Some(v) => v,
                 None => {
-                    output.visit_step_result(&step, &TestResult::Unimplemented);
+                    output.visit_step_result(&scenario, &step, &TestResult::Unimplemented);
                     if !is_skipping {
                         is_skipping = true;
                         output.visit_scenario_skipped(&scenario);
@@ -529,10 +718,10 @@ impl<'s, T: Default> Steps<'s, T> {
             };
 
             if is_skipping {
-                output.visit_step_result(&step, &TestResult::Skipped);
+                output.visit_step_result(&scenario, &step, &TestResult::Skipped);
             } else {
                 let result = self.run_test(&mut world, test_type, &step, last_panic.clone());
-                output.visit_step_result(&step, &result);
+                output.visit_step_result(&scenario, &step, &result);
                 match result {
                     TestResult::Pass => {}
                     _ => {
