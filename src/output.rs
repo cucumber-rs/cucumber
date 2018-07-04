@@ -320,7 +320,7 @@ impl OutputVisitor for DefaultOutput {
             ).trim_right()
         );
 
-        self.writeln(&format!("{:-<1$}\n", "", textwrap::termwidth()), Color::Red, true);
+        self.writeln(&format!("{:—<1$}\n", "", textwrap::termwidth()), Color::Red, true);
 
         self.feature_error_count += 1;  
     }
