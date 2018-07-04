@@ -9,7 +9,8 @@ repository = "https://github.com/bbqsrc/cucumber-rust"
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
 
-[lib]
+[[test]]
+name = "cucumber"
 harness = false
 
 [dependencies]
