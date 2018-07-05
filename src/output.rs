@@ -392,6 +392,7 @@ impl OutputVisitor for DefaultOutput {
                 self.print_step_extras(step);
                 self.write("    ⚡ ", Color::Yellow, false);
                 println!("Not yet implemented (skipped)");
+                
                 self.skipped_count += 1;
             }
         };

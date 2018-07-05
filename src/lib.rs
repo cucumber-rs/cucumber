@@ -261,8 +261,8 @@ impl<'s, T: Default> Steps<'s, T> {
                     }
                 };
 
-                if s == "not yet implemented" {
-                    TestResult::Unimplemented
+                if s.ends_with("test skipped") {
+                    TestResult::Skipped
                 } else {
                     let panic_str = if &captured_io.stdout.len() > &0usize {
                         String::from_utf8_lossy(&captured_io.stdout).to_string()
@@ -460,6 +460,14 @@ macro_rules! cucumber {
                 process::exit(1);
             }
         }
+    }
+}
+
+
+#[macro_export]
+macro_rules! skip {
+    () => {
+        unimplemented!("test skipped");
     }
 }
 
