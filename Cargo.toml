@@ -19,3 +19,4 @@ regex = "^1.0"
 termcolor = "^0.3.6"
 pathdiff = "^0.1.0"
 textwrap = { version = "^0.10.0", features = ["term_size"] }
+clap = "^2.32.0"

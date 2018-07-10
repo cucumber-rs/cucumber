@@ -14,6 +14,7 @@ pub extern crate regex;
 extern crate termcolor;
 extern crate pathdiff;
 extern crate textwrap;
+extern crate clap;
 
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
@@ -29,6 +30,7 @@ use std::sync::{Arc, Mutex};
 use std::any::Any;
 
 mod output;
+pub mod cli;
 
 pub use output::{DefaultOutput, OutputVisitor};
 
@@ -264,12 +266,14 @@ impl<'s, T: Default> Steps<'s, T> {
                 if s.ends_with("test skipped") {
                     TestResult::Skipped
                 } else {
-                    let panic_str = if &captured_io.stdout.len() > &0usize {
-                        String::from_utf8_lossy(&captured_io.stdout).to_string()
-                    } else {
-                        format!("Panicked with: {}", s)
-                    };
-                    TestResult::Fail(panic_str, loc.to_owned())
+                    let mut m = format!("Panicked with: {}", s);
+
+                    if &captured_io.stdout.len() > &0usize {
+                        m.push_str("\n\n");
+                        m.push_str(&String::from_utf8_lossy(&captured_io.stdout));
+                    }
+
+                    TestResult::Fail(m, loc.to_owned())
                 }
             }
         }
@@ -351,7 +355,7 @@ impl<'s, T: Default> Steps<'s, T> {
         has_failures
     }
     
-    pub fn run<'a>(&'s self, feature_path: &Path, output: &mut impl OutputVisitor) -> bool {
+    pub fn run<'a>(&'s self, feature_path: &Path, options: cli::CliOptions, output: &mut impl OutputVisitor) -> bool {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
@@ -376,6 +380,11 @@ impl<'s, T: Default> Steps<'s, T> {
             output.visit_feature(&feature, &path);
 
             for scenario in (&feature.scenarios).iter() {
+                if let Some(ref regex) = options.filter {
+                    if !regex.is_match(&scenario.name) {
+                        continue;
+                    }
+                }
                 if !self.run_scenario(&feature, &scenario, last_panic.clone(), output) {
                     has_failures = true;
                 }
@@ -418,6 +427,12 @@ macro_rules! cucumber {
             use std::process;
             use std::boxed::FnBox;
             use $crate::{Steps, World, DefaultOutput};
+            use $crate::cli::make_app;
+
+            let options = match make_app() {
+                Ok(v) => v,
+                Err(e) => panic!(e)
+            };
 
             let path = match Path::new($featurepath).canonicalize() {
                 Ok(p) => p,
@@ -459,7 +474,7 @@ macro_rules! cucumber {
                 None => {}
             };
 
-            if !tests.run(&path, &mut output) {
+            if !tests.run(&path, options, &mut output) {
                 process::exit(1);
             }
         }
