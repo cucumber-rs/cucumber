@@ -334,7 +334,10 @@ impl<'s, T: Default> Steps<'s, T> {
                 output.visit_step_result(&scenario, &step, &result);
                 match result {
                     TestResult::Pass => {}
-                    TestResult::Fail(_, _) => { has_failures = true; }
+                    TestResult::Fail(_, _) => {
+                        has_failures = true;
+                        is_skipping = true;
+                    }
                     _ => {
                         is_skipping = true;
                         output.visit_scenario_skipped(&scenario);
