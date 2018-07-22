@@ -7,7 +7,6 @@
 // except according to those terms.
 
 #![feature(set_stdio)]
-#![feature(fnbox)]
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
@@ -17,6 +16,7 @@ extern crate textwrap;
 extern crate clap;
 
 use gherkin::{Step, StepType, Feature};
+pub use gherkin::Scenario;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -283,6 +283,8 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         feature: &'a gherkin::Feature,
         scenario: &'a gherkin::Scenario,
+        before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
+        after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         last_panic: Arc<Mutex<Option<String>>>,
         output: &mut impl OutputVisitor
     ) -> bool {
@@ -294,6 +296,7 @@ impl<'s, T: Default> Steps<'s, T> {
         let mut world = match captured_io.result {
             Ok(v) => v,
             Err(e) => {
+                eprintln!("An error occurred creating world:");
                 if &captured_io.stdout.len() > &0usize {
                     let msg = String::from_utf8_lossy(&captured_io.stdout).to_string();
                     panic!(msg);
@@ -302,7 +305,13 @@ impl<'s, T: Default> Steps<'s, T> {
                 }
             }
         };
-        
+
+        if let Some(before_fns) = before_fns {
+            for f in before_fns.iter() {
+                f(&scenario);
+            }
+        }
+
         let mut steps: Vec<&'a Step> = vec![];
         if let Some(ref bg) = &feature.background {
             for s in &bg.steps {
@@ -350,12 +359,25 @@ impl<'s, T: Default> Steps<'s, T> {
             }
         }
 
+        if let Some(after_fns) = after_fns {
+            for f in after_fns.iter() {
+                f(&scenario);
+            }
+        }
+
         output.visit_scenario_end(&scenario);
 
         has_failures
     }
     
-    pub fn run<'a>(&'s self, feature_path: &Path, options: cli::CliOptions, output: &mut impl OutputVisitor) -> bool {
+    pub fn run<'a>(
+        &'s self,
+        feature_path: &Path,
+        before_fns: Option<&[fn(&Scenario) -> ()]>,
+        after_fns: Option<&[fn(&Scenario) -> ()]>,
+        options: cli::CliOptions,
+        output: &mut impl OutputVisitor
+    ) -> bool {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
@@ -385,7 +407,7 @@ impl<'s, T: Default> Steps<'s, T> {
                         continue;
                     }
                 }
-                if !self.run_scenario(&feature, &scenario, last_panic.clone(), output) {
+                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, last_panic.clone(), output) {
                     has_failures = true;
                 }
             }
@@ -399,15 +421,136 @@ impl<'s, T: Default> Steps<'s, T> {
     }
 }
 
+#[doc(hidden)]
+pub fn tag_rule_applies(scenario: &Scenario, rule: &str) -> bool {
+    if let Some(ref tags) = &scenario.tags {
+        let tags: Vec<&str> = tags.iter().map(|s| s.as_str()).collect();
+        let rule_chunks = rule.split(" ");
+        // TODO: implement a sane parser for this
+        for rule in rule_chunks {
+            if rule == "and" || rule == "or" {
+                // TODO: implement handling for this
+                continue;
+            }
+
+            if !tags.contains(&rule) {
+                return false;
+            }
+        }
+
+        true
+    } else {
+        true
+    }
+}
+
+#[macro_export]
+macro_rules! before {
+    (
+        $fnname:ident: $tagrule:tt $scenariofn:expr
+    ) => {
+        fn $fnname(scenario: &$crate::Scenario) {
+            let scenario_closure: fn(&$crate::Scenario) -> () = $scenariofn;
+            let tag_rule: &str = $tagrule;
+
+            // TODO check tags
+            if $crate::tag_rule_applies(scenario, tag_rule) {
+                scenario_closure(scenario);
+            }
+        }
+    };
+
+    (
+        $fnname:ident $scenariofn:expr
+    ) => {
+        before!($fnname: "" $scenariofn);
+    };
+}
+
+// This is just a remap of before.
+#[macro_export]
+macro_rules! after {
+    (
+        $fnname:ident: $tagrule:tt $stepfn:expr
+    ) => {
+        before!($fnname: $tagrule $stepfn);
+    };
+
+    (
+        $fnname:ident $scenariofn:expr
+    ) => {
+        before!($fnname: "" $scenariofn);
+    };
+}
+
 #[macro_export]
 macro_rules! cucumber {
     (
         features: $featurepath:tt;
         world: $worldtype:path;
         steps: $vec:expr;
-        before: $beforefn:expr
+        setup: $setupfn:expr;
+        before: $beforefns:expr;
+        after: $afterfns:expr
     ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; Some(Box::new($beforefn)));
+        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); Some($afterfns));
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        setup: $setupfn:expr;
+        before: $beforefns:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); None);
+    };
+
+        (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        setup: $setupfn:expr;
+        after: $afterfns:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; Some($afterfns));
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        before: $beforefns:expr;
+        after: $afterfns:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); Some($afterfns));
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        before: $beforefns:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); None);
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        after: $afterfns:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; Some($afterfns));
+    };
+
+    (
+        features: $featurepath:tt;
+        world: $worldtype:path;
+        steps: $vec:expr;
+        setup: $setupfn:expr
+    ) => {
+        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; None);
     };
 
     (
@@ -415,17 +558,17 @@ macro_rules! cucumber {
         world: $worldtype:path;
         steps: $vec:expr
     ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; None);
+        cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; None);
     };
 
     (
-        @finish; $featurepath:tt; $worldtype:path; $vec:expr; $beforefn:expr
+        @finish; $featurepath:tt; $worldtype:path; $vec:expr; $setupfn:expr; $beforefns:expr; $afterfns:expr
     ) => {
         #[allow(unused_imports)]
         fn main() {
             use std::path::Path;
             use std::process;
-            use std::boxed::FnBox;
+            use $crate::gherkin::Scenario;
             use $crate::{Steps, World, DefaultOutput};
             use $crate::cli::make_app;
 
@@ -467,14 +610,16 @@ macro_rules! cucumber {
             
             let mut output = DefaultOutput::default();
 
-            let before_fn: Option<Box<FnBox() -> ()>> = $beforefn;
+            let setup_fn: Option<fn() -> ()> = $setupfn;
+            let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
+            let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
 
-            match before_fn {
+            match setup_fn {
                 Some(f) => f(),
                 None => {}
             };
 
-            if !tests.run(&path, options, &mut output) {
+            if !tests.run(&path, before_fns, after_fns, options, &mut output) {
                 process::exit(1);
             }
         }

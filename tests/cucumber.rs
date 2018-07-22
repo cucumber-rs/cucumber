@@ -42,11 +42,27 @@ mod basic {
         then "another thing" |_world, _step| {
             assert!(true)
         };
-
-        when "nothing" |world, step| {
-            // panic!("oh shit");
-        };
     }
+}
+
+fn before_thing(step: &cucumber_rust::Scenario) {
+
+}
+
+before!(some_before: "@tag2 and @tag3" |scenario| {
+    println!("{}", "lol");
+});
+
+before!(something_great |scenario| {
+
+});
+
+after!(after_thing |scenario| {
+
+});
+
+fn setup() {
+
 }
 
 cucumber! {
@@ -54,5 +70,8 @@ cucumber! {
     world: ::MyWorld;
     steps: &[
         basic::steps
-    ]
+    ];
+    setup: setup;
+    before: &[before_thing, some_before, something_great];
+    after: &[after_thing]
 }
