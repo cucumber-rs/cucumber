@@ -32,7 +32,8 @@ use std::any::Any;
 mod output;
 pub mod cli;
 
-pub use output::{DefaultOutput, OutputVisitor};
+use output::OutputVisitor;
+pub use output::default::DefaultOutput;
 
 pub trait World: Default {}
 
