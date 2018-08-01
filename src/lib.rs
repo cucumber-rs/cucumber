@@ -466,7 +466,7 @@ macro_rules! cucumber {
 #[macro_export]
 macro_rules! steps {
     (
-        @gather_steps, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr;
     ) => {
         $tests.regex.$ty.insert(
@@ -475,30 +475,66 @@ macro_rules! steps {
     };
 
     (
-        @gather_steps, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr; $( $items:tt )*
     ) => {
         $tests.regex.$ty.insert(
             HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
                 RegexTestCase::new($body));
 
-        steps!(@gather_steps, $tests, $( $items )*);
+        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
 
     (
-        @gather_steps, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
+        $ty:ident regex $name:tt, ($($arg_type:tt),*) $body:expr;
+    ) => {
+        $tests.regex.$ty.insert(
+            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &Step) -> ()> = Box::new($body);
+
+                    let mut i = 0;
+                    closure(world,
+                        $( matches[{i += 1; i}].parse::<$arg_type>().expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                        step
+                    )
+                }));
+    };
+
+    (
+        @gather_steps, $worldtype:path, $tests:tt,
+        $ty:ident regex $name:tt, ($($arg_type:tt),*) $body:expr; $( $items:tt )*
+    ) => {
+        $tests.regex.$ty.insert(
+            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &Step) -> ()> = Box::new($body);
+                    
+                    let mut i = 0;
+                    closure(world,
+                        $( matches[{i += 1; i}].parse::<$arg_type>().expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                        step
+                    )
+                }));
+
+        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
+    };
+
+    (
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr;
     ) => {
         $tests.$ty.insert($name, TestCase::new($body));
     };
 
     (
-        @gather_steps, $tests:tt,
+        @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr; $( $items:tt )*
     ) => {
         $tests.$ty.insert($name, TestCase::new($body));
 
-        steps!(@gather_steps, $tests, $( $items )*);
+        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
 
     (
@@ -511,9 +547,10 @@ macro_rules! steps {
             use std::process;
             use $crate::regex::Regex;
             use $crate::{Steps, TestCase, RegexTestCase, HashableRegex};
+            use $crate::gherkin::Step;
 
             let mut tests: Steps<'a, $worldtype> = Steps::new();
-            steps!(@gather_steps, tests, $( $items )*);
+            steps!(@gather_steps, $worldtype, tests, $( $items )*);
             tests
         }
     };
