@@ -14,7 +14,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = "^0.3.2"
+cucumber = "^0.3.4"
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
@@ -67,6 +67,10 @@ mod example_steps {
         then regex r"^we can (.*) rules with regex$" |world, matches, step| {
             // And access them as an array
             assert_eq!(matches[1], "implement");
+        };
+
+        then regex r"^we can also match (\d+) (.+) types$", (usize, String) |world, num, word, step| {
+            // `num` will be of type usize, `word` of type String
         };
     }
 }
