@@ -6,8 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(set_stdio)]
-
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 extern crate termcolor;
@@ -21,13 +19,11 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
-use std::io;
 use std::io::prelude::*;
 use std::ops::Deref;
 use std::panic;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::any::Any;
 
 mod output;
 pub mod cli;
@@ -70,7 +66,6 @@ pub struct TestCase<T: Default> {
 }
 
 impl<T: Default> TestCase<T> {
-    #[allow(dead_code)]
     pub fn new(test: TestFn<T>) -> TestCase<T> {
         TestCase {
             test: test
@@ -84,7 +79,6 @@ pub struct RegexTestCase<'a, T: 'a + Default> {
 }
 
 impl<'a, T: Default> RegexTestCase<'a, T> {
-    #[allow(dead_code)]
     pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
         RegexTestCase {
             test: test,
@@ -116,51 +110,38 @@ pub enum TestResult {
     Skipped,
     Unimplemented,
     Pass,
-    Fail(String, String)
+    Fail(PanicDetails)
 }
 
-struct Sink(Arc<Mutex<Vec<u8>>>);
-impl Write for Sink {
-    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        Write::write(&mut *self.0.lock().unwrap(), data)
+#[derive(Clone)]
+pub struct PanicDetails {
+    pub payload: String,
+    pub location: String,
+}
+
+impl PanicDetails {
+    fn from_panic_info(info: &panic::PanicInfo) -> PanicDetails {
+        let info_payload = info.payload();
+        let payload = if let Some(s) = info_payload.downcast_ref::<String>() {
+            s.clone()
+        } else if let Some(s) = info_payload.downcast_ref::<&str>() {
+            s.deref().to_owned()
+        } else {
+            "Opaque panic payload".to_owned()
+        };
+
+        let location = info.location()
+                .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+                .unwrap_or("Unknown location".to_owned());
+
+        PanicDetails {
+            payload,
+            location,
+        }
     }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
 }
-
-struct CapturedIo<T> {
-    stdout: Vec<u8>,
-    result: Result<T, Box<dyn Any + Send>>
-}
-
-fn capture_io<T, F: FnOnce() -> T>(callback: F) -> CapturedIo<T> {
-    let data = Arc::new(Mutex::new(Vec::new()));
-    let data2 = data.clone();
-
-    let old_io = (
-        io::set_print(Some(Box::new(Sink(data2.clone())))),
-        io::set_panic(Some(Box::new(Sink(data2))))
-    );
-
-    let result = panic::catch_unwind(
-        panic::AssertUnwindSafe(callback)
-    );
-
-    let captured_io = CapturedIo {
-        stdout: data.lock().unwrap().to_vec(),
-        result: result
-    };
-
-    io::set_print(old_io.0);
-    io::set_panic(old_io.1);
-
-    captured_io
-}
-
 
 impl<'s, T: Default> Steps<'s, T> {
-    #[allow(dead_code)]
     pub fn new() -> Steps<'s, T> {
         let regex_tests = RegexSteps {
             given: HashMap::new(),
@@ -168,14 +149,12 @@ impl<'s, T: Default> Steps<'s, T> {
             then: HashMap::new()
         };
 
-        let tests = Steps {
+        Steps {
             given: HashMap::new(),
             when: HashMap::new(),
             then: HashMap::new(),
             regex: regex_tests
-        };
-
-        tests
+        }
     }
 
     fn test_bag_for<'a>(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
@@ -231,50 +210,32 @@ impl<'s, T: Default> Steps<'s, T> {
         };
     }
 
-    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, last_panic: Arc<Mutex<Option<String>>>) -> TestResult {
+    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, last_panic: Arc<Mutex<Option<PanicDetails>>>) -> TestResult {
         let last_panic_hook = last_panic.clone();
         panic::set_hook(Box::new(move |info| {
             let mut state = last_panic.lock().expect("last_panic unpoisoned");
-            *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
+            *state = Some(PanicDetails::from_panic_info(info));
         }));
 
 
-        let captured_io = capture_io(move || {
+        let test_result = panic::catch_unwind(panic::AssertUnwindSafe(move || {
             self.run_test_inner(world, test_type, &step)
-        });
+        }));
 
         let _ = panic::take_hook();
         
-        match captured_io.result {
+        match test_result {
             Ok(_) => TestResult::Pass,
-            Err(any) => {
-                let mut state = last_panic_hook.lock().expect("unpoisoned");
-                let loc = match &*state {
-                    Some(v) => &v,
-                    None => "unknown"
-                };
+            Err(_) => {
+                let panic_info = last_panic_hook.lock()
+                    .expect("unpoisoned")
+                    .clone()
+                    .expect("Panic occurred during test but panic info was not caught");
 
-                let s = {
-                    if let Some(s) = any.downcast_ref::<String>() {
-                        s.as_str()
-                    } else if let Some(s) = any.downcast_ref::<&str>() {
-                        *s
-                    } else {
-                        ""
-                    }
-                };
-
-                if s.ends_with("test skipped") {
-                    TestResult::Skipped
+                if panic_info.payload == "not yet implemented" {
+                    TestResult::Unimplemented
                 } else {
-                    let mut m = format!("Panicked with: {}", s);
-
-                    if &captured_io.stdout.len() > &0usize {
-                        m.push_str("\n\n");
-                        m.push_str(&String::from_utf8_lossy(&captured_io.stdout));
-                    }
-
-                    TestResult::Fail(m, loc.to_owned())
+                    TestResult::Fail(panic_info)
                 }
             }
         }
@@ -286,32 +247,14 @@ impl<'s, T: Default> Steps<'s, T> {
         scenario: &'a gherkin::Scenario,
         before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
-        last_panic: Arc<Mutex<Option<String>>>,
+        last_panic: Arc<Mutex<Option<PanicDetails>>>,
         output: &mut impl OutputVisitor
     ) -> bool {
         output.visit_scenario(&scenario);
 
         let mut has_failures = false;
 
-        let captured_io = capture_io(|| T::default());
-        let mut world = match captured_io.result {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("An error occurred creating world:");
-                if &captured_io.stdout.len() > &0usize {
-                    let msg = String::from_utf8_lossy(&captured_io.stdout).to_string();
-                    panic!(msg);
-                } else {
-                    panic!(e);
-                }
-            }
-        };
-
-        if let Some(before_fns) = before_fns {
-            for f in before_fns.iter() {
-                f(&scenario);
-            }
-        }
+        let mut world = T::default();
 
         let mut steps: Vec<&'a Step> = vec![];
         if let Some(ref bg) = &feature.background {
@@ -347,11 +290,11 @@ impl<'s, T: Default> Steps<'s, T> {
                 let result = self.run_test(&mut world, test_type, &step, last_panic.clone());
                 output.visit_step_result(&scenario, &step, &result);
                 match result {
-                    TestResult::Pass => {}
-                    TestResult::Fail(_, _) => {
+                    TestResult::Pass => {},
+                    TestResult::Fail(_) => { 
                         has_failures = true;
                         is_skipping = true;
-                    }
+                    },
                     _ => {
                         is_skipping = true;
                         output.visit_scenario_skipped(&scenario);
@@ -382,7 +325,7 @@ impl<'s, T: Default> Steps<'s, T> {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
-        let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+        let last_panic: Arc<Mutex<Option<PanicDetails>>> = Arc::new(Mutex::new(None));
         let mut has_failures = false;
 
         for entry in feature_path {

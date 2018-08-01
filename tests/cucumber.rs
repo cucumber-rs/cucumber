@@ -1,5 +1,3 @@
-#![feature(fnbox)]
-
 #[macro_use]
 extern crate cucumber_rust;
 
