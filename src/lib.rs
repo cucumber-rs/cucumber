@@ -245,8 +245,8 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         feature: &'a gherkin::Feature,
         scenario: &'a gherkin::Scenario,
-        before_fns: Option<&[fn(&Scenario) -> ()]>,
-        after_fns: Option<&[fn(&Scenario) -> ()]>,
+        before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
+        after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         last_panic: Arc<Mutex<Option<PanicDetails>>>,
         output: &mut impl OutputVisitor
     ) -> bool {
