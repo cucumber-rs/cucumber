@@ -346,7 +346,7 @@ impl OutputVisitor for DefaultOutput {
                 self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
                 self.print_step_extras(step);
             },
-            TestResult::Fail(panic_info) => {
+            TestResult::Fail(panic_info, captured_output) => {
                 self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
                 self.print_step_extras(step);
                 self.writeln_cmt(
@@ -359,6 +359,11 @@ impl OutputVisitor for DefaultOutput {
                     Color::Red,
                     true);
                 self.red(&textwrap::indent(&textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4), "  ").trim_right());
+                if captured_output.len() > 0 {
+                    let output_str = String::from_utf8(captured_output.to_vec()).unwrap_or_else(|_| format!("{:?}", captured_output));
+                    self.red(&textwrap::indent(&textwrap::fill("Captured output:", textwrap::termwidth() - 4), "  ").trim_right());
+                    self.red(&textwrap::indent(&textwrap::fill(&output_str, textwrap::termwidth() - 4), "  ").trim_right());
+                }
                 self.writeln(&format!("{:—<1$}", "", textwrap::termwidth()), Color::Red, true);
                 self.fail_count += 1;
                 self.scenarios.insert(scenario.clone(), ScenarioResult::Fail);

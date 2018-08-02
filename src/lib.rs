@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![cfg_attr(feature = "nightly", feature(set_stdio))]
+
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 extern crate termcolor;
@@ -19,17 +21,18 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
-use std::io::prelude::*;
+use std::io::{Read, Write, stderr};
 use std::ops::Deref;
-use std::panic;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
 mod output;
 pub mod cli;
 
 use output::OutputVisitor;
 pub use output::default::DefaultOutput;
+
+mod panic_trap;
+use panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
 
@@ -110,35 +113,7 @@ pub enum TestResult {
     Skipped,
     Unimplemented,
     Pass,
-    Fail(PanicDetails)
-}
-
-#[derive(Clone)]
-pub struct PanicDetails {
-    pub payload: String,
-    pub location: String,
-}
-
-impl PanicDetails {
-    fn from_panic_info(info: &panic::PanicInfo) -> PanicDetails {
-        let info_payload = info.payload();
-        let payload = if let Some(s) = info_payload.downcast_ref::<String>() {
-            s.clone()
-        } else if let Some(s) = info_payload.downcast_ref::<&str>() {
-            s.deref().to_owned()
-        } else {
-            "Opaque panic payload".to_owned()
-        };
-
-        let location = info.location()
-                .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
-                .unwrap_or("Unknown location".to_owned());
-
-        PanicDetails {
-            payload,
-            location,
-        }
-    }
+    Fail(PanicDetails, Vec<u8>)
 }
 
 impl<'s, T: Default> Steps<'s, T> {
@@ -210,32 +185,18 @@ impl<'s, T: Default> Steps<'s, T> {
         };
     }
 
-    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, last_panic: Arc<Mutex<Option<PanicDetails>>>) -> TestResult {
-        let last_panic_hook = last_panic.clone();
-        panic::set_hook(Box::new(move |info| {
-            let mut state = last_panic.lock().expect("last_panic unpoisoned");
-            *state = Some(PanicDetails::from_panic_info(info));
-        }));
-
-
-        let test_result = panic::catch_unwind(panic::AssertUnwindSafe(move || {
+    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, suppress_output: bool) -> TestResult {
+        let test_result = PanicTrap::run(suppress_output, move || {
             self.run_test_inner(world, test_type, &step)
-        }));
+        });
 
-        let _ = panic::take_hook();
-        
-        match test_result {
+        match test_result.result {
             Ok(_) => TestResult::Pass,
-            Err(_) => {
-                let panic_info = last_panic_hook.lock()
-                    .expect("unpoisoned")
-                    .clone()
-                    .expect("Panic occurred during test but panic info was not caught");
-
+            Err(panic_info) => {
                 if panic_info.payload == "not yet implemented" {
                     TestResult::Unimplemented
                 } else {
-                    TestResult::Fail(panic_info)
+                    TestResult::Fail(panic_info, test_result.stdout)
                 }
             }
         }
@@ -245,16 +206,29 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         feature: &'a gherkin::Feature,
         scenario: &'a gherkin::Scenario,
-        before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
+        _before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
-        last_panic: Arc<Mutex<Option<PanicDetails>>>,
+        suppress_output: bool,
         output: &mut impl OutputVisitor
     ) -> bool {
         output.visit_scenario(&scenario);
 
         let mut has_failures = false;
 
-        let mut world = T::default();
+        let mut world = {
+            let panic_trap = PanicTrap::run(suppress_output, || T::default());
+            match panic_trap.result {
+                Ok(v) => v,
+                Err(panic_info) => {
+                    eprintln!("Panic caught during world creation. Panic location: {}", panic_info.location);
+                    if panic_trap.stdout.len() > 0 {
+                        eprintln!("Captured output was:");
+                        Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
+                    }
+                    panic!(panic_info.payload);
+                }
+            }
+        };
 
         let mut steps: Vec<&'a Step> = vec![];
         if let Some(ref bg) = &feature.background {
@@ -287,11 +261,11 @@ impl<'s, T: Default> Steps<'s, T> {
             if is_skipping {
                 output.visit_step_result(&scenario, &step, &TestResult::Skipped);
             } else {
-                let result = self.run_test(&mut world, test_type, &step, last_panic.clone());
+                let result = self.run_test(&mut world, test_type, &step, suppress_output);
                 output.visit_step_result(&scenario, &step, &result);
                 match result {
                     TestResult::Pass => {},
-                    TestResult::Fail(_) => { 
+                    TestResult::Fail(_, _) => { 
                         has_failures = true;
                         is_skipping = true;
                     },
@@ -325,7 +299,6 @@ impl<'s, T: Default> Steps<'s, T> {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
-        let last_panic: Arc<Mutex<Option<PanicDetails>>> = Arc::new(Mutex::new(None));
         let mut has_failures = false;
 
         for entry in feature_path {
@@ -351,7 +324,7 @@ impl<'s, T: Default> Steps<'s, T> {
                         continue;
                     }
                 }
-                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, last_panic.clone(), output) {
+                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
                     has_failures = true;
                 }
             }
