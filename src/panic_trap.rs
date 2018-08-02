@@ -70,7 +70,7 @@ impl<T> PanicTrap<T> {
         let loud_panic_trap = PanicTrap::run_loudly(f);
 
         io::set_print(old_io.0);
-        io::set_print(old_io.1);
+        io::set_panic(old_io.1);
 
         let stdout = stdout_sink_hook.lock().expect("Stdout mutex poisoned").clone();
         PanicTrap {
