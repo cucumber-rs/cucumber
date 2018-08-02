@@ -1,5 +1,3 @@
-#![feature(fnbox)]
-
 #[macro_use]
 extern crate cucumber_rust;
 
@@ -39,7 +37,12 @@ mod basic {
             assert!(true);
         };
 
-        then "another thing" |_world, _step| {
+        when "something goes wrong" |_world, _step| {
+            println!("Something to stdout");
+            eprintln!("Something to stderr");
+            panic!("This is my custom panic message");
+        };
+      then "another thing" |_world, _step| {
             assert!(true)
         };
     }

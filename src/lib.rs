@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(set_stdio)]
+#![cfg_attr(feature = "nightly", feature(set_stdio))]
+
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
@@ -21,19 +22,18 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
-use std::io;
-use std::io::prelude::*;
+use std::io::{Read, Write, stderr};
 use std::ops::Deref;
-use std::panic;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use std::any::Any;
 
 mod output;
 pub mod cli;
 
 use output::OutputVisitor;
 pub use output::default::DefaultOutput;
+
+mod panic_trap;
+use panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
 
@@ -70,7 +70,6 @@ pub struct TestCase<T: Default> {
 }
 
 impl<T: Default> TestCase<T> {
-    #[allow(dead_code)]
     pub fn new(test: TestFn<T>) -> TestCase<T> {
         TestCase {
             test: test
@@ -84,7 +83,6 @@ pub struct RegexTestCase<'a, T: 'a + Default> {
 }
 
 impl<'a, T: Default> RegexTestCase<'a, T> {
-    #[allow(dead_code)]
     pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
         RegexTestCase {
             test: test,
@@ -116,51 +114,10 @@ pub enum TestResult {
     Skipped,
     Unimplemented,
     Pass,
-    Fail(String, String)
+    Fail(PanicDetails, Vec<u8>)
 }
-
-struct Sink(Arc<Mutex<Vec<u8>>>);
-impl Write for Sink {
-    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        Write::write(&mut *self.0.lock().unwrap(), data)
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-struct CapturedIo<T> {
-    stdout: Vec<u8>,
-    result: Result<T, Box<dyn Any + Send>>
-}
-
-fn capture_io<T, F: FnOnce() -> T>(callback: F) -> CapturedIo<T> {
-    let data = Arc::new(Mutex::new(Vec::new()));
-    let data2 = data.clone();
-
-    let old_io = (
-        io::set_print(Some(Box::new(Sink(data2.clone())))),
-        io::set_panic(Some(Box::new(Sink(data2))))
-    );
-
-    let result = panic::catch_unwind(
-        panic::AssertUnwindSafe(callback)
-    );
-
-    let captured_io = CapturedIo {
-        stdout: data.lock().unwrap().to_vec(),
-        result: result
-    };
-
-    io::set_print(old_io.0);
-    io::set_panic(old_io.1);
-
-    captured_io
-}
-
 
 impl<'s, T: Default> Steps<'s, T> {
-    #[allow(dead_code)]
     pub fn new() -> Steps<'s, T> {
         let regex_tests = RegexSteps {
             given: HashMap::new(),
@@ -168,14 +125,12 @@ impl<'s, T: Default> Steps<'s, T> {
             then: HashMap::new()
         };
 
-        let tests = Steps {
+        Steps {
             given: HashMap::new(),
             when: HashMap::new(),
             then: HashMap::new(),
             regex: regex_tests
-        };
-
-        tests
+        }
     }
 
     fn test_bag_for<'a>(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
@@ -231,50 +186,18 @@ impl<'s, T: Default> Steps<'s, T> {
         };
     }
 
-    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, last_panic: Arc<Mutex<Option<String>>>) -> TestResult {
-        let last_panic_hook = last_panic.clone();
-        panic::set_hook(Box::new(move |info| {
-            let mut state = last_panic.lock().expect("last_panic unpoisoned");
-            *state = info.location().map(|x| format!("{}:{}:{}", x.file(), x.line(), x.column()));
-        }));
-
-
-        let captured_io = capture_io(move || {
+    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, suppress_output: bool) -> TestResult {
+        let test_result = PanicTrap::run(suppress_output, move || {
             self.run_test_inner(world, test_type, &step)
         });
 
-        let _ = panic::take_hook();
-        
-        match captured_io.result {
+        match test_result.result {
             Ok(_) => TestResult::Pass,
-            Err(any) => {
-                let mut state = last_panic_hook.lock().expect("unpoisoned");
-                let loc = match &*state {
-                    Some(v) => &v,
-                    None => "unknown"
-                };
-
-                let s = {
-                    if let Some(s) = any.downcast_ref::<String>() {
-                        s.as_str()
-                    } else if let Some(s) = any.downcast_ref::<&str>() {
-                        *s
-                    } else {
-                        ""
-                    }
-                };
-
-                if s.ends_with("test skipped") {
-                    TestResult::Skipped
+            Err(panic_info) => {
+                if panic_info.payload == "not yet implemented" {
+                    TestResult::Unimplemented
                 } else {
-                    let mut m = format!("Panicked with: {}", s);
-
-                    if &captured_io.stdout.len() > &0usize {
-                        m.push_str("\n\n");
-                        m.push_str(&String::from_utf8_lossy(&captured_io.stdout));
-                    }
-
-                    TestResult::Fail(m, loc.to_owned())
+                    TestResult::Fail(panic_info, test_result.stdout)
                 }
             }
         }
@@ -286,23 +209,24 @@ impl<'s, T: Default> Steps<'s, T> {
         scenario: &'a gherkin::Scenario,
         before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
-        last_panic: Arc<Mutex<Option<String>>>,
+        suppress_output: bool,
         output: &mut impl OutputVisitor
     ) -> bool {
         output.visit_scenario(&scenario);
 
         let mut has_failures = false;
 
-        let captured_io = capture_io(|| T::default());
-        let mut world = match captured_io.result {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("An error occurred creating world:");
-                if &captured_io.stdout.len() > &0usize {
-                    let msg = String::from_utf8_lossy(&captured_io.stdout).to_string();
-                    panic!(msg);
-                } else {
-                    panic!(e);
+        let mut world = {
+            let panic_trap = PanicTrap::run(suppress_output, || T::default());
+            match panic_trap.result {
+                Ok(v) => v,
+                Err(panic_info) => {
+                    eprintln!("Panic caught during world creation. Panic location: {}", panic_info.location);
+                    if panic_trap.stdout.len() > 0 {
+                        eprintln!("Captured output was:");
+                        Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
+                    }
+                    panic!(panic_info.payload);
                 }
             }
         };
@@ -344,14 +268,14 @@ impl<'s, T: Default> Steps<'s, T> {
             if is_skipping {
                 output.visit_step_result(&scenario, &step, &TestResult::Skipped);
             } else {
-                let result = self.run_test(&mut world, test_type, &step, last_panic.clone());
+                let result = self.run_test(&mut world, test_type, &step, suppress_output);
                 output.visit_step_result(&scenario, &step, &result);
                 match result {
-                    TestResult::Pass => {}
-                    TestResult::Fail(_, _) => {
+                    TestResult::Pass => {},
+                    TestResult::Fail(_, _) => { 
                         has_failures = true;
                         is_skipping = true;
-                    }
+                    },
                     _ => {
                         is_skipping = true;
                         output.visit_scenario_skipped(&scenario);
@@ -382,7 +306,6 @@ impl<'s, T: Default> Steps<'s, T> {
         output.visit_start();
         
         let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
-        let last_panic: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
         let mut has_failures = false;
 
         for entry in feature_path {
@@ -408,7 +331,7 @@ impl<'s, T: Default> Steps<'s, T> {
                         continue;
                     }
                 }
-                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, last_panic.clone(), output) {
+                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
                     has_failures = true;
                 }
             }

@@ -88,6 +88,11 @@ impl DefaultOutput {
         self.stdout.set_color(ColorSpec::new().set_fg(None)).unwrap();
     }
 
+    fn println(&mut self, s: &str) {
+        writeln!(&mut self.stdout, "{}", s).unwrap();
+    }
+
+
     fn red(&mut self, s: &str) {
         self.writeln(s, Color::Red, false);
     }
@@ -143,7 +148,7 @@ impl DefaultOutput {
                 self.write(&field, Color::White, true);
                 self.write("|", border_color.clone(), true);
             }
-            println!();
+            self.println("");
 
             for row in formatted_row_fields {
                 print!("{}", indent);
@@ -152,7 +157,7 @@ impl DefaultOutput {
                     print!("{}", field);
                     self.write("|", border_color.clone(), false);
                 }
-                println!();
+                self.println("");
             }
         };
 
@@ -176,7 +181,7 @@ impl DefaultOutput {
             write!(&mut self.stdout, ")")?;
         }
 
-        println!();
+        self.println("");
             
         // Do scenario count
         let scenario_passed_count = self.scenarios.values().filter(|v| {
@@ -226,7 +231,7 @@ impl DefaultOutput {
 
         write!(&mut self.stdout, ")")?;
 
-        println!();
+        self.println("");
 
         // Do steps
         let passed_count = self.step_count - self.skipped_count - self.fail_count;
@@ -256,13 +261,11 @@ impl DefaultOutput {
         write!(&mut self.stdout, "{} passed", passed_count)?;
         self.set_color(Color::White, true);
         write!(&mut self.stdout, ")")?;
-        println!();
-
+        self.println("");
         self.stdout.set_color(ColorSpec::new()
             .set_fg(None)
             .set_bold(false))?;
-        println!();
-
+        self.println("");
         Ok(())
     }
 }
@@ -329,7 +332,7 @@ impl OutputVisitor for DefaultOutput {
         if !self.scenarios.contains_key(scenario) {
             self.scenarios.insert(scenario.clone(), ScenarioResult::Pass);
         }
-        println!();
+        self.println("");
     }
     
     fn visit_step(&mut self, _scenario: &gherkin::Scenario, _step: &gherkin::Step) {
@@ -346,29 +349,36 @@ impl OutputVisitor for DefaultOutput {
                 self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
                 self.print_step_extras(step);
             },
-            TestResult::Fail(err_msg, loc) => {
+
+            TestResult::Fail(panic_info, captured_output) => {
                 self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
                 self.print_step_extras(step);
                 self.writeln_cmt(
                     &format!(
                         "{:—<1$}", "! Step failed: ",
-                        textwrap::termwidth() - loc.chars().count() - 7
+                        textwrap::termwidth() - panic_info.location.chars().count() - 7
                     ),
-                    loc,
+                    &panic_info.location,
                     "———— ",
                     Color::Red,
                     true);
-                self.red(&textwrap::indent(&textwrap::fill(err_msg, textwrap::termwidth() - 4), "  ").trim_right());
+                self.red(&textwrap::indent(&textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4), "  ").trim_right());
+
+                if captured_output.len() > 0 {
+                    self.writeln(&format!("{:—<1$}", "———— Captured output: ", textwrap::termwidth()), Color::Red, true);
+                    let output_str = String::from_utf8(captured_output.to_vec()).unwrap_or_else(|_| format!("{:?}", captured_output));
+                    self.red(&textwrap::indent(&textwrap::fill(&output_str, textwrap::termwidth() - 4), "  ").trim_right());
+                }
                 self.writeln(&format!("{:—<1$}", "", textwrap::termwidth()), Color::Red, true);
+
                 self.fail_count += 1;
                 self.scenarios.insert(scenario.clone(), ScenarioResult::Fail);
             },
             TestResult::MutexPoisoned => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 self.print_step_extras(step);
-
                 self.write("    ⚡ ", Color::Yellow, false);
-                println!("Skipped due to previous error (poisoned)");
+                self.println("Skipped due to previous error (poisoned)");
                 self.fail_count += 1;
             },
             TestResult::Skipped => {
@@ -380,7 +390,7 @@ impl OutputVisitor for DefaultOutput {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 self.print_step_extras(step);
                 self.write("    ⚡ ", Color::Yellow, false);
-                println!("Not yet implemented (skipped)");
+                self.println("Not yet implemented (skipped)");
                 
                 self.skipped_count += 1;
             }
