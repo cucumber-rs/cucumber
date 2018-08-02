@@ -91,7 +91,6 @@ impl DefaultOutput {
     fn println(&mut self, s: &str) {
         writeln!(&mut self.stdout, "{}", s);
     }
-
     fn red(&mut self, s: &str) {
         self.writeln(s, Color::Red, false);
     }
@@ -266,7 +265,6 @@ impl DefaultOutput {
             .set_fg(None)
             .set_bold(false))?;
         self.println("");
-
         Ok(())
     }
 }
@@ -350,6 +348,7 @@ impl OutputVisitor for DefaultOutput {
                 self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
                 self.print_step_extras(step);
             },
+
             TestResult::Fail(panic_info, captured_output) => {
                 self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
                 self.print_step_extras(step);

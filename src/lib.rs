@@ -31,6 +31,7 @@ pub mod cli;
 use output::OutputVisitor;
 pub use output::default::DefaultOutput;
 
+
 mod panic_trap;
 use panic_trap::{PanicDetails, PanicTrap};
 
@@ -197,6 +198,7 @@ impl<'s, T: Default> Steps<'s, T> {
                     TestResult::Unimplemented
                 } else {
                     TestResult::Fail(panic_info, test_result.stdout)
+
                 }
             }
         }
@@ -206,7 +208,7 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         feature: &'a gherkin::Feature,
         scenario: &'a gherkin::Scenario,
-        _before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
+        before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         suppress_output: bool,
         output: &mut impl OutputVisitor
@@ -229,6 +231,12 @@ impl<'s, T: Default> Steps<'s, T> {
                 }
             }
         };
+
+        if let Some(before_fns) = before_fns {
+            for f in before_fns.iter() {
+                f(&scenario);
+            }
+        }
 
         let mut steps: Vec<&'a Step> = vec![];
         if let Some(ref bg) = &feature.background {
