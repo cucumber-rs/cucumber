@@ -37,6 +37,12 @@ mod basic {
             assert!(true);
         };
 
+        when "something goes wrong" |_world, _step| {
+            println!("Something to stdout");
+            eprintln!("Something to stderr");
+            panic!("This is my custom panic message");
+        };
+
         then "another thing" |_world, _step| {
             assert!(true)
         };
