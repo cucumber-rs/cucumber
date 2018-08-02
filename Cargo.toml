@@ -22,5 +22,5 @@ textwrap = { version = "^0.10.0", features = ["term_size"] }
 clap = "^2.32.0"
 
 [features]
-default = ["nightly"]
+default = []
 nightly = []
