@@ -89,7 +89,7 @@ impl DefaultOutput {
     }
 
     fn println(&mut self, s: &str) {
-        writeln!(&mut self.stdout, "{}", s);
+        writeln!(&mut self.stdout, "{}", s).unwrap();
     }
 
 
