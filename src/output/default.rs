@@ -91,6 +91,8 @@ impl DefaultOutput {
     fn println(&mut self, s: &str) {
         writeln!(&mut self.stdout, "{}", s);
     }
+
+
     fn red(&mut self, s: &str) {
         self.writeln(s, Color::Red, false);
     }
@@ -260,7 +262,6 @@ impl DefaultOutput {
         self.set_color(Color::White, true);
         write!(&mut self.stdout, ")")?;
         self.println("");
-
         self.stdout.set_color(ColorSpec::new()
             .set_fg(None)
             .set_bold(false))?;

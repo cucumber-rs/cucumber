@@ -8,6 +8,7 @@
 
 #![cfg_attr(feature = "nightly", feature(set_stdio))]
 
+
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
 extern crate termcolor;
@@ -30,7 +31,6 @@ pub mod cli;
 
 use output::OutputVisitor;
 pub use output::default::DefaultOutput;
-
 
 mod panic_trap;
 use panic_trap::{PanicDetails, PanicTrap};
@@ -198,7 +198,6 @@ impl<'s, T: Default> Steps<'s, T> {
                     TestResult::Unimplemented
                 } else {
                     TestResult::Fail(panic_info, test_result.stdout)
-
                 }
             }
         }

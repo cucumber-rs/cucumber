@@ -42,7 +42,6 @@ mod basic {
             eprintln!("Something to stderr");
             panic!("This is my custom panic message");
         };
-
       then "another thing" |_world, _step| {
             assert!(true)
         };
