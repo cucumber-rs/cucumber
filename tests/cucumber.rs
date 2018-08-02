@@ -43,7 +43,7 @@ mod basic {
             panic!("This is my custom panic message");
         };
 
-        then "another thing" |_world, _step| {
+      then "another thing" |_world, _step| {
             assert!(true)
         };
     }
