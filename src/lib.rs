@@ -298,11 +298,17 @@ impl<'s, T: Default> Steps<'s, T> {
     ) -> bool {
         output.visit_start();
         
-        let feature_path = fs::read_dir(feature_path).expect("feature path to exist");
+        let feature_files = {
+            let mut paths = fs::read_dir(feature_path).expect("feature path to exist")
+            .map(|entry| entry.unwrap().path())
+            .collect::<Vec<_>>();
+            paths.sort();
+            paths
+        };
+        
         let mut has_failures = false;
 
-        for entry in feature_path {
-            let path = entry.unwrap().path();
+        for path in feature_files {
             let mut file = File::open(&path).expect("file to open");
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
@@ -575,7 +581,7 @@ macro_rules! steps {
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt, ($($arg_type:tt),*) $body:expr;
+        $ty:ident regex $name:tt, ($($arg_type:ty),*) $body:expr;
     ) => {
         $tests.regex.$ty.insert(
             HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
@@ -592,7 +598,7 @@ macro_rules! steps {
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt, ($($arg_type:tt),*) $body:expr; $( $items:tt )*
+        $ty:ident regex $name:tt, ($($arg_type:ty),*) $body:expr; $( $items:tt )*
     ) => {
         $tests.regex.$ty.insert(
             HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
