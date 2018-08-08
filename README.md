@@ -2,6 +2,10 @@
 
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
 
+<p align="center">
+    <img src="https://cdn.rawgit.com/bbqsrc/cucumber-rust/develop/example.svg">
+</p>
+
 ### Usage
 
 Create a directory called `tests/` in your project root and create a test target of your choice. In this example we will name it `cucumber.rs`.
