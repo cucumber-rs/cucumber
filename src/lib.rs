@@ -382,7 +382,7 @@ pub fn tag_rule_applies(scenario: &Scenario, rule: &str) -> bool {
 #[macro_export]
 macro_rules! before {
     (
-        $fnname:ident: $tagrule:tt $scenariofn:expr
+        $fnname:ident: $tagrule:tt => $scenariofn:expr
     ) => {
         fn $fnname(scenario: &$crate::Scenario) {
             let scenario_closure: fn(&$crate::Scenario) -> () = $scenariofn;
@@ -396,9 +396,9 @@ macro_rules! before {
     };
 
     (
-        $fnname:ident $scenariofn:expr
+        $fnname:ident => $scenariofn:expr
     ) => {
-        before!($fnname: "" $scenariofn);
+        before!($fnname: "" => $scenariofn);
     };
 }
 
@@ -406,91 +406,91 @@ macro_rules! before {
 #[macro_export]
 macro_rules! after {
     (
-        $fnname:ident: $tagrule:tt $stepfn:expr
+        $fnname:ident: $tagrule:tt => $stepfn:expr
     ) => {
-        before!($fnname: $tagrule $stepfn);
+        before!($fnname: $tagrule => $stepfn);
     };
 
     (
-        $fnname:ident $scenariofn:expr
+        $fnname:ident => $scenariofn:expr
     ) => {
-        before!($fnname: "" $scenariofn);
+        before!($fnname: "" => $scenariofn);
     };
 }
 
 #[macro_export]
 macro_rules! cucumber {
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
-        setup: $setupfn:expr;
-        before: $beforefns:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
+        setup: $setupfn:expr,
+        before: $beforefns:expr,
         after: $afterfns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); Some($afterfns));
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
-        setup: $setupfn:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
+        setup: $setupfn:expr,
         before: $beforefns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); None);
     };
 
         (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
-        setup: $setupfn:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
+        setup: $setupfn:expr,
         after: $afterfns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; Some($afterfns));
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
-        before: $beforefns:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
+        before: $beforefns:expr,
         after: $afterfns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); Some($afterfns));
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
         before: $beforefns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); None);
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
         after: $afterfns:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; Some($afterfns));
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
-        steps: $vec:expr;
+        features: $featurepath:tt,
+        world: $worldtype:path,
+        steps: $vec:expr,
         setup: $setupfn:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; None);
     };
 
     (
-        features: $featurepath:tt;
-        world: $worldtype:path;
+        features: $featurepath:tt,
+        world: $worldtype:path,
         steps: $vec:expr
     ) => {
         cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; None);
@@ -576,8 +576,8 @@ macro_rules! steps {
         $ty:ident regex $name:tt $body:expr;
     ) => {
         $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                RegexTestCase::new($body));
+            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                $crate::RegexTestCase::new($body));
     };
 
     (
@@ -585,20 +585,20 @@ macro_rules! steps {
         $ty:ident regex $name:tt $body:expr; $( $items:tt )*
     ) => {
         $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                RegexTestCase::new($body));
+            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                $crate::RegexTestCase::new($body));
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt, ($($arg_type:ty),*) $body:expr;
+        $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr;
     ) => {
         $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                RegexTestCase::new(|world: &mut $worldtype, matches, step| {
-                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &Step) -> ()> = Box::new($body);
+            HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
 
                     let mut i = 0;
                     closure(world,
@@ -610,16 +610,17 @@ macro_rules! steps {
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt, ($($arg_type:ty),*) $body:expr; $( $items:tt )*
+        $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr; $( $items:tt )*
     ) => {
         $tests.regex.$ty.insert(
-            HashableRegex(Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                RegexTestCase::new(|world: &mut $worldtype, matches, step| {
-                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &Step) -> ()> = Box::new($body);
+            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+                $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
                     
                     let mut i = 0;
                     closure(world,
-                        $( matches[{i += 1; i}].parse::<$arg_type>().expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                        $( matches[{i += 1; i}].parse::<$arg_type>()
+                            .expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
                         step
                     )
                 }));
@@ -631,31 +632,27 @@ macro_rules! steps {
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr;
     ) => {
-        $tests.$ty.insert($name, TestCase::new($body));
+        $tests.$ty.insert($name, $crate::TestCase::new($body));
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr; $( $items:tt )*
     ) => {
-        $tests.$ty.insert($name, TestCase::new($body));
+        $tests.$ty.insert($name, $crate::TestCase::new($body));
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
 
     (
-        world: $worldtype:path;
-        $( $items:tt )*
+        $worldtype:path => { $( $items:tt )* }
     ) => {
         #[allow(unused_imports)]
         pub fn steps<'a>() -> $crate::Steps<'a, $worldtype> {
             use std::path::Path;
             use std::process;
-            use $crate::regex::Regex;
-            use $crate::{Steps, TestCase, RegexTestCase, HashableRegex};
-            use $crate::gherkin::Step;
 
-            let mut tests: Steps<'a, $worldtype> = Steps::new();
+            let mut tests: $crate::Steps<'a, $worldtype> = $crate::Steps::new();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
             tests
         }

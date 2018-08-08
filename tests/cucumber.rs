@@ -19,8 +19,11 @@ impl Default for MyWorld {
 
 #[cfg(test)]
 mod basic {
-    steps! {
-        world: ::MyWorld;
+    steps!(::MyWorld => {
+        when regex "thing (\\d+)" (usize) |world, sz, step| {
+
+        };
+        
         when regex "^test (.*) regex$" |_world, matches, _step| {
             println!("{}", matches[1]);
         };
@@ -46,22 +49,22 @@ mod basic {
         then "another thing" |_world, _step| {
             assert!(true)
         };
-    }
+    });
 }
 
 fn before_thing(step: &cucumber_rust::Scenario) {
 
 }
 
-before!(some_before: "@tag2 and @tag3" |scenario| {
+before!(some_before: "@tag2 and @tag3" => |scenario| {
     println!("{}", "lol");
 });
 
-before!(something_great |scenario| {
+before!(something_great => |scenario| {
 
 });
 
-after!(after_thing |scenario| {
+after!(after_thing => |scenario| {
 
 });
 
@@ -70,12 +73,12 @@ fn setup() {
 }
 
 cucumber! {
-    features: "./features";
-    world: ::MyWorld;
+    features: "./features",
+    world: ::MyWorld,
     steps: &[
         basic::steps
-    ];
-    setup: setup;
-    before: &[before_thing, some_before, something_great];
+    ],
+    setup: setup,
+    before: &[before_thing, some_before, something_great],
     after: &[after_thing]
 }
