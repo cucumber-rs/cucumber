@@ -325,11 +325,23 @@ impl<'s, T: Default> Steps<'s, T> {
             output.visit_feature(&feature, &path);
 
             for scenario in (&feature.scenarios).iter() {
+                // If a tag is specified and the scenario does not have the tag, skip the test.
+                let should_skip = match (&scenario.tags, &options.tag) {
+                    (Some(ref tags), Some(ref tag)) => !tags.contains(tag),
+                    _ => false
+                };
+
+                if should_skip {
+                    continue;
+                }
+
+                // If regex filter fails, skip the test.
                 if let Some(ref regex) = options.filter {
                     if !regex.is_match(&scenario.name) {
                         continue;
                     }
                 }
+
                 if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
                     has_failures = true;
                 }

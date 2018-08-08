@@ -8,6 +8,7 @@ pub enum CliError {
 
 pub struct CliOptions {
     pub filter: Option<Regex>,
+    pub tag: Option<String>,
     pub suppress_output: bool,
 }
 
@@ -22,6 +23,12 @@ pub fn make_app<'a, 'b>() -> Result<CliOptions, CliError> {
             .value_name("regex")
             .help("Regex to select scenarios from")
             .takes_value(true))
+        .arg(Arg::with_name("tag")
+            .short("t")
+            .long("tag")
+            .value_name("tag")
+            .help("Filter by specified tag")
+            .takes_value(true))
         .arg(Arg::with_name("nocapture")
             .long("nocapture")
             .help("Use this flag to disable suppression of output from tests"))
@@ -34,10 +41,13 @@ pub fn make_app<'a, 'b>() -> Result<CliOptions, CliError> {
         None
     };
 
+    let tag = matches.value_of("tag").map(|v| v.to_string());
+
     let suppress_output = cfg!(feature = "nightly") && !matches.is_present("nocapture");
 
     Ok(CliOptions {
-        filter: filter,
-        suppress_output: suppress_output,
+        filter,
+        tag,
+        suppress_output
     })
 }
