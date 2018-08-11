@@ -214,7 +214,7 @@ impl<'s, T: Default> Steps<'s, T> {
     ) -> bool {
         output.visit_scenario(rule, &scenario);
 
-        let mut has_failures = false;
+        let mut is_success = true;
 
         let mut world = {
             let panic_trap = PanicTrap::run(suppress_output, || T::default());
@@ -267,7 +267,7 @@ impl<'s, T: Default> Steps<'s, T> {
                 match result {
                     TestResult::Pass => {},
                     TestResult::Fail(_, _) => { 
-                        has_failures = true;
+                        is_success = false;
                         is_skipping = true;
                     },
                     _ => {
@@ -286,7 +286,7 @@ impl<'s, T: Default> Steps<'s, T> {
 
         output.visit_scenario_end(rule, &scenario);
 
-        has_failures
+        is_success
     }
 
     fn run_scenarios<'a>(
@@ -299,7 +299,7 @@ impl<'s, T: Default> Steps<'s, T> {
         options: &cli::CliOptions,
         output: &mut impl OutputVisitor
     ) -> bool {
-        let mut has_failures = true;
+        let mut is_success = true;
 
         for scenario in scenarios {
             // If a tag is specified and the scenario does not have the tag, skip the test.
@@ -320,11 +320,11 @@ impl<'s, T: Default> Steps<'s, T> {
             }
 
             if !self.run_scenario(&feature, rule, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
-                has_failures = true;
+                is_success = false;
             }
         }
 
-        has_failures
+        is_success
     }
     
     pub fn run<'a>(
@@ -345,7 +345,7 @@ impl<'s, T: Default> Steps<'s, T> {
             paths
         };
         
-        let mut has_failures = false;
+        let mut is_success = true;
 
         for path in feature_files {
             let mut file = File::open(&path).expect("file to open");
@@ -356,17 +356,21 @@ impl<'s, T: Default> Steps<'s, T> {
                 Ok(v) => v,
                 Err(e) => {
                     output.visit_feature_error(&path, &e);
-                    has_failures = true;
+                    is_success = false;
                     continue;
                 }
             };
 
             output.visit_feature(&feature, &path);
-            self.run_scenarios(&feature, None, &feature.scenarios, before_fns, after_fns, &options, output);
+            if !self.run_scenarios(&feature, None, &feature.scenarios, before_fns, after_fns, &options, output) {
+                is_success = false;
+            }
 
             for rule in &feature.rules {
                 output.visit_rule(&rule);
-                self.run_scenarios(&feature, Some(&rule), &rule.scenarios, before_fns, after_fns, &options, output);
+                if !self.run_scenarios(&feature, Some(&rule), &rule.scenarios, before_fns, after_fns, &options, output) {
+                    is_success = false;
+                }
                 output.visit_rule_end(&rule);
             }
             output.visit_feature_end(&feature);
@@ -374,7 +378,7 @@ impl<'s, T: Default> Steps<'s, T> {
         
         output.visit_finish();
 
-        has_failures
+        is_success
     }
 }
 
