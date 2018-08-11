@@ -205,13 +205,14 @@ impl<'s, T: Default> Steps<'s, T> {
     fn run_scenario<'a>(
         &'s self,
         feature: &'a gherkin::Feature,
+        rule: Option<&'a gherkin::Rule>,
         scenario: &'a gherkin::Scenario,
         _before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
         suppress_output: bool,
         output: &mut impl OutputVisitor
     ) -> bool {
-        output.visit_scenario(&scenario);
+        output.visit_scenario(rule, &scenario);
 
         let mut has_failures = false;
 
@@ -244,25 +245,25 @@ impl<'s, T: Default> Steps<'s, T> {
         let mut is_skipping = false;
 
         for step in steps.iter() {
-            output.visit_step(&scenario, &step);
+            output.visit_step(rule, &scenario, &step);
 
             let test_type = match self.test_type(&step) {
                 Some(v) => v,
                 None => {
-                    output.visit_step_result(&scenario, &step, &TestResult::Unimplemented);
+                    output.visit_step_result(rule, &scenario, &step, &TestResult::Unimplemented);
                     if !is_skipping {
                         is_skipping = true;
-                        output.visit_scenario_skipped(&scenario);
+                        output.visit_scenario_skipped(rule, &scenario);
                     }
                     continue;
                 }
             };
 
             if is_skipping {
-                output.visit_step_result(&scenario, &step, &TestResult::Skipped);
+                output.visit_step_result(rule, &scenario, &step, &TestResult::Skipped);
             } else {
                 let result = self.run_test(&mut world, test_type, &step, suppress_output);
-                output.visit_step_result(&scenario, &step, &result);
+                output.visit_step_result(rule, &scenario, &step, &result);
                 match result {
                     TestResult::Pass => {},
                     TestResult::Fail(_, _) => { 
@@ -271,7 +272,7 @@ impl<'s, T: Default> Steps<'s, T> {
                     },
                     _ => {
                         is_skipping = true;
-                        output.visit_scenario_skipped(&scenario);
+                        output.visit_scenario_skipped(rule, &scenario);
                     }
                 };
             }
@@ -283,7 +284,45 @@ impl<'s, T: Default> Steps<'s, T> {
             }
         }
 
-        output.visit_scenario_end(&scenario);
+        output.visit_scenario_end(rule, &scenario);
+
+        has_failures
+    }
+
+    fn run_scenarios<'a>(
+        &'s self,
+        feature: &'a gherkin::Feature,
+        rule: Option<&'a gherkin::Rule>,
+        scenarios: &[gherkin::Scenario],
+        before_fns: Option<&[fn(&Scenario) -> ()]>,
+        after_fns: Option<&[fn(&Scenario) -> ()]>,
+        options: &cli::CliOptions,
+        output: &mut impl OutputVisitor
+    ) -> bool {
+        let mut has_failures = true;
+
+        for scenario in scenarios {
+            // If a tag is specified and the scenario does not have the tag, skip the test.
+            let should_skip = match (&scenario.tags, &options.tag) {
+                (Some(ref tags), Some(ref tag)) => !tags.contains(tag),
+                _ => false
+            };
+
+            if should_skip {
+                continue;
+            }
+
+            // If regex filter fails, skip the test.
+            if let Some(ref regex) = options.filter {
+                if !regex.is_match(&scenario.name) {
+                    continue;
+                }
+            }
+
+            if !self.run_scenario(&feature, rule, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
+                has_failures = true;
+            }
+        }
 
         has_failures
     }
@@ -323,30 +362,13 @@ impl<'s, T: Default> Steps<'s, T> {
             };
 
             output.visit_feature(&feature, &path);
+            self.run_scenarios(&feature, None, &feature.scenarios, before_fns, after_fns, &options, output);
 
-            for scenario in (&feature.scenarios).iter() {
-                // If a tag is specified and the scenario does not have the tag, skip the test.
-                let should_skip = match (&scenario.tags, &options.tag) {
-                    (Some(ref tags), Some(ref tag)) => !tags.contains(tag),
-                    _ => false
-                };
-
-                if should_skip {
-                    continue;
-                }
-
-                // If regex filter fails, skip the test.
-                if let Some(ref regex) = options.filter {
-                    if !regex.is_match(&scenario.name) {
-                        continue;
-                    }
-                }
-
-                if !self.run_scenario(&feature, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
-                    has_failures = true;
-                }
+            for rule in &feature.rules {
+                output.visit_rule(&rule);
+                self.run_scenarios(&feature, Some(&rule), &rule.scenarios, before_fns, after_fns, &options, output);
+                output.visit_rule_end(&rule);
             }
-
             output.visit_feature_end(&feature);
         }
         

@@ -22,6 +22,7 @@ pub struct DefaultOutput {
     cur_feature: String,
     feature_count: u32,
     feature_error_count: u32,
+    rule_count: u32,
     scenarios: HashMap<gherkin::Scenario, ScenarioResult>,
     step_count: u32,
     skipped_count: u32,
@@ -35,6 +36,7 @@ impl std::default::Default for DefaultOutput {
             cur_feature: "".to_string(),
             feature_count: 0,
             feature_error_count: 0,
+            rule_count: 0,
             scenarios: HashMap::new(),
             step_count: 0,
             skipped_count: 0,
@@ -180,6 +182,11 @@ impl DefaultOutput {
             write!(&mut self.stdout, ")")?;
         }
 
+        // Do rule count
+        if self.rule_count > 0 {
+            write!(&mut self.stdout, ", {} rules", &self.rule_count)?;
+        }
+
         self.println("");
             
         // Do scenario count
@@ -318,32 +325,42 @@ impl OutputVisitor for DefaultOutput {
         self.feature_error_count += 1;  
     }
 
-    fn visit_scenario(&mut self, scenario: &gherkin::Scenario) {
-        let cmt = &format!("{}:{}:{}", &self.cur_feature, scenario.position.0, scenario.position.1);
-        self.bold_white_comment(&format!("Scenario: {}", &scenario.name), cmt, " ");
+    fn visit_rule(&mut self, rule: &gherkin::Rule) {
+        let cmt = &format!("{}:{}:{}", &self.cur_feature, rule.position.0, rule.position.1);
+        self.bold_white_comment(&format!("Rule: {}\n", &rule.name), cmt, " ");
     }
 
-    fn visit_scenario_skipped(&mut self, scenario: &gherkin::Scenario) {
+    fn visit_rule_end(&mut self, _rule: &gherkin::Rule) {
+        self.rule_count += 1;
+    }
+
+    fn visit_scenario(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
+        let cmt = &format!("{}:{}:{}", &self.cur_feature, scenario.position.0, scenario.position.1);
+        let indent = if rule.is_some() { "  " } else { " " };
+        self.bold_white_comment(&format!("Scenario: {}", &scenario.name), cmt, indent);
+    }
+
+    fn visit_scenario_skipped(&mut self, _rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
         if !self.scenarios.contains_key(scenario) {
             self.scenarios.insert(scenario.clone(), ScenarioResult::Skip);
         }
     }
     
-    fn visit_scenario_end(&mut self, scenario: &gherkin::Scenario) {
+    fn visit_scenario_end(&mut self, _rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
         if !self.scenarios.contains_key(scenario) {
             self.scenarios.insert(scenario.clone(), ScenarioResult::Pass);
         }
         self.println("");
     }
     
-    fn visit_step(&mut self, _scenario: &gherkin::Scenario, _step: &gherkin::Step) {
+    fn visit_step(&mut self, _rule: Option<&gherkin::Rule>, _scenario: &gherkin::Scenario, _step: &gherkin::Step) {
         self.step_count += 1;
     }
     
-    fn visit_step_result(&mut self, scenario: &gherkin::Scenario, step: &gherkin::Step, result: &TestResult) {
+    fn visit_step_result(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario, step: &gherkin::Step, result: &TestResult) {
         let cmt = &format!("{}:{}:{}", &self.cur_feature, step.position.0, step.position.1);
         let msg = &format!("{}", &step.to_string());
-        let indent = "  ";
+        let indent = if rule.is_some() { "   " } else { "  " };
 
         match result {
             TestResult::Pass => {
@@ -377,7 +394,7 @@ impl OutputVisitor for DefaultOutput {
             TestResult::MutexPoisoned => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 self.print_step_extras(step);
-                self.write("    ⚡ ", Color::Yellow, false);
+                self.write(&format!("{}  ⚡ ", indent), Color::Yellow, false);
                 self.println("Skipped due to previous error (poisoned)");
                 self.fail_count += 1;
             },
@@ -389,7 +406,7 @@ impl OutputVisitor for DefaultOutput {
             TestResult::Unimplemented => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 self.print_step_extras(step);
-                self.write("    ⚡ ", Color::Yellow, false);
+                self.write(&format!("{}  ⚡ ", indent), Color::Yellow, false);
                 self.println("Not yet implemented (skipped)");
                 
                 self.skipped_count += 1;
