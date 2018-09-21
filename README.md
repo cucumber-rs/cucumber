@@ -50,7 +50,7 @@ impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
         MyWorld { 
-            foo: "".to_string()
+            foo: "a default string".to_string()
         }
     }
 }
@@ -79,21 +79,21 @@ mod example_steps {
             assert_eq!(matches[1], "implement");
         };
 
-        then regex r"^we can also match (\d+) (.+) types$", (usize, String) |world, num, word, step| {
+        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |world, num, word, step| {
             // `num` will be of type usize, `word` of type String
-            assert_eq(num, 42);
-            assert_eq(word, "olika");
+            assert_eq!(num, 42);
+            assert_eq!(word, "olika");
         };
     });
 }
 
-// Declares a before handler function named `something_fn`
-before!(something_fn => |scenario| {
+// Declares a before handler function named `a_before_fn`
+before!(a_before_fn => |scenario| {
 
 });
 
-// Declares an after handler function named `something_fn`
-after!(after_thing => |scenario| {
+// Declares an after handler function named `an_after_fn`
+after!(an_after_fn => |scenario| {
 
 });
 
@@ -110,10 +110,10 @@ cucumber! {
     ],
     setup: setup, // Optional; called once before everything
     before: &[
-        before_fn // Optional; called before each scenario
+        a_before_fn // Optional; called before each scenario
     ], 
     after: &[
-        after_fn // Optional; called after each scenario
+        an_after_fn // Optional; called after each scenario
     ] 
 }
 ```

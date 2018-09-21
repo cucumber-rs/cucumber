@@ -622,13 +622,14 @@ macro_rules! steps {
         $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr;
     ) => {
         $tests.regex.$ty.insert(
-            HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
+            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
                 $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
                     let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
 
                     let mut i = 0;
                     closure(world,
-                        $( matches[{i += 1; i}].parse::<$arg_type>().expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                        $( matches[{i += 1; i}].parse::<$arg_type>()
+                            .expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
                         step
                     )
                 }));
