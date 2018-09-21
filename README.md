@@ -18,7 +18,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = "^0.4.0"
+cucumber_rust = "^0.4.1"
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
