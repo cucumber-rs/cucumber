@@ -21,6 +21,12 @@ harness = false # Allows Cucumber to print output instead of libtest
 cucumber_rust = "^0.4.1"
 ```
 
+If using stable Rust, you need to disable the `nightly` feature:
+
+```
+cucumber_rust = { version = "0.4.1", default-features = false }
+```
+
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
 
 ```gherkin
