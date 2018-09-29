@@ -195,8 +195,8 @@ impl<'s, T: Default> Steps<'s, T> {
         match test_result.result {
             Ok(_) => TestResult::Pass,
             Err(panic_info) => {
-                if panic_info.payload == "not yet implemented" {
-                    TestResult::Unimplemented
+                if panic_info.payload.ends_with("cucumber test skipped") {
+                    TestResult::Skipped
                 } else {
                     TestResult::Fail(panic_info, test_result.stdout)
                 }
@@ -595,7 +595,7 @@ macro_rules! cucumber {
 #[macro_export]
 macro_rules! skip {
     () => {
-        unimplemented!("test skipped");
+        unimplemented!("cucumber test skipped");
     }
 }
 
