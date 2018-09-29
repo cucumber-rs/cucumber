@@ -14,16 +14,19 @@ extern crate termcolor;
 extern crate pathdiff;
 extern crate textwrap;
 extern crate clap;
+extern crate globwalk;
 
-use gherkin::{Step, StepType, Feature};
-pub use gherkin::Scenario;
-use regex::Regex;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write, stderr};
 use std::ops::Deref;
 use std::path::Path;
+
+pub use gherkin::Scenario;
+use globwalk::GlobWalkerBuilder;
+use gherkin::{Step, StepType, Feature};
+use regex::Regex;
 
 mod output;
 pub mod cli;
@@ -338,13 +341,18 @@ impl<'s, T: Default> Steps<'s, T> {
         output.visit_start();
         
         let feature_files = {
-            let mut paths = fs::read_dir(feature_path).expect("feature path to exist")
-            .map(|entry| entry.unwrap().path())
-            .collect::<Vec<_>>();
+            let mut paths = GlobWalkerBuilder::new(feature_path, "*.feature")
+                .case_insensitive(true)
+                .build()
+                .expect("feature path is invalid")
+                .into_iter()
+                .filter_map(Result::ok)
+                .map(|entry| entry.path().to_owned())
+                .collect::<Vec<_>>();
             paths.sort();
             paths
         };
-        
+
         let mut is_success = true;
 
         for path in feature_files {
