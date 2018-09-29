@@ -10,21 +10,20 @@
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate regex;
+pub extern crate globwalk;
 extern crate termcolor;
 extern crate pathdiff;
 extern crate textwrap;
 extern crate clap;
-extern crate globwalk;
 
 use std::collections::HashMap;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write, stderr};
 use std::ops::Deref;
-use std::path::Path;
+use std::path::PathBuf;
 
 pub use gherkin::Scenario;
-use globwalk::GlobWalkerBuilder;
 use gherkin::{Step, StepType, Feature};
 use regex::Regex;
 
@@ -332,26 +331,13 @@ impl<'s, T: Default> Steps<'s, T> {
     
     pub fn run<'a>(
         &'s self,
-        feature_path: &Path,
+        feature_files: Vec<PathBuf>,
         before_fns: Option<&[fn(&Scenario) -> ()]>,
         after_fns: Option<&[fn(&Scenario) -> ()]>,
         options: cli::CliOptions,
         output: &mut impl OutputVisitor
     ) -> bool {
         output.visit_start();
-        
-        let feature_files = {
-            let mut paths = GlobWalkerBuilder::new(feature_path, "*.feature")
-                .case_insensitive(true)
-                .build()
-                .expect("feature path is invalid")
-                .into_iter()
-                .filter_map(Result::ok)
-                .map(|entry| entry.path().to_owned())
-                .collect::<Vec<_>>();
-            paths.sort();
-            paths
-        };
 
         let mut is_success = true;
 
@@ -537,6 +523,7 @@ macro_rules! cucumber {
         fn main() {
             use std::path::Path;
             use std::process;
+            use $crate::globwalk::{glob, GlobWalkerBuilder};
             use $crate::gherkin::Scenario;
             use $crate::{Steps, World, DefaultOutput};
             use $crate::cli::make_app;
@@ -546,19 +533,28 @@ macro_rules! cucumber {
                 Err(e) => panic!(e)
             };
 
-            let path = match Path::new($featurepath).canonicalize() {
-                Ok(p) => p,
-                Err(e) => {
-                    eprintln!("{}", e);
-                    eprintln!("There was an error parsing \"{}\"; aborting.", $featurepath);
-                    process::exit(1);
+            let walker = match &options.feature {
+                Some(v) => glob(v).expect("feature glob is invalid"),
+                None => match Path::new($featurepath).canonicalize() {
+                    Ok(p) => { 
+                        GlobWalkerBuilder::new(p, "*.feature")
+                            .case_insensitive(true)
+                            .build()
+                            .expect("feature path is invalid")
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        eprintln!("There was an error parsing \"{}\"; aborting.", $featurepath);
+                        process::exit(1);
+                    }
                 }
-            };
+            }.into_iter();
 
-            if !&path.exists() {
-                eprintln!("Path {:?} does not exist; aborting.", &path);
-                process::exit(1);
-            }
+            let mut feature_files = walker
+                .filter_map(Result::ok)
+                .map(|entry| entry.path().to_owned())
+                .collect::<Vec<_>>();
+            feature_files.sort();
 
             let tests = {
                 let step_groups: Vec<Steps<$worldtype>> = $vec.iter().map(|f| f()).collect();
@@ -588,7 +584,7 @@ macro_rules! cucumber {
                 None => {}
             };
 
-            if !tests.run(&path, before_fns, after_fns, options, &mut output) {
+            if !tests.run(feature_files, before_fns, after_fns, options, &mut output) {
                 process::exit(1);
             }
         }

@@ -7,6 +7,7 @@ pub enum CliError {
 }
 
 pub struct CliOptions {
+    pub feature: Option<String>,
     pub filter: Option<Regex>,
     pub tag: Option<String>,
     pub suppress_output: bool,
@@ -18,10 +19,16 @@ pub fn make_app<'a, 'b>() -> Result<CliOptions, CliError> {
         .author("Brendan Molloy <brendan@bbqsrc.net>")
         .about("Run the tests, pet a dog!")
         .arg(Arg::with_name("filter")
-            .short("f")
-            .long("filter")
+            .short("e")
+            .long("expression")
             .value_name("regex")
             .help("Regex to select scenarios from")
+            .takes_value(true))
+        .arg(Arg::with_name("feature")
+            .short("f")
+            .long("feature")
+            .value_name("feature")
+            .help("Specific feature file(s) to use with a glob (optional)")
             .takes_value(true))
         .arg(Arg::with_name("tag")
             .short("t")
@@ -41,11 +48,13 @@ pub fn make_app<'a, 'b>() -> Result<CliOptions, CliError> {
         None
     };
 
+    let feature = matches.value_of("feature").map(|v| v.to_string());
     let tag = matches.value_of("tag").map(|v| v.to_string());
 
     let suppress_output = cfg!(feature = "nightly") && !matches.is_present("nocapture");
 
     Ok(CliOptions {
+        feature,
         filter,
         tag,
         suppress_output

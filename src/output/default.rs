@@ -107,7 +107,9 @@ impl DefaultOutput {
     }
 
     fn relpath(&self, target: &Path) -> std::path::PathBuf {
-        diff_paths(&target, &env::current_dir().unwrap()).unwrap()
+        let target = target.canonicalize().expect("invalid target path");
+        diff_paths(&target, &env::current_dir().expect("invalid current directory"))
+            .expect("invalid target path")
     }
 
     fn print_step_extras(&mut self, step: &gherkin::Step) {
