@@ -164,7 +164,10 @@ impl<'s, T: Default> Steps<'s, T> {
                 match result {
                     Some((regex, tc)) => {
                         let matches = regex.0.captures(&step.value).unwrap();
-                        let matches: Vec<String> = matches.iter().map(|x| x.unwrap().as_str().to_string()).collect();
+                        let matches: Vec<String> = matches
+                            .iter()
+                            .map(|x| x.map(|s| s.as_str().to_string()).unwrap_or("".to_string()))
+                            .collect();
                         Some(TestCaseType::Regex(tc, matches))
                     },
                     None => {
