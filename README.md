@@ -90,6 +90,18 @@ mod example_steps {
             assert_eq!(num, 42);
             assert_eq!(word, "olika");
         };
+        
+        then "we can use data tables to provide more parameters" |world, step| {
+            let table = step.table().unwrap().clone();
+            
+            assert_eq!(table.header, vec!["key", "value"]);
+            
+            let expected_keys: Vec<String> = table.rows.into_iter().map(|x| x[0].to_owned()).collect();
+            let expected_values: Vec<String> = table.rows.into_iter().map(|x| x[1].to_owned()).collect();
+                        
+            assert_eq!(expected_keys, vec!["a", "b"]);
+            assert_eq!(expected_values, vec!["fizz", "buzz"]);
+        }
     });
 }
 
