@@ -632,11 +632,14 @@ macro_rules! steps {
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
                 $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
                     let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
+                    let mut matches = matches.into_iter().enumerate();
 
-                    let mut i = 0;
-                    closure(world,
-                        $( matches[{i += 1; i}].parse::<$arg_type>()
-                            .expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                    closure(
+                        world,
+                        $({
+                            let (index, match_) = matches.next().unwrap();
+                            match_.parse::<$arg_type>().expect(&format!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
+                        },)*
                         step
                     )
                 }));
@@ -650,11 +653,14 @@ macro_rules! steps {
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
                 $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
                     let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
-                    
-                    let mut i = 0;
-                    closure(world,
-                        $( matches[{i += 1; i}].parse::<$arg_type>()
-                            .expect(&format!("Failed to parse argument {} '{}' of type {}", i, matches[i], stringify!($arg_type))),)*
+                    let mut matches = matches.into_iter().enumerate().skip(1);
+
+                    closure(
+                        world,
+                        $({
+                            let (index, match_) = matches.next().unwrap();
+                            match_.parse::<$arg_type>().expect(&format!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
+                        },)*
                         step
                     )
                 }));
