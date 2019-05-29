@@ -8,6 +8,7 @@ readme = "README.md"
 repository = "https://github.com/bbqsrc/cucumber-rust"
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
+build = "build.rs"
 
 [[test]]
 name = "cucumber"
@@ -22,6 +23,8 @@ textwrap = { version = "^0.10.0", features = ["term_size"] }
 clap = "^2.32.0"
 globwalk = "0.5"
 
+[build-dependencies]
+rustc_version = "0.2"
+
 [features]
-default = ["nightly"]
 nightly = []

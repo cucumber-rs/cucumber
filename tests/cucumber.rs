@@ -20,10 +20,10 @@ impl Default for MyWorld {
 #[cfg(test)]
 mod basic {
     steps!(::MyWorld => {
-        when regex "thing (\\d+)" (usize) |_world, _sz, _step| {
+        when regex "thing (\\d+) does (.+)" (usize, String) |_world, _sz, _txt, _step| {
 
         };
-        
+
         when regex "^test (.*) regex$" |_world, matches, _step| {
             println!("{}", matches[1]);
         };
