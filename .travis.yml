@@ -1,0 +1,10 @@
+sudo: false
+
+language: rust
+
+rust:
+  - stable
+  - nightly
+
+script:
+  - cargo check --verbose --all-targets --no-default-features
