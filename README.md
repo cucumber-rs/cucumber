@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/bbqsrc/cucumber-rust.svg?branch=master)](https://travis-ci.org/bbqsrc/cucumber-rust)
+
 # cucumber-rust
 
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
