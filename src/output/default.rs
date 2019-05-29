@@ -166,7 +166,7 @@ impl DefaultOutput {
 
         if let Some(ref docstring) = &step.docstring {
             self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
-            println!("{}", textwrap::indent(docstring, indent).trim_right());
+            println!("{}", textwrap::indent(docstring, indent).trim_end());
             self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
         }
     }
@@ -319,7 +319,7 @@ impl OutputVisitor for DefaultOutput {
                     textwrap::termwidth() - 4
                 ),
                 "  "
-            ).trim_right()
+            ).trim_end()
         );
 
         self.writeln(&format!("{:—<1$}\n", "", textwrap::termwidth()), Color::Red, true);
@@ -381,12 +381,12 @@ impl OutputVisitor for DefaultOutput {
                     "———— ",
                     Color::Red,
                     true);
-                self.red(&textwrap::indent(&textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4), "  ").trim_right());
+                self.red(&textwrap::indent(&textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4), "  ").trim_end());
 
                 if captured_output.len() > 0 {
                     self.writeln(&format!("{:—<1$}", "———— Captured output: ", textwrap::termwidth()), Color::Red, true);
                     let output_str = String::from_utf8(captured_output.to_vec()).unwrap_or_else(|_| format!("{:?}", captured_output));
-                    self.red(&textwrap::indent(&textwrap::fill(&output_str, textwrap::termwidth() - 4), "  ").trim_right());
+                    self.red(&textwrap::indent(&textwrap::fill(&output_str, textwrap::termwidth() - 4), "  ").trim_end());
                 }
                 self.writeln(&format!("{:—<1$}", "", textwrap::termwidth()), Color::Red, true);
 
