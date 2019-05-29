@@ -20,7 +20,7 @@ impl Default for MyWorld {
 #[cfg(test)]
 mod basic {
     steps!(::MyWorld => {
-        when regex "thing (\\d+)" (usize) |world, sz, step| {
+        when regex "thing (\\d+)" (usize) |_world, _sz, _step| {
 
         };
         
@@ -52,19 +52,19 @@ mod basic {
     });
 }
 
-fn before_thing(step: &cucumber_rust::Scenario) {
+fn before_thing(_step: &cucumber_rust::Scenario) {
 
 }
 
-before!(some_before: "@tag2 and @tag3" => |scenario| {
+before!(some_before: "@tag2 and @tag3" => |_scenario| {
     println!("{}", "lol");
 });
 
-before!(something_great => |scenario| {
+before!(something_great => |_scenario| {
 
 });
 
-after!(after_thing => |scenario| {
+after!(after_thing => |_scenario| {
 
 });
 
