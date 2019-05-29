@@ -146,19 +146,19 @@ impl DefaultOutput {
 
             print!("{}", indent);
             let border_color = Color::Magenta;
-            self.write("|", border_color.clone(), true);
+            self.write("|", border_color, true);
             for field in formatted_header_fields {
                 self.write(&field, Color::White, true);
-                self.write("|", border_color.clone(), true);
+                self.write("|", border_color, true);
             }
             self.println("");
 
             for row in formatted_row_fields {
                 print!("{}", indent);
-                self.write("|", border_color.clone(), false);
+                self.write("|", border_color, false);
                 for field in row {
                     print!("{}", field);
-                    self.write("|", border_color.clone(), false);
+                    self.write("|", border_color, false);
                 }
                 self.println("");
             }
