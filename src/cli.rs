@@ -13,7 +13,7 @@ pub struct CliOptions {
     pub suppress_output: bool,
 }
 
-pub fn make_app<'a, 'b>() -> Result<CliOptions, CliError> {
+pub fn make_app() -> Result<CliOptions, CliError> {
     let matches = App::new("cucumber")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Brendan Molloy <brendan@bbqsrc.net>")

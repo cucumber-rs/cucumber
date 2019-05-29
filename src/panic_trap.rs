@@ -22,7 +22,7 @@ impl PanicDetails {
 
         let location = info.location()
                 .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
-                .unwrap_or("Unknown location".to_owned());
+                .unwrap_or_else(|| "Unknown location".to_owned());
 
         PanicDetails {
             payload,
@@ -74,7 +74,7 @@ impl<T> PanicTrap<T> {
 
         let stdout = stdout_sink_hook.lock().expect("Stdout mutex poisoned").clone();
         PanicTrap {
-            stdout: stdout,
+            stdout,
             result: loud_panic_trap.result,
         }
     }

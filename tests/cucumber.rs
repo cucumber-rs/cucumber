@@ -1,3 +1,5 @@
+#![allow(clippy::assertions_on_constants)]
+
 #[macro_use]
 extern crate cucumber_rust;
 
@@ -33,7 +35,7 @@ mod basic {
         };
 
         when "another thing" |_world, _step| {
-            assert!(false);
+            panic!();
         };
 
         when "something goes right" |_world, _step| { 

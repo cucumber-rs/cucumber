@@ -6,5 +6,12 @@ rust:
   - stable
   - nightly
 
+matrix:
+  allow_failures:
+    - rust: nightly
+
+before_script:
+  - rustup component add clippy
+
 script:
-  - cargo check --verbose --all-targets --no-default-features
+  - cargo clippy --verbose --all-targets -- --deny warnings
