@@ -11,7 +11,8 @@ matrix:
     - rust: nightly
 
 before_script:
-  - rustup component add clippy
+  - rustup component add clippy rustfmt
 
 script:
   - cargo clippy --verbose --all-targets -- --deny warnings
+  - cargo fmt -- --check

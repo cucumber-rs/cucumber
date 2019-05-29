@@ -6,16 +6,14 @@ extern crate cucumber_rust;
 use std::default::Default;
 
 pub struct MyWorld {
-    pub thing: bool
+    pub thing: bool,
 }
 
 impl cucumber_rust::World for MyWorld {}
 
 impl Default for MyWorld {
     fn default() -> MyWorld {
-        MyWorld {
-            thing: false
-        }
+        MyWorld { thing: false }
     }
 }
 
@@ -54,9 +52,7 @@ mod basic {
     });
 }
 
-fn before_thing(_step: &cucumber_rust::Scenario) {
-
-}
+fn before_thing(_step: &cucumber_rust::Scenario) {}
 
 before!(some_before: "@tag2 and @tag3" => |_scenario| {
     println!("{}", "lol");
@@ -70,9 +66,7 @@ after!(after_thing => |_scenario| {
 
 });
 
-fn setup() {
-
-}
+fn setup() {}
 
 cucumber! {
     features: "./features",
