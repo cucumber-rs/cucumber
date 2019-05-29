@@ -290,11 +290,11 @@ impl OutputVisitor for DefaultOutput {
         let msg = &format!("Feature: {}", &feature.name);
         let cmt = &format!("{}:{}:{}", &self.cur_feature, feature.position.0, feature.position.1);
         self.bold_white_comment(msg, cmt, "");
-        println!("");
+        println!();
 
         self.feature_count += 1;
     }
-    
+
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
     fn visit_feature_error<'r>(&mut self, path: &Path, error: &gherkin::Error<'r>) {
@@ -361,7 +361,7 @@ impl OutputVisitor for DefaultOutput {
     
     fn visit_step_result(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario, step: &gherkin::Step, result: &TestResult) {
         let cmt = &format!("{}:{}:{}", &self.cur_feature, step.position.0, step.position.1);
-        let msg = &format!("{}", &step.to_string());
+        let msg = &step.to_string();
         let indent = if rule.is_some() { "   " } else { "  " };
 
         match result {
@@ -383,7 +383,7 @@ impl OutputVisitor for DefaultOutput {
                     true);
                 self.red(&textwrap::indent(&textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4), "  ").trim_end());
 
-                if captured_output.len() > 0 {
+                if !captured_output.is_empty() {
                     self.writeln(&format!("{:—<1$}", "———— Captured output: ", textwrap::termwidth()), Color::Red, true);
                     let output_str = String::from_utf8(captured_output.to_vec()).unwrap_or_else(|_| format!("{:?}", captured_output));
                     self.red(&textwrap::indent(&textwrap::fill(&output_str, textwrap::termwidth() - 4), "  ").trim_end());

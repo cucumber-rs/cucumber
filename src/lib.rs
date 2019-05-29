@@ -38,6 +38,8 @@ use panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
 
+type HelperFn = fn(&Scenario) -> ();
+
 #[derive(Debug, Clone)]
 pub struct HashableRegex(pub Regex);
 
@@ -73,7 +75,7 @@ pub struct TestCase<T: Default> {
 impl<T: Default> TestCase<T> {
     pub fn new(test: TestFn<T>) -> TestCase<T> {
         TestCase {
-            test: test
+            test
         }
     }
 }
@@ -86,12 +88,13 @@ pub struct RegexTestCase<'a, T: 'a + Default> {
 impl<'a, T: Default> RegexTestCase<'a, T> {
     pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
         RegexTestCase {
-            test: test,
+            test,
             _marker: std::marker::PhantomData
         }
     }
 }
 
+#[derive(Default)]
 pub struct Steps<'s, T: 's + Default> {
     pub given: HashMap<&'static str, TestCase<T>>,
     pub when: HashMap<&'static str, TestCase<T>>,
@@ -99,6 +102,7 @@ pub struct Steps<'s, T: 's + Default> {
     pub regex: RegexSteps<'s, T>
 }
 
+#[derive(Default)]
 pub struct RegexSteps<'s, T: 's + Default> {
     pub given: HashMap<HashableRegex, RegexTestCase<'s, T>>,
     pub when: HashMap<HashableRegex, RegexTestCase<'s, T>>,
@@ -119,22 +123,7 @@ pub enum TestResult {
 }
 
 impl<'s, T: Default> Steps<'s, T> {
-    pub fn new() -> Steps<'s, T> {
-        let regex_tests = RegexSteps {
-            given: HashMap::new(),
-            when: HashMap::new(),
-            then: HashMap::new()
-        };
-
-        Steps {
-            given: HashMap::new(),
-            when: HashMap::new(),
-            then: HashMap::new(),
-            regex: regex_tests
-        }
-    }
-
-    fn test_bag_for<'a>(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
+    fn test_bag_for(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
         match ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
@@ -166,7 +155,7 @@ impl<'s, T: Default> Steps<'s, T> {
                         let matches = regex.0.captures(&step.value).unwrap();
                         let matches: Vec<String> = matches
                             .iter()
-                            .map(|x| x.map(|s| s.as_str().to_string()).unwrap_or("".to_string()))
+                            .map(|x| x.map(|s| s.as_str().to_string()).unwrap_or_else(String::new))
                             .collect();
                         Some(TestCaseType::Regex(tc, matches))
                     },
@@ -207,13 +196,14 @@ impl<'s, T: Default> Steps<'s, T> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn run_scenario<'a>(
         &'s self,
         feature: &'a gherkin::Feature,
         rule: Option<&'a gherkin::Rule>,
         scenario: &'a gherkin::Scenario,
-        _before_fns: &'a Option<&[fn(&Scenario) -> ()]>,
-        after_fns: &'a Option<&[fn(&Scenario) -> ()]>,
+        _before_fns: &'a Option<&[HelperFn]>,
+        after_fns: &'a Option<&[HelperFn]>,
         suppress_output: bool,
         output: &mut impl OutputVisitor
     ) -> bool {
@@ -222,12 +212,12 @@ impl<'s, T: Default> Steps<'s, T> {
         let mut is_success = true;
 
         let mut world = {
-            let panic_trap = PanicTrap::run(suppress_output, || T::default());
+            let panic_trap = PanicTrap::run(suppress_output, T::default);
             match panic_trap.result {
                 Ok(v) => v,
                 Err(panic_info) => {
                     eprintln!("Panic caught during world creation. Panic location: {}", panic_info.location);
-                    if panic_trap.stdout.len() > 0 {
+                    if !panic_trap.stdout.is_empty() {
                         eprintln!("Captured output was:");
                         Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
                     }
@@ -294,13 +284,14 @@ impl<'s, T: Default> Steps<'s, T> {
         is_success
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn run_scenarios<'a>(
         &'s self,
         feature: &'a gherkin::Feature,
         rule: Option<&'a gherkin::Rule>,
         scenarios: &[gherkin::Scenario],
-        before_fns: Option<&[fn(&Scenario) -> ()]>,
-        after_fns: Option<&[fn(&Scenario) -> ()]>,
+        before_fns: Option<&[HelperFn]>,
+        after_fns: Option<&[HelperFn]>,
         options: &cli::CliOptions,
         output: &mut impl OutputVisitor
     ) -> bool {
@@ -331,12 +322,12 @@ impl<'s, T: Default> Steps<'s, T> {
 
         is_success
     }
-    
-    pub fn run<'a>(
+
+    pub fn run(
         &'s self,
         feature_files: Vec<PathBuf>,
-        before_fns: Option<&[fn(&Scenario) -> ()]>,
-        after_fns: Option<&[fn(&Scenario) -> ()]>,
+        before_fns: Option<&[HelperFn]>,
+        after_fns: Option<&[HelperFn]>,
         options: cli::CliOptions,
         output: &mut impl OutputVisitor
     ) -> bool {
@@ -383,7 +374,7 @@ impl<'s, T: Default> Steps<'s, T> {
 pub fn tag_rule_applies(scenario: &Scenario, rule: &str) -> bool {
     if let Some(ref tags) = &scenario.tags {
         let tags: Vec<&str> = tags.iter().map(|s| s.as_str()).collect();
-        let rule_chunks = rule.split(" ");
+        let rule_chunks = rule.split(' ');
         // TODO: implement a sane parser for this
         for rule in rule_chunks {
             if rule == "and" || rule == "or" {
@@ -561,7 +552,7 @@ macro_rules! cucumber {
 
             let tests = {
                 let step_groups: Vec<Steps<$worldtype>> = $vec.iter().map(|f| f()).collect();
-                let mut combined_steps = Steps::new();
+                let mut combined_steps = Steps::default();
 
                 for step_group in step_groups.into_iter() {
                     combined_steps.given.extend(step_group.given);
@@ -692,7 +683,7 @@ macro_rules! steps {
             use std::path::Path;
             use std::process;
 
-            let mut tests: $crate::Steps<'a, $worldtype> = $crate::Steps::new();
+            let mut tests: $crate::Steps<'a, $worldtype> = $crate::Steps::default();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
             tests
         }
