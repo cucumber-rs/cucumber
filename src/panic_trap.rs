@@ -1,10 +1,9 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::io::Read;
 use std::ops::Deref;
 use std::panic;
 use std::sync::{Arc, Mutex};
 
-use gag::Redirect;
-use tempfile::tempfile;
+use shh::{stderr, stdout};
 
 #[derive(Clone)]
 pub struct PanicDetails {
@@ -33,8 +32,9 @@ impl PanicDetails {
 }
 
 pub struct PanicTrap<T> {
-    pub stdout: Vec<u8>,
     pub result: Result<T, PanicDetails>,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
 }
 
 impl<T> PanicTrap<T> {
@@ -47,25 +47,15 @@ impl<T> PanicTrap<T> {
     }
 
     fn run_quietly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
-        let mut tmp = tempfile().unwrap();
+        let mut stdout = stdout().expect("Failed to capture stdout");
+        let mut stderr = stderr().expect("Failed to capture stderr");
 
-        let loud_panic_trap = {
-            let _stdout =
-                Redirect::stdout(tmp.try_clone().unwrap()).expect("Failed to capture stdout");
-            let _stderr =
-                Redirect::stderr(tmp.try_clone().unwrap()).expect("Failed to capture stderr");
+        let mut trap = PanicTrap::run_loudly(f);
 
-            PanicTrap::run_loudly(f)
-        };
+        stdout.read_to_end(&mut trap.stdout).unwrap();
+        stderr.read_to_end(&mut trap.stderr).unwrap();
 
-        let mut stdout = Vec::new();
-        tmp.seek(SeekFrom::Start(0)).unwrap();
-        tmp.read_to_end(&mut stdout).unwrap();
-
-        PanicTrap {
-            stdout,
-            result: loud_panic_trap.result,
-        }
+        trap
     }
 
     fn run_loudly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
@@ -90,8 +80,9 @@ impl<T> PanicTrap<T> {
         let _ = panic::take_hook();
 
         PanicTrap {
-            stdout: vec![],
             result,
+            stdout: Vec::new(),
+            stderr: Vec::new(),
         }
     }
 }

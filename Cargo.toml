@@ -25,5 +25,4 @@ pathdiff = "^0.1.0"
 textwrap = { version = "0.11", features = ["term_size"] }
 clap = "^2.32.0"
 globwalk = "0.7"
-gag = "0.1"
-tempfile = "3.0"
+shh = "1.0"

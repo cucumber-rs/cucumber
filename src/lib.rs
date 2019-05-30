@@ -96,7 +96,7 @@ pub enum TestResult {
     Skipped,
     Unimplemented,
     Pass,
-    Fail(PanicDetails, Vec<u8>),
+    Fail(PanicDetails, Vec<u8>, Vec<u8>),
 }
 
 impl<T: Default> Steps<T> {
@@ -162,7 +162,7 @@ impl<T: Default> Steps<T> {
                 if panic_info.payload.ends_with("cucumber test skipped") {
                     TestResult::Skipped
                 } else {
-                    TestResult::Fail(panic_info, test_result.stdout)
+                    TestResult::Fail(panic_info, test_result.stdout, test_result.stderr)
                 }
             }
         }
@@ -237,7 +237,7 @@ impl<T: Default> Steps<T> {
                 output.visit_step_result(rule, &scenario, &step, &result);
                 match result {
                     TestResult::Pass => {}
-                    TestResult::Fail(_, _) => {
+                    TestResult::Fail(_, _, _) => {
                         is_success = false;
                         is_skipping = true;
                     }
