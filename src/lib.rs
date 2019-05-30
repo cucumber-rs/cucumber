@@ -8,7 +8,6 @@
 
 pub extern crate gherkin_rust as gherkin;
 pub extern crate globwalk;
-pub extern crate regex;
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -17,8 +16,8 @@ use std::io::{stderr, Read, Write};
 use std::ops::Deref;
 use std::path::PathBuf;
 
-pub use gherkin::Scenario;
-use gherkin::{Feature, Step, StepType};
+use gherkin::Feature;
+pub use gherkin::{Scenario, Step, StepType};
 use regex::Regex;
 
 pub mod cli;
@@ -35,7 +34,7 @@ pub trait World: Default {}
 type HelperFn = fn(&Scenario) -> ();
 
 #[derive(Debug, Clone)]
-pub struct HashableRegex(pub Regex);
+struct HashableRegex(pub Regex);
 
 impl Hash for HashableRegex {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -62,31 +61,28 @@ impl Deref for HashableRegex {
 type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
 
-pub struct TestCase<T: Default>(pub TestFn<T>);
-pub struct RegexTestCase<T: Default>(pub TestRegexFn<T>);
+struct TestCase<T: Default>(pub TestFn<T>);
+struct RegexTestCase<T: Default>(pub TestRegexFn<T>);
 
 type TestBag<T> = HashMap<&'static str, TestCase<T>>;
 type RegexBag<T> = HashMap<HashableRegex, RegexTestCase<T>>;
 
 #[derive(Default)]
 pub struct Steps<T: Default> {
-    pub given: TestBag<T>,
-    pub when: TestBag<T>,
-    pub then: TestBag<T>,
-    pub regex: RegexSteps<T>,
+    given: TestBag<T>,
+    when: TestBag<T>,
+    then: TestBag<T>,
+    regex: RegexSteps<T>,
 }
 
 #[derive(Default)]
-pub struct RegexSteps<T: Default> {
-    pub given: RegexBag<T>,
-    pub when: RegexBag<T>,
-    pub then: RegexBag<T>,
+struct RegexSteps<T: Default> {
+    given: RegexBag<T>,
+    when: RegexBag<T>,
+    then: RegexBag<T>,
 }
 
-pub enum TestCaseType<'a, T>
-where
-    T: 'a + Default,
-{
+enum TestCaseType<'a, T: 'a + Default> {
     Normal(&'a TestCase<T>),
     Regex(&'a RegexTestCase<T>, Vec<String>),
 }
@@ -108,11 +104,27 @@ impl<T: Default> Steps<T> {
         }
     }
 
+    fn test_bag_mut_for(&mut self, ty: StepType) -> &mut TestBag<T> {
+        match ty {
+            StepType::Given => &mut self.given,
+            StepType::When => &mut self.when,
+            StepType::Then => &mut self.then,
+        }
+    }
+
     fn regex_bag_for(&self, ty: StepType) -> &RegexBag<T> {
         match ty {
             StepType::Given => &self.regex.given,
             StepType::When => &self.regex.when,
             StepType::Then => &self.regex.then,
+        }
+    }
+
+    fn regex_bag_mut_for(&mut self, ty: StepType) -> &mut RegexBag<T> {
+        match ty {
+            StepType::Given => &mut self.regex.given,
+            StepType::When => &mut self.regex.when,
+            StepType::Then => &mut self.regex.then,
         }
     }
 
@@ -142,6 +154,34 @@ impl<T: Default> Steps<T> {
         }
 
         None
+    }
+
+    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<T>) {
+        self.test_bag_mut_for(ty).insert(name, TestCase(test_fn));
+    }
+
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<T>) {
+        let regex = Regex::new(regex)
+            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
+
+        self.regex_bag_mut_for(ty)
+            .insert(HashableRegex(regex), RegexTestCase(test_fn));
+    }
+
+    pub fn combine(iter: impl Iterator<Item = Self>) -> Self {
+        let mut combined = Self::default();
+
+        for steps in iter {
+            combined.given.extend(steps.given);
+            combined.when.extend(steps.when);
+            combined.then.extend(steps.then);
+
+            combined.regex.given.extend(steps.regex.given);
+            combined.regex.when.extend(steps.regex.when);
+            combined.regex.then.extend(steps.regex.then);
+        }
+
+        combined
     }
 
     fn run_test(
@@ -550,22 +590,7 @@ macro_rules! cucumber {
                 .collect::<Vec<_>>();
             feature_files.sort();
 
-            let tests = {
-                let step_groups: Vec<Steps<$worldtype>> = $vec.iter().map(|f| f()).collect();
-                let mut combined_steps = Steps::default();
-
-                for step_group in step_groups.into_iter() {
-                    combined_steps.given.extend(step_group.given);
-                    combined_steps.when.extend(step_group.when);
-                    combined_steps.then.extend(step_group.then);
-
-                    combined_steps.regex.given.extend(step_group.regex.given);
-                    combined_steps.regex.when.extend(step_group.regex.when);
-                    combined_steps.regex.then.extend(step_group.regex.then);
-                }
-
-                combined_steps
-            };
+            let tests = Steps::combine($vec.iter().map(|f| f()));
 
             let mut output = DefaultOutput::default();
 
@@ -595,21 +620,53 @@ macro_rules! skip {
 #[macro_export]
 macro_rules! steps {
     (
+        @step_type given
+    ) => {
+        $crate::StepType::Given
+    };
+
+    (
+        @step_type when
+    ) => {
+        $crate::StepType::When
+    };
+
+    (
+        @step_type then
+    ) => {
+        $crate::StepType::Then
+    };
+
+    (
+        @parse_matches $worldtype:path, ($($arg_type:ty),*) $body:expr
+    ) => {
+        |world: &mut $worldtype, matches, step| {
+            let body: fn(&mut $worldtype, $($arg_type,)* &$crate::Step) -> () = $body;
+            let mut matches = matches.into_iter().enumerate().skip(1);
+
+            body(
+                world,
+                $({
+                    let (index, match_) = matches.next().unwrap();
+                    match_.parse::<$arg_type>().unwrap_or_else(|_| panic!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
+                },)*
+                step
+            )
+        }
+    };
+
+    (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr;
     ) => {
-        $tests.regex.$ty.insert(
-            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase($body));
+        $tests.add_regex(steps!(@step_type $ty), $name, $body);
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt $body:expr; $( $items:tt )*
     ) => {
-        $tests.regex.$ty.insert(
-            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase($body));
+        $tests.add_regex(steps!(@step_type $ty), $name, $body);
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
@@ -618,42 +675,14 @@ macro_rules! steps {
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr;
     ) => {
-        $tests.regex.$ty.insert(
-            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase(|world: &mut $worldtype, matches, step| {
-                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
-                    let mut matches = matches.into_iter().enumerate();
-
-                    closure(
-                        world,
-                        $({
-                            let (index, match_) = matches.next().unwrap();
-                            match_.parse::<$arg_type>().expect(&format!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
-                        },)*
-                        step
-                    )
-                }));
+        $tests.add_regex(steps!(@step_type $ty), $name, steps!(@parse_matches $worldtype, ($($arg_type),*) $body));
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr; $( $items:tt )*
     ) => {
-        $tests.regex.$ty.insert(
-            $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase(|world: &mut $worldtype, matches, step| {
-                    let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
-                    let mut matches = matches.into_iter().enumerate().skip(1);
-
-                    closure(
-                        world,
-                        $({
-                            let (index, match_) = matches.next().unwrap();
-                            match_.parse::<$arg_type>().expect(&format!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
-                        },)*
-                        step
-                    )
-                }));
+        $tests.add_regex(steps!(@step_type $ty), $name, steps!(@parse_matches $worldtype, ($($arg_type),*) $body));
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
@@ -662,14 +691,14 @@ macro_rules! steps {
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr;
     ) => {
-        $tests.$ty.insert($name, $crate::TestCase($body));
+        $tests.add_normal(steps!(@step_type $ty), $name, $body);
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr; $( $items:tt )*
     ) => {
-        $tests.$ty.insert($name, $crate::TestCase($body));
+        $tests.add_normal(steps!(@step_type $ty), $name, $body);
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
@@ -677,11 +706,7 @@ macro_rules! steps {
     (
         $worldtype:path => { $( $items:tt )* }
     ) => {
-        #[allow(unused_imports)]
         pub fn steps() -> $crate::Steps<$worldtype> {
-            use std::path::Path;
-            use std::process;
-
             let mut tests: $crate::Steps<$worldtype> = Default::default();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
             tests
