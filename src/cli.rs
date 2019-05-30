@@ -59,7 +59,7 @@ pub fn make_app() -> Result<CliOptions, CliError> {
     let feature = matches.value_of("feature").map(|v| v.to_string());
     let tag = matches.value_of("tag").map(|v| v.to_string());
 
-    let suppress_output = cfg!(feature = "nightly") && !matches.is_present("nocapture");
+    let suppress_output = !matches.is_present("nocapture");
 
     Ok(CliOptions {
         feature,

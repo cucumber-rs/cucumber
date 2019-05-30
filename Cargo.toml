@@ -9,7 +9,6 @@ repository = "https://github.com/bbqsrc/cucumber-rust"
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
 edition = "2018"
-build = "build.rs"
 
 [badges]
 travis-ci = { repository = "bbqsrc/cucumber-rust" }
@@ -26,9 +25,4 @@ pathdiff = "^0.1.0"
 textwrap = { version = "0.11", features = ["term_size"] }
 clap = "^2.32.0"
 globwalk = "0.7"
-
-[build-dependencies]
-rustc_version = "0.2"
-
-[features]
-nightly = []
+shh = "1.0"

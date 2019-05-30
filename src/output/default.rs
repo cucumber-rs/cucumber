@@ -430,7 +430,7 @@ impl OutputVisitor for DefaultOutput {
                 self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
                 self.print_step_extras(step);
             }
-            TestResult::Fail(panic_info, captured_output) => {
+            TestResult::Fail(panic_info, captured_stdout, captured_stderr) => {
                 self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
                 self.print_step_extras(step);
                 self.writeln_cmt(
@@ -452,26 +452,50 @@ impl OutputVisitor for DefaultOutput {
                     .trim_end(),
                 );
 
-                if !captured_output.is_empty() {
+                if !captured_stdout.is_empty() {
                     self.writeln(
                         &format!(
                             "{:—<1$}",
-                            "———— Captured output: ",
+                            "———— Captured stdout: ",
                             textwrap::termwidth()
                         ),
                         Color::Red,
                         true,
                     );
-                    let output_str = String::from_utf8(captured_output.to_vec())
-                        .unwrap_or_else(|_| format!("{:?}", captured_output));
                     self.red(
                         &textwrap::indent(
-                            &textwrap::fill(&output_str, textwrap::termwidth() - 4),
+                            &textwrap::fill(
+                                &String::from_utf8_lossy(captured_stderr),
+                                textwrap::termwidth() - 4,
+                            ),
                             "  ",
                         )
                         .trim_end(),
                     );
                 }
+
+                if !captured_stderr.is_empty() {
+                    self.writeln(
+                        &format!(
+                            "{:—<1$}",
+                            "———— Captured stderr: ",
+                            textwrap::termwidth()
+                        ),
+                        Color::Red,
+                        true,
+                    );
+                    self.red(
+                        &textwrap::indent(
+                            &textwrap::fill(
+                                &String::from_utf8_lossy(captured_stderr),
+                                textwrap::termwidth() - 4,
+                            ),
+                            "  ",
+                        )
+                        .trim_end(),
+                    );
+                }
+
                 self.writeln(
                     &format!("{:—<1$}", "", textwrap::termwidth()),
                     Color::Red,
