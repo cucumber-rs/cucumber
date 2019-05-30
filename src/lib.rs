@@ -6,8 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![cfg_attr(feature = "nightly", feature(set_stdio))]
-
 pub extern crate gherkin_rust as gherkin;
 pub extern crate globwalk;
 pub extern crate regex;

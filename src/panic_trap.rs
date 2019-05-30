@@ -1,7 +1,10 @@
-use std::io::{self, Write};
+use std::io::{Read, Seek, SeekFrom};
 use std::ops::Deref;
 use std::panic;
 use std::sync::{Arc, Mutex};
+
+use gag::Redirect;
+use tempfile::tempfile;
 
 #[derive(Clone)]
 pub struct PanicDetails {
@@ -29,19 +32,6 @@ impl PanicDetails {
     }
 }
 
-#[derive(Default)]
-struct Sink(Arc<Mutex<Vec<u8>>>);
-
-impl Write for Sink {
-    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        Write::write(&mut *self.0.lock().unwrap(), data)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.0.lock().unwrap().flush()
-    }
-}
-
 pub struct PanicTrap<T> {
     pub stdout: Vec<u8>,
     pub result: Result<T, PanicDetails>,
@@ -56,33 +46,26 @@ impl<T> PanicTrap<T> {
         }
     }
 
-    #[cfg(feature = "nightly")]
     fn run_quietly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
-        let stdout_sink = Arc::new(Mutex::new(vec![]));
-        let stdout_sink_hook = stdout_sink.clone();
-        let old_io = (
-            io::set_print(Some(Box::new(Sink(stdout_sink.clone())))),
-            io::set_panic(Some(Box::new(Sink(stdout_sink)))),
-        );
+        let mut tmp = tempfile().unwrap();
 
-        let loud_panic_trap = PanicTrap::run_loudly(f);
+        let loud_panic_trap = {
+            let _stdout =
+                Redirect::stdout(tmp.try_clone().unwrap()).expect("Failed to capture stdout");
+            let _stderr =
+                Redirect::stderr(tmp.try_clone().unwrap()).expect("Failed to capture stderr");
 
-        io::set_print(old_io.0);
-        io::set_panic(old_io.1);
+            PanicTrap::run_loudly(f)
+        };
 
-        let stdout = stdout_sink_hook
-            .lock()
-            .expect("Stdout mutex poisoned")
-            .clone();
+        let mut stdout = Vec::new();
+        tmp.seek(SeekFrom::Start(0)).unwrap();
+        tmp.read_to_end(&mut stdout).unwrap();
+
         PanicTrap {
             stdout,
             result: loud_panic_trap.result,
         }
-    }
-
-    #[cfg(not(feature = "nightly"))]
-    fn run_quietly<F: FnOnce() -> T>(_f: F) -> PanicTrap<T> {
-        panic!("PanicTrap cannot run quietly without the 'nightly' feature");
     }
 
     fn run_loudly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
