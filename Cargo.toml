@@ -8,6 +8,7 @@ readme = "README.md"
 repository = "https://github.com/bbqsrc/cucumber-rust"
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
+edition = "2018"
 build = "build.rs"
 
 [badges]

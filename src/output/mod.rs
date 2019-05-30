@@ -3,7 +3,8 @@ pub mod default;
 use std::path::Path;
 
 use gherkin;
-use TestResult;
+
+use crate::TestResult;
 
 pub trait OutputVisitor: Default {
     fn visit_start(&mut self);

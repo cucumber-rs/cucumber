@@ -1,15 +1,16 @@
-use gherkin;
-use pathdiff::diff_paths;
 use std;
 use std::collections::HashMap;
 use std::env;
 use std::io::Write;
 use std::path::Path;
+
+use gherkin;
+use pathdiff::diff_paths;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use textwrap;
-use TestResult;
 
-use OutputVisitor;
+use crate::OutputVisitor;
+use crate::TestResult;
 
 enum ScenarioResult {
     Pass,
