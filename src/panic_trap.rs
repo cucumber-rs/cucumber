@@ -1,7 +1,7 @@
 use std::io::{self, Write};
-use std::sync::{Arc, Mutex};
-use std::panic;
 use std::ops::Deref;
+use std::panic;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct PanicDetails {
@@ -20,14 +20,12 @@ impl PanicDetails {
             "Opaque panic payload".to_owned()
         };
 
-        let location = info.location()
-                .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
-                .unwrap_or_else(|| "Unknown location".to_owned());
+        let location = info
+            .location()
+            .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+            .unwrap_or_else(|| "Unknown location".to_owned());
 
-        PanicDetails {
-            payload,
-            location,
-        }
+        PanicDetails { payload, location }
     }
 }
 
@@ -64,7 +62,7 @@ impl<T> PanicTrap<T> {
         let stdout_sink_hook = stdout_sink.clone();
         let old_io = (
             io::set_print(Some(Box::new(Sink(stdout_sink.clone())))),
-            io::set_panic(Some(Box::new(Sink(stdout_sink))))
+            io::set_panic(Some(Box::new(Sink(stdout_sink)))),
         );
 
         let loud_panic_trap = PanicTrap::run_loudly(f);
@@ -72,7 +70,10 @@ impl<T> PanicTrap<T> {
         io::set_print(old_io.0);
         io::set_panic(old_io.1);
 
-        let stdout = stdout_sink_hook.lock().expect("Stdout mutex poisoned").clone();
+        let stdout = stdout_sink_hook
+            .lock()
+            .expect("Stdout mutex poisoned")
+            .clone();
         PanicTrap {
             stdout,
             result: loud_panic_trap.result,
@@ -95,14 +96,19 @@ impl<T> PanicTrap<T> {
             })
         });
 
-        let result = panic::catch_unwind(panic::AssertUnwindSafe(f))
-            .map_err(|_| last_panic.lock().expect("Last panic mutex poisoned").clone().expect("Panic occurred but no panic details were set"));
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(f)).map_err(|_| {
+            last_panic
+                .lock()
+                .expect("Last panic mutex poisoned")
+                .clone()
+                .expect("Panic occurred but no panic details were set")
+        });
 
         let _ = panic::take_hook();
 
         PanicTrap {
             stdout: vec![],
-            result
+            result,
         }
     }
 }

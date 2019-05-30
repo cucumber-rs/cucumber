@@ -8,30 +8,30 @@
 
 #![cfg_attr(feature = "nightly", feature(set_stdio))]
 
-pub extern crate gherkin_rust as gherkin;
-pub extern crate regex;
-pub extern crate globwalk;
-extern crate termcolor;
-extern crate pathdiff;
-extern crate textwrap;
 extern crate clap;
+pub extern crate gherkin_rust as gherkin;
+pub extern crate globwalk;
+extern crate pathdiff;
+pub extern crate regex;
+extern crate termcolor;
+extern crate textwrap;
 
 use std::collections::HashMap;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io::{Read, Write, stderr};
+use std::io::{stderr, Read, Write};
 use std::ops::Deref;
 use std::path::PathBuf;
 
 pub use gherkin::Scenario;
-use gherkin::{Step, StepType, Feature};
+use gherkin::{Feature, Step, StepType};
 use regex::Regex;
 
-mod output;
 pub mod cli;
+mod output;
 
-use output::OutputVisitor;
 pub use output::default::DefaultOutput;
+use output::OutputVisitor;
 
 mod panic_trap;
 use panic_trap::{PanicDetails, PanicTrap};
@@ -69,27 +69,25 @@ type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
 
 pub struct TestCase<T: Default> {
-    pub test: TestFn<T>
+    pub test: TestFn<T>,
 }
 
 impl<T: Default> TestCase<T> {
     pub fn new(test: TestFn<T>) -> TestCase<T> {
-        TestCase {
-            test
-        }
+        TestCase { test }
     }
 }
 
 pub struct RegexTestCase<'a, T: 'a + Default> {
     pub test: TestRegexFn<T>,
-    _marker: std::marker::PhantomData<&'a T>
+    _marker: std::marker::PhantomData<&'a T>,
 }
 
 impl<'a, T: Default> RegexTestCase<'a, T> {
     pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
         RegexTestCase {
             test,
-            _marker: std::marker::PhantomData
+            _marker: std::marker::PhantomData,
         }
     }
 }
@@ -99,7 +97,7 @@ pub struct Steps<'s, T: 's + Default> {
     pub given: HashMap<&'static str, TestCase<T>>,
     pub when: HashMap<&'static str, TestCase<T>>,
     pub then: HashMap<&'static str, TestCase<T>>,
-    pub regex: RegexSteps<'s, T>
+    pub regex: RegexSteps<'s, T>,
 }
 
 #[derive(Default)]
@@ -109,9 +107,13 @@ pub struct RegexSteps<'s, T: 's + Default> {
     pub then: HashMap<HashableRegex, RegexTestCase<'s, T>>,
 }
 
-pub enum TestCaseType<'a, T> where T: 'a, T: Default {
+pub enum TestCaseType<'a, T>
+where
+    T: 'a,
+    T: Default,
+{
     Normal(&'a TestCase<T>),
-    Regex(&'a RegexTestCase<'a, T>, Vec<String>)
+    Regex(&'a RegexTestCase<'a, T>, Vec<String>),
 }
 
 pub enum TestResult {
@@ -119,7 +121,7 @@ pub enum TestResult {
     Skipped,
     Unimplemented,
     Pass,
-    Fail(PanicDetails, Vec<u8>)
+    Fail(PanicDetails, Vec<u8>),
 }
 
 impl<'s, T: Default> Steps<'s, T> {
@@ -127,7 +129,7 @@ impl<'s, T: Default> Steps<'s, T> {
         match ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
-            StepType::Then => &self.then
+            StepType::Then => &self.then,
         }
     }
 
@@ -135,7 +137,7 @@ impl<'s, T: Default> Steps<'s, T> {
         match ty {
             StepType::Given => &self.regex.given,
             StepType::When => &self.regex.when,
-            StepType::Then => &self.regex.then
+            StepType::Then => &self.regex.then,
         }
     }
 
@@ -147,7 +149,8 @@ impl<'s, T: Default> Steps<'s, T> {
             None => {
                 let regex_bag = self.regex_bag_for(step.ty);
 
-                let result = regex_bag.iter()
+                let result = regex_bag
+                    .iter()
                     .find(|(regex, _)| regex.is_match(&step.value));
 
                 match result {
@@ -155,13 +158,14 @@ impl<'s, T: Default> Steps<'s, T> {
                         let matches = regex.0.captures(&step.value).unwrap();
                         let matches: Vec<String> = matches
                             .iter()
-                            .map(|x| x.map(|s| s.as_str().to_string()).unwrap_or_else(String::new))
+                            .map(|x| {
+                                x.map(|s| s.as_str().to_string())
+                                    .unwrap_or_else(String::new)
+                            })
                             .collect();
                         Some(TestCaseType::Regex(tc, matches))
-                    },
-                    None => {
-                        None
                     }
+                    None => None,
                 }
             }
         }
@@ -171,15 +175,21 @@ impl<'s, T: Default> Steps<'s, T> {
         &'s self,
         world: &mut T,
         test_type: TestCaseType<'s, T>,
-        step: &'a gherkin::Step
+        step: &'a gherkin::Step,
     ) {
         match test_type {
             TestCaseType::Normal(t) => (t.test)(world, &step),
-            TestCaseType::Regex(t, ref c) => (t.test)(world, c, &step)
+            TestCaseType::Regex(t, ref c) => (t.test)(world, c, &step),
         };
     }
 
-    fn run_test<'a>(&'s self, world: &mut T, test_type: TestCaseType<'s, T>, step: &'a Step, suppress_output: bool) -> TestResult {
+    fn run_test<'a>(
+        &'s self,
+        world: &mut T,
+        test_type: TestCaseType<'s, T>,
+        step: &'a Step,
+        suppress_output: bool,
+    ) -> TestResult {
         let test_result = PanicTrap::run(suppress_output, move || {
             self.run_test_inner(world, test_type, &step)
         });
@@ -205,7 +215,7 @@ impl<'s, T: Default> Steps<'s, T> {
         _before_fns: &'a Option<&[HelperFn]>,
         after_fns: &'a Option<&[HelperFn]>,
         suppress_output: bool,
-        output: &mut impl OutputVisitor
+        output: &mut impl OutputVisitor,
     ) -> bool {
         output.visit_scenario(rule, &scenario);
 
@@ -216,7 +226,10 @@ impl<'s, T: Default> Steps<'s, T> {
             match panic_trap.result {
                 Ok(v) => v,
                 Err(panic_info) => {
-                    eprintln!("Panic caught during world creation. Panic location: {}", panic_info.location);
+                    eprintln!(
+                        "Panic caught during world creation. Panic location: {}",
+                        panic_info.location
+                    );
                     if !panic_trap.stdout.is_empty() {
                         eprintln!("Captured output was:");
                         Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
@@ -260,11 +273,11 @@ impl<'s, T: Default> Steps<'s, T> {
                 let result = self.run_test(&mut world, test_type, &step, suppress_output);
                 output.visit_step_result(rule, &scenario, &step, &result);
                 match result {
-                    TestResult::Pass => {},
-                    TestResult::Fail(_, _) => { 
+                    TestResult::Pass => {}
+                    TestResult::Fail(_, _) => {
                         is_success = false;
                         is_skipping = true;
-                    },
+                    }
                     _ => {
                         is_skipping = true;
                         output.visit_scenario_skipped(rule, &scenario);
@@ -293,7 +306,7 @@ impl<'s, T: Default> Steps<'s, T> {
         before_fns: Option<&[HelperFn]>,
         after_fns: Option<&[HelperFn]>,
         options: &cli::CliOptions,
-        output: &mut impl OutputVisitor
+        output: &mut impl OutputVisitor,
     ) -> bool {
         let mut is_success = true;
 
@@ -301,7 +314,7 @@ impl<'s, T: Default> Steps<'s, T> {
             // If a tag is specified and the scenario does not have the tag, skip the test.
             let should_skip = match (&scenario.tags, &options.tag) {
                 (Some(ref tags), Some(ref tag)) => !tags.contains(tag),
-                _ => false
+                _ => false,
             };
 
             if should_skip {
@@ -315,7 +328,15 @@ impl<'s, T: Default> Steps<'s, T> {
                 }
             }
 
-            if !self.run_scenario(&feature, rule, &scenario, &before_fns, &after_fns, options.suppress_output, output) {
+            if !self.run_scenario(
+                &feature,
+                rule,
+                &scenario,
+                &before_fns,
+                &after_fns,
+                options.suppress_output,
+                output,
+            ) {
                 is_success = false;
             }
         }
@@ -329,7 +350,7 @@ impl<'s, T: Default> Steps<'s, T> {
         before_fns: Option<&[HelperFn]>,
         after_fns: Option<&[HelperFn]>,
         options: cli::CliOptions,
-        output: &mut impl OutputVisitor
+        output: &mut impl OutputVisitor,
     ) -> bool {
         output.visit_start();
 
@@ -339,7 +360,7 @@ impl<'s, T: Default> Steps<'s, T> {
             let mut file = File::open(&path).expect("file to open");
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
-            
+
             let feature = match Feature::try_from(&*buffer) {
                 Ok(v) => v,
                 Err(e) => {
@@ -350,20 +371,36 @@ impl<'s, T: Default> Steps<'s, T> {
             };
 
             output.visit_feature(&feature, &path);
-            if !self.run_scenarios(&feature, None, &feature.scenarios, before_fns, after_fns, &options, output) {
+            if !self.run_scenarios(
+                &feature,
+                None,
+                &feature.scenarios,
+                before_fns,
+                after_fns,
+                &options,
+                output,
+            ) {
                 is_success = false;
             }
 
             for rule in &feature.rules {
                 output.visit_rule(&rule);
-                if !self.run_scenarios(&feature, Some(&rule), &rule.scenarios, before_fns, after_fns, &options, output) {
+                if !self.run_scenarios(
+                    &feature,
+                    Some(&rule),
+                    &rule.scenarios,
+                    before_fns,
+                    after_fns,
+                    &options,
+                    output,
+                ) {
                     is_success = false;
                 }
                 output.visit_rule_end(&rule);
             }
             output.visit_feature_end(&feature);
         }
-        
+
         output.visit_finish();
 
         is_success
@@ -530,7 +567,7 @@ macro_rules! cucumber {
             let walker = match &options.feature {
                 Some(v) => glob(v).expect("feature glob is invalid"),
                 None => match Path::new($featurepath).canonicalize() {
-                    Ok(p) => { 
+                    Ok(p) => {
                         GlobWalkerBuilder::new(p, "*.feature")
                             .case_insensitive(true)
                             .build()
@@ -566,7 +603,7 @@ macro_rules! cucumber {
 
                 combined_steps
             };
-            
+
             let mut output = DefaultOutput::default();
 
             let setup_fn: Option<fn() -> ()> = $setupfn;
@@ -585,12 +622,11 @@ macro_rules! cucumber {
     }
 }
 
-
 #[macro_export]
 macro_rules! skip {
     () => {
         unimplemented!("cucumber test skipped");
-    }
+    };
 }
 
 #[macro_export]

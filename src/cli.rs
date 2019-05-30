@@ -1,9 +1,9 @@
-use clap::{Arg, App};
+use clap::{App, Arg};
 use regex::Regex;
 
 #[derive(Debug)]
 pub enum CliError {
-    InvalidFilterRegex
+    InvalidFilterRegex,
 }
 
 pub struct CliOptions {
@@ -18,27 +18,35 @@ pub fn make_app() -> Result<CliOptions, CliError> {
         .version(env!("CARGO_PKG_VERSION"))
         .author("Brendan Molloy <brendan@bbqsrc.net>")
         .about("Run the tests, pet a dog!")
-        .arg(Arg::with_name("filter")
-            .short("e")
-            .long("expression")
-            .value_name("regex")
-            .help("Regex to select scenarios from")
-            .takes_value(true))
-        .arg(Arg::with_name("feature")
-            .short("f")
-            .long("feature")
-            .value_name("feature")
-            .help("Specific feature file(s) to use with a glob (optional)")
-            .takes_value(true))
-        .arg(Arg::with_name("tag")
-            .short("t")
-            .long("tag")
-            .value_name("tag")
-            .help("Filter by specified tag")
-            .takes_value(true))
-        .arg(Arg::with_name("nocapture")
-            .long("nocapture")
-            .help("Use this flag to disable suppression of output from tests"))
+        .arg(
+            Arg::with_name("filter")
+                .short("e")
+                .long("expression")
+                .value_name("regex")
+                .help("Regex to select scenarios from")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("feature")
+                .short("f")
+                .long("feature")
+                .value_name("feature")
+                .help("Specific feature file(s) to use with a glob (optional)")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("tag")
+                .short("t")
+                .long("tag")
+                .value_name("tag")
+                .help("Filter by specified tag")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("nocapture")
+                .long("nocapture")
+                .help("Use this flag to disable suppression of output from tests"),
+        )
         .get_matches();
 
     let filter = if let Some(filter) = matches.value_of("filter") {
@@ -57,6 +65,6 @@ pub fn make_app() -> Result<CliOptions, CliError> {
         feature,
         filter,
         tag,
-        suppress_output
+        suppress_output,
     })
 }
