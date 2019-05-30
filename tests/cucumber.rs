@@ -1,15 +1,12 @@
 #![allow(clippy::assertions_on_constants)]
 
-#[macro_use]
-extern crate cucumber_rust;
-
-use std::default::Default;
+use cucumber_rust::{after, before, cucumber, World};
 
 pub struct MyWorld {
     pub thing: bool,
 }
 
-impl cucumber_rust::World for MyWorld {}
+impl World for MyWorld {}
 
 impl Default for MyWorld {
     fn default() -> MyWorld {
@@ -19,7 +16,9 @@ impl Default for MyWorld {
 
 #[cfg(test)]
 mod basic {
-    steps!(::MyWorld => {
+    use cucumber_rust::steps;
+
+    steps!(crate::MyWorld => {
         when regex "thing (\\d+) does (.+)" (usize, String) |_world, _sz, _txt, _step| {
 
         };
@@ -70,7 +69,7 @@ fn setup() {}
 
 cucumber! {
     features: "./features",
-    world: ::MyWorld,
+    world: crate::MyWorld,
     steps: &[
         basic::steps
     ],

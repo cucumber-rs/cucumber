@@ -8,13 +8,9 @@
 
 #![cfg_attr(feature = "nightly", feature(set_stdio))]
 
-extern crate clap;
 pub extern crate gherkin_rust as gherkin;
 pub extern crate globwalk;
-extern crate pathdiff;
 pub extern crate regex;
-extern crate termcolor;
-extern crate textwrap;
 
 use std::collections::HashMap;
 use std::fs::File;
