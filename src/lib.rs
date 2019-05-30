@@ -9,54 +9,28 @@
 pub extern crate gherkin_rust as gherkin;
 pub extern crate globwalk;
 
+pub mod cli;
+mod hashable_regex;
+mod output;
+mod panic_trap;
+
 use std::collections::HashMap;
 use std::fs::File;
-use std::hash::{Hash, Hasher};
 use std::io::{stderr, Read, Write};
-use std::ops::Deref;
 use std::path::PathBuf;
 
 use gherkin::Feature;
 pub use gherkin::{Scenario, Step, StepType};
 use regex::Regex;
 
-pub mod cli;
-mod output;
-
+use hashable_regex::HashableRegex;
 pub use output::default::DefaultOutput;
 use output::OutputVisitor;
-
-mod panic_trap;
 use panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
 
 type HelperFn = fn(&Scenario) -> ();
-
-#[derive(Debug, Clone)]
-struct HashableRegex(pub Regex);
-
-impl Hash for HashableRegex {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_str().hash(state);
-    }
-}
-
-impl PartialEq for HashableRegex {
-    fn eq(&self, other: &HashableRegex) -> bool {
-        self.0.as_str() == other.0.as_str()
-    }
-}
-
-impl Eq for HashableRegex {}
-
-impl Deref for HashableRegex {
-    type Target = Regex;
-
-    fn deref(&self) -> &Regex {
-        &self.0
-    }
-}
 
 type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
