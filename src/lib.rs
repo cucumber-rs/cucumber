@@ -64,52 +64,33 @@ impl Deref for HashableRegex {
 type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
 
-pub struct TestCase<T: Default> {
-    pub test: TestFn<T>,
-}
+pub struct TestCase<T: Default>(pub TestFn<T>);
+pub struct RegexTestCase<T: Default>(pub TestRegexFn<T>);
 
-impl<T: Default> TestCase<T> {
-    pub fn new(test: TestFn<T>) -> TestCase<T> {
-        TestCase { test }
-    }
-}
+type TestBag<T> = HashMap<&'static str, TestCase<T>>;
+type RegexBag<T> = HashMap<HashableRegex, RegexTestCase<T>>;
 
-pub struct RegexTestCase<'a, T: 'a + Default> {
-    pub test: TestRegexFn<T>,
-    _marker: std::marker::PhantomData<&'a T>,
-}
-
-impl<'a, T: Default> RegexTestCase<'a, T> {
-    pub fn new(test: TestRegexFn<T>) -> RegexTestCase<'a, T> {
-        RegexTestCase {
-            test,
-            _marker: std::marker::PhantomData,
-        }
-    }
+#[derive(Default)]
+pub struct Steps<T: Default> {
+    pub given: TestBag<T>,
+    pub when: TestBag<T>,
+    pub then: TestBag<T>,
+    pub regex: RegexSteps<T>,
 }
 
 #[derive(Default)]
-pub struct Steps<'s, T: 's + Default> {
-    pub given: HashMap<&'static str, TestCase<T>>,
-    pub when: HashMap<&'static str, TestCase<T>>,
-    pub then: HashMap<&'static str, TestCase<T>>,
-    pub regex: RegexSteps<'s, T>,
-}
-
-#[derive(Default)]
-pub struct RegexSteps<'s, T: 's + Default> {
-    pub given: HashMap<HashableRegex, RegexTestCase<'s, T>>,
-    pub when: HashMap<HashableRegex, RegexTestCase<'s, T>>,
-    pub then: HashMap<HashableRegex, RegexTestCase<'s, T>>,
+pub struct RegexSteps<T: Default> {
+    pub given: RegexBag<T>,
+    pub when: RegexBag<T>,
+    pub then: RegexBag<T>,
 }
 
 pub enum TestCaseType<'a, T>
 where
-    T: 'a,
-    T: Default,
+    T: 'a + Default,
 {
     Normal(&'a TestCase<T>),
-    Regex(&'a RegexTestCase<'a, T>, Vec<String>),
+    Regex(&'a RegexTestCase<T>, Vec<String>),
 }
 
 pub enum TestResult {
@@ -120,8 +101,8 @@ pub enum TestResult {
     Fail(PanicDetails, Vec<u8>),
 }
 
-impl<'s, T: Default> Steps<'s, T> {
-    fn test_bag_for(&self, ty: StepType) -> &HashMap<&'static str, TestCase<T>> {
+impl<T: Default> Steps<T> {
+    fn test_bag_for(&self, ty: StepType) -> &TestBag<T> {
         match ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
@@ -129,7 +110,7 @@ impl<'s, T: Default> Steps<'s, T> {
         }
     }
 
-    fn regex_bag_for<'a>(&'a self, ty: StepType) -> &HashMap<HashableRegex, RegexTestCase<'a, T>> {
+    fn regex_bag_for(&self, ty: StepType) -> &RegexBag<T> {
         match ty {
             StepType::Given => &self.regex.given,
             StepType::When => &self.regex.when,
@@ -137,57 +118,44 @@ impl<'s, T: Default> Steps<'s, T> {
         }
     }
 
-    fn test_type(&'s self, step: &Step) -> Option<TestCaseType<'s, T>> {
-        let test_bag = self.test_bag_for(step.ty);
-
-        match test_bag.get(&*step.value) {
-            Some(v) => Some(TestCaseType::Normal(v)),
-            None => {
-                let regex_bag = self.regex_bag_for(step.ty);
-
-                let result = regex_bag
-                    .iter()
-                    .find(|(regex, _)| regex.is_match(&step.value));
-
-                match result {
-                    Some((regex, tc)) => {
-                        let matches = regex.0.captures(&step.value).unwrap();
-                        let matches: Vec<String> = matches
-                            .iter()
-                            .map(|x| {
-                                x.map(|s| s.as_str().to_string())
-                                    .unwrap_or_else(String::new)
-                            })
-                            .collect();
-                        Some(TestCaseType::Regex(tc, matches))
-                    }
-                    None => None,
-                }
-            }
+    fn test_type<'a>(&'a self, step: &Step) -> Option<TestCaseType<'a, T>> {
+        if let Some(t) = self.test_bag_for(step.ty).get(&*step.value) {
+            return Some(TestCaseType::Normal(t));
         }
+
+        if let Some((regex, t)) = self
+            .regex_bag_for(step.ty)
+            .iter()
+            .find(|(regex, _)| regex.is_match(&step.value))
+        {
+            let matches = regex
+                .0
+                .captures(&step.value)
+                .unwrap()
+                .iter()
+                .map(|match_| {
+                    match_
+                        .map(|match_| match_.as_str().to_owned())
+                        .unwrap_or_default()
+                })
+                .collect();
+
+            return Some(TestCaseType::Regex(t, matches));
+        }
+
+        None
     }
 
-    fn run_test_inner<'a>(
-        &'s self,
+    fn run_test(
+        &self,
         world: &mut T,
-        test_type: TestCaseType<'s, T>,
-        step: &'a gherkin::Step,
-    ) {
-        match test_type {
-            TestCaseType::Normal(t) => (t.test)(world, &step),
-            TestCaseType::Regex(t, ref c) => (t.test)(world, c, &step),
-        };
-    }
-
-    fn run_test<'a>(
-        &'s self,
-        world: &mut T,
-        test_type: TestCaseType<'s, T>,
-        step: &'a Step,
+        test_type: TestCaseType<'_, T>,
+        step: &Step,
         suppress_output: bool,
     ) -> TestResult {
-        let test_result = PanicTrap::run(suppress_output, move || {
-            self.run_test_inner(world, test_type, &step)
+        let test_result = PanicTrap::run(suppress_output, move || match test_type {
+            TestCaseType::Normal(t) => (t.0)(world, &step),
+            TestCaseType::Regex(t, ref c) => (t.0)(world, c, &step),
         });
 
         match test_result.result {
@@ -203,13 +171,13 @@ impl<'s, T: Default> Steps<'s, T> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn run_scenario<'a>(
-        &'s self,
-        feature: &'a gherkin::Feature,
-        rule: Option<&'a gherkin::Rule>,
-        scenario: &'a gherkin::Scenario,
-        before_fns: &'a Option<&[HelperFn]>,
-        after_fns: &'a Option<&[HelperFn]>,
+    fn run_scenario(
+        &self,
+        feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
+        scenario: &gherkin::Scenario,
+        before_fns: &Option<&[HelperFn]>,
+        after_fns: &Option<&[HelperFn]>,
         suppress_output: bool,
         output: &mut impl OutputVisitor,
     ) -> bool {
@@ -220,8 +188,6 @@ impl<'s, T: Default> Steps<'s, T> {
                 f(&scenario);
             }
         }
-
-        let mut is_success = true;
 
         let mut world = {
             let panic_trap = PanicTrap::run(suppress_output, T::default);
@@ -241,20 +207,17 @@ impl<'s, T: Default> Steps<'s, T> {
             }
         };
 
-        let mut steps: Vec<&'a Step> = vec![];
-        if let Some(ref bg) = &feature.background {
-            for s in &bg.steps {
-                steps.push(&s);
-            }
-        }
-
-        for s in &scenario.steps {
-            steps.push(&s);
-        }
-
+        let mut is_success = true;
         let mut is_skipping = false;
 
-        for step in steps.iter() {
+        let steps = feature
+            .background
+            .iter()
+            .map(|bg| bg.steps.iter())
+            .flatten()
+            .chain(scenario.steps.iter());
+
+        for step in steps {
             output.visit_step(rule, &scenario, &step);
 
             let test_type = match self.test_type(&step) {
@@ -300,10 +263,10 @@ impl<'s, T: Default> Steps<'s, T> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn run_scenarios<'a>(
-        &'s self,
-        feature: &'a gherkin::Feature,
-        rule: Option<&'a gherkin::Rule>,
+    fn run_scenarios(
+        &self,
+        feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
         scenarios: &[gherkin::Scenario],
         before_fns: Option<&[HelperFn]>,
         after_fns: Option<&[HelperFn]>,
@@ -347,7 +310,7 @@ impl<'s, T: Default> Steps<'s, T> {
     }
 
     pub fn run(
-        &'s self,
+        &self,
         feature_files: Vec<PathBuf>,
         before_fns: Option<&[HelperFn]>,
         after_fns: Option<&[HelperFn]>,
@@ -639,7 +602,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase::new($body));
+                $crate::RegexTestCase($body));
     };
 
     (
@@ -648,7 +611,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase::new($body));
+                $crate::RegexTestCase($body));
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
@@ -659,7 +622,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                $crate::RegexTestCase(|world: &mut $worldtype, matches, step| {
                     let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
                     let mut matches = matches.into_iter().enumerate();
 
@@ -680,7 +643,7 @@ macro_rules! steps {
     ) => {
         $tests.regex.$ty.insert(
             $crate::HashableRegex($crate::regex::Regex::new($name).expect(&format!("{} is a valid regex", $name))),
-                $crate::RegexTestCase::new(|world: &mut $worldtype, matches, step| {
+                $crate::RegexTestCase(|world: &mut $worldtype, matches, step| {
                     let closure: Box<Fn(&mut $worldtype, $($arg_type,)* &$crate::gherkin::Step) -> ()> = Box::new($body);
                     let mut matches = matches.into_iter().enumerate().skip(1);
 
@@ -701,14 +664,14 @@ macro_rules! steps {
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr;
     ) => {
-        $tests.$ty.insert($name, $crate::TestCase::new($body));
+        $tests.$ty.insert($name, $crate::TestCase($body));
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident $name:tt $body:expr; $( $items:tt )*
     ) => {
-        $tests.$ty.insert($name, $crate::TestCase::new($body));
+        $tests.$ty.insert($name, $crate::TestCase($body));
 
         steps!(@gather_steps, $worldtype, $tests, $( $items )*);
     };
@@ -717,11 +680,11 @@ macro_rules! steps {
         $worldtype:path => { $( $items:tt )* }
     ) => {
         #[allow(unused_imports)]
-        pub fn steps<'a>() -> $crate::Steps<'a, $worldtype> {
+        pub fn steps() -> $crate::Steps<$worldtype> {
             use std::path::Path;
             use std::process;
 
-            let mut tests: $crate::Steps<'a, $worldtype> = $crate::Steps::default();
+            let mut tests: $crate::Steps<$worldtype> = Default::default();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
             tests
         }
