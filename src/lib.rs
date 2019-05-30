@@ -212,12 +212,18 @@ impl<'s, T: Default> Steps<'s, T> {
         feature: &'a gherkin::Feature,
         rule: Option<&'a gherkin::Rule>,
         scenario: &'a gherkin::Scenario,
-        _before_fns: &'a Option<&[HelperFn]>,
+        before_fns: &'a Option<&[HelperFn]>,
         after_fns: &'a Option<&[HelperFn]>,
         suppress_output: bool,
         output: &mut impl OutputVisitor,
     ) -> bool {
         output.visit_scenario(rule, &scenario);
+
+        if let Some(before_fns) = before_fns {
+            for f in before_fns.iter() {
+                f(&scenario);
+            }
+        }
 
         let mut is_success = true;
 
