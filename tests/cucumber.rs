@@ -48,6 +48,18 @@ mod basic {
         then "another thing" |_world, _step| {
             assert!(true)
         };
+
+        then "things can also be data tables" |_world, step| {
+            let table = step.table().unwrap().clone();
+
+            assert_eq!(table.header, vec!["key", "value"]);
+
+            let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
+            let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
+
+            assert_eq!(expected_keys, vec!["a", "b"]);
+            assert_eq!(expected_values, vec!["fizz", "buzz"]);
+        };
     });
 }
 
