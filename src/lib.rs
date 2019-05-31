@@ -32,30 +32,30 @@ pub trait World: Default {}
 
 type HelperFn = fn(&Scenario) -> ();
 
-type TestFn<T> = fn(&mut T, &Step) -> ();
-type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
+type TestFn<W> = fn(&mut W, &Step) -> ();
+type TestRegexFn<W> = fn(&mut W, &[String], &Step) -> ();
 
-type TestBag<T> = HashMap<&'static str, TestFn<T>>;
-type RegexBag<T> = HashMap<HashableRegex, TestRegexFn<T>>;
+type TestBag<W> = HashMap<&'static str, TestFn<W>>;
+type RegexBag<W> = HashMap<HashableRegex, TestRegexFn<W>>;
 
 #[derive(Default)]
-pub struct Steps<T: Default> {
-    given: TestBag<T>,
-    when: TestBag<T>,
-    then: TestBag<T>,
-    regex: RegexSteps<T>,
+pub struct Steps<W: World> {
+    given: TestBag<W>,
+    when: TestBag<W>,
+    then: TestBag<W>,
+    regex: RegexSteps<W>,
 }
 
 #[derive(Default)]
-struct RegexSteps<T: Default> {
-    given: RegexBag<T>,
-    when: RegexBag<T>,
-    then: RegexBag<T>,
+struct RegexSteps<W: World> {
+    given: RegexBag<W>,
+    when: RegexBag<W>,
+    then: RegexBag<W>,
 }
 
-enum TestCaseType<'a, T: 'a + Default> {
-    Normal(&'a TestFn<T>),
-    Regex(&'a TestRegexFn<T>, Vec<String>),
+enum TestCaseType<'a, W: 'a + Default> {
+    Normal(&'a TestFn<W>),
+    Regex(&'a TestRegexFn<W>, Vec<String>),
 }
 
 pub enum TestResult {
@@ -66,8 +66,8 @@ pub enum TestResult {
     Fail(PanicDetails, Vec<u8>, Vec<u8>),
 }
 
-impl<T: Default> Steps<T> {
-    fn test_bag_for(&self, ty: StepType) -> &TestBag<T> {
+impl<W: World> Steps<W> {
+    fn test_bag_for(&self, ty: StepType) -> &TestBag<W> {
         match ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
@@ -75,7 +75,7 @@ impl<T: Default> Steps<T> {
         }
     }
 
-    fn test_bag_mut_for(&mut self, ty: StepType) -> &mut TestBag<T> {
+    fn test_bag_mut_for(&mut self, ty: StepType) -> &mut TestBag<W> {
         match ty {
             StepType::Given => &mut self.given,
             StepType::When => &mut self.when,
@@ -83,7 +83,7 @@ impl<T: Default> Steps<T> {
         }
     }
 
-    fn regex_bag_for(&self, ty: StepType) -> &RegexBag<T> {
+    fn regex_bag_for(&self, ty: StepType) -> &RegexBag<W> {
         match ty {
             StepType::Given => &self.regex.given,
             StepType::When => &self.regex.when,
@@ -91,7 +91,7 @@ impl<T: Default> Steps<T> {
         }
     }
 
-    fn regex_bag_mut_for(&mut self, ty: StepType) -> &mut RegexBag<T> {
+    fn regex_bag_mut_for(&mut self, ty: StepType) -> &mut RegexBag<W> {
         match ty {
             StepType::Given => &mut self.regex.given,
             StepType::When => &mut self.regex.when,
@@ -99,7 +99,7 @@ impl<T: Default> Steps<T> {
         }
     }
 
-    fn test_type<'a>(&'a self, step: &Step) -> Option<TestCaseType<'a, T>> {
+    fn test_type<'a>(&'a self, step: &Step) -> Option<TestCaseType<'a, W>> {
         if let Some(t) = self.test_bag_for(step.ty).get(&*step.value) {
             return Some(TestCaseType::Normal(t));
         }
@@ -127,11 +127,11 @@ impl<T: Default> Steps<T> {
         None
     }
 
-    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<T>) {
+    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) {
         self.test_bag_mut_for(ty).insert(name, test_fn);
     }
 
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<T>) {
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) {
         let regex = Regex::new(regex)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
 
@@ -157,8 +157,8 @@ impl<T: Default> Steps<T> {
 
     fn run_test(
         &self,
-        world: &mut T,
-        test_type: TestCaseType<'_, T>,
+        world: &mut W,
+        test_type: TestCaseType<'_, W>,
         step: &Step,
         suppress_output: bool,
     ) -> TestResult {
@@ -199,7 +199,7 @@ impl<T: Default> Steps<T> {
         }
 
         let mut world = {
-            let panic_trap = PanicTrap::run(suppress_output, T::default);
+            let panic_trap = PanicTrap::run(suppress_output, W::default);
             match panic_trap.result {
                 Ok(v) => v,
                 Err(panic_info) => {
