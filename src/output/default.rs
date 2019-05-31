@@ -506,13 +506,6 @@ impl OutputVisitor for DefaultOutput {
                 self.scenarios
                     .insert(scenario.clone(), ScenarioResult::Fail);
             }
-            TestResult::MutexPoisoned => {
-                self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                self.print_step_extras(step);
-                self.write(&format!("{}  ⚡ ", indent), Color::Yellow, false);
-                self.println("Skipped due to previous error (poisoned)");
-                self.fail_count += 1;
-            }
             TestResult::Skipped => {
                 self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
                 self.print_step_extras(step);

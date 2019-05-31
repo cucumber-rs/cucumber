@@ -53,13 +53,12 @@ struct RegexSteps<W: World> {
     then: RegexBag<W>,
 }
 
-enum TestCaseType<'a, W: 'a + Default> {
+enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestFn<W>),
     Regex(&'a TestRegexFn<W>, Vec<String>),
 }
 
 pub enum TestResult {
-    MutexPoisoned,
     Skipped,
     Unimplemented,
     Pass,
@@ -162,7 +161,7 @@ impl<W: World> Steps<W> {
         step: &Step,
         suppress_output: bool,
     ) -> TestResult {
-        let test_result = PanicTrap::run(suppress_output, move || match test_type {
+        let test_result = PanicTrap::run(suppress_output, || match test_type {
             TestCaseType::Normal(t) => t(world, &step),
             TestCaseType::Regex(t, ref c) => t(world, c, &step),
         });
@@ -569,10 +568,9 @@ macro_rules! cucumber {
             let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
             let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
 
-            match setup_fn {
-                Some(f) => f(),
-                None => {}
-            };
+            if let Some(setup_fn) = setup_fn {
+                setup_fn();
+            }
 
             if !tests.run(feature_files, before_fns, after_fns, options, &mut output) {
                 process::exit(1);
