@@ -646,16 +646,14 @@ macro_rules! steps {
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr;
     ) => {
-        $tests.add_regex(steps!(@step_type $ty), $name, steps!(@parse_matches $worldtype, ($($arg_type),*) $body));
+        steps!(@gather_steps, $worldtype, $tests, $ty regex $name steps!(@parse_matches $worldtype, ($($arg_type),*) $body););
     };
 
     (
         @gather_steps, $worldtype:path, $tests:tt,
         $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr; $( $items:tt )*
     ) => {
-        $tests.add_regex(steps!(@step_type $ty), $name, steps!(@parse_matches $worldtype, ($($arg_type),*) $body));
-
-        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
+        steps!(@gather_steps, $worldtype, $tests, $ty regex $name steps!(@parse_matches $worldtype, ($($arg_type),*) $body); $( $items )*);
     };
 
     (
