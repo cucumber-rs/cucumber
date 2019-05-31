@@ -35,11 +35,8 @@ type HelperFn = fn(&Scenario) -> ();
 type TestFn<T> = fn(&mut T, &Step) -> ();
 type TestRegexFn<T> = fn(&mut T, &[String], &Step) -> ();
 
-struct TestCase<T: Default>(pub TestFn<T>);
-struct RegexTestCase<T: Default>(pub TestRegexFn<T>);
-
-type TestBag<T> = HashMap<&'static str, TestCase<T>>;
-type RegexBag<T> = HashMap<HashableRegex, RegexTestCase<T>>;
+type TestBag<T> = HashMap<&'static str, TestFn<T>>;
+type RegexBag<T> = HashMap<HashableRegex, TestRegexFn<T>>;
 
 #[derive(Default)]
 pub struct Steps<T: Default> {
@@ -57,8 +54,8 @@ struct RegexSteps<T: Default> {
 }
 
 enum TestCaseType<'a, T: 'a + Default> {
-    Normal(&'a TestCase<T>),
-    Regex(&'a RegexTestCase<T>, Vec<String>),
+    Normal(&'a TestFn<T>),
+    Regex(&'a TestRegexFn<T>, Vec<String>),
 }
 
 pub enum TestResult {
@@ -131,7 +128,7 @@ impl<T: Default> Steps<T> {
     }
 
     pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<T>) {
-        self.test_bag_mut_for(ty).insert(name, TestCase(test_fn));
+        self.test_bag_mut_for(ty).insert(name, test_fn);
     }
 
     pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<T>) {
@@ -139,7 +136,7 @@ impl<T: Default> Steps<T> {
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
 
         self.regex_bag_mut_for(ty)
-            .insert(HashableRegex(regex), RegexTestCase(test_fn));
+            .insert(HashableRegex(regex), test_fn);
     }
 
     pub fn combine(iter: impl Iterator<Item = Self>) -> Self {
@@ -166,8 +163,8 @@ impl<T: Default> Steps<T> {
         suppress_output: bool,
     ) -> TestResult {
         let test_result = PanicTrap::run(suppress_output, move || match test_type {
-            TestCaseType::Normal(t) => (t.0)(world, &step),
-            TestCaseType::Regex(t, ref c) => (t.0)(world, c, &step),
+            TestCaseType::Normal(t) => t(world, &step),
+            TestCaseType::Regex(t, ref c) => t(world, c, &step),
         });
 
         match test_result.result {
