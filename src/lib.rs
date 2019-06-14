@@ -532,10 +532,7 @@ macro_rules! cucumber {
             use $crate::{Steps, World, DefaultOutput};
             use $crate::cli::make_app;
 
-            let options = match make_app() {
-                Ok(v) => v,
-                Err(e) => panic!(e)
-            };
+            let options = make_app().unwrap();
 
             let walker = match &options.feature {
                 Some(v) => glob(v).expect("feature glob is invalid"),
