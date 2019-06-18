@@ -1,55 +1,54 @@
-#![allow(clippy::assertions_on_constants)]
-
-use cucumber_rust::{after, before, cucumber, World};
+extern crate cucumber_rust as cucumber;
+use cucumber::{cucumber, steps, before, after};
 
 pub struct MyWorld {
-    pub thing: bool,
+    // You can use this struct for mutable context in scenarios.
+    foo: String
 }
 
-impl World for MyWorld {}
-
-impl Default for MyWorld {
+impl cucumber::World for MyWorld {}
+impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
-        MyWorld { thing: false }
+        // This function is called every time a new scenario is started
+        MyWorld { 
+            foo: "a default string".to_string()
+        }
     }
 }
 
-#[cfg(test)]
-mod basic {
-    use cucumber_rust::steps;
+mod example_steps {
+    use cucumber::steps;
 
+    // Any type that implements cucumber::World + Default can be the world
     steps!(crate::MyWorld => {
-        when regex "thing (\\d+) does (.+)" (usize, String) |_world, _sz, _txt, _step| {
-
+        given "I am trying out Cucumber" |world, step| {
+            world.foo = "Some string".to_string();
+            // Set up your context in given steps
         };
 
-        when regex "^test (.*) regex$" |_world, matches, _step| {
-            println!("{}", matches[1]);
+        when "I consider what I am doing" |world, step| {
+            // Take actions
+            let new_string = format!("{}.", &world.foo);
+            world.foo = new_string;
         };
 
-        given "a thing" |_world, _step| {
-            assert!(true);
+        then "I am interested in ATDD" |world, step| {
+            // Check that the outcomes to be observed have occurred
+            assert_eq!(world.foo, "Some string.");
         };
 
-        when "another thing" |_world, _step| {
-            panic!();
+        then regex r"^we can (.*) rules with regex$" |world, matches, step| {
+            // And access them as an array
+            assert_eq!(matches[1], "implement");
         };
 
-        when "something goes right" |_world, _step| { 
-            assert!(true);
+        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |world, num, word, step| {
+            // `num` will be of type usize, `word` of type String
+            assert_eq!(num, 42);
+            assert_eq!(word, "olika");
         };
 
-        when "something goes wrong" |_world, _step| {
-            println!("Something to stdout");
-            eprintln!("Something to stderr");
-            panic!("This is my custom panic message");
-        };
-
-        then "another thing" |_world, _step| {
-            assert!(true)
-        };
-
-        then "things can also be data tables" |_world, step| {
+        then "we can use data tables to provide more parameters" |world, step| {
             let table = step.table().unwrap().clone();
 
             assert_eq!(table.header, vec!["key", "value"]);
@@ -63,29 +62,32 @@ mod basic {
     });
 }
 
-fn before_thing(_step: &cucumber_rust::Scenario) {}
-
-before!(some_before: "@tag2 and @tag3" => |_scenario| {
-    println!("{}", "lol");
-});
-
-before!(something_great => |_scenario| {
+// Declares a before handler function named `a_before_fn`
+before!(a_before_fn => |scenario| {
 
 });
 
-after!(after_thing => |_scenario| {
+// Declares an after handler function named `an_after_fn`
+after!(an_after_fn => |scenario| {
 
 });
 
-fn setup() {}
+// A setup function to be called before everything else
+fn setup() {
+    
+}
 
 cucumber! {
-    features: "./features",
-    world: crate::MyWorld,
+    features: "./features", // Path to our feature files
+    world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
-        basic::steps
+        example_steps::steps // the `steps!` macro creates a `steps` function in a module
     ],
-    setup: setup,
-    before: &[before_thing, some_before, something_great],
-    after: &[after_thing]
+    setup: setup, // Optional; called once before everything
+    before: &[
+        a_before_fn // Optional; called before each scenario
+    ], 
+    after: &[
+        an_after_fn // Optional; called after each scenario
+    ] 
 }

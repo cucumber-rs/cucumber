@@ -39,7 +39,7 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-use cucumber::{cucumber, steps};
+use cucumber::{cucumber, steps, before, after};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -57,6 +57,8 @@ impl std::default::Default for MyWorld {
 }
 
 mod example_steps {
+    use cucumber::steps;
+    
     // Any type that implements cucumber::World + Default can be the world
     steps!(::MyWorld => {
         given "I am trying out Cucumber" |world, step| {
