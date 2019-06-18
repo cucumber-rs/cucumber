@@ -308,6 +308,16 @@ impl DefaultOutput {
     }
 }
 
+#[inline]
+fn error_position(error: &gherkin::Error) -> (usize, usize) {
+    use gherkin::pest::error::LineColLocation;
+
+    match error.line_col {
+        LineColLocation::Pos(v) => v,
+        LineColLocation::Span(v, _) => v
+    }
+}
+
 impl OutputVisitor for DefaultOutput {
     fn visit_start(&mut self) {
         self.bold_white(&format!("[Cucumber v{}]\n", env!("CARGO_PKG_VERSION")))
@@ -328,8 +338,8 @@ impl OutputVisitor for DefaultOutput {
 
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
-    fn visit_feature_error<'r>(&mut self, path: &Path, error: &gherkin::Error<'r>) {
-        let position = gherkin::error_position(error);
+    fn visit_feature_error<'r>(&mut self, path: &Path, error: &gherkin::Error) {
+        let position = error_position(error);
         let relpath = self.relpath(&path).to_string_lossy().to_string();
         let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
 

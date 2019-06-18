@@ -20,7 +20,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = "^0.6.0"
+cucumber = { package = "cucumber_rust", version = "^0.6.0" } 
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
@@ -39,15 +39,14 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-#[macro_use]
-extern crate cucumber_rust;
+use cucumber::{cucumber, steps};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String
 }
 
-impl cucumber_rust::World for MyWorld {}
+impl cucumber::World for MyWorld {}
 impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
@@ -58,7 +57,7 @@ impl std::default::Default for MyWorld {
 }
 
 mod example_steps {
-    // Any type that implements cucumber_rust::World + Default can be the world
+    // Any type that implements cucumber::World + Default can be the world
     steps!(::MyWorld => {
         given "I am trying out Cucumber" |world, step| {
             world.foo = "Some string".to_string();
