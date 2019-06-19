@@ -614,7 +614,7 @@ macro_rules! steps {
                 world,
                 $({
                     let (index, match_) = matches.next().unwrap();
-                    match_.parse::<$arg_type>().unwrap_or_else(|_| panic!("Failed to parse {}th argument '{}' to type {}", index, match_, stringify!($arg_type)))
+                    match_.parse::<$arg_type>().unwrap_or_else(|_| panic!("Failed to parse argument {} with value '{}' to type {}", index, match_, stringify!($arg_type)))
                 },)*
                 step
             )
