@@ -314,7 +314,7 @@ fn error_position(error: &gherkin::Error) -> (usize, usize) {
 
     match error.line_col {
         LineColLocation::Pos(v) => v,
-        LineColLocation::Span(v, _) => v
+        LineColLocation::Span(v, _) => v,
     }
 }
 
