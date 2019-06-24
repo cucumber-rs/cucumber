@@ -338,7 +338,7 @@ impl OutputVisitor for DefaultOutput {
 
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
-    fn visit_feature_error<'r>(&mut self, path: &Path, error: &gherkin::Error) {
+    fn visit_feature_error(&mut self, path: &Path, error: &gherkin::Error) {
         let position = error_position(error);
         let relpath = self.relpath(&path).to_string_lossy().to_string();
         let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
