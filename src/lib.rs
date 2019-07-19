@@ -330,6 +330,7 @@ impl<W: World> Steps<W> {
         let mut is_success = true;
 
         for path in feature_files {
+            use std::convert::TryFrom;
             let mut file = File::open(&path).expect("file to open");
             let mut buffer = String::new();
             file.read_to_string(&mut buffer).unwrap();
