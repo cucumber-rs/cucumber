@@ -1,6 +1,9 @@
+#![feature(async_await)]
+
 extern crate cucumber_rust as cucumber;
 use cucumber::{after, before, cucumber};
 
+#[derive(Clone)]
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,
@@ -18,11 +21,25 @@ impl std::default::Default for MyWorld {
 
 mod example_steps {
     use cucumber::{typed_regex, Steps, StepsBuilder};
+    use std::pin::Pin;
+
+    use std::panic::{AssertUnwindSafe, UnwindSafe};
+    use futures::future::{Future, BoxFuture, FutureExt};
+
+    async fn a_thing(world: crate::MyWorld, step: cucumber::Step) -> () {
+        runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+        panic!("OH NO");
+    }
+
+    fn a_thing2(world: crate::MyWorld, step: cucumber::Step) -> cucumber::TestFuture {
+        cucumber::TestFuture::new(a_thing(world, step))
+    }
 
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: StepsBuilder<crate::MyWorld> = StepsBuilder::new();
 
         builder
+            .given_async("a thing", a_thing2)
             .given("I am trying out Cucumber", |world, _step| {
                 world.foo = "Some string".to_string();
             })

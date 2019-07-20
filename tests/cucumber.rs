@@ -1,6 +1,9 @@
+#![feature(async_await)]
+
 extern crate cucumber_rust as cucumber;
 use cucumber::{after, before, cucumber};
 
+#[derive(Clone)]
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,

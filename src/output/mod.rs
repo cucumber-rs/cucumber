@@ -6,7 +6,7 @@ use gherkin;
 
 use crate::TestResult;
 
-pub trait OutputVisitor {
+pub trait OutputVisitor: Default + Clone {
     fn new() -> Self
     where
         Self: Sized;
