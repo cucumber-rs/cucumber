@@ -672,9 +672,31 @@ macro_rules! steps {
         $worldtype:path => { $( $items:tt )* }
     ) => {
         pub fn steps() -> $crate::Steps<$worldtype> {
-            let mut tests: $crate::Steps<$worldtype> = Default::default();
+            let mut tests: $crate::StepsBuilder::<$worldtype> = $crate::StepsBuilder::new();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
-            tests
+            tests.build()
         }
     };
+}
+
+pub struct StepsBuilder<W> where W: World {
+    steps: Steps<W>
+}
+
+impl<W: World> StepsBuilder<W> {
+    pub fn new() -> StepsBuilder<W> {
+        StepsBuilder { steps: Default::default() }
+    }
+
+    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) {
+        self.steps.add_normal(ty, name, test_fn);
+    }
+    
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) {
+        self.steps.add_regex(ty, regex, test_fn);
+    }
+
+    pub fn build(self) -> Steps<W> {
+        self.steps
+    }
 }
