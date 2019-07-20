@@ -34,10 +34,10 @@ pub trait World: Default {}
 type HelperFn = fn(&Scenario) -> ();
 
 type TestFn<W> = fn(&mut W, &Step) -> ();
-type TestRegexFn<W> = fn(&mut W, &[String], &Step) -> ();
+type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
 
 type TestBag<W> = HashMap<&'static str, TestFn<W>>;
-type RegexBag<W> = HashMap<HashableRegex, TestRegexFn<W>>;
+type RegexBag<W> = HashMap<HashableRegex, RegexTestFn<W>>;
 
 #[derive(Default)]
 pub struct Steps<W: World> {
@@ -56,7 +56,7 @@ struct RegexSteps<W: World> {
 
 enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestFn<W>),
-    Regex(&'a TestRegexFn<W>, Vec<String>),
+    Regex(&'a RegexTestFn<W>, Vec<String>),
 }
 
 pub enum TestResult {
@@ -131,7 +131,7 @@ impl<W: World> Steps<W> {
         self.test_bag_mut_for(ty).insert(name, test_fn);
     }
 
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) {
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) {
         let regex = Regex::new(regex)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
 
@@ -702,7 +702,7 @@ impl<W: World> StepsBuilder<W> {
         self
     }
     
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) -> &mut Self {
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
         self.steps.add_regex(ty, regex, test_fn);
         self
     }
@@ -722,17 +722,17 @@ impl<W: World> StepsBuilder<W> {
         self
     }
 
-    pub fn given_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+    pub fn given_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
         self.add_regex(StepType::Given, regex, test_fn);
         self
     }
 
-    pub fn when_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+    pub fn when_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
         self.add_regex(StepType::When, regex, test_fn);
         self
     }
 
-    pub fn then_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+    pub fn then_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
         self.add_regex(StepType::Then, regex, test_fn);
         self
     }
