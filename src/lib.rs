@@ -15,18 +15,19 @@ mod output;
 mod panic_trap;
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stderr, Read, Write};
 use std::path::PathBuf;
 
-use gherkin::Feature;
 pub use gherkin::{Scenario, Step, StepType};
+use gherkin::Feature;
 use regex::Regex;
 
-use hashable_regex::HashableRegex;
-pub use output::default::DefaultOutput;
-use output::OutputVisitor;
-use panic_trap::{PanicDetails, PanicTrap};
+pub use crate::output::default::DefaultOutput;
+use crate::hashable_regex::HashableRegex;
+use crate::output::OutputVisitor;
+use crate::panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
 
