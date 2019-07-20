@@ -20,12 +20,12 @@ use std::fs::File;
 use std::io::{stderr, Read, Write};
 use std::path::PathBuf;
 
-pub use gherkin::{Scenario, Step, StepType};
 use gherkin::Feature;
+pub use gherkin::{Scenario, Step, StepType};
 use regex::Regex;
 
-pub use crate::output::default::DefaultOutput;
 use crate::hashable_regex::HashableRegex;
+pub use crate::output::default::DefaultOutput;
 use crate::output::OutputVisitor;
 use crate::panic_trap::{PanicDetails, PanicTrap};
 
