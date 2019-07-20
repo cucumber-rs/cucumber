@@ -578,6 +578,27 @@ macro_rules! cucumber {
 }
 
 #[macro_export]
+macro_rules! typed_regex {
+    (
+        $worldtype:path, ($($arg_type:ty),*) $body:expr
+    ) => {
+        |world: &mut $worldtype, matches, step| {
+            let body: fn(&mut $worldtype, $($arg_type,)* &$crate::Step) -> () = $body;
+            let mut matches = matches.into_iter().enumerate().skip(1);
+
+            body(
+                world,
+                $({
+                    let (index, match_) = matches.next().unwrap();
+                    match_.parse::<$arg_type>().unwrap_or_else(|_| panic!("Failed to parse argument {} with value '{}' to type {}", index, match_, stringify!($arg_type)))
+                },)*
+                step
+            )
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! skip {
     () => {
         unimplemented!("cucumber test skipped");
@@ -607,19 +628,7 @@ macro_rules! steps {
     (
         @parse_matches $worldtype:path, ($($arg_type:ty),*) $body:expr
     ) => {
-        |world: &mut $worldtype, matches, step| {
-            let body: fn(&mut $worldtype, $($arg_type,)* &$crate::Step) -> () = $body;
-            let mut matches = matches.into_iter().enumerate().skip(1);
-
-            body(
-                world,
-                $({
-                    let (index, match_) = matches.next().unwrap();
-                    match_.parse::<$arg_type>().unwrap_or_else(|_| panic!("Failed to parse argument {} with value '{}' to type {}", index, match_, stringify!($arg_type)))
-                },)*
-                step
-            )
-        }
+        $crate::typed_regex!($worldtype, ($($arg_type),*) $body)
     };
 
     (
@@ -688,12 +697,44 @@ impl<W: World> StepsBuilder<W> {
         StepsBuilder { steps: Default::default() }
     }
 
-    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) {
+    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
         self.steps.add_normal(ty, name, test_fn);
+        self
     }
     
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) {
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: TestRegexFn<W>) -> &mut Self {
         self.steps.add_regex(ty, regex, test_fn);
+        self
+    }
+
+    pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::Given, name, test_fn);
+        self
+    }
+
+    pub fn when(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::When, name, test_fn);
+        self
+    }
+
+    pub fn then(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::Then, name, test_fn);
+        self
+    }
+
+    pub fn given_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+        self.add_regex(StepType::Given, regex, test_fn);
+        self
+    }
+
+    pub fn when_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+        self.add_regex(StepType::When, regex, test_fn);
+        self
+    }
+
+    pub fn then_regex(&mut self, regex: &'static str, test_fn: TestRegexFn<W>) -> &mut Self {
+        self.add_regex(StepType::Then, regex, test_fn);
+        self
     }
 
     pub fn build(self) -> Steps<W> {
