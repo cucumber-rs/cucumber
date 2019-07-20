@@ -127,18 +127,6 @@ impl<W: World> Steps<W> {
         None
     }
 
-    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) {
-        self.test_bag_mut_for(ty).insert(name, test_fn);
-    }
-
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) {
-        let regex = Regex::new(regex)
-            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
-
-        self.regex_bag_mut_for(ty)
-            .insert(HashableRegex(regex), test_fn);
-    }
-
     pub fn combine(iter: impl Iterator<Item = Self>) -> Self {
         let mut combined = Self::default();
 
@@ -697,16 +685,6 @@ impl<W: World> StepsBuilder<W> {
         StepsBuilder { steps: Default::default() }
     }
 
-    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.steps.add_normal(ty, name, test_fn);
-        self
-    }
-    
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
-        self.steps.add_regex(ty, regex, test_fn);
-        self
-    }
-
     pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
         self.add_normal(StepType::Given, name, test_fn);
         self
@@ -734,6 +712,21 @@ impl<W: World> StepsBuilder<W> {
 
     pub fn then_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
         self.add_regex(StepType::Then, regex, test_fn);
+        self
+    }
+
+    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.steps.test_bag_mut_for(ty).insert(name, test_fn);
+        self
+    }
+
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
+        let regex = Regex::new(regex)
+            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
+
+        self.steps.regex_bag_mut_for(ty)
+            .insert(HashableRegex(regex), test_fn);
+        
         self
     }
 
