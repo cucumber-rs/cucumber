@@ -33,15 +33,27 @@ mod example_steps {
             .then("I am interested in ATDD", |world, _step| {
                 assert_eq!(world.foo, "Some string.");
             })
-            .then_regex(r"^we can (.*) rules with regex$", |_world, matches, _step| {
-                // And access them as an array
-                assert_eq!(matches[1], "implement");
-            })
-            .then_regex(r"^we can also match (\d+) (.+) types$", typed_regex!(crate::MyWorld, (usize, String) |_world, num, word, _step| {
-                // `num` will be of type usize, `word` of type String
-                assert_eq!(num, 42);
-                assert_eq!(word, "olika");
-            }));
+            .then_regex(
+                r"^we can (.*) rules with regex$",
+                |_world, matches, _step| {
+                    // And access them as an array
+                    assert_eq!(matches[1], "implement");
+                },
+            )
+            .then_regex(
+                r"^we can also match (\d+) (.+) types$",
+                typed_regex!(
+                    crate::MyWorld,
+                    (usize, String) | _world,
+                    num,
+                    word,
+                    _step | {
+                        // `num` will be of type usize, `word` of type String
+                        assert_eq!(num, 42);
+                        assert_eq!(word, "olika");
+                    }
+                ),
+            );
 
         builder.build()
     }

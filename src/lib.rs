@@ -66,6 +66,76 @@ pub enum TestResult {
     Fail(PanicDetails, Vec<u8>, Vec<u8>),
 }
 
+pub struct StepsBuilder<W>
+where
+    W: World,
+{
+    steps: Steps<W>,
+}
+
+impl<W: World> StepsBuilder<W> {
+    pub fn new() -> StepsBuilder<W> {
+        StepsBuilder {
+            steps: Default::default(),
+        }
+    }
+
+    pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::Given, name, test_fn);
+        self
+    }
+
+    pub fn when(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::When, name, test_fn);
+        self
+    }
+
+    pub fn then(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal(StepType::Then, name, test_fn);
+        self
+    }
+
+    pub fn given_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+        self.add_regex(StepType::Given, regex, test_fn);
+        self
+    }
+
+    pub fn when_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+        self.add_regex(StepType::When, regex, test_fn);
+        self
+    }
+
+    pub fn then_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+        self.add_regex(StepType::Then, regex, test_fn);
+        self
+    }
+
+    pub fn add_normal(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        test_fn: TestFn<W>,
+    ) -> &mut Self {
+        self.steps.test_bag_mut_for(ty).insert(name, test_fn);
+        self
+    }
+
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
+        let regex = Regex::new(regex)
+            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
+
+        self.steps
+            .regex_bag_mut_for(ty)
+            .insert(HashableRegex(regex), test_fn);
+
+        self
+    }
+
+    pub fn build(self) -> Steps<W> {
+        self.steps
+    }
+}
+
 impl<W: World> Steps<W> {
     fn test_bag_for(&self, ty: StepType) -> &TestBag<W> {
         match ty {
@@ -674,63 +744,4 @@ macro_rules! steps {
             tests.build()
         }
     };
-}
-
-pub struct StepsBuilder<W> where W: World {
-    steps: Steps<W>
-}
-
-impl<W: World> StepsBuilder<W> {
-    pub fn new() -> StepsBuilder<W> {
-        StepsBuilder { steps: Default::default() }
-    }
-
-    pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::Given, name, test_fn);
-        self
-    }
-
-    pub fn when(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::When, name, test_fn);
-        self
-    }
-
-    pub fn then(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::Then, name, test_fn);
-        self
-    }
-
-    pub fn given_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
-        self.add_regex(StepType::Given, regex, test_fn);
-        self
-    }
-
-    pub fn when_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
-        self.add_regex(StepType::When, regex, test_fn);
-        self
-    }
-
-    pub fn then_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
-        self.add_regex(StepType::Then, regex, test_fn);
-        self
-    }
-
-    pub fn add_normal(&mut self, ty: StepType, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.steps.test_bag_mut_for(ty).insert(name, test_fn);
-        self
-    }
-
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
-        let regex = Regex::new(regex)
-            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
-
-        self.steps.regex_bag_mut_for(ty)
-            .insert(HashableRegex(regex), test_fn);
-        
-        self
-    }
-
-    pub fn build(self) -> Steps<W> {
-        self.steps
-    }
 }
