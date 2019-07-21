@@ -738,6 +738,7 @@ macro_rules! steps {
     (
         $worldtype:path => { $( $items:tt )* }
     ) => {
+        #[allow(missing_docs)]
         pub fn steps() -> $crate::Steps<$worldtype> {
             let mut tests: $crate::StepsBuilder::<$worldtype> = $crate::StepsBuilder::new();
             steps!(@gather_steps, $worldtype, tests, $( $items )*);
