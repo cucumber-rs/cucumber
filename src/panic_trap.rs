@@ -71,7 +71,7 @@ impl<T> PanicTrap<T> {
 
         let result = panic::catch_unwind(panic::AssertUnwindSafe(f));
 
-        panic::take_hook();
+        let _ = panic::take_hook();
 
         PanicTrap {
             result: result.map_err(|_| {
