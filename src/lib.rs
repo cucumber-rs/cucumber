@@ -25,6 +25,7 @@ use std::fs::File;
 use std::io::{stderr, Read, Write};
 use std::path::PathBuf;
 use std::process;
+use std::sync::{Arc, Mutex};
 
 use gherkin::Feature;
 pub use gherkin::{Scenario, Step, StepType};
@@ -425,7 +426,7 @@ impl<W: World + Default> Steps<W> {
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         suppress_output: bool,
-        mut output: impl OutputVisitor,
+        output: &impl OutputVisitor,
     ) -> bool {
         output.visit_scenario(rule, &scenario);
 
@@ -520,7 +521,7 @@ impl<W: World + Default> Steps<W> {
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         options: &cli::CliOptions,
-        output: &mut impl OutputVisitor,
+        output: &impl OutputVisitor,
     ) -> bool {
         let mut futures = vec![];
 
@@ -624,7 +625,7 @@ impl<W: World + Default> Steps<W> {
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         options: cli::CliOptions,
-        output: &mut impl OutputVisitor,
+        output: &impl OutputVisitor,
     ) -> bool {
         output.visit_start();
 
