@@ -66,6 +66,7 @@ pub enum TestResult {
     Fail(PanicDetails, Vec<u8>, Vec<u8>),
 }
 
+#[derive(Default)]
 pub struct StepsBuilder<W>
 where
     W: World,
@@ -75,9 +76,7 @@ where
 
 impl<W: World> StepsBuilder<W> {
     pub fn new() -> StepsBuilder<W> {
-        StepsBuilder {
-            steps: Default::default(),
-        }
+        StepsBuilder::default()
     }
 
     pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
