@@ -53,7 +53,7 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
         .map(|x| format!("{}{}", indent, &x.trim()))
         .collect();
     // Fit the comment onto the last line
-    let comment_space = tw - c.chars().count() - 2;
+    let comment_space = tw.saturating_sub(c.chars().count()).saturating_sub(2);
     let last_count = cs.last().unwrap().chars().count();
     if last_count > comment_space {
         cs.push(format!("{: <1$}", "", comment_space))
@@ -447,7 +447,9 @@ impl OutputVisitor for DefaultOutput {
                     &format!(
                         "{:—<1$}",
                         "! Step failed: ",
-                        textwrap::termwidth() - panic_info.location.chars().count() - 7
+                        textwrap::termwidth()
+                            .saturating_sub(panic_info.location.chars().count())
+                            .saturating_sub(7),
                     ),
                     &panic_info.location,
                     "———— ",
