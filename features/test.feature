@@ -7,6 +7,7 @@ Feature: Basic functionality
   Scenario: bar
     Given a thing
     When something goes wrong
+    Then it worked anyway
 
   Scenario Outline: scenario with examples
     Given a number <num>

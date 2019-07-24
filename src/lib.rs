@@ -200,6 +200,16 @@ impl<W: World> StepsBuilder<W> {
         self
     }
 
+    pub fn when_async(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal_async(StepType::When, name, test_fn);
+        self
+    }
+
+    pub fn then_async(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
+        self.add_normal_async(StepType::Then, name, test_fn);
+        self
+    }
+
     pub fn given(&mut self, name: &'static str, test_fn: TestSyncFn<W>) -> &mut Self {
         self.add_normal(StepType::Given, name, test_fn);
         self
