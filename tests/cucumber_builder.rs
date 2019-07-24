@@ -27,21 +27,38 @@ mod example_steps {
     use futures::future::{Future, BoxFuture, FutureExt};
 
     async fn a_thing(world: crate::MyWorld, step: cucumber::Step) -> () {
-        runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
-        panic!("OH NO");
+        // runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+        // panic!("OH NO");
     }
 
     fn a_thing2(world: crate::MyWorld, step: cucumber::Step) -> cucumber::TestFuture {
         cucumber::TestFuture::new(a_thing(world, step))
     }
 
+
+    // fn something_wrong(world: crate::MyWorld, step: cucumber::Step) {
+    //     cucumber::TestFuture::new(async {
+    //         runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+    //     })
+    //     // runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+    //     // panic!("OH NO");
+    // }
+
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: StepsBuilder<crate::MyWorld> = StepsBuilder::new();
 
         builder
             .given_async("a thing", a_thing2)
+            .when_async("something goes wrong", |_world, _step| {
+                cucumber::TestFuture::new(async {
+                    runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+                })
+            })
             .given("I am trying out Cucumber", |world, _step| {
                 world.foo = "Some string".to_string();
+            })
+            .when("nothing", |_, _| {
+                panic!("fight me");
             })
             .when("I consider what I am doing", |world, _step| {
                 let new_string = format!("{}.", &world.foo);
