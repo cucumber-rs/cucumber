@@ -19,11 +19,7 @@ pub trait OutputVisitor: Default {
     fn visit_rule_end(&self, rule: &gherkin::Rule);
     fn visit_scenario(&self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario);
     fn visit_scenario_end(&self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario);
-    fn visit_scenario_skipped(
-        &self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-    );
+    fn visit_scenario_skipped(&self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario);
     fn visit_step(
         &self,
         rule: Option<&gherkin::Rule>,
