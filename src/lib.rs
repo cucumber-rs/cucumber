@@ -43,21 +43,21 @@ pub trait World: Default + Clone {}
 
 type HelperFn = fn(&Scenario) -> ();
 
-use std::panic::{UnwindSafe, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, UnwindSafe};
 
 type TestSyncFn<W> = fn(&mut W, &Step) -> ();
 type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
 type RegexTestSyncFn<W> = fn(&mut W, &[String], &Step) -> ();
 type TestFn<W> = fn(W, Step) -> TestFuture;
-// TODO 
+// TODO
 pub struct TestFuture {
-    future: BoxFuture<'static, ()>
+    future: BoxFuture<'static, ()>,
 }
 
 impl UnwindSafe for TestFuture {}
 
-use futures::task::{Poll, Context};
-use std::panic::{catch_unwind};
+use futures::task::{Context, Poll};
+use std::panic::catch_unwind;
 
 use pin_utils::unsafe_pinned;
 impl TestFuture {
@@ -67,7 +67,6 @@ impl TestFuture {
         TestFuture { future: f.boxed() }
     }
 }
-
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 impl Future for TestFuture {
@@ -383,8 +382,7 @@ impl<W: World + Default> Steps<W> {
             TestCaseType::Normal(t) => PanicTrap::run(suppress_output, || t(world, &step)),
             TestCaseType::Regex(t, ref c) => PanicTrap::run(suppress_output, || t(world, c, &step)),
             TestCaseType::Async(t) => {
-                let unwindable = t(world.clone(), step.clone())
-                    .catch_unwind();
+                let unwindable = t(world.clone(), step.clone()).catch_unwind();
                 let result = match unwindable.await {
                     Ok(unwind) => match unwind {
                         Ok(_) => Ok(()),
@@ -396,20 +394,30 @@ impl<W: World + Default> Steps<W> {
                             } else {
                                 "Opaque panic payload".to_owned()
                             };
-                            Err(PanicDetails { payload, location: "<async>:0:0".into() })
+                            Err(PanicDetails {
+                                payload,
+                                location: "<async>:0:0".into(),
+                            })
                         }
                     },
-                    Err(e) => Err(PanicDetails { payload: "".into(), location: "".into() })
+                    Err(e) => Err(PanicDetails {
+                        payload: "".into(),
+                        location: "".into(),
+                    }),
                 };
-                    //     println!("OK: {:?}", &x);
-                    //     ()
-                    // })
-                    // .map_err(|e| {
-                    //     println!("ERR: {:?}", &e);
-                    //     PanicDetails { payload: "".into(), location: "".into() }
-                    // });
+                //     println!("OK: {:?}", &x);
+                //     ()
+                // })
+                // .map_err(|e| {
+                //     println!("ERR: {:?}", &e);
+                //     PanicDetails { payload: "".into(), location: "".into() }
+                // });
                 // println!("RESULT: {:?}", &result);
-                PanicTrap { result, stdout: vec![], stderr: vec![] }
+                PanicTrap {
+                    result,
+                    stdout: vec![],
+                    stderr: vec![],
+                }
             }
         };
 
