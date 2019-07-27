@@ -5,7 +5,7 @@
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
 
 <p align="center">
-    <img src="https://cdn.rawgit.com/bbqsrc/cucumber-rust/develop/example.svg">
+    <img src="https://rawcdn.githack.com/bbqsrc/cucumber-rust/aa0c7efe20298d77f0acd3442946290b07026653/example.svg">
 </p>
 
 ### Usage
