@@ -14,11 +14,14 @@ mod hashable_regex;
 mod output;
 mod panic_trap;
 
+use crate::cli::make_app;
+use crate::globwalk::{glob, GlobWalkerBuilder};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stderr, Read, Write};
 use std::path::PathBuf;
+use std::process;
 
 use gherkin::Feature;
 pub use gherkin::{Scenario, Step, StepType};
@@ -26,7 +29,7 @@ use regex::Regex;
 
 use crate::hashable_regex::HashableRegex;
 pub use crate::output::default::DefaultOutput;
-use crate::output::OutputVisitor;
+pub use crate::output::OutputVisitor;
 use crate::panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
@@ -242,17 +245,15 @@ impl<W: World> Steps<W> {
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
-        before_fns: &Option<&[HelperFn]>,
-        after_fns: &Option<&[HelperFn]>,
+        before_fns: &[HelperFn],
+        after_fns: &[HelperFn],
         suppress_output: bool,
         output: &mut impl OutputVisitor,
     ) -> bool {
         output.visit_scenario(rule, &scenario);
 
-        if let Some(before_fns) = before_fns {
-            for f in before_fns.iter() {
-                f(&scenario);
-            }
+        for f in before_fns.iter() {
+            f(&scenario);
         }
 
         let mut world = {
@@ -317,10 +318,8 @@ impl<W: World> Steps<W> {
             }
         }
 
-        if let Some(after_fns) = after_fns {
-            for f in after_fns.iter() {
-                f(&scenario);
-            }
+        for f in after_fns.iter() {
+            f(&scenario);
         }
 
         output.visit_scenario_end(rule, &scenario);
@@ -334,8 +333,8 @@ impl<W: World> Steps<W> {
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         scenarios: &[gherkin::Scenario],
-        before_fns: Option<&[HelperFn]>,
-        after_fns: Option<&[HelperFn]>,
+        before_fns: &[HelperFn],
+        after_fns: &[HelperFn],
         options: &cli::CliOptions,
         output: &mut impl OutputVisitor,
     ) -> bool {
@@ -378,8 +377,8 @@ impl<W: World> Steps<W> {
     pub fn run(
         &self,
         feature_files: Vec<PathBuf>,
-        before_fns: Option<&[HelperFn]>,
-        after_fns: Option<&[HelperFn]>,
+        before_fns: &[HelperFn],
+        after_fns: &[HelperFn],
         options: cli::CliOptions,
         output: &mut impl OutputVisitor,
     ) -> bool {
@@ -500,6 +499,123 @@ macro_rules! after {
     };
 }
 
+pub struct CucumberBuilder<W: World, O: OutputVisitor> {
+    output: O,
+    features: Vec<PathBuf>,
+    setup: Option<fn() -> ()>,
+    before: Vec<fn(&Scenario) -> ()>,
+    after: Vec<fn(&Scenario) -> ()>,
+    steps: Steps<W>,
+    options: crate::cli::CliOptions,
+}
+
+impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
+    pub fn new(output: O) -> Self {
+        CucumberBuilder {
+            output,
+            features: vec![],
+            setup: None,
+            before: vec![],
+            after: vec![],
+            steps: Steps::default(),
+            options: crate::cli::CliOptions::default(),
+        }
+    }
+
+    pub fn setup(&mut self, function: fn() -> ()) -> &mut Self {
+        self.setup = Some(function);
+        self
+    }
+
+    pub fn features(&mut self, features: Vec<PathBuf>) -> &mut Self {
+        let mut features = features
+            .iter()
+            .map(|path| match path.canonicalize() {
+                Ok(p) => GlobWalkerBuilder::new(p, "*.feature")
+                    .case_insensitive(true)
+                    .build()
+                    .expect("feature path is invalid"),
+                Err(e) => {
+                    eprintln!("{}", e);
+                    eprintln!("There was an error parsing {:?}; aborting.", path);
+                    process::exit(1);
+                }
+            })
+            .flatten()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path().to_owned())
+            .collect::<Vec<_>>();
+        features.sort();
+
+        self.features = features;
+        self
+    }
+
+    pub fn before(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
+        self.before = functions;
+        self
+    }
+
+    pub fn add_before(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
+        self.before.push(function);
+        self
+    }
+
+    pub fn after(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
+        self.after = functions;
+        self
+    }
+
+    pub fn add_after(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
+        self.after.push(function);
+        self
+    }
+
+    pub fn steps(&mut self, steps: Steps<W>) -> &mut Self {
+        self.steps = steps;
+        self
+    }
+
+    pub fn options(&mut self, options: crate::cli::CliOptions) -> &mut Self {
+        self.options = options;
+        self
+    }
+
+    pub fn run(mut self) -> bool {
+        if let Some(feature) = self.options.feature.as_ref() {
+            let features = glob(feature)
+                .expect("feature glob is invalid")
+                .filter_map(Result::ok)
+                .map(|entry| entry.path().to_owned())
+                .collect::<Vec<_>>();
+            self.features(features);
+        }
+
+        if let Some(setup) = self.setup {
+            setup();
+        }
+
+        self.steps.run(
+            self.features,
+            &self.before,
+            &self.after,
+            self.options,
+            &mut self.output,
+        )
+    }
+
+    pub fn command_line(mut self) -> bool {
+        let options = make_app().unwrap();
+        self.options(options);
+
+        if let Some(setup_fn) = self.setup {
+            setup_fn();
+        }
+
+        self.run()
+    }
+}
+
 #[macro_export]
 macro_rules! cucumber {
     (
@@ -584,51 +700,37 @@ macro_rules! cucumber {
         #[allow(unused_imports)]
         fn main() {
             use std::path::Path;
-            use std::process;
-            use $crate::globwalk::{glob, GlobWalkerBuilder};
-            use $crate::gherkin::Scenario;
-            use $crate::{Steps, World, DefaultOutput};
-            use $crate::cli::make_app;
+            use $crate::{CucumberBuilder, Scenario, Steps, DefaultOutput, OutputVisitor};
 
-            let options = make_app().unwrap();
+            let output = DefaultOutput::new();
+            let instance = {
+                let mut instance = CucumberBuilder::new(output);
 
-            let walker = match &options.feature {
-                Some(v) => glob(v).expect("feature glob is invalid"),
-                None => match Path::new($featurepath).canonicalize() {
-                    Ok(p) => {
-                        GlobWalkerBuilder::new(p, "*.feature")
-                            .case_insensitive(true)
-                            .build()
-                            .expect("feature path is invalid")
-                    }
-                    Err(e) => {
-                        eprintln!("{}", e);
-                        eprintln!("There was an error parsing \"{}\"; aborting.", $featurepath);
-                        process::exit(1);
-                    }
+                instance
+                    .features(vec![Path::new($featurepath).to_path_buf()])
+                    .steps(Steps::combine($vec.iter().map(|f| f())));
+
+                if let Some(setup) = $setupfn {
+                    instance.setup(setup);
                 }
-            }.into_iter();
 
-            let mut feature_files = walker
-                .filter_map(Result::ok)
-                .map(|entry| entry.path().to_owned())
-                .collect::<Vec<_>>();
-            feature_files.sort();
+                let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
+                if let Some(before) = before_fns {
+                    instance.before(before.to_vec());
+                }
 
-            let tests = Steps::combine($vec.iter().map(|f| f()));
+                let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
+                if let Some(after) = after_fns {
+                    instance.after(after.to_vec());
+                }
 
-            let mut output = DefaultOutput::default();
+                instance
+            };
 
-            let setup_fn: Option<fn() -> ()> = $setupfn;
-            let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
-            let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
+            let res = instance.command_line();
 
-            if let Some(setup_fn) = setup_fn {
-                setup_fn();
-            }
-
-            if !tests.run(feature_files, before_fns, after_fns, options, &mut output) {
-                process::exit(1);
+            if !res {
+                std::process::exit(1);
             }
         }
     }

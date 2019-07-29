@@ -1,5 +1,6 @@
 use std;
 use std::collections::HashMap;
+use std::default::Default;
 use std::env;
 use std::io::Write;
 use std::path::Path;
@@ -30,7 +31,7 @@ pub struct DefaultOutput {
     fail_count: u32,
 }
 
-impl std::default::Default for DefaultOutput {
+impl Default for DefaultOutput {
     fn default() -> DefaultOutput {
         DefaultOutput {
             stdout: StandardStream::stdout(ColorChoice::Always),
@@ -319,6 +320,10 @@ fn error_position(error: &gherkin::Error) -> (usize, usize) {
 }
 
 impl OutputVisitor for DefaultOutput {
+    fn new() -> Self {
+        Default::default()
+    }
+
     fn visit_start(&mut self) {
         self.bold_white(&format!("[Cucumber v{}]\n", env!("CARGO_PKG_VERSION")))
     }

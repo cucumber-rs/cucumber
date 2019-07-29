@@ -6,7 +6,10 @@ use gherkin;
 
 use crate::TestResult;
 
-pub trait OutputVisitor: Default {
+pub trait OutputVisitor {
+    fn new() -> Self
+    where
+        Self: Sized;
     fn visit_start(&mut self);
     fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path);
     fn visit_feature_end(&mut self, feature: &gherkin::Feature);

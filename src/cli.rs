@@ -6,6 +6,7 @@ pub enum CliError {
     InvalidFilterRegex,
 }
 
+#[derive(Default)]
 pub struct CliOptions {
     pub feature: Option<String>,
     pub filter: Option<Regex>,
