@@ -7,11 +7,35 @@ matrix:
     env: NAME=test-after-dark
     script:
     - cargo test --all --verbose
+<<<<<<< HEAD
   - rust: 1.40.0
+||||||| parent of fa6e50e... Nightly only for Travis
+  - rust: 1.36.0
+=======
+  - rust: nightly
+>>>>>>> fa6e50e... Nightly only for Travis
     env: NAME=test
     script:
     - cargo test --all --verbose
+<<<<<<< HEAD
   - rust: 1.40.0
+||||||| parent of fa6e50e... Nightly only for Travis
+  - rust: 1.36.0
+    env: NAME=pretty
+    before_script:
+    - rustup component add rustfmt
+    script:
+    - cargo fmt --all -- --check
+  - rust: 1.36.0
+=======
+  - rust: nightly
+    env: NAME=pretty
+    before_script:
+    - rustup component add rustfmt
+    script:
+    - cargo fmt --all -- --check
+  - rust: nightly
+>>>>>>> fa6e50e... Nightly only for Travis
     env: NAME=petty
     before_script:
     - rustup component add clippy
