@@ -16,10 +16,12 @@ travis-ci = { repository = "bbqsrc/cucumber-rust" }
 [[test]]
 name = "cucumber"
 harness = false
+test = false
 
 [[test]]
 name = "cucumber_builder"
 harness = false
+test = false
 
 [dependencies]
 gherkin = { package = "gherkin_rust", version = "^0.6.0" }
