@@ -864,13 +864,15 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
             setup();
         }
 
-        self.steps.run(
-            self.features,
-            &self.before,
-            &self.after,
-            self.options,
-            &mut self.output,
-        ).await
+        self.steps
+            .run(
+                self.features,
+                &self.before,
+                &self.after,
+                self.options,
+                &mut self.output,
+            )
+            .await
     }
 
     pub async fn command_line(mut self) -> bool {
