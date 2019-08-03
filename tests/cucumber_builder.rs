@@ -147,17 +147,29 @@ after!(an_after_fn => |_scenario| {
 // A setup function to be called before everything else
 fn setup() {}
 
-cucumber! {
-    features: "./features", // Path to our feature files
-    world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
-    steps: &[
-        example_steps::steps // the `steps!` macro creates a `steps` function in a module
-    ],
-    setup: setup, // Optional; called once before everything
-    before: &[
-        a_before_fn // Optional; called before each scenario
-    ],
-    after: &[
-        an_after_fn // Optional; called after each scenario
-    ]
+fn main() {
+    use cucumber::CucumberBuilder;
+    use std::default::Default;
+
+    let fut = CucumberBuilder::new(cucumber::DefaultOutput::default())
+        .features(vec!["./features"])
+        .steps(example_steps::steps())
+        .run();
+
+    futures::executor::block_on(fut);
 }
+
+// cucumber! {
+//     features: "./features", // Path to our feature files
+//     world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
+//     steps: &[
+//         example_steps::steps // the `steps!` macro creates a `steps` function in a module
+//     ],
+//     setup: setup, // Optional; called once before everything
+//     before: &[
+//         a_before_fn // Optional; called before each scenario
+//     ],
+//     after: &[
+//         an_after_fn // Optional; called after each scenario
+//     ]
+// }
