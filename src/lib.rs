@@ -136,6 +136,17 @@ struct AsyncSteps<W: World> {
     then: TestAsyncBag<W>,
 }
 
+impl<W: World> AsyncSteps<W> {
+    pub fn len(&self) -> usize {
+        self.given.len() + self.when.len() + self.then.len()
+    }
+}
+
+impl<W: World> RegexSteps<W> {
+    pub fn len(&self) -> usize {
+        self.given.len() + self.when.len() + self.then.len()
+    }
+}
 
 enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestSyncFn<W>),
@@ -250,6 +261,10 @@ impl<W: World> StepsBuilder<W> {
 }
 
 impl<W: World + Default> Steps<W> {
+    pub fn len(&self) -> usize {
+        self.given.len() + self.when.len() + self.then.len() + self.regex.len() + self.async_.len()
+    }
+
     fn test_bag_for(&self, ty: StepType) -> &TestSyncBag<W> {
         match ty {
             StepType::Given => &self.given,
@@ -330,24 +345,25 @@ impl<W: World + Default> Steps<W> {
         None
     }
 
-    pub fn combine(iter: impl Iterator<Item = Self>) -> Self {
-        let mut combined = Self::default();
+    pub fn append(&mut self, other: Self) {
+        self.given.extend(other.given);
+        self.when.extend(other.when);
+        self.then.extend(other.then);
 
-        for steps in iter {
-            combined.given.extend(steps.given);
-            combined.when.extend(steps.when);
-            combined.then.extend(steps.then);
+        self.regex.given.extend(other.regex.given);
+        self.regex.when.extend(other.regex.when);
+        self.regex.then.extend(other.regex.then);
 
-            combined.regex.given.extend(steps.regex.given);
-            combined.regex.when.extend(steps.regex.when);
-            combined.regex.then.extend(steps.regex.then);
+        self.async_.given.extend(other.async_.given);
+        self.async_.when.extend(other.async_.when);
+        self.async_.then.extend(other.async_.then);
+    }
 
-            combined.async_.given.extend(steps.async_.given);
-            combined.async_.when.extend(steps.async_.when);
-            combined.async_.then.extend(steps.async_.then);
-        }
-
-        combined
+    pub fn concat(iter: impl Iterator<Item = Self>) -> Self {
+        iter.fold(Self::default(), |mut acc, steps| {
+            acc.append(steps);
+            acc
+        })
     }
 
     async fn run_test<'f>(
@@ -770,14 +786,15 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
         }
     }
 
-    pub fn setup(&mut self, function: fn() -> ()) -> &mut Self {
+    pub fn setup(mut self, function: fn() -> ()) -> Self {
         self.setup = Some(function);
         self
     }
 
-    pub fn features(&mut self, features: Vec<PathBuf>) -> &mut Self {
+    pub fn features<P: AsRef<std::path::Path>>(mut self, features: Vec<P>) -> Self {
         let mut features = features
             .iter()
+            .map(AsRef::as_ref)
             .map(|path| match path.canonicalize() {
                 Ok(p) => GlobWalkerBuilder::new(p, "*.feature")
                     .case_insensitive(true)
@@ -799,65 +816,85 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
         self
     }
 
-    pub fn before(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
+    pub fn before(mut self, functions: Vec<fn(&Scenario) -> ()>) -> Self {
         self.before = functions;
         self
     }
 
-    pub fn add_before(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
+    pub fn add_before(mut self, function: fn(&Scenario) -> ()) -> Self {
         self.before.push(function);
         self
     }
 
-    pub fn after(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
+    pub fn after(mut self, functions: Vec<fn(&Scenario) -> ()>) -> Self {
         self.after = functions;
         self
     }
 
-    pub fn add_after(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
+    pub fn add_after(mut self, function: fn(&Scenario) -> ()) -> Self {
         self.after.push(function);
         self
     }
 
-    pub fn steps(&mut self, steps: Steps<W>) -> &mut Self {
+    pub fn steps(mut self, steps: Steps<W>) -> Self {
         self.steps = steps;
         self
     }
 
-    pub fn options(&mut self, options: crate::cli::CliOptions) -> &mut Self {
+    pub fn add_steps(mut self, steps: Steps<W>) -> Self {
+        self.steps.append(steps);
+        self
+    }
+
+    pub fn options(mut self, options: crate::cli::CliOptions) -> Self {
         self.options = options;
         self
     }
 
     pub async fn run(mut self) -> bool {
-        if let Some(feature) = self.options.feature.as_ref() {
+        if self.features.len() == 0 {
+            eprintln!("No features found; aborting.");
+            return false;
+        }
+
+        if self.steps.len() == 0 {
+            eprintln!("No steps found; aborting.");
+            return false;
+        }
+
+        let this = if let Some(feature) = self.options.feature.as_ref() {
             let features = glob(feature)
                 .expect("feature glob is invalid")
                 .filter_map(Result::ok)
                 .map(|entry| entry.path().to_owned())
                 .collect::<Vec<_>>();
-            self.features(features);
-        }
+            self.features(features)
+        } else {
+            self
+        };
 
-        if let Some(setup) = self.setup {
+        if let Some(ref setup) = this.setup {
             setup();
         }
 
-        self.steps
+        let steps = this.steps;
+
+        steps
             .run(
-                self.features,
-                &self.before,
-                &self.after,
-                self.options,
-                &mut self.output,
+                this.features,
+                &this.before,
+                &this.after,
+                this.options,
+                &this.output,
             )
             .await
     }
 
-    pub async fn command_line(mut self) -> bool {
+    pub async fn command_line(self) -> bool {
         let options = make_app().unwrap();
-        self.options(options);
-        self.run().await
+        self.options(options)
+            .run()
+            .await
     }
 }
 
@@ -943,8 +980,7 @@ macro_rules! cucumber {
         @finish; $featurepath:tt; $worldtype:path; $vec:expr; $setupfn:expr; $beforefns:expr; $afterfns:expr
     ) => {
         #[allow(unused_imports)]
-        #[runtime::main]
-        async fn main() {
+        fn main() {
             use std::path::Path;
             use $crate::{CucumberBuilder, Scenario, Steps, DefaultOutput, OutputVisitor};
 
@@ -952,28 +988,28 @@ macro_rules! cucumber {
             let instance = {
                 let mut instance = CucumberBuilder::new(output);
 
-                instance
+                instance = instance
                     .features(vec![Path::new($featurepath).to_path_buf()])
-                    .steps(Steps::combine($vec.iter().map(|f| f())));
+                    .steps(Steps::concat($vec.iter().map(|f| f())));
 
                 if let Some(setup) = $setupfn {
-                    instance.setup(setup);
+                    instance = instance.setup(setup);
                 }
 
                 let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
                 if let Some(before) = before_fns {
-                    instance.before(before.to_vec());
+                    instance = instance.before(before.to_vec());
                 }
 
                 let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
                 if let Some(after) = after_fns {
-                    instance.after(after.to_vec());
+                    instance = instance.after(after.to_vec());
                 }
 
                 instance
             };
 
-            let res = instance.command_line().await;
+            let res = futures::executor::block_on(instance.command_line());
 
             if !res {
                 std::process::exit(1);
