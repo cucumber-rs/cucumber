@@ -5,8 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+
 #![feature(async_await)]
-#![feature(async_closure)]
 
 pub extern crate gherkin;
 pub extern crate globwalk;
@@ -49,7 +49,7 @@ type TestSyncFn<W> = fn(&mut W, &Step) -> ();
 type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
 type RegexTestSyncFn<W> = fn(&mut W, &[String], &Step) -> ();
 type TestFn<W> = fn(W, Step) -> TestFuture;
-// TODO
+
 pub struct TestFuture {
     future: BoxFuture<'static, ()>,
 }
@@ -76,15 +76,6 @@ impl Future for TestFuture {
         catch_unwind(AssertUnwindSafe(|| self.future().poll(cx)))?.map(Ok)
     }
 }
-
-// type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> BoxFuture<'static, ()>;
-
-// fn woot<W: World>() -> TestFn<W> {// fn(&mut W, &Step) -> Box<dyn Future<Output = ()>> {
-//     Box::new(|world: &mut W, step: &Step| Box::new(async {
-//         step.description;
-//         42usize;
-//     }))
-// }
 
 type TestAsyncBag<W> = HashMap<&'static str, TestFn<W>>;
 type TestSyncBag<W> = HashMap<&'static str, TestSyncFn<W>>;
@@ -145,15 +136,6 @@ struct AsyncSteps<W: World> {
     then: TestAsyncBag<W>,
 }
 
-// impl<W: World> Default for AsyncSteps<W> {
-//     fn default() -> Self {
-//         AsyncSteps {
-//             given: HashMap::new(),
-//             when: HashMap::new(),
-//             then: HashMap::new(),
-//         }
-//     }
-// }
 
 enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestSyncFn<W>),
@@ -175,9 +157,6 @@ where
 {
     steps: Steps<W>,
 }
-
-// impl<W: World + Send> StepsBuilder<W> {
-// }
 
 impl<W: World> StepsBuilder<W> {
     pub fn new() -> StepsBuilder<W> {
