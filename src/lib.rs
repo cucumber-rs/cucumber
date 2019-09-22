@@ -351,24 +351,66 @@ impl<W: World> Steps<W> {
                 continue;
             }
 
-            // If regex filter fails, skip the test.
-            if let Some(ref regex) = options.filter {
-                if !regex.is_match(&scenario.name) {
-                    continue;
-                }
-            }
+            match &scenario.examples {
+                Some(examples) => {
+                    println!("{:?}", examples.table);
+                    for (i, row) in examples.table.rows.iter().enumerate() {
+                        let steps = scenario.steps.iter().map(|step| {
+                            let mut step = step.clone();
+                            for (k, v) in examples.table.header.iter().zip(row.iter()) {
+                                step.value = step.value.replace(&format!("<{}>", k), &v);
+                            }
+                            step
+                        }).collect();
+                        let example = Scenario {
+                            name: format!("{} {}", scenario.name, i),
+                            steps,
+                            examples: None,
+                            tags: scenario.tags.clone(),
+                            position: examples.table.position
+                        };
 
-            if !self.run_scenario(
-                &feature,
-                rule,
-                &scenario,
-                &before_fns,
-                &after_fns,
-                options.suppress_output,
-                output,
-            ) {
-                is_success = false;
-            }
+                        // If regex filter fails, skip the test.
+                        if let Some(ref regex) = options.filter {
+                            if !regex.is_match(&scenario.name) {
+                                continue;
+                            }
+                        }
+
+                        if !self.run_scenario(
+                            &feature,
+                            rule,
+                            &example,
+                            &before_fns,
+                            &after_fns,
+                            options.suppress_output,
+                            output,
+                        ) {
+                            is_success = false;
+                        }
+                    }
+                }
+                None => {
+                    // If regex filter fails, skip the test.
+                    if let Some(ref regex) = options.filter {
+                        if !regex.is_match(&scenario.name) {
+                            continue;
+                        }
+                    }
+
+                    if !self.run_scenario(
+                        &feature,
+                        rule,
+                        &scenario,
+                        &before_fns,
+                        &after_fns,
+                        options.suppress_output,
+                        output,
+                    ) {
+                        is_success = false;
+                    }
+                }
+            };
         }
 
         is_success
