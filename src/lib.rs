@@ -353,7 +353,6 @@ impl<W: World> Steps<W> {
 
             match &scenario.examples {
                 Some(examples) => {
-                    println!("{:?}", examples.table);
                     for (i, row) in examples.table.rows.iter().enumerate() {
                         let steps = scenario.steps.iter().map(|step| {
                             let mut step = step.clone();
