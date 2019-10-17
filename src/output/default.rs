@@ -471,11 +471,7 @@ impl OutputVisitor for DefaultOutput {
 
                 if !captured_stdout.is_empty() {
                     self.writeln(
-                        &format!(
-                            "{:—<1$}",
-                            "———— Captured stdout: ",
-                            textwrap::termwidth()
-                        ),
+                        &format!("{:—<1$}", "———— Captured stdout: ", textwrap::termwidth()),
                         Color::Red,
                         true,
                     );
@@ -493,11 +489,7 @@ impl OutputVisitor for DefaultOutput {
 
                 if !captured_stderr.is_empty() {
                     self.writeln(
-                        &format!(
-                            "{:—<1$}",
-                            "———— Captured stderr: ",
-                            textwrap::termwidth()
-                        ),
+                        &format!("{:—<1$}", "———— Captured stderr: ", textwrap::termwidth()),
                         Color::Red,
                         true,
                     );

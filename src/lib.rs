@@ -354,19 +354,23 @@ impl<W: World> Steps<W> {
             match &scenario.examples {
                 Some(examples) => {
                     for (i, row) in examples.table.rows.iter().enumerate() {
-                        let steps = scenario.steps.iter().map(|step| {
-                            let mut step = step.clone();
-                            for (k, v) in examples.table.header.iter().zip(row.iter()) {
-                                step.value = step.value.replace(&format!("<{}>", k), &v);
-                            }
-                            step
-                        }).collect();
+                        let steps = scenario
+                            .steps
+                            .iter()
+                            .map(|step| {
+                                let mut step = step.clone();
+                                for (k, v) in examples.table.header.iter().zip(row.iter()) {
+                                    step.value = step.value.replace(&format!("<{}>", k), &v);
+                                }
+                                step
+                            })
+                            .collect();
                         let example = Scenario {
                             name: format!("{} {}", scenario.name, i),
                             steps,
                             examples: None,
                             tags: scenario.tags.clone(),
-                            position: examples.table.position
+                            position: examples.table.position,
                         };
 
                         // If regex filter fails, skip the test.
