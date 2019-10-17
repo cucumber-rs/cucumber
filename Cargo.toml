@@ -22,8 +22,7 @@ name = "cucumber_builder"
 harness = false
 
 [dependencies]
-# gherkin = { package = "gherkin_rust", version = "^0.5.1" }
-gherkin = { package = "gherkin_rust", git = "https://github.com/bbqsrc/gherkin-rust" }
+gherkin = { package = "gherkin_rust", version = "^0.5.1" }
 regex = "1.1.9"
 termcolor = "1.0"
 pathdiff = "0.1.0"
