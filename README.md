@@ -60,7 +60,7 @@ mod example_steps {
     use cucumber::steps;
     
     // Any type that implements cucumber::World + Default can be the world
-    steps!(::MyWorld => {
+    steps!(crate::MyWorld => {
         given "I am trying out Cucumber" |world, step| {
             world.foo = "Some string".to_string();
             // Set up your context in given steps
@@ -119,7 +119,7 @@ fn setup() {
 
 cucumber! {
     features: "./features", // Path to our feature files
-    world: ::MyWorld, // The world needs to be the same for steps and the main cucumber call
+    world: crate::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         example_steps::steps // the `steps!` macro creates a `steps` function in a module
     ],
