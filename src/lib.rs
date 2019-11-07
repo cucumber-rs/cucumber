@@ -361,12 +361,27 @@ impl<W: World> Steps<W> {
                                 let mut step = step.clone();
                                 for (k, v) in examples.table.header.iter().zip(row.iter()) {
                                     step.value = step.value.replace(&format!("<{}>", k), &v);
+                                    // Replace the values in the doc strings
+                                    step.docstring =
+                                        step.docstring.map(|x| x.replace(&format!("<{}>", k), &v));
+                                    // TODO: also replace those in the table.
                                 }
                                 step
                             })
                             .collect();
+
+                        // Replace example scenario name with example values
+                        let mut scenario_name = scenario.name.clone();
+                        for (k, v) in examples.table.header.iter().zip(row.iter()) {
+                            scenario_name = scenario_name.replace(&format!("<{}>", k), &v);
+                        }
+                        // Graceful degradation
+                        if scenario_name == scenario.name {
+                            scenario_name = format!("{} {}", scenario.name, i);
+                        }
+
                         let example = Scenario {
-                            name: format!("{} {}", scenario.name, i),
+                            name: scenario_name,
                             steps,
                             examples: None,
                             tags: scenario.tags.clone(),
