@@ -34,7 +34,7 @@ pub struct DefaultOutput {
 impl Default for DefaultOutput {
     fn default() -> DefaultOutput {
         DefaultOutput {
-            stdout: StandardStream::stdout(ColorChoice::Always),
+            stdout: StandardStream::stdout(ColorChoice::Auto),
             cur_feature: "".to_string(),
             feature_count: 0,
             feature_error_count: 0,
