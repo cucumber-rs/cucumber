@@ -667,11 +667,6 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
     pub fn command_line(mut self) -> bool {
         let options = make_app().unwrap();
         self.options(options);
-
-        if let Some(setup_fn) = self.setup {
-            setup_fn();
-        }
-
         self.run()
     }
 }
