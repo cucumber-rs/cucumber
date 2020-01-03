@@ -7,17 +7,11 @@ matrix:
     env: NAME=test-after-dark
     script:
     - cargo test --all --verbose
-  - rust: 1.36.0
+  - rust: 1.40.0
     env: NAME=test
     script:
     - cargo test --all --verbose
-  - rust: 1.36.0
-    env: NAME=pretty
-    before_script:
-    - rustup component add rustfmt
-    script:
-    - cargo fmt --all -- --check
-  - rust: 1.36.0
+  - rust: 1.40.0
     env: NAME=petty
     before_script:
     - rustup component add clippy
