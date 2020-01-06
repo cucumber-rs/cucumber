@@ -9,14 +9,14 @@ Feature: Basic functionality
     When something goes wrong
     Then it worked anyway
 
-  Scenario Outline: scenario with examples
-    Given a number <num>
-    Then twice that number should be <double>
+  # Scenario Outline: scenario with examples
+  #   Given a number <num>
+  #   Then twice that number should be <double>
 
-    Examples:
-      | num | double |
-      |   2 |      4 |
-      |   3 |      6 |
+  #   Examples:
+  #     | num | double |
+  #     |   2 |      4 |
+  #     |   3 |      6 |
 
   Rule: A rule
 

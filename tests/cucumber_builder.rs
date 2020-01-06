@@ -1,5 +1,3 @@
-#![feature(async_await)]
-
 extern crate cucumber_rust as cucumber;
 use cucumber::{after, before, cucumber};
 
@@ -50,14 +48,14 @@ mod example_steps {
             .given_async("a thing", a_thing2)
             .when_async("something goes wrong", |_world, _step| {
                 cucumber::TestFuture::new(async {
-                    runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
+                //     runtime::time::Delay::new(std::time::Duration::from_millis(2000)).await;
                 })
             })
             .given("I am trying out Cucumber", |world, _step| {
                 world.foo = "Some string".to_string();
             })
             .when("nothing", |_, _| {
-                panic!("fight me");
+                // panic!("fight me");
             })
             .when("I consider what I am doing", |world, _step| {
                 let new_string = format!("{}.", &world.foo);

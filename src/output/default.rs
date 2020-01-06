@@ -545,7 +545,12 @@ impl OutputVisitor for DefaultOutput {
 
     fn visit_scenario(&self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
         let mut guard = self.progress.write().unwrap();
-        let mut buffer = &mut guard.get_mut(scenario).unwrap().1;
+        let mut buffer = match guard.get_mut(scenario) {
+            Some(v) => &mut v.1,
+            None => {
+                return;
+            }
+        };
         let cmt = &format!(
             "{}:{}:{}",
             &self.cur_feature.read().unwrap(),
@@ -566,14 +571,14 @@ impl OutputVisitor for DefaultOutput {
     }
 
     fn visit_scenario_skipped(&self, _rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
-        if !self.scenarios.read().unwrap().contains_key(scenario) {
-            self.scenarios
-                .write()
-                .unwrap()
-                .insert(scenario.clone(), ScenarioResult::Skip);
+        // if !self.scenarios.read().unwrap().contains_key(scenario) {
+        //     self.scenarios
+        //         .write()
+        //         .unwrap()
+        //         .insert(scenario.clone(), ScenarioResult::Skip);
 
-            let pb = &self.progress.write().unwrap()[scenario].0;
-        }
+        //     let pb = &self.progress.write().unwrap()[scenario].0;
+        // }
     }
 
     fn visit_scenario_end(&self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
@@ -585,7 +590,10 @@ impl OutputVisitor for DefaultOutput {
         }
 
         let mut guard = self.progress.write().unwrap();
-        let mut buffer = &mut guard.get_mut(scenario).unwrap().1;
+        let mut buffer = match guard.get_mut(scenario) {
+            Some(v) => &mut v.1,
+            None => return
+        };
         self.println(&mut buffer, "");
         let pb = &guard[scenario].0;
         let status = &self.scenarios.read().unwrap()[scenario];
@@ -606,7 +614,11 @@ impl OutputVisitor for DefaultOutput {
         step: &gherkin::Step,
     ) {
         self.step_count.fetch_add(1, Ordering::SeqCst);
-        let pb = &self.progress.write().unwrap()[scenario].0;
+        let guard = self.progress.write().unwrap();
+        let pb = match guard.get(scenario) {
+            Some(v) => &v.0,
+            None => return
+        };
         pb.set_message(&format!("Step: {}", &step.to_string()));
         pb.inc(1);
     }
@@ -628,7 +640,10 @@ impl OutputVisitor for DefaultOutput {
         let indent = if rule.is_some() { "   " } else { "  " };
 
         let mut guard = self.progress.write().unwrap();
-        let item = &mut guard.get_mut(scenario).unwrap();
+        let item = match guard.get_mut(scenario) {
+            Some(mut v) => v,
+            None => return
+        };
         let pb = &item.0;
         let mut buffer = &mut item.1;
 
