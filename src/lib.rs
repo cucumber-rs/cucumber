@@ -43,21 +43,20 @@ type HelperFn = fn(&Scenario) -> ();
 
 use std::panic::{AssertUnwindSafe, UnwindSafe};
 
+type TestFn<W> = fn(W, Step) -> TestFuture;
 type TestSyncFn<W> = fn(&mut W, &Step) -> ();
 type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
 type RegexTestSyncFn<W> = fn(&mut W, &[String], &Step) -> ();
-type TestFn<W> = fn(W, Step) -> TestFuture;
 
+#[must_use = "futures do nothing unless you `.await` or poll them"]
 pub struct TestFuture {
     future: BoxFuture<'static, ()>,
 }
 
-impl UnwindSafe for TestFuture {}
-
 use futures::task::{Context, Poll};
 use std::panic::catch_unwind;
-
 use pin_utils::unsafe_pinned;
+
 impl TestFuture {
     unsafe_pinned!(future: BoxFuture<'static, ()>);
 
@@ -66,7 +65,8 @@ impl TestFuture {
     }
 }
 
-#[must_use = "futures do nothing unless you `.await` or poll them"]
+impl UnwindSafe for TestFuture {}
+
 impl Future for TestFuture {
     type Output = Result<(), Box<dyn std::any::Any + Send>>;
 
@@ -75,6 +75,8 @@ impl Future for TestFuture {
     }
 }
 
+//TODO: more than one dimension of differences should be avoided. In this case we have n^2 variants
+//for bags and related functions, etc.
 type TestAsyncBag<W> = HashMap<&'static str, TestFn<W>>;
 type TestSyncBag<W> = HashMap<&'static str, TestSyncFn<W>>;
 type RegexBag<W> = HashMap<HashableRegex, RegexTestFn<W>>;
@@ -95,6 +97,11 @@ struct RegexSteps<W: World> {
     then: RegexBag<W>,
 }
 
+//TODO: three Debug impls for different steps shows that current approach is more 'inheritance'
+//like, not a composition. Maybe there is a way to use Step struct with `given`,`when`,`then` and
+//`type` fields for example. Then we can use the same trait impl for different steps (async,
+//regexp) and we also use pattern matching on step's type field instead of different impl traits
+//for several structs. 
 impl<W: World> fmt::Debug for Steps<W> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Steps")
@@ -127,6 +134,8 @@ impl<W: World> fmt::Debug for AsyncSteps<W> {
     }
 }
 
+//TODO: Async steps have the same struct as sync steps. May be replaced with one struct and `type`
+//parameter (or maybe more elegant solution).
 #[derive(Default)]
 struct AsyncSteps<W: World> {
     given: TestAsyncBag<W>,
@@ -134,6 +143,35 @@ struct AsyncSteps<W: World> {
     then: TestAsyncBag<W>,
 }
 
+//TODO: Two exactly the same impls for almost exactly the same structs.
+//Another Idea is to make Steps an enum:
+//```
+//enum Step {
+//  Sync,
+//  Async,
+//  Regexp,
+//}
+//But looks like we will suffer from two dimensial parameters in such a case too.
+//But if we would make step's type a enum with different parameters for different cases:
+//```
+//struct Step {
+//  given:...,
+//  other_common_fields:...,
+//  type: StepType,
+//  execution_type: ExType,
+//}
+//
+//enum StepType {
+//  Regexp(Step),
+//}
+//
+//And also a different field and enum for execution type (Async/Sync):
+//enum ExType {
+//  Async(...),
+//  Sync(...),
+//}
+// We would have enough flexibility to reuse traits' impls where they are universal and make the
+// differences base on type and execution_type where it need to be done.
 impl<W: World> AsyncSteps<W> {
     pub fn len(&self) -> usize {
         self.given.len() + self.when.len() + self.then.len()
@@ -146,6 +184,7 @@ impl<W: World> RegexSteps<W> {
     }
 }
 
+//TODO: Is it Scenario Type?
 enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestSyncFn<W>),
     Async(&'a TestFn<W>),
@@ -172,6 +211,17 @@ impl<W: World> StepsBuilder<W> {
         StepsBuilder::default()
     }
 
+    //TODO: If we place sync/async enum field into Step struct, we will need only to pattern match
+    //this field and place step in a bag based on value:
+    //```
+    //match step.execution_type {
+    //  Sync => self.steps.sync_bag.insert()
+    //  Async => self.steps.async_bag.insert()
+    //}
+    //```
+    //The same about StepType, if it will be a field, we can use current approach and don't pass ty
+    //as additional parameter, or we can make bags inside bags and pattern match target bag based
+    //on it.
     pub fn add_normal_async(
         &mut self,
         ty: StepType,
@@ -182,6 +232,12 @@ impl<W: World> StepsBuilder<W> {
         self
     }
 
+    //TODO: we wouldn't need two functions for given if we place type into Step
+    //it will look like a canonical builder:
+    //```
+    //Step::builder().given(...).sync().build();
+    //Step::builder().given(...).regexp().async().build();
+    //```
     pub fn given_async(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
         self.add_normal_async(StepType::Given, name, test_fn);
         self
@@ -258,11 +314,13 @@ impl<W: World> StepsBuilder<W> {
     }
 }
 
+//TODO: If we have AsyncSteps, why do we place async bags into impl for syncsteps?
 impl<W: World + Default> Steps<W> {
     pub fn len(&self) -> usize {
         self.given.len() + self.when.len() + self.then.len() + self.regex.len() + self.async_.len()
     }
 
+    //TODO: merge with async bag for
     fn test_bag_for(&self, ty: StepType) -> &TestSyncBag<W> {
         match ty {
             StepType::Given => &self.given,
@@ -311,6 +369,7 @@ impl<W: World + Default> Steps<W> {
         }
     }
 
+    //TODO: we will not need this method if we place fields inside step struct.
     fn test_type<'a>(&'a self, step: &Step) -> Option<TestCaseType<'a, W>> {
         if let Some(t) = self.test_bag_for(step.ty).get(&*step.value) {
             return Some(TestCaseType::Normal(t));
@@ -344,6 +403,13 @@ impl<W: World + Default> Steps<W> {
     }
 
     pub fn append(&mut self, other: Self) {
+        //TODO: we can try to use:
+        //self
+        //  given
+        //    sync
+        //    async
+        //  when
+        //  then
         self.given.extend(other.given);
         self.when.extend(other.when);
         self.then.extend(other.then);
