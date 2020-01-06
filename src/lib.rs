@@ -6,8 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(async_await)]
-
 pub extern crate gherkin;
 pub extern crate globwalk;
 
@@ -435,7 +433,7 @@ impl<W: World + Default> Steps<W> {
         &self,
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
+        scenario: gherkin::Scenario,
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         suppress_output: bool,
@@ -596,7 +594,7 @@ impl<W: World + Default> Steps<W> {
                         futures.push(self.run_scenario(
                             &feature,
                             rule,
-                            &example,
+                            example,
                             &before_fns,
                             &after_fns,
                             options.suppress_output,
@@ -615,7 +613,7 @@ impl<W: World + Default> Steps<W> {
                     futures.push(self.run_scenario(
                         &feature,
                         rule,
-                        &scenario,
+                        scenario.clone(),
                         &before_fns,
                         &after_fns,
                         options.suppress_output,
