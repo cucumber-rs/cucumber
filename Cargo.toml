@@ -14,10 +14,6 @@ edition = "2018"
 travis-ci = { repository = "bbqsrc/cucumber-rust" }
 
 [[test]]
-name = "cucumber"
-harness = false
-
-[[test]]
 name = "cucumber_builder"
 harness = false
 

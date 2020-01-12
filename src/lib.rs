@@ -520,45 +520,6 @@ pub fn tag_rule_applies(scenario: &Scenario, rule: &str) -> bool {
     }
 }
 
-#[macro_export]
-macro_rules! before {
-    (
-        $fnname:ident: $tagrule:tt => $scenariofn:expr
-    ) => {
-        fn $fnname(scenario: &$crate::Scenario) {
-            let scenario_closure: fn(&$crate::Scenario) -> () = $scenariofn;
-            let tag_rule: &str = $tagrule;
-
-            // TODO check tags
-            if $crate::tag_rule_applies(scenario, tag_rule) {
-                scenario_closure(scenario);
-            }
-        }
-    };
-
-    (
-        $fnname:ident => $scenariofn:expr
-    ) => {
-        before!($fnname: "" => $scenariofn);
-    };
-}
-
-// This is just a remap of before.
-#[macro_export]
-macro_rules! after {
-    (
-        $fnname:ident: $tagrule:tt => $stepfn:expr
-    ) => {
-        before!($fnname: $tagrule => $stepfn);
-    };
-
-    (
-        $fnname:ident => $scenariofn:expr
-    ) => {
-        before!($fnname: "" => $scenariofn);
-    };
-}
-
 pub struct CucumberBuilder<W: World, O: OutputVisitor> {
     output: O,
     features: Vec<PathBuf>,
@@ -671,124 +632,44 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
     }
 }
 
+
 #[macro_export]
-macro_rules! cucumber {
+macro_rules! before {
     (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        setup: $setupfn:expr,
-        before: $beforefns:expr,
-        after: $afterfns:expr
+        $fnname:ident: $tagrule:tt => $scenariofn:expr
     ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); Some($afterfns));
-    };
+        fn $fnname(scenario: &$crate::Scenario) {
+            let scenario_closure: fn(&$crate::Scenario) -> () = $scenariofn;
+            let tag_rule: &str = $tagrule;
 
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        setup: $setupfn:expr,
-        before: $beforefns:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); Some($beforefns); None);
-    };
-
-        (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        setup: $setupfn:expr,
-        after: $afterfns:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; Some($afterfns));
-    };
-
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        before: $beforefns:expr,
-        after: $afterfns:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); Some($afterfns));
-    };
-
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        before: $beforefns:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; None; Some($beforefns); None);
-    };
-
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        after: $afterfns:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; Some($afterfns));
-    };
-
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr,
-        setup: $setupfn:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; Some($setupfn); None; None);
-    };
-
-    (
-        features: $featurepath:tt,
-        world: $worldtype:path,
-        steps: $vec:expr
-    ) => {
-        cucumber!(@finish; $featurepath; $worldtype; $vec; None; None; None);
-    };
-
-    (
-        @finish; $featurepath:tt; $worldtype:path; $vec:expr; $setupfn:expr; $beforefns:expr; $afterfns:expr
-    ) => {
-        #[allow(unused_imports)]
-        fn main() {
-            use std::path::Path;
-            use $crate::{CucumberBuilder, Scenario, Steps, DefaultOutput, OutputVisitor};
-
-            let output = DefaultOutput::new();
-            let instance = {
-                let mut instance = CucumberBuilder::new(output);
-
-                instance
-                    .features(vec![Path::new($featurepath).to_path_buf()])
-                    .steps(Steps::combine($vec.iter().map(|f| f())));
-
-                if let Some(setup) = $setupfn {
-                    instance.setup(setup);
-                }
-
-                let before_fns: Option<&[fn(&Scenario) -> ()]> = $beforefns;
-                if let Some(before) = before_fns {
-                    instance.before(before.to_vec());
-                }
-
-                let after_fns: Option<&[fn(&Scenario) -> ()]> = $afterfns;
-                if let Some(after) = after_fns {
-                    instance.after(after.to_vec());
-                }
-
-                instance
-            };
-
-            let res = instance.command_line();
-
-            if !res {
-                std::process::exit(1);
+            // TODO check tags
+            if $crate::tag_rule_applies(scenario, tag_rule) {
+                scenario_closure(scenario);
             }
         }
-    }
+    };
+
+    (
+        $fnname:ident => $scenariofn:expr
+    ) => {
+        before!($fnname: "" => $scenariofn);
+    };
+}
+
+// This is just a remap of before.
+#[macro_export]
+macro_rules! after {
+    (
+        $fnname:ident: $tagrule:tt => $stepfn:expr
+    ) => {
+        before!($fnname: $tagrule => $stepfn);
+    };
+
+    (
+        $fnname:ident => $scenariofn:expr
+    ) => {
+        before!($fnname: "" => $scenariofn);
+    };
 }
 
 #[macro_export]
@@ -816,89 +697,5 @@ macro_rules! typed_regex {
 macro_rules! skip {
     () => {
         unimplemented!("cucumber test skipped");
-    };
-}
-
-#[macro_export]
-macro_rules! steps {
-    (
-        @step_type given
-    ) => {
-        $crate::StepType::Given
-    };
-
-    (
-        @step_type when
-    ) => {
-        $crate::StepType::When
-    };
-
-    (
-        @step_type then
-    ) => {
-        $crate::StepType::Then
-    };
-
-    (
-        @parse_matches $worldtype:path, ($($arg_type:ty),*) $body:expr
-    ) => {
-        $crate::typed_regex!($worldtype, ($($arg_type),*) $body)
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt $body:expr;
-    ) => {
-        $tests.add_regex(steps!(@step_type $ty), $name, $body);
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt $body:expr; $( $items:tt )*
-    ) => {
-        $tests.add_regex(steps!(@step_type $ty), $name, $body);
-
-        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr;
-    ) => {
-        steps!(@gather_steps, $worldtype, $tests, $ty regex $name steps!(@parse_matches $worldtype, ($($arg_type),*) $body););
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident regex $name:tt ($($arg_type:ty),*) $body:expr; $( $items:tt )*
-    ) => {
-        steps!(@gather_steps, $worldtype, $tests, $ty regex $name steps!(@parse_matches $worldtype, ($($arg_type),*) $body); $( $items )*);
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident $name:tt $body:expr;
-    ) => {
-        $tests.add_normal(steps!(@step_type $ty), $name, $body);
-    };
-
-    (
-        @gather_steps, $worldtype:path, $tests:tt,
-        $ty:ident $name:tt $body:expr; $( $items:tt )*
-    ) => {
-        $tests.add_normal(steps!(@step_type $ty), $name, $body);
-
-        steps!(@gather_steps, $worldtype, $tests, $( $items )*);
-    };
-
-    (
-        $worldtype:path => { $( $items:tt )* }
-    ) => {
-        #[allow(missing_docs)]
-        pub fn steps() -> $crate::Steps<$worldtype> {
-            let mut tests: $crate::StepsBuilder::<$worldtype> = $crate::StepsBuilder::new();
-            steps!(@gather_steps, $worldtype, tests, $( $items )*);
-            tests.build()
-        }
     };
 }
