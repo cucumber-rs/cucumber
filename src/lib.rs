@@ -35,30 +35,98 @@ pub trait World: Default {}
 
 type HelperFn = fn(&Scenario) -> ();
 
-type TestFn<W> = fn(&mut W, &Step) -> ();
-type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
+type LiteralSyncTestFunction<W> = fn(&mut W, &Step) -> ();
+type ArgsSyncTestFunction<W> = fn(&mut W, &[String], &Step) -> ();
 
-type TestBag<W> = HashMap<&'static str, TestFn<W>>;
-type RegexBag<W> = HashMap<HashableRegex, RegexTestFn<W>>;
+enum SyncTestFunction<W> {
+    WithArgs(fn(&mut W, &[String], &Step) -> ()),
+    WithoutArgs(fn(&mut W, &Step) -> ())
+}
 
-#[derive(Default)]
-pub struct Steps<W: World> {
-    given: TestBag<W>,
-    when: TestBag<W>,
-    then: TestBag<W>,
-    regex: RegexSteps<W>,
+enum TestFunction<W> {
+    Sync(SyncTestFunction<W>)
 }
 
 #[derive(Default)]
-struct RegexSteps<W: World> {
-    given: RegexBag<W>,
-    when: RegexBag<W>,
-    then: RegexBag<W>,
+struct StepMaps<W: World> {
+    literals: HashMap<&'static str, TestFunction<W>>,
+    regex: HashMap<HashableRegex, TestFunction<W>>,
 }
 
-enum TestCaseType<'a, W: 'a + World> {
-    Normal(&'a TestFn<W>),
-    Regex(&'a RegexTestFn<W>, Vec<String>),
+#[derive(Default)]
+struct StepsCollection<W: World> {
+    given: StepMaps<W>,
+    when: StepMaps<W>,
+    then: StepMaps<W>,
+}
+
+struct TestPayload<'a, W: World> {
+    function: &'a TestFunction<W>,
+    payload: Vec<String>
+}
+
+impl<W: World> StepsCollection<W> {
+    fn insert_literal(&mut self, ty: StepType, name: &'static str, callback: LiteralSyncTestFunction<W>) {
+        let callback = TestFunction::Sync(SyncTestFunction::WithoutArgs(callback));
+
+        match ty {
+            StepType::Given => self.given.literals.insert(name, callback),
+            StepType::When => self.when.literals.insert(name, callback),
+            StepType::Then => self.then.literals.insert(name, callback)
+        };
+    }
+
+    fn insert_regex(&mut self, ty: StepType, regex: Regex, callback: ArgsSyncTestFunction<W>) {
+        let callback = TestFunction::Sync(SyncTestFunction::WithArgs(callback));
+        let name = HashableRegex(regex);
+
+        match ty {
+            StepType::Given => self.given.regex.insert(name, callback),
+            StepType::When => self.when.regex.insert(name, callback),
+            StepType::Then => self.then.regex.insert(name, callback)
+        };
+    }
+
+    fn resolve(&self, step: &Step) -> Option<TestPayload<'_, W>> {
+        // Attempt to find literal variant of steps first
+        let test_fn = match step.ty {
+            StepType::Given => self.given.literals.get(&*step.value),
+            StepType::When => self.when.literals.get(&*step.value),
+            StepType::Then => self.then.literals.get(&*step.value),
+        };
+
+        match test_fn {
+            Some(function) => return Some(TestPayload { function, payload: vec![] }),
+            None => {}
+        };
+
+        let regex_map = match step.ty {
+            StepType::Given => &self.given.regex,
+            StepType::When => &self.when.regex,
+            StepType::Then => &self.then.regex,
+        };
+
+        // Then attempt to find a regex variant of that test
+        if let Some((regex, function)) = regex_map
+            .iter()
+            .find(|(regex, _)| regex.is_match(&step.value))
+        {
+            let matches = regex.0
+                .captures(&step.value)
+                .unwrap()
+                .iter()
+                .map(|match_| {
+                    match_
+                        .map(|match_| match_.as_str().to_owned())
+                        .unwrap_or_default()
+                })
+                .collect();
+
+            return Some(TestPayload { function, payload: matches })
+        }
+
+        None
+    }
 }
 
 pub enum TestResult {
@@ -73,7 +141,7 @@ pub struct StepsBuilder<W>
 where
     W: World,
 {
-    steps: Steps<W>,
+    steps: StepsCollection<W>,
 }
 
 impl<W: World> StepsBuilder<W> {
@@ -81,149 +149,85 @@ impl<W: World> StepsBuilder<W> {
         StepsBuilder::default()
     }
 
-    pub fn given(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::Given, name, test_fn);
+    pub fn given(&mut self, name: &'static str, test_fn: LiteralSyncTestFunction<W>) -> &mut Self {
+        self.add_literal(StepType::Given, name, test_fn);
         self
     }
 
-    pub fn when(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::When, name, test_fn);
+    pub fn when(&mut self, name: &'static str, test_fn: LiteralSyncTestFunction<W>) -> &mut Self {
+        self.add_literal(StepType::When, name, test_fn);
         self
     }
 
-    pub fn then(&mut self, name: &'static str, test_fn: TestFn<W>) -> &mut Self {
-        self.add_normal(StepType::Then, name, test_fn);
+    pub fn then(&mut self, name: &'static str, test_fn: LiteralSyncTestFunction<W>) -> &mut Self {
+        self.add_literal(StepType::Then, name, test_fn);
         self
     }
 
-    pub fn given_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+    pub fn given_regex(&mut self, regex: &'static str, test_fn: ArgsSyncTestFunction<W>) -> &mut Self {
         self.add_regex(StepType::Given, regex, test_fn);
         self
     }
 
-    pub fn when_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+    pub fn when_regex(&mut self, regex: &'static str, test_fn: ArgsSyncTestFunction<W>) -> &mut Self {
         self.add_regex(StepType::When, regex, test_fn);
         self
     }
 
-    pub fn then_regex(&mut self, regex: &'static str, test_fn: RegexTestFn<W>) -> &mut Self {
+    pub fn then_regex(&mut self, regex: &'static str, test_fn: ArgsSyncTestFunction<W>) -> &mut Self {
         self.add_regex(StepType::Then, regex, test_fn);
         self
     }
 
-    pub fn add_normal(
+    pub fn add_literal(
         &mut self,
         ty: StepType,
         name: &'static str,
-        test_fn: TestFn<W>,
+        test_fn: LiteralSyncTestFunction<W>,
     ) -> &mut Self {
-        self.steps.test_bag_mut_for(ty).insert(name, test_fn);
+        self.steps.insert_literal(ty, name, test_fn);
         self
     }
 
-    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: RegexTestFn<W>) -> &mut Self {
+    pub fn add_regex(&mut self, ty: StepType, regex: &str, test_fn: ArgsSyncTestFunction<W>) -> &mut Self {
         let regex = Regex::new(regex)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", regex));
-
-        self.steps
-            .regex_bag_mut_for(ty)
-            .insert(HashableRegex(regex), test_fn);
+        self.steps.insert_regex(ty, regex, test_fn);
 
         self
     }
 
     pub fn build(self) -> Steps<W> {
-        self.steps
+        Steps { steps: self.steps }
     }
 }
 
+#[derive(Default)]
+pub struct Steps<W: World> {
+    steps: StepsCollection<W>
+}
+
 impl<W: World> Steps<W> {
-    fn test_bag_for(&self, ty: StepType) -> &TestBag<W> {
-        match ty {
-            StepType::Given => &self.given,
-            StepType::When => &self.when,
-            StepType::Then => &self.then,
-        }
-    }
-
-    fn test_bag_mut_for(&mut self, ty: StepType) -> &mut TestBag<W> {
-        match ty {
-            StepType::Given => &mut self.given,
-            StepType::When => &mut self.when,
-            StepType::Then => &mut self.then,
-        }
-    }
-
-    fn regex_bag_for(&self, ty: StepType) -> &RegexBag<W> {
-        match ty {
-            StepType::Given => &self.regex.given,
-            StepType::When => &self.regex.when,
-            StepType::Then => &self.regex.then,
-        }
-    }
-
-    fn regex_bag_mut_for(&mut self, ty: StepType) -> &mut RegexBag<W> {
-        match ty {
-            StepType::Given => &mut self.regex.given,
-            StepType::When => &mut self.regex.when,
-            StepType::Then => &mut self.regex.then,
-        }
-    }
-
-    fn test_type<'a>(&'a self, step: &Step) -> Option<TestCaseType<'a, W>> {
-        if let Some(t) = self.test_bag_for(step.ty).get(&*step.value) {
-            return Some(TestCaseType::Normal(t));
-        }
-
-        if let Some((regex, t)) = self
-            .regex_bag_for(step.ty)
-            .iter()
-            .find(|(regex, _)| regex.is_match(&step.value))
-        {
-            let matches = regex
-                .0
-                .captures(&step.value)
-                .unwrap()
-                .iter()
-                .map(|match_| {
-                    match_
-                        .map(|match_| match_.as_str().to_owned())
-                        .unwrap_or_default()
-                })
-                .collect();
-
-            return Some(TestCaseType::Regex(t, matches));
-        }
-
-        None
-    }
-
-    pub fn combine(iter: impl Iterator<Item = Self>) -> Self {
-        let mut combined = Self::default();
-
-        for steps in iter {
-            combined.given.extend(steps.given);
-            combined.when.extend(steps.when);
-            combined.then.extend(steps.then);
-
-            combined.regex.given.extend(steps.regex.given);
-            combined.regex.when.extend(steps.regex.when);
-            combined.regex.then.extend(steps.regex.then);
-        }
-
-        combined
+    fn resolve_test<'a>(&'a self, step: &Step) -> Option<TestPayload<'a, W>> {
+        self.steps.resolve(step)
     }
 
     fn run_test(
         &self,
         world: &mut W,
-        test_type: TestCaseType<'_, W>,
+        test: TestPayload<'_, W>,
         step: &Step,
         suppress_output: bool,
     ) -> TestResult {
-        let test_result = PanicTrap::run(suppress_output, || match test_type {
-            TestCaseType::Normal(t) => t(world, &step),
-            TestCaseType::Regex(t, ref c) => t(world, c, &step),
+        let test_result = PanicTrap::run(suppress_output, || {
+            match test.function {
+                TestFunction::Sync(SyncTestFunction::WithArgs(function)) => {
+                    function(world, &test.payload, step)
+                },
+                TestFunction::Sync(SyncTestFunction::WithoutArgs(function)) => {
+                    function(world, step)
+                }
+            }
         });
 
         match test_result.result {
@@ -286,7 +290,7 @@ impl<W: World> Steps<W> {
         for step in steps {
             output.visit_step(rule, &scenario, &step);
 
-            let test_type = match self.test_type(&step) {
+            let test_type = match self.resolve_test(&step) {
                 Some(v) => v,
                 None => {
                     output.visit_step_result(rule, &scenario, &step, &TestResult::Unimplemented);
