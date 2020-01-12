@@ -349,7 +349,7 @@ impl OutputVisitor for DefaultOutput {
             gherkin::TryFromPathError::Parsing(error) => {
                 let position = error_position(error);
                 let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
-        
+
                 self.writeln_cmt(
                     &format!(
                         "{:—<1$}",
@@ -361,7 +361,7 @@ impl OutputVisitor for DefaultOutput {
                     Color::Red,
                     true,
                 );
-        
+
                 self.red(
                     &textwrap::indent(
                         &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
@@ -369,13 +369,13 @@ impl OutputVisitor for DefaultOutput {
                     )
                     .trim_end(),
                 );
-        
+
                 self.writeln(
                     &format!("{:—<1$}\n", "", textwrap::termwidth()),
                     Color::Red,
                     true,
                 );
-            },
+            }
             gherkin::TryFromPathError::Io(error) => {
                 self.writeln_cmt(
                     &format!(
@@ -388,7 +388,7 @@ impl OutputVisitor for DefaultOutput {
                     Color::Red,
                     true,
                 );
-        
+
                 self.red(
                     &textwrap::indent(
                         &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
@@ -396,7 +396,7 @@ impl OutputVisitor for DefaultOutput {
                     )
                     .trim_end(),
                 );
-        
+
                 self.writeln(
                     &format!("{:—<1$}\n", "", textwrap::termwidth()),
                     Color::Red,
@@ -404,8 +404,6 @@ impl OutputVisitor for DefaultOutput {
                 );
             }
         }
-
-        
 
         self.feature_error_count += 1;
     }

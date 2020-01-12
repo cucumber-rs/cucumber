@@ -23,12 +23,18 @@ mod example_steps {
         let mut builder: StepsBuilder<crate::MyWorld> = StepsBuilder::new();
 
         builder
-            .given("a thing", |_world, _step| {
-
-            })
-            .when_regex("something goes (.*)", typed_regex!(crate::MyWorld, (String) |world, item, _step| {
-                world.foo = item;
-            }))
+            .given("a thing", |_world, _step| {})
+            .when_regex(
+                "something goes (.*)",
+                typed_regex!(
+                    crate::MyWorld,
+                    (String) | world,
+                    item,
+                    _step | {
+                        world.foo = item;
+                    }
+                ),
+            )
             .given("I am trying out Cucumber", |world, _step| {
                 world.foo = "Some string".to_string();
             })
