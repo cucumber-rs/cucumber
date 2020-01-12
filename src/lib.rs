@@ -351,84 +351,24 @@ impl<W: World> Steps<W> {
                 continue;
             }
 
-            match &scenario.examples {
-                Some(examples) => {
-                    for (i, row) in examples.table.rows.iter().enumerate() {
-                        let steps = scenario
-                            .steps
-                            .iter()
-                            .map(|step| {
-                                let mut step = step.clone();
-                                for (k, v) in examples.table.header.iter().zip(row.iter()) {
-                                    step.value = step.value.replace(&format!("<{}>", k), &v);
-                                    // Replace the values in the doc strings
-                                    step.docstring =
-                                        step.docstring.map(|x| x.replace(&format!("<{}>", k), &v));
-                                    // TODO: also replace those in the table.
-                                }
-                                step
-                            })
-                            .collect();
-
-                        // Replace example scenario name with example values
-                        let mut scenario_name = scenario.name.clone();
-                        for (k, v) in examples.table.header.iter().zip(row.iter()) {
-                            scenario_name = scenario_name.replace(&format!("<{}>", k), &v);
-                        }
-                        // Graceful degradation
-                        if scenario_name == scenario.name {
-                            scenario_name = format!("{} {}", scenario.name, i);
-                        }
-
-                        let example = Scenario {
-                            name: scenario_name,
-                            steps,
-                            examples: None,
-                            tags: scenario.tags.clone(),
-                            position: examples.table.position,
-                        };
-
-                        // If regex filter fails, skip the test.
-                        if let Some(ref regex) = options.filter {
-                            if !regex.is_match(&scenario.name) {
-                                continue;
-                            }
-                        }
-
-                        if !self.run_scenario(
-                            &feature,
-                            rule,
-                            &example,
-                            &before_fns,
-                            &after_fns,
-                            options.suppress_output,
-                            output,
-                        ) {
-                            is_success = false;
-                        }
-                    }
+            // If regex filter fails, skip the test.
+            if let Some(ref regex) = options.filter {
+                if !regex.is_match(&scenario.name) {
+                    continue;
                 }
-                None => {
-                    // If regex filter fails, skip the test.
-                    if let Some(ref regex) = options.filter {
-                        if !regex.is_match(&scenario.name) {
-                            continue;
-                        }
-                    }
+            }
 
-                    if !self.run_scenario(
-                        &feature,
-                        rule,
-                        &scenario,
-                        &before_fns,
-                        &after_fns,
-                        options.suppress_output,
-                        output,
-                    ) {
-                        is_success = false;
-                    }
-                }
-            };
+            if !self.run_scenario(
+                &feature,
+                rule,
+                &scenario,
+                &before_fns,
+                &after_fns,
+                options.suppress_output,
+                output,
+            ) {
+                is_success = false;
+            }
         }
 
         is_success
