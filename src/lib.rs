@@ -18,8 +18,7 @@ use crate::cli::make_app;
 use crate::globwalk::{glob, GlobWalkerBuilder};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::fs::File;
-use std::io::{stderr, Read, Write};
+use std::io::{stderr, Write};
 use std::path::PathBuf;
 use std::process;
 
@@ -387,11 +386,7 @@ impl<W: World> Steps<W> {
         let mut is_success = true;
 
         for path in feature_files {
-            let mut file = File::open(&path).expect("file to open");
-            let mut buffer = String::new();
-            file.read_to_string(&mut buffer).unwrap();
-
-            let feature = match Feature::try_from(&*buffer) {
+            let feature = match Feature::try_from(&*path) {
                 Ok(v) => v,
                 Err(e) => {
                     output.visit_feature_error(&path, &e);

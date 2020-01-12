@@ -343,36 +343,69 @@ impl OutputVisitor for DefaultOutput {
 
     fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
 
-    fn visit_feature_error(&mut self, path: &Path, error: &gherkin::Error) {
-        let position = error_position(error);
+    fn visit_feature_error(&mut self, path: &Path, error: &gherkin::TryFromPathError) {
         let relpath = self.relpath(&path).to_string_lossy().to_string();
-        let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
+        match error {
+            gherkin::TryFromPathError::Parsing(error) => {
+                let position = error_position(error);
+                let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
+        
+                self.writeln_cmt(
+                    &format!(
+                        "{:—<1$}",
+                        "! Parsing feature failed: ",
+                        textwrap::termwidth() - loc.chars().count() - 7
+                    ),
+                    &loc,
+                    "———— ",
+                    Color::Red,
+                    true,
+                );
+        
+                self.red(
+                    &textwrap::indent(
+                        &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
+                        "  ",
+                    )
+                    .trim_end(),
+                );
+        
+                self.writeln(
+                    &format!("{:—<1$}\n", "", textwrap::termwidth()),
+                    Color::Red,
+                    true,
+                );
+            },
+            gherkin::TryFromPathError::Io(error) => {
+                self.writeln_cmt(
+                    &format!(
+                        "{:—<1$}",
+                        "! Parsing feature failed: ",
+                        textwrap::termwidth() - relpath.chars().count() - 7
+                    ),
+                    &relpath,
+                    "———— ",
+                    Color::Red,
+                    true,
+                );
+        
+                self.red(
+                    &textwrap::indent(
+                        &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
+                        "  ",
+                    )
+                    .trim_end(),
+                );
+        
+                self.writeln(
+                    &format!("{:—<1$}\n", "", textwrap::termwidth()),
+                    Color::Red,
+                    true,
+                );
+            }
+        }
 
-        self.writeln_cmt(
-            &format!(
-                "{:—<1$}",
-                "! Parsing feature failed: ",
-                textwrap::termwidth() - loc.chars().count() - 7
-            ),
-            &loc,
-            "———— ",
-            Color::Red,
-            true,
-        );
-
-        self.red(
-            &textwrap::indent(
-                &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
-                "  ",
-            )
-            .trim_end(),
-        );
-
-        self.writeln(
-            &format!("{:—<1$}\n", "", textwrap::termwidth()),
-            Color::Red,
-            true,
-        );
+        
 
         self.feature_error_count += 1;
     }
