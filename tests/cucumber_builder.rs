@@ -17,13 +17,18 @@ impl std::default::Default for MyWorld {
 }
 
 mod example_steps {
-    use cucumber::{typed_regex, Steps, StepsBuilder};
+    use cucumber::{typed_regex, Steps, StepsBuilder, TestFuture};
 
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: StepsBuilder<crate::MyWorld> = StepsBuilder::new();
 
         builder
-            .given("a thing", |_world, _step| {})
+            .given_async("a thing", |world, _step| {
+                TestFuture::new(async move {            
+                    let mut world = world.write().unwrap();
+                    world.foo = "elho".into();
+                })
+            })
             .when_regex(
                 "something goes (.*)",
                 typed_regex!(
@@ -56,10 +61,8 @@ mod example_steps {
                 r"^we can also match (\d+) (.+) types$",
                 typed_regex!(
                     crate::MyWorld,
-                    (usize, String) | _world,
-                    num,
-                    word,
-                    _step | {
+                    (usize, String)
+                    |_world, num, word, _step| {
                         // `num` will be of type usize, `word` of type String
                         assert_eq!(num, 42);
                         assert_eq!(word, "olika");
@@ -92,5 +95,5 @@ fn main() {
         .setup(setup)
         .steps(example_steps::steps());
 
-    builder.command_line();
+    futures::executor::block_on(builder.command_line());
 }

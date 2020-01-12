@@ -8,16 +8,17 @@
 
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::{
-    ArgsSyncTestFunction, LiteralSyncTestFunction, SyncTestFunction, TestFunction, TestPayload,
+    ArgsSyncTestFunction, LiteralSyncTestFunction, ArgsAsyncTestFunction, LiteralAsyncTestFunction, AsyncTestFunction, SyncTestFunction, TestFunction, TestPayload,
 };
 use crate::{hashable_regex::HashableRegex, Step, StepType, World};
 
 #[derive(Default)]
 struct StepMaps<W: World> {
-    literals: HashMap<&'static str, TestFunction<W>>,
-    regex: HashMap<HashableRegex, TestFunction<W>>,
+    literals: HashMap<&'static str, Arc<TestFunction<W>>>,
+    regex: HashMap<HashableRegex, Arc<TestFunction<W>>>,
 }
 
 #[derive(Default)]
@@ -34,7 +35,7 @@ impl<W: World> StepsCollection<W> {
         name: &'static str,
         callback: LiteralSyncTestFunction<W>,
     ) {
-        let callback = TestFunction::Sync(SyncTestFunction::WithoutArgs(callback));
+        let callback = Arc::new(TestFunction::Sync(SyncTestFunction::WithoutArgs(callback)));
 
         match ty {
             StepType::Given => self.given.literals.insert(name, callback),
@@ -49,7 +50,7 @@ impl<W: World> StepsCollection<W> {
         regex: Regex,
         callback: ArgsSyncTestFunction<W>,
     ) {
-        let callback = TestFunction::Sync(SyncTestFunction::WithArgs(callback));
+        let callback = Arc::new(TestFunction::Sync(SyncTestFunction::WithArgs(callback)));
         let name = HashableRegex(regex);
 
         match ty {
@@ -59,7 +60,38 @@ impl<W: World> StepsCollection<W> {
         };
     }
 
-    pub(crate) fn resolve(&self, step: &Step) -> Option<TestPayload<'_, W>> {
+    pub(crate) fn insert_async_literal(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        callback: LiteralAsyncTestFunction<W>,
+    ) {
+        let callback = Arc::new(TestFunction::Async(AsyncTestFunction::WithoutArgs(callback)));
+
+        match ty {
+            StepType::Given => self.given.literals.insert(name, callback),
+            StepType::When => self.when.literals.insert(name, callback),
+            StepType::Then => self.then.literals.insert(name, callback),
+        };
+    }
+
+    pub(crate) fn insert_async_regex(
+        &mut self,
+        ty: StepType,
+        regex: Regex,
+        callback: ArgsAsyncTestFunction<W>,
+    ) {
+        let callback = Arc::new(TestFunction::Async(AsyncTestFunction::WithArgs(callback)));
+        let name = HashableRegex(regex);
+
+        match ty {
+            StepType::Given => self.given.regex.insert(name, callback),
+            StepType::When => self.when.regex.insert(name, callback),
+            StepType::Then => self.then.regex.insert(name, callback),
+        };
+    }
+
+    pub(crate) fn resolve(&self, step: &Step) -> Option<TestPayload<W>> {
         // Attempt to find literal variant of steps first
         let test_fn = match step.ty {
             StepType::Given => self.given.literals.get(&*step.value),
@@ -70,7 +102,7 @@ impl<W: World> StepsCollection<W> {
         match test_fn {
             Some(function) => {
                 return Some(TestPayload {
-                    function,
+                    function: Arc::clone(function),
                     payload: vec![],
                 })
             }
@@ -101,7 +133,7 @@ impl<W: World> StepsCollection<W> {
                 .collect();
 
             return Some(TestPayload {
-                function,
+                function: Arc::clone(function),
                 payload: matches,
             });
         }

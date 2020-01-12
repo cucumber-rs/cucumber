@@ -9,26 +9,63 @@
 mod builder;
 mod collection;
 
+use futures::future::{BoxFuture, FutureExt};
+use futures::task::{Context, Poll};
+use pin_utils::unsafe_pinned;
+use std::future::Future;
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::pin::Pin;
+use std::sync::{Arc, RwLock};
+
 pub use self::builder::StepsBuilder;
 pub(crate) use self::collection::StepsCollection;
 use crate::panic_trap::{PanicDetails, PanicTrap};
 use crate::{HelperFn, OutputVisitor, Step, World};
 
+pub struct TestFuture {
+    future: BoxFuture<'static, ()>,
+}
+
+#[must_use = "futures do nothing unless you `.await` or poll them"]
+impl TestFuture {
+    unsafe_pinned!(future: BoxFuture<'static, ()>);
+
+    pub fn new(f: impl Future<Output = ()> + Send + 'static) -> Self {
+        TestFuture { future: f.boxed() }
+    }
+}
+
+impl Future for TestFuture {
+    type Output = Result<(), Box<dyn std::any::Any + Send>>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        catch_unwind(AssertUnwindSafe(|| self.future().poll(cx)))?.map(Ok)
+    }
+}
+
 type LiteralSyncTestFunction<W> = fn(&mut W, &Step) -> ();
 type ArgsSyncTestFunction<W> = fn(&mut W, &[String], &Step) -> ();
+type LiteralAsyncTestFunction<W> = fn(Arc<RwLock<W>>, &Step) -> TestFuture;
+type ArgsAsyncTestFunction<W> = fn(Arc<RwLock<W>>, &[String], &Step) -> TestFuture;
 
-pub(crate) struct TestPayload<'a, W: World> {
-    function: &'a TestFunction<W>,
+pub(crate) struct TestPayload<W: World> {
+    function: Arc<TestFunction<W>>,
     payload: Vec<String>,
 }
 
 enum SyncTestFunction<W> {
-    WithArgs(fn(&mut W, &[String], &Step) -> ()),
-    WithoutArgs(fn(&mut W, &Step) -> ()),
+    WithArgs(ArgsSyncTestFunction<W>),
+    WithoutArgs(LiteralSyncTestFunction<W>),
+}
+
+enum AsyncTestFunction<W> {
+    WithArgs(ArgsAsyncTestFunction<W>),
+    WithoutArgs(LiteralAsyncTestFunction<W>),
 }
 
 enum TestFunction<W> {
     Sync(SyncTestFunction<W>),
+    Async(AsyncTestFunction<W>),
 }
 
 pub enum TestResult {
@@ -44,38 +81,62 @@ pub struct Steps<W: World> {
 }
 
 impl<W: World> Steps<W> {
-    fn resolve_test<'a>(&'a self, step: &Step) -> Option<TestPayload<'a, W>> {
+    fn resolve_test<'a>(&'a self, step: &Step) -> Option<TestPayload<W>> {
         self.steps.resolve(step)
     }
 
-    fn run_test(
+    async fn run_test(
         &self,
-        world: &mut W,
-        test: TestPayload<'_, W>,
-        step: &Step,
+        world: &Arc<RwLock<W>>,
+        test: TestPayload<W>,
+        step: &Arc<Step>,
         suppress_output: bool,
     ) -> TestResult {
-        let test_result = PanicTrap::run(suppress_output, || match test.function {
-            TestFunction::Sync(SyncTestFunction::WithArgs(function)) => {
-                function(world, &test.payload, step)
-            }
-            TestFunction::Sync(SyncTestFunction::WithoutArgs(function)) => function(world, step),
+        let world = Arc::clone(world);
+        let step = Arc::clone(step);
+
+        let fut_result = PanicTrap::run(suppress_output, || {
+            let fut = match *test.function {
+                TestFunction::Sync(SyncTestFunction::WithArgs(function)) => {
+                    TestFuture::new(async move {
+                        let mut world = world.write().unwrap();
+                        let payload = test.payload;
+                        function(&mut *world, &*payload, &*step)
+                    })
+                }
+                TestFunction::Sync(SyncTestFunction::WithoutArgs(function)) => {
+                    TestFuture::new(async move {
+                        let mut world = world.write().unwrap();
+                        function(&mut *world, &*step)
+                    })
+                }
+                TestFunction::Async(AsyncTestFunction::WithArgs(generator)) => {
+                    generator(world, &test.payload, &*step)
+                }
+                TestFunction::Async(AsyncTestFunction::WithoutArgs(generator)) => {
+                    generator(world, &*step)
+                }
+            };
+            fut
         });
 
-        match test_result.result {
-            Ok(_) => TestResult::Pass,
+        let future = match fut_result.result {
+            Ok(fut) => fut,
             Err(panic_info) => {
-                if panic_info.payload.ends_with("cucumber test skipped") {
+                return if panic_info.payload.ends_with("cucumber test skipped") {
                     TestResult::Skipped
                 } else {
-                    TestResult::Fail(panic_info, test_result.stdout, test_result.stderr)
+                    TestResult::Fail(panic_info, fut_result.stdout, fut_result.stderr)
                 }
             }
-        }
+        };
+
+        let _ = future.await;
+        TestResult::Pass
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn run_scenario(
+    async fn run_scenario(
         &self,
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -83,7 +144,7 @@ impl<W: World> Steps<W> {
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         suppress_output: bool,
-        output: &mut impl OutputVisitor,
+        output: &impl OutputVisitor,
     ) -> bool {
         output.visit_scenario(rule, &scenario);
 
@@ -91,7 +152,7 @@ impl<W: World> Steps<W> {
             f(&scenario);
         }
 
-        let mut world = {
+        let world = Arc::new(RwLock::new({
             let panic_trap = PanicTrap::run(suppress_output, W::default);
             match panic_trap.result {
                 Ok(v) => v,
@@ -108,7 +169,7 @@ impl<W: World> Steps<W> {
                     panic!(panic_info.payload);
                 }
             }
-        };
+        }));
 
         let mut is_success = true;
         let mut is_skipping = false;
@@ -118,7 +179,9 @@ impl<W: World> Steps<W> {
             .iter()
             .map(|bg| bg.steps.iter())
             .flatten()
-            .chain(scenario.steps.iter());
+            .chain(scenario.steps.iter())
+            .cloned()
+            .map(Arc::new);
 
         for step in steps {
             output.visit_step(rule, &scenario, &step);
@@ -138,7 +201,9 @@ impl<W: World> Steps<W> {
             if is_skipping {
                 output.visit_step_result(rule, &scenario, &step, &TestResult::Skipped);
             } else {
-                let result = self.run_test(&mut world, test_type, &step, suppress_output);
+                let result = self
+                    .run_test(&world, test_type, &step, suppress_output)
+                    .await;
                 output.visit_step_result(rule, &scenario, &step, &result);
                 match result {
                     TestResult::Pass => {}
@@ -164,7 +229,7 @@ impl<W: World> Steps<W> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn run_scenarios(
+    async fn run_scenarios(
         &self,
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -172,9 +237,9 @@ impl<W: World> Steps<W> {
         before_fns: &[HelperFn],
         after_fns: &[HelperFn],
         options: &crate::cli::CliOptions,
-        output: &mut impl OutputVisitor,
+        output: &impl OutputVisitor,
     ) -> bool {
-        let mut is_success = true;
+        let mut futures = vec![];
 
         for scenario in scenarios {
             // If a tag is specified and the scenario does not have the tag, skip the test.
@@ -194,23 +259,25 @@ impl<W: World> Steps<W> {
                 }
             }
 
-            if !self.run_scenario(
+            futures.push(self.run_scenario(
                 &feature,
                 rule,
                 &scenario,
                 &before_fns,
                 &after_fns,
                 options.suppress_output,
-                output,
-            ) {
-                is_success = false;
-            }
+                output.clone(),
+            ));
         }
 
-        is_success
+        // Check if all are successful
+        futures::future::join_all(futures)
+            .await
+            .into_iter()
+            .all(|x| x)
     }
 
-    pub fn run(
+    pub async fn run(
         &self,
         feature_files: Vec<std::path::PathBuf>,
         before_fns: &[HelperFn],
@@ -235,29 +302,35 @@ impl<W: World> Steps<W> {
             };
 
             output.visit_feature(&feature, &path);
-            if !self.run_scenarios(
-                &feature,
-                None,
-                &feature.scenarios,
-                before_fns,
-                after_fns,
-                &options,
-                output,
-            ) {
+            if !self
+                .run_scenarios(
+                    &feature,
+                    None,
+                    &feature.scenarios,
+                    before_fns,
+                    after_fns,
+                    &options,
+                    output,
+                )
+                .await
+            {
                 is_success = false;
             }
 
             for rule in &feature.rules {
                 output.visit_rule(&rule);
-                if !self.run_scenarios(
-                    &feature,
-                    Some(&rule),
-                    &rule.scenarios,
-                    before_fns,
-                    after_fns,
-                    &options,
-                    output,
-                ) {
+                if !self
+                    .run_scenarios(
+                        &feature,
+                        Some(&rule),
+                        &rule.scenarios,
+                        before_fns,
+                        after_fns,
+                        &options,
+                        output,
+                    )
+                    .await
+                {
                     is_success = false;
                 }
                 output.visit_rule_end(&rule);

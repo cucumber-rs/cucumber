@@ -95,7 +95,7 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
         self
     }
 
-    pub fn run(mut self) -> bool {
+    pub async fn run(mut self) -> bool {
         if let Some(feature) = self.options.feature.as_ref() {
             let features = glob(feature)
                 .expect("feature glob is invalid")
@@ -109,18 +109,20 @@ impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
             setup();
         }
 
-        self.steps.run(
-            self.features,
-            &self.before,
-            &self.after,
-            self.options,
-            &mut self.output,
-        )
+        self.steps
+            .run(
+                self.features,
+                &self.before,
+                &self.after,
+                self.options,
+                &mut self.output,
+            )
+            .await
     }
 
-    pub fn command_line(mut self) -> bool {
+    pub async fn command_line(mut self) -> bool {
         let options = make_app().unwrap();
         self.options(options);
-        self.run()
+        self.run().await
     }
 }
