@@ -1,6 +1,6 @@
 [package]
 name = "cucumber_rust"
-version = "0.6.4"
+version = "0.6.5"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 description = "Cucumber testing framework for Rust. Fully native, no external test runners or dependencies."
 license = "MIT OR Apache-2.0"
@@ -29,4 +29,5 @@ pathdiff = "0.1.0"
 textwrap = { version = "0.11", features = ["term_size"] }
 clap = "2.33.0"
 globwalk = "0.7"
-shh = "1.0"
+shh = "1.0.1"
+
