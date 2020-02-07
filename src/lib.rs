@@ -68,12 +68,10 @@ pub enum TestCaseType<'a, W: 'a + World> {
 impl<'a, W: 'a + World> std::fmt::Debug for TestCaseType<'a, W> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TestCaseType::Normal(test) => write!(f, "Normal(fn({:?}))", 1),
-            TestCaseType::Regex(test, args, regex) => write!(
-                f,
-                "Regex(fn({:?}), {:?}, {})",
-                1, &args, regex
-            ),
+            TestCaseType::Normal(_test) => write!(f, "Normal(fn())"),
+            TestCaseType::Regex(_test, args, regex) => {
+                write!(f, "Regex(fn(), {:?}, {})", &args, regex)
+            }
         }
     }
 }

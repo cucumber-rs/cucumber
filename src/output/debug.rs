@@ -1,14 +1,7 @@
 use std;
-use std::collections::HashMap;
-use std::default::Default;
-use std::env;
-use std::io::Write;
 use std::path::Path;
 
 use gherkin;
-use pathdiff::diff_paths;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use textwrap;
 
 use crate::OutputVisitor;
 use crate::TestResult;
@@ -47,22 +40,26 @@ impl OutputVisitor for DebugOutput {
         println!("visit_rule_end {}", rule.name);
     }
 
-    fn visit_scenario(&mut self, rule: Option<&gherkin::Rule>, scenario: &crate::Scenario) {
+    fn visit_scenario(&mut self, _rule: Option<&gherkin::Rule>, scenario: &crate::Scenario) {
         println!("visit_scenario {}", scenario.name);
     }
 
-    fn visit_scenario_end(&mut self, rule: Option<&gherkin::Rule>, scenario: &crate::Scenario) {
+    fn visit_scenario_end(&mut self, _rule: Option<&gherkin::Rule>, scenario: &crate::Scenario) {
         println!("visit_scenario_end {}", scenario.name);
     }
 
-    fn visit_scenario_skipped(&mut self, rule: Option<&gherkin::Rule>, scenario: &crate::Scenario) {
+    fn visit_scenario_skipped(
+        &mut self,
+        _rule: Option<&gherkin::Rule>,
+        scenario: &crate::Scenario,
+    ) {
         println!("visit_scenario_skipped {}", scenario.name);
     }
 
     fn visit_step(
         &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &crate::Scenario,
+        _rule: Option<&gherkin::Rule>,
+        _scenario: &crate::Scenario,
         step: &crate::Step,
     ) {
         println!("visit_step {} {}", step.raw_type, step.value);
@@ -70,8 +67,8 @@ impl OutputVisitor for DebugOutput {
 
     fn visit_step_result(
         &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &crate::Scenario,
+        _rule: Option<&gherkin::Rule>,
+        _scenario: &crate::Scenario,
         step: &crate::Step,
         result: &TestResult,
     ) {
@@ -87,7 +84,7 @@ impl OutputVisitor for DebugOutput {
 
     fn visit_step_resolved<'a, W: crate::World>(
         &mut self,
-        step: &crate::Step,
+        _step: &crate::Step,
         test: &crate::TestCaseType<'a, W>,
     ) {
         println!("visit_step_resolved {:?}", test);
