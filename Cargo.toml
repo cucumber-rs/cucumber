@@ -1,6 +1,6 @@
 [package]
 name = "cucumber_rust"
-version = "0.6.6"
+version = "0.6.7"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 description = "Cucumber testing framework for Rust. Fully native, no external test runners or dependencies."
 license = "MIT OR Apache-2.0"
