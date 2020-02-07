@@ -537,8 +537,8 @@ impl OutputVisitor for DefaultOutput {
 
     fn visit_step_resolved<'a, W: crate::World>(
         &mut self,
-        step: &crate::Step,
-        test: &crate::TestCaseType<'a, W>,
+        _step: &crate::Step,
+        _test: &crate::TestCaseType<'a, W>,
     ) {
     }
 }

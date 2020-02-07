@@ -22,7 +22,6 @@ impl Ord for HashableRegex {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.0.as_str().cmp(other.0.as_str())
     }
-    
 }
 
 impl Hash for HashableRegex {
