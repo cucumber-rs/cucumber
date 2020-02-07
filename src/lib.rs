@@ -16,7 +16,7 @@ mod panic_trap;
 
 use crate::cli::make_app;
 use crate::globwalk::{glob, GlobWalkerBuilder};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{stderr, Read, Write};
@@ -38,8 +38,8 @@ type HelperFn = fn(&Scenario) -> ();
 type TestFn<W> = fn(&mut W, &Step) -> ();
 type RegexTestFn<W> = fn(&mut W, &[String], &Step) -> ();
 
-type TestBag<W> = HashMap<&'static str, TestFn<W>>;
-type RegexBag<W> = HashMap<HashableRegex, RegexTestFn<W>>;
+type TestBag<W> = BTreeMap<&'static str, TestFn<W>>;
+type RegexBag<W> = BTreeMap<HashableRegex, RegexTestFn<W>>;
 
 #[derive(Default)]
 pub struct Steps<W: World> {
