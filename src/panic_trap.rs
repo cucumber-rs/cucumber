@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use shh::{stderr, stdout};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PanicDetails {
     pub payload: String,
     pub location: String,

@@ -28,8 +28,7 @@ pub use gherkin::{Scenario, Step, StepType};
 use regex::Regex;
 
 use crate::hashable_regex::HashableRegex;
-pub use crate::output::default::DefaultOutput;
-pub use crate::output::OutputVisitor;
+pub use crate::output::{debug::DebugOutput, default::DefaultOutput, OutputVisitor};
 use crate::panic_trap::{PanicDetails, PanicTrap};
 
 pub trait World: Default {}
@@ -57,11 +56,29 @@ struct RegexSteps<W: World> {
     then: RegexBag<W>,
 }
 
-enum TestCaseType<'a, W: 'a + World> {
+pub enum TestCaseType<'a, W: 'a + World> {
     Normal(&'a TestFn<W>),
-    Regex(&'a RegexTestFn<W>, Vec<String>),
+    Regex(
+        &'a RegexTestFn<W>,
+        Vec<String>,
+        &'a hashable_regex::HashableRegex,
+    ),
 }
 
+impl<'a, W: 'a + World> std::fmt::Debug for TestCaseType<'a, W> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TestCaseType::Normal(test) => write!(f, "Normal(fn({:?}))", 1),
+            TestCaseType::Regex(test, args, regex) => write!(
+                f,
+                "Regex(fn({:?}), {:?}, {})",
+                1, &args, regex
+            ),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum TestResult {
     Skipped,
     Unimplemented,
@@ -193,7 +210,7 @@ impl<W: World> Steps<W> {
                 })
                 .collect();
 
-            return Some(TestCaseType::Regex(t, matches));
+            return Some(TestCaseType::Regex(t, matches, regex));
         }
 
         None
@@ -224,7 +241,7 @@ impl<W: World> Steps<W> {
     ) -> TestResult {
         let test_result = PanicTrap::run(suppress_output, || match test_type {
             TestCaseType::Normal(t) => t(world, &step),
-            TestCaseType::Regex(t, ref c) => t(world, c, &step),
+            TestCaseType::Regex(t, ref c, _) => t(world, c, &step),
         });
 
         match test_result.result {
@@ -288,7 +305,10 @@ impl<W: World> Steps<W> {
             output.visit_step(rule, &scenario, &step);
 
             let test_type = match self.test_type(&step) {
-                Some(v) => v,
+                Some(v) => {
+                    output.visit_step_resolved(step, &v);
+                    v
+                }
                 None => {
                     output.visit_step_result(rule, &scenario, &step, &TestResult::Unimplemented);
                     if !is_skipping {

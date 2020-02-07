@@ -534,4 +534,11 @@ impl OutputVisitor for DefaultOutput {
     fn visit_finish(&mut self) {
         self.print_finish().unwrap();
     }
+
+    fn visit_step_resolved<'a, W: crate::World>(
+        &mut self,
+        step: &crate::Step,
+        test: &crate::TestCaseType<'a, W>,
+    ) {
+    }
 }
