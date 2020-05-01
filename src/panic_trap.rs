@@ -1,6 +1,6 @@
 use std::io::Read;
 use std::ops::Deref;
-use std::panic;
+use std::panic::{self, UnwindSafe};
 use std::sync::{Arc, Mutex};
 
 use shh::{stderr, stdout};
@@ -37,19 +37,19 @@ pub struct PanicTrap<T> {
 }
 
 impl<T> PanicTrap<T> {
-    pub fn run<F: FnOnce() -> T>(quiet: bool, f: F) -> PanicTrap<T> {
+    pub async fn run(quiet: bool, f: impl futures::future::Future<Output = T> + UnwindSafe) -> PanicTrap<T> {
         if quiet {
-            PanicTrap::run_quietly(f)
+            PanicTrap::run_quietly(f).await
         } else {
-            PanicTrap::run_loudly(f)
+            PanicTrap::run_loudly(f).await
         }
     }
 
-    fn run_quietly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
+    async fn run_quietly(f: impl futures::future::Future<Output = T> + UnwindSafe) -> PanicTrap<T> {
         let mut stdout = stdout().expect("Failed to capture stdout");
         let mut stderr = stderr().expect("Failed to capture stderr");
 
-        let mut trap = PanicTrap::run_loudly(f);
+        let mut trap = PanicTrap::run_loudly(f).await;
 
         stdout.read_to_end(&mut trap.stdout).unwrap();
         stderr.read_to_end(&mut trap.stderr).unwrap();
@@ -57,7 +57,8 @@ impl<T> PanicTrap<T> {
         trap
     }
 
-    fn run_loudly<F: FnOnce() -> T>(f: F) -> PanicTrap<T> {
+    async fn run_loudly(f: impl futures::future::Future<Output = T> + UnwindSafe) -> PanicTrap<T> {
+        use futures::future::FutureExt;
         let last_panic = Arc::new(Mutex::new(None));
 
         panic::set_hook({
@@ -69,18 +70,17 @@ impl<T> PanicTrap<T> {
             })
         });
 
-        let result = panic::catch_unwind(panic::AssertUnwindSafe(f));
+        let result = f.catch_unwind().await;
 
         let _ = panic::take_hook();
 
+        let result = match last_panic.lock().expect("Last panic mutex poisoned").take() {
+            Some(v) => Err(v),
+            None => Ok(result.unwrap()),
+        };
+
         PanicTrap {
-            result: result.map_err(|_| {
-                last_panic
-                    .lock()
-                    .expect("Last panic mutex poisoned")
-                    .take()
-                    .expect("Panic occurred but no panic details were set")
-            }),
+            result: result,
             stdout: Vec::new(),
             stderr: Vec::new(),
         }

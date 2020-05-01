@@ -9,10 +9,9 @@
 mod builder;
 mod collection;
 
-use futures::future::{BoxFuture, FutureExt};
+use futures::future::{Future, BoxFuture, FutureExt};
 use futures::task::{Context, Poll};
 use pin_utils::unsafe_pinned;
-use std::future::Future;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
@@ -22,25 +21,28 @@ pub use self::builder::StepsBuilder;
 pub(crate) use self::collection::StepsCollection;
 use crate::panic_trap::{PanicDetails, PanicTrap};
 use crate::{HelperFn, OutputVisitor, Step, World};
+use std::panic::UnwindSafe;
 
 pub struct TestFuture {
-    future: BoxFuture<'static, ()>,
+    future: BoxFuture<'static, std::result::Result<(), std::boxed::Box<(dyn std::any::Any + std::marker::Send + 'static)>>>,
 }
+
+impl UnwindSafe for TestFuture {}
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 impl TestFuture {
-    unsafe_pinned!(future: BoxFuture<'static, ()>);
+    unsafe_pinned!(future: BoxFuture<'static, std::result::Result<(), std::boxed::Box<(dyn std::any::Any + std::marker::Send + 'static)>>>);
 
-    pub fn new(f: impl Future<Output = ()> + Send + 'static) -> Self {
-        TestFuture { future: f.boxed() }
+    pub fn new(f: impl Future<Output = ()> + Send + UnwindSafe + 'static) -> Self {
+        TestFuture { future: Box::pin(f.catch_unwind()) }
     }
 }
 
 impl Future for TestFuture {
-    type Output = Result<(), Box<dyn std::any::Any + Send>>;
+    type Output = std::result::Result<(), std::boxed::Box<(dyn std::any::Any + std::marker::Send + 'static)>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        catch_unwind(AssertUnwindSafe(|| self.future().poll(cx)))?.map(Ok)
+        catch_unwind(AssertUnwindSafe(|| self.future().poll(cx)))?
     }
 }
 
@@ -93,33 +95,37 @@ impl<W: World> Steps<W> {
         step: &Arc<Step>,
         suppress_output: bool,
     ) -> TestResult {
+        use futures::future::FutureExt;
+
         let world = Arc::clone(world);
         let step = Arc::clone(step);
 
-        let fut_result = PanicTrap::run(suppress_output, || {
-            let fut = match *test.function {
-                TestFunction::Sync(SyncTestFunction::WithArgs(function)) => {
-                    TestFuture::new(async move {
-                        let mut world = world.write().unwrap();
-                        let payload = test.payload;
-                        function(&mut *world, &*payload, &*step)
-                    })
-                }
-                TestFunction::Sync(SyncTestFunction::WithoutArgs(function)) => {
-                    TestFuture::new(async move {
-                        let mut world = world.write().unwrap();
-                        function(&mut *world, &*step)
-                    })
-                }
-                TestFunction::Async(AsyncTestFunction::WithArgs(generator)) => {
-                    generator(world, &test.payload, &*step)
-                }
-                TestFunction::Async(AsyncTestFunction::WithoutArgs(generator)) => {
-                    generator(world, &*step)
-                }
-            };
-            fut
-        });
+        let fut = match *test.function {
+            TestFunction::Sync(SyncTestFunction::WithArgs(function)) => {
+                TestFuture::new(async move {
+                    let mut world = world.write().unwrap();
+                    let payload = test.payload;
+                    function(&mut *world, &*payload, &*step)
+                })
+            }
+            TestFunction::Sync(SyncTestFunction::WithoutArgs(function)) => {
+                TestFuture::new(async move {
+                    let mut world = world.write().unwrap();
+                    function(&mut *world, &*step)
+                })
+            }
+            TestFunction::Async(AsyncTestFunction::WithArgs(generator)) => {
+                generator(world, &test.payload, &*step)
+            }
+            TestFunction::Async(AsyncTestFunction::WithoutArgs(generator)) => {
+                generator(world, &*step)
+            }
+        };
+            // fut
+
+        let fut_result = PanicTrap::run(suppress_output, async move {
+            fut.catch_unwind().await
+        }).await;
 
         let future = match fut_result.result {
             Ok(fut) => fut,
@@ -132,8 +138,12 @@ impl<W: World> Steps<W> {
             }
         };
 
-        let _ = future.await;
+
+        // if last_panic.lock().is_none() {
         TestResult::Pass
+        // } else {
+        //     TestResult::Fail
+        // }
     }
 
     #[allow(clippy::too_many_arguments)]

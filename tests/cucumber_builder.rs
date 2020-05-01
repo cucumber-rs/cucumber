@@ -31,6 +31,7 @@ mod example_steps {
             .given_async("a thing", |world, _step| {
                 TestFuture::new(async move {            
                     let mut world = world.write().unwrap();
+                    panic!("UUUUUU");
                     world.foo = "elho".into();
                 })
             })
