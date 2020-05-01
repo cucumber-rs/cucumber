@@ -22,7 +22,11 @@ pub use self::output::{default::DefaultOutput, OutputVisitor};
 pub use self::runner::CucumberBuilder;
 pub use self::steps::{Steps, StepsBuilder, TestResult};
 pub use self::steps::TestFuture;
-pub trait World: Default + Send + Sync + 'static {}
+
+#[async_trait::async_trait]
+pub trait World: Send + Sync + 'static {
+    async fn new() -> Self;
+}
 
 type HelperFn = fn(&Scenario) -> ();
 

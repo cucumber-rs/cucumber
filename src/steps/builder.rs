@@ -11,17 +11,13 @@ use regex::Regex;
 use super::{ArgsSyncTestFunction, LiteralSyncTestFunction, ArgsAsyncTestFunction, LiteralAsyncTestFunction, StepsCollection};
 use crate::{StepType, World};
 
-#[derive(Default)]
-pub struct StepsBuilder<W>
-where
-    W: World,
-{
+pub struct StepsBuilder<W: World> {
     steps: StepsCollection<W>,
 }
 
 impl<W: World> StepsBuilder<W> {
     pub fn new() -> StepsBuilder<W> {
-        StepsBuilder::default()
+        StepsBuilder { steps: StepsCollection::default() }
     }
 
     pub fn given(&mut self, name: &'static str, test_fn: LiteralSyncTestFunction<W>) -> &mut Self {

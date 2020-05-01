@@ -59,7 +59,7 @@ impl std::default::Default for MyWorld {
 mod example_steps {
     use cucumber::steps;
     
-    // Any type that implements cucumber::World + Default can be the world
+    // Any type that implements cucumber::World can be the world
     steps!(crate::MyWorld => {
         given "I am trying out Cucumber" |world, step| {
             world.foo = "Some string".to_string();

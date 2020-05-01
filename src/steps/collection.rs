@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use cute_custom_default::CustomDefault;
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -15,13 +16,15 @@ use super::{
 };
 use crate::{hashable_regex::HashableRegex, Step, StepType, World};
 
-#[derive(Default)]
+#[derive(CustomDefault)]
 struct StepMaps<W: World> {
+    #[def_exp = "HashMap::new()"]
     literals: HashMap<&'static str, Arc<TestFunction<W>>>,
+    #[def_exp = "HashMap::new()"]
     regex: HashMap<HashableRegex, Arc<TestFunction<W>>>,
 }
 
-#[derive(Default)]
+#[derive(CustomDefault)]
 pub(crate) struct StepsCollection<W: World> {
     given: StepMaps<W>,
     when: StepMaps<W>,

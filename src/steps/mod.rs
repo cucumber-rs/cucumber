@@ -16,6 +16,7 @@ use std::future::Future;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
+use cute_custom_default::CustomDefault;
 
 pub use self::builder::StepsBuilder;
 pub(crate) use self::collection::StepsCollection;
@@ -75,7 +76,7 @@ pub enum TestResult {
     Fail(PanicDetails, Vec<u8>, Vec<u8>),
 }
 
-#[derive(Default)]
+#[derive(CustomDefault)]
 pub struct Steps<W: World> {
     steps: StepsCollection<W>,
 }
@@ -152,24 +153,25 @@ impl<W: World> Steps<W> {
             f(&scenario);
         }
 
-        let world = Arc::new(RwLock::new({
-            let panic_trap = PanicTrap::run(suppress_output, W::default);
-            match panic_trap.result {
-                Ok(v) => v,
-                Err(panic_info) => {
-                    eprintln!(
-                        "Panic caught during world creation. Panic location: {}",
-                        panic_info.location
-                    );
-                    if !panic_trap.stdout.is_empty() {
-                        use std::io::{stderr, Write};
-                        eprintln!("Captured output was:");
-                        Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
-                    }
-                    panic!(panic_info.payload);
-                }
-            }
-        }));
+        let world = Arc::new(RwLock::new(W::new().await));
+            // {
+            // let panic_trap = PanicTrap::run(suppress_output, W::default);
+            // match panic_trap.result {
+            //     Ok(v) => v,
+            //     Err(panic_info) => {
+            //         eprintln!(
+            //             "Panic caught during world creation. Panic location: {}",
+            //             panic_info.location
+            //         );
+            //         if !panic_trap.stdout.is_empty() {
+            //             use std::io::{stderr, Write};
+            //             eprintln!("Captured output was:");
+            //             Write::write(&mut stderr(), &panic_trap.stdout).unwrap();
+            //         }
+            //         panic!(panic_info.payload);
+            //     }
+            // }
+        // }));
 
         let mut is_success = true;
         let mut is_skipping = false;

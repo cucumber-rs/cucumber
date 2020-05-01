@@ -6,7 +6,12 @@ pub struct MyWorld {
     foo: String,
 }
 
-impl cucumber::World for MyWorld {}
+#[async_trait::async_trait]
+impl cucumber::World for MyWorld {
+    async fn new() -> Self {
+        Default::default()
+    }
+}
 impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
