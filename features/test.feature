@@ -1,5 +1,6 @@
 Feature: Basic functionality
 
+  @foo
   Scenario: foo
     Given a thing
     When nothing
