@@ -5,6 +5,7 @@ authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 description = "Cucumber testing framework for Rust. Fully native, no external test runners or dependencies."
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+keywords = ["cucumber", "testing", "bdd", "atdd"]
 repository = "https://github.com/bbqsrc/cucumber-rust"
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
