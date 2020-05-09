@@ -360,14 +360,24 @@ impl<W: World> Steps<W> {
 
         for scenario in scenarios {
             // If a tag is specified and the scenario does not have the tag, skip the test.
-            let should_skip = match (&scenario.tags, &options.tag) {
-                (Some(ref tags), Some(ref tag)) => !tags.contains(tag),
-                _ => false,
-            };
+            match (&scenario.tags, &options.tag) {
+                // Scenario tags doesn't contain the tag we've set
+                (Some(ref tags), Some(ref tag)) => {
+                    let has_tag = tags.contains(tag);
+                    if !has_tag {
+                        continue;
+                    }
+                }
 
-            if should_skip {
-                continue;
-            }
+                // No tags on scenario, but one is requested, we should skip.
+                (None, Some(_)) => continue,
+
+                // Tags on scenario, but no tag requested, we should not skip.
+                (Some(_), None) => {},
+
+                // No tags, no skip.
+                (None, None) => {},
+            };
 
             match &scenario.examples {
                 Some(examples) => {
