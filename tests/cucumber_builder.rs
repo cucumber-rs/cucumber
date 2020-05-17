@@ -29,7 +29,7 @@ mod example_steps {
 
         builder
             .given_async("a thing", |world, _step| {
-                TestFuture::new(async move {            
+                TestFuture::new(async move {
                     let mut world = world.write().unwrap();
                     panic!("UUUUUU");
                     world.foo = "elho".into();
@@ -67,8 +67,10 @@ mod example_steps {
                 r"^we can also match (\d+) (.+) types$",
                 typed_regex!(
                     crate::MyWorld,
-                    (usize, String)
-                    |_world, num, word, _step| {
+                    (usize, String) | _world,
+                    num,
+                    word,
+                    _step | {
                         // `num` will be of type usize, `word` of type String
                         assert_eq!(num, 42);
                         assert_eq!(word, "olika");

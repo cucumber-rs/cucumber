@@ -32,7 +32,7 @@ fn coerce_error(err: PanicError) -> Option<String> {
     if let Some(string) = err.downcast_ref::<String>() {
         Some(string.to_string())
     } else if let Some(string) = err.downcast_ref::<&str>() {
-        Some(string.to_string())
+        Some((*string).to_string())
     } else {
         None
     }

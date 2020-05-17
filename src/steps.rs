@@ -10,9 +10,9 @@ use cute_custom_default::CustomDefault;
 
 use gherkin::StepType;
 
-use crate::World;
 use crate::collection::StepsCollection;
 use crate::runner::{BasicStepFn, RegexStepFn};
+use crate::World;
 
 #[derive(CustomDefault)]
 pub struct Steps<W: World> {
@@ -21,15 +21,27 @@ pub struct Steps<W: World> {
 
 impl<W: World> Steps<W> {
     pub fn new() -> Steps<W> {
-        Steps { steps: StepsCollection::default() }
+        Steps {
+            steps: StepsCollection::default(),
+        }
     }
 
-    pub fn insert(&mut self, ty: StepType, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
+    pub fn insert(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        test_fn: BasicStepFn<W>,
+    ) -> &mut Self {
         self.steps.insert_basic(ty, name, test_fn);
         self
     }
 
-    pub fn insert_regex(&mut self, ty: StepType, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
+    pub fn insert_regex(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        test_fn: RegexStepFn<W>,
+    ) -> &mut Self {
         let regex = regex::Regex::new(name)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
         self.steps.insert_regex(ty, regex, test_fn);
@@ -37,7 +49,7 @@ impl<W: World> Steps<W> {
     }
 
     pub fn given(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
-        self.insert(StepType::Given, name, test_fn.into())
+        self.insert(StepType::Given, name, test_fn)
     }
 
     pub fn when(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {

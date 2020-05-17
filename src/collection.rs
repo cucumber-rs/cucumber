@@ -73,11 +73,11 @@ impl<W: World> StepsCollection<W> {
             StepType::Then => self.then.basic.get(&*step.value),
         };
 
-        match test_fn {
-            Some(function) => return Some(TestFunction::Basic(Rc::clone(function))),
-            None => {}
-        };
+        if let Some(function) = test_fn {
+            return Some(TestFunction::Basic(Rc::clone(function)));
+        }
 
+        #[allow(clippy::mutable_key_type)]
         let regex_map = match step.ty {
             StepType::Given => &self.given.regex,
             StepType::When => &self.when.regex,

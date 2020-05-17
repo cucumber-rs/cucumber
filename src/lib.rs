@@ -5,14 +5,14 @@
 pub use gherkin;
 
 mod collection;
+mod cucumber;
 mod event;
 mod regex;
 mod runner;
 mod steps;
-mod cucumber;
 
-use std::panic::UnwindSafe;
 use async_trait::async_trait;
+use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
 pub use steps::Steps;
