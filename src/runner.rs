@@ -6,123 +6,252 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::path::PathBuf;
-use std::process;
+use std::any::Any;
+use std::pin::Pin;
+use std::rc::Rc;
 
-use crate::cli::make_app;
-use crate::globwalk::{glob, GlobWalkerBuilder};
-use crate::{OutputVisitor, Scenario, Steps, World};
+use async_stream::stream;
+use futures::{Future, Stream, StreamExt};
 
-pub struct CucumberBuilder<W: World, O: OutputVisitor> {
-    output: O,
-    features: Vec<PathBuf>,
-    setup: Option<fn() -> ()>,
-    before: Vec<fn(&Scenario) -> ()>,
-    after: Vec<fn(&Scenario) -> ()>,
-    steps: Steps<W>,
-    options: crate::cli::CliOptions,
+use crate::collection::StepsCollection;
+use crate::event::*;
+use crate::{World, TEST_SKIPPED};
+
+pub(crate) type PanicError = Box<(dyn Any + Send + 'static)>;
+pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, PanicError>>>>;
+
+pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W>>;
+pub type RegexStepFn<W> = Rc<dyn Fn(Vec<String>, W, Rc<gherkin::Step>) -> TestFuture<W>>;
+
+pub enum TestFunction<W> {
+    Basic(BasicStepFn<W>),
+    Regex(RegexStepFn<W>, Vec<String>),
 }
 
-impl<W: World, O: OutputVisitor> CucumberBuilder<W, O> {
-    pub fn new(output: O) -> Self {
-        CucumberBuilder {
-            output,
-            features: vec![],
-            setup: None,
-            before: vec![],
-            after: vec![],
-            steps: Steps::default(),
-            options: crate::cli::CliOptions::default(),
-        }
+fn coerce_error(err: PanicError) -> Option<String> {
+    if let Some(string) = err.downcast_ref::<String>() {
+        Some(string.to_string())
+    } else if let Some(string) = err.downcast_ref::<&str>() {
+        Some(string.to_string())
+    } else {
+        None
+    }
+}
+
+pub(crate) struct Runner<W: World> {
+    functions: StepsCollection<W>,
+    features: Rc<Vec<gherkin::Feature>>,
+}
+
+impl<W: World> Runner<W> {
+    #[inline]
+    pub fn new(
+        functions: StepsCollection<W>,
+        features: Rc<Vec<gherkin::Feature>>,
+    ) -> Rc<Runner<W>> {
+        Rc::new(Runner {
+            functions,
+            features,
+        })
     }
 
-    pub fn setup(&mut self, function: fn() -> ()) -> &mut Self {
-        self.setup = Some(function);
-        self
-    }
+    async fn run_step(self: Rc<Self>, step: Rc<gherkin::Step>, world: W) -> TestEvent<W> {
+        use std::io::prelude::*;
 
-    pub fn features(&mut self, features: Vec<PathBuf>) -> &mut Self {
-        let mut features = features
-            .iter()
-            .map(|path| match path.canonicalize() {
-                Ok(p) => GlobWalkerBuilder::new(p, "*.feature")
-                    .case_insensitive(true)
-                    .build()
-                    .expect("feature path is invalid"),
-                Err(e) => {
-                    eprintln!("{}", e);
-                    eprintln!("There was an error parsing {:?}; aborting.", path);
-                    process::exit(1);
+        let func = match self.functions.resolve(&step) {
+            Some(v) => v,
+            None => return TestEvent::Unimplemented,
+        };
+
+        let mut stdout = shh::stdout().unwrap();
+        let mut stderr = shh::stderr().unwrap();
+
+        let result = match func {
+            TestFunction::Basic(f) => (f)(world, step).await,
+            TestFunction::Regex(f, r) => (f)(r, world, step).await,
+        };
+
+        let mut out = String::new();
+        let mut err = String::new();
+        stdout.read_to_string(&mut out).unwrap_or_else(|_| {
+            out = "Error retrieving stdout".to_string();
+            0
+        });
+        stderr.read_to_string(&mut err).unwrap_or_else(|_| {
+            err = "Error retrieving stderr".to_string();
+            0
+        });
+
+        let output = CapturedOutput { out, err };
+        match result {
+            Ok(w) => TestEvent::Success(w, output),
+            Err(e) => {
+                let e = coerce_error(e);
+                if e.as_ref().map(|x| &**x) == Some(TEST_SKIPPED) {
+                    return TestEvent::Skipped;
                 }
-            })
-            .flatten()
-            .filter_map(Result::ok)
-            .map(|entry| entry.path().to_owned())
-            .collect::<Vec<_>>();
-        features.sort();
-
-        self.features = features;
-        self
-    }
-
-    pub fn before(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
-        self.before = functions;
-        self
-    }
-
-    pub fn add_before(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
-        self.before.push(function);
-        self
-    }
-
-    pub fn after(&mut self, functions: Vec<fn(&Scenario) -> ()>) -> &mut Self {
-        self.after = functions;
-        self
-    }
-
-    pub fn add_after(&mut self, function: fn(&Scenario) -> ()) -> &mut Self {
-        self.after.push(function);
-        self
-    }
-
-    pub fn steps(&mut self, steps: Steps<W>) -> &mut Self {
-        self.steps = steps;
-        self
-    }
-
-    pub fn options(&mut self, options: crate::cli::CliOptions) -> &mut Self {
-        self.options = options;
-        self
-    }
-
-    pub async fn run(mut self) -> bool {
-        if let Some(feature) = self.options.feature.as_ref() {
-            let features = glob(feature)
-                .expect("feature glob is invalid")
-                .filter_map(Result::ok)
-                .map(|entry| entry.path().to_owned())
-                .collect::<Vec<_>>();
-            self.features(features);
+                TestEvent::Failure(e, output)
+            }
         }
-
-        if let Some(setup) = self.setup {
-            setup();
-        }
-
-        self.steps
-            .run(
-                self.features,
-                &self.before,
-                &self.after,
-                self.options,
-                &mut self.output,
-            )
-            .await
     }
 
-    pub async fn command_line(mut self) -> bool {
-        let options = make_app().unwrap();
-        self.options(options);
-        self.run().await
+    fn run_feature(self: Rc<Self>, feature: Rc<gherkin::Feature>) -> FeatureStream {
+        Box::pin(stream! {
+            yield FeatureEvent::Starting;
+
+            for scenario in feature.scenarios.iter() {
+                let this = Rc::clone(&self);
+                let scenario = Rc::new(scenario.clone());
+
+                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature));
+
+                while let Some(event) = stream.next().await {
+                    yield FeatureEvent::Scenario(Rc::clone(&scenario), event);
+                }
+            }
+
+            for rule in feature.rules.iter() {
+                let this = Rc::clone(&self);
+                let rule = Rc::new(rule.clone());
+
+                let mut stream = this.run_rule(Rc::clone(&rule), Rc::clone(&feature));
+
+                while let Some(event) = stream.next().await {
+                    yield FeatureEvent::Rule(Rc::clone(&rule), event);
+                }
+            }
+
+            yield FeatureEvent::Finished;
+        })
+    }
+
+    fn run_rule(
+        self: Rc<Self>,
+        rule: Rc<gherkin::Rule>,
+        feature: Rc<gherkin::Feature>,
+    ) -> RuleStream {
+        Box::pin(stream! {
+            yield RuleEvent::Starting;
+
+            let mut return_event = None;
+
+            for scenario in rule.scenarios.iter() {
+                let this = Rc::clone(&self);
+                let scenario = Rc::new(scenario.clone());
+
+                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature));
+
+                while let Some(event) = stream.next().await {
+                    match event {
+                        ScenarioEvent::Failed => { return_event = Some(RuleEvent::Failed); },
+                        ScenarioEvent::Passed if return_event.is_none() => { return_event = Some(RuleEvent::Passed); },
+                        ScenarioEvent::Skipped if return_event == Some(RuleEvent::Passed) => { return_event = Some(RuleEvent::Skipped); }
+                        _ => {}
+                    }
+                    yield RuleEvent::Scenario(Rc::clone(&scenario), event);
+                }
+            }
+
+            yield return_event.unwrap_or(RuleEvent::Skipped);
+        })
+    }
+
+    fn run_scenario(
+        self: Rc<Self>,
+        scenario: Rc<gherkin::Scenario>,
+        feature: Rc<gherkin::Feature>,
+    ) -> ScenarioStream {
+        Box::pin(stream! {
+            yield ScenarioEvent::Starting;
+            let mut world = Some(W::new().await);
+
+            if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
+                for step in scenario.steps.iter() {
+                    let this = Rc::clone(&self);
+
+                    let step = Rc::new(step.clone());
+                    let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
+
+                    match result {
+                        TestEvent::Success(w, output) => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Passed(output));
+                            // Pass world result for current step to next step.
+                            world = Some(w);
+                        }
+                        TestEvent::Failure(e, output) => {
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(output, e));
+                            yield ScenarioEvent::Failed;
+                            return;
+                        },
+                        TestEvent::Skipped => {
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Skipped);
+                            yield ScenarioEvent::Skipped;
+                            return;
+                        }
+                        TestEvent::Unimplemented => {
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Unimplemented);
+                            yield ScenarioEvent::Skipped;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            for step in scenario.steps.iter() {
+                let this = Rc::clone(&self);
+
+                let step = Rc::new(step.clone());
+                let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
+
+                match result {
+                    TestEvent::Success(w, output) => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Passed(output));
+                        // Pass world result for current step to next step.
+                        world = Some(w);
+                    }
+                    TestEvent::Failure(e, output) => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(output, e));
+                        yield ScenarioEvent::Failed;
+                        return;
+                    },
+                    TestEvent::Skipped => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Skipped);
+                        yield ScenarioEvent::Skipped;
+                        return;
+                    }
+                    TestEvent::Unimplemented => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Unimplemented);
+                        yield ScenarioEvent::Skipped;
+                        return;
+                    }
+                }
+            }
+
+            yield ScenarioEvent::Passed;
+        })
+    }
+
+    pub fn run(self: Rc<Self>) -> CucumberStream {
+        Box::pin(stream! {
+            yield CucumberEvent::Starting;
+
+            let features = self.features.iter().cloned().map(Rc::new).collect::<Vec<_>>();
+
+            for feature in features.into_iter() {
+                let this = Rc::clone(&self);
+                let mut stream = this.run_feature(Rc::clone(&feature));
+
+                while let Some(event) = stream.next().await {
+                    yield CucumberEvent::Feature(Rc::clone(&feature), event);
+                }
+            }
+
+            yield CucumberEvent::Finished;
+        })
     }
 }
+
+type CucumberStream = Pin<Box<dyn Stream<Item = CucumberEvent>>>;
+type FeatureStream = Pin<Box<dyn Stream<Item = FeatureEvent>>>;
+type RuleStream = Pin<Box<dyn Stream<Item = RuleEvent>>>;
+type ScenarioStream = Pin<Box<dyn Stream<Item = ScenarioEvent>>>;
