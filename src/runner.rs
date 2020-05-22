@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use std::any::Any;
+use std::panic;
 use std::pin::Pin;
 use std::rc::Rc;
 
@@ -28,13 +29,13 @@ pub enum TestFunction<W> {
     Regex(RegexStepFn<W>, Vec<String>),
 }
 
-fn coerce_error(err: PanicError) -> Option<String> {
+fn coerce_error(err: &(dyn Any + Send + 'static)) -> String {
     if let Some(string) = err.downcast_ref::<String>() {
-        Some(string.to_string())
+        string.to_string()
     } else if let Some(string) = err.downcast_ref::<&str>() {
-        Some((*string).to_string())
+        (*string).to_string()
     } else {
-        None
+        "(Could not resolve panic payload)".into()
     }
 }
 
@@ -66,6 +67,23 @@ impl<W: World> Runner<W> {
         let mut stdout = shh::stdout().unwrap();
         let mut stderr = shh::stderr().unwrap();
 
+        // This ugly mess here catches the panics from async calls.
+        let panic_info = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let panic_info0 = std::sync::Arc::clone(&panic_info);
+        panic::set_hook(Box::new(move |pi| {
+            *panic_info0.lock().unwrap() = Some(PanicInfo {
+                location: pi
+                    .location()
+                    .map(|l| Location {
+                        file: l.file().to_string(),
+                        line: l.line(),
+                        column: l.column(),
+                    })
+                    .unwrap_or_else(|| Location::unknown()),
+                payload: coerce_error(pi.payload()),
+            });
+        }));
+
         let result = match func {
             TestFunction::Basic(f) => (f)(world, step).await,
             TestFunction::Regex(f, r) => (f)(r, world, step).await,
@@ -82,15 +100,21 @@ impl<W: World> Runner<W> {
             0
         });
 
+        drop(stdout);
+        drop(stderr);
+
         let output = CapturedOutput { out, err };
         match result {
             Ok(w) => TestEvent::Success(w, output),
             Err(e) => {
-                let e = coerce_error(e);
-                if e.as_ref().map(|x| &**x) == Some(TEST_SKIPPED) {
+                let e = coerce_error(&e);
+                if &*e == TEST_SKIPPED {
                     return TestEvent::Skipped;
                 }
-                TestEvent::Failure(e, output)
+
+                let mut guard = panic_info.lock().unwrap();
+                let pi = guard.take().unwrap_or_else(|| PanicInfo::unknown());
+                TestEvent::Failure(pi, output)
             }
         }
     }

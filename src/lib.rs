@@ -4,9 +4,13 @@
 // Re-export Gherkin for the convenience of everybody
 pub use gherkin;
 
+#[macro_use]
+mod macros;
+
 mod collection;
 mod cucumber;
 mod event;
+mod output;
 mod regex;
 mod runner;
 mod steps;
@@ -29,4 +33,8 @@ macro_rules! skip {
 #[async_trait(?Send)]
 pub trait World: Sized + UnwindSafe + 'static {
     async fn new() -> Self;
+}
+
+pub trait EventHandler: 'static {
+    fn handle_event(&mut self, event: event::CucumberEvent);
 }

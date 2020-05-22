@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::rc::Rc;
+use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapturedOutput {
@@ -14,23 +14,61 @@ pub struct CapturedOutput {
     pub err: String,
 }
 
-pub(crate) enum TestEvent<W> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Location {
+    pub file: String,
+    pub line: u32,
+    pub column: u32,
+}
+
+impl Location {
+    pub fn unknown() -> Self {
+        Location {
+            file: "<unknown>".into(),
+            line: 0,
+            column: 0,
+        }
+    }
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}:{}", &self.file, self.line, self.column)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PanicInfo {
+    pub location: Location,
+    pub payload: String,
+}
+
+impl PanicInfo {
+    pub fn unknown() -> Self {
+        PanicInfo {
+            location: Location::unknown(),
+            payload: "(No panic info was found?)".into(),
+        }
+    }
+}
+
+pub enum TestEvent<W> {
     Unimplemented,
     Skipped,
     Success(W, CapturedOutput),
-    Failure(Option<String>, CapturedOutput),
+    Failure(PanicInfo, CapturedOutput),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum StepEvent {
+pub enum StepEvent {
     Unimplemented,
     Skipped,
     Passed(CapturedOutput),
-    Failed(CapturedOutput, Option<String>),
+    Failed(CapturedOutput, PanicInfo),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ScenarioEvent {
+pub enum ScenarioEvent {
     Starting,
     Background(Rc<gherkin::Step>, StepEvent),
     Step(Rc<gherkin::Step>, StepEvent),
@@ -40,7 +78,7 @@ pub(crate) enum ScenarioEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RuleEvent {
+pub enum RuleEvent {
     Starting,
     Scenario(Rc<gherkin::Scenario>, ScenarioEvent),
     Skipped,
@@ -49,7 +87,7 @@ pub(crate) enum RuleEvent {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum FeatureEvent {
+pub enum FeatureEvent {
     Starting,
     Scenario(Rc<gherkin::Scenario>, ScenarioEvent),
     Rule(Rc<gherkin::Rule>, RuleEvent),
@@ -57,7 +95,7 @@ pub(crate) enum FeatureEvent {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum CucumberEvent {
+pub enum CucumberEvent {
     Starting,
     Feature(Rc<gherkin::Feature>, FeatureEvent),
     Finished,

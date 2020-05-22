@@ -8,77 +8,31 @@
 
 use futures::StreamExt;
 
-use crate::event::{CucumberEvent, ScenarioEvent};
 use crate::steps::Steps;
-use crate::World;
-
-fn scenario_event_handler(scenario: std::rc::Rc<gherkin::Scenario>, event: ScenarioEvent) {
-    match event {
-        ScenarioEvent::Starting => println!("Scenario '{}' starting", &scenario.name),
-        ScenarioEvent::Background(step, event) => match event {
-            crate::event::StepEvent::Unimplemented => {
-                println!("Background step '{}' unimplemented", step.to_string())
-            }
-            crate::event::StepEvent::Skipped => {
-                println!("Background step '{}' skipped", step.to_string())
-            }
-            crate::event::StepEvent::Passed(_) => {
-                println!("Background step '{}' passed", step.to_string())
-            }
-            crate::event::StepEvent::Failed(_, _) => {
-                println!("Background step '{}' failed", step.to_string())
-            }
-        },
-        ScenarioEvent::Step(step, event) => match event {
-            crate::event::StepEvent::Unimplemented => {
-                println!("Step '{}' unimplemented", step.to_string())
-            }
-            crate::event::StepEvent::Skipped => println!("Step '{}' skipped", step.to_string()),
-            crate::event::StepEvent::Passed(_) => println!("Step '{}' passed", step.to_string()),
-            crate::event::StepEvent::Failed(_, _) => println!("Step '{}' failed", step.to_string()),
-        },
-        ScenarioEvent::Skipped => println!("Scenario '{}' skipped", &scenario.name),
-        ScenarioEvent::Passed => println!("Scenario '{}' passed", &scenario.name),
-        ScenarioEvent::Failed => println!("Scenario '{}' failed", &scenario.name),
-    }
-}
-
-fn event_handler(event: CucumberEvent) {
-    match event {
-        CucumberEvent::Starting => println!("Cucumber test runner starting"),
-        CucumberEvent::Feature(feature, event) => match event {
-            crate::event::FeatureEvent::Starting => {
-                println!("Feature '{}' starting", &feature.name)
-            }
-            crate::event::FeatureEvent::Scenario(scenario, event) => {
-                scenario_event_handler(scenario, event)
-            }
-            crate::event::FeatureEvent::Rule(rule, event) => match event {
-                crate::event::RuleEvent::Starting => println!("Rule '{}' starting", &rule.name),
-                crate::event::RuleEvent::Scenario(scenario, event) => {
-                    scenario_event_handler(scenario, event)
-                }
-                crate::event::RuleEvent::Skipped => println!("Rule '{}' skipped", &rule.name),
-                crate::event::RuleEvent::Passed => println!("Rule '{}' passed", &rule.name),
-                crate::event::RuleEvent::Failed => println!("Rule '{}' failed", &rule.name),
-            },
-            crate::event::FeatureEvent::Finished => {
-                println!("Feature '{}' finished", &feature.name)
-            }
-        },
-        CucumberEvent::Finished => println!("Cucumber test runner finished"),
-    }
-}
+use crate::{EventHandler, World};
 
 pub struct Cucumber<W: World> {
     steps: Steps<W>,
     features: Vec<gherkin::Feature>,
-    event_handler: fn(CucumberEvent) -> (),
+    event_handler: Box<dyn EventHandler>,
+}
+
+impl<W: World> Default for Cucumber<W> {
+    fn default() -> Self {
+        Cucumber {
+            steps: Default::default(),
+            features: Default::default(),
+            event_handler: Box::new(crate::output::BasicOutput::default()),
+        }
+    }
 }
 
 impl<W: World> Cucumber<W> {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Cucumber<W> {
+        Default::default()
+    }
+
+    pub fn with_output<O: EventHandler>(event_handler: Box<O>) -> Self {
         Cucumber {
             steps: Default::default(),
             features: Default::default(),
@@ -117,12 +71,12 @@ impl<W: World> Cucumber<W> {
         self
     }
 
-    pub async fn run(self) {
+    pub async fn run(mut self) {
         let runner = crate::runner::Runner::new(self.steps.steps, std::rc::Rc::new(self.features));
         let mut stream = runner.run();
 
         while let Some(event) = stream.next().await {
-            (self.event_handler)(event);
+            self.event_handler.handle_event(event);
         }
     }
 }

@@ -6,13 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use cute_custom_default::CustomDefault;
+use std::rc::Rc;
 
-use gherkin::StepType;
+use cute_custom_default::CustomDefault;
 
 use crate::collection::StepsCollection;
 use crate::runner::{BasicStepFn, RegexStepFn};
 use crate::World;
+use gherkin::StepType;
 
 #[derive(CustomDefault)]
 pub struct Steps<W: World> {
@@ -33,6 +34,24 @@ impl<W: World> Steps<W> {
         test_fn: BasicStepFn<W>,
     ) -> &mut Self {
         self.steps.insert_basic(ty, name, test_fn);
+        self
+    }
+
+    pub fn insert_sync(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        use futures::future::FutureExt;
+
+        let winner = std::rc::Rc::new(move |world: W, step| {
+            // let test_fn = Rc::clone(&test_fn);
+            std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
+                .catch_unwind()
+                .boxed_local()
+        });
+        self.steps.insert_basic(ty, name, winner);
         self
     }
 
@@ -58,6 +77,30 @@ impl<W: World> Steps<W> {
 
     pub fn then(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
         self.insert(StepType::Then, name, test_fn)
+    }
+
+    pub fn given_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_sync(StepType::Given, name, test_fn)
+    }
+
+    pub fn when_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_sync(StepType::When, name, test_fn)
+    }
+
+    pub fn then_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_sync(StepType::Then, name, test_fn)
     }
 
     pub fn given_regex(&mut self, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
