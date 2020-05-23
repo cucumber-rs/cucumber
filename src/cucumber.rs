@@ -32,11 +32,11 @@ impl<W: World> Cucumber<W> {
         Default::default()
     }
 
-    pub fn with_output<O: EventHandler>(event_handler: Box<O>) -> Self {
+    pub fn with_handler<O: EventHandler>(event_handler: O) -> Self {
         Cucumber {
             steps: Default::default(),
             features: Default::default(),
-            event_handler,
+            event_handler: Box::new(event_handler),
         }
     }
 
