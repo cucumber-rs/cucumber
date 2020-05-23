@@ -161,10 +161,10 @@ impl BasicOutput {
         cprintln!(termcolor::Color::White, " {}", cmt);
     }
 
-    fn file_line_col(&self, file: Option<&PathBuf>, line: usize, col: usize) -> String {
+    fn file_line_col(&self, file: Option<&PathBuf>, position: (usize, usize)) -> String {
         match file {
-            Some(v) => format!("{}:{}:{}", self.relpath(Some(v)), line, col),
-            None => format!("<input>:{}:{}", line, col),
+            Some(v) => format!("{}:{}:{}", self.relpath(Some(v)), position.0, position.1),
+            None => format!("<input>:{}:{}", position.0, position.1),
         }
     }
 
@@ -179,7 +179,7 @@ impl BasicOutput {
     ) {
         self.steps.total += 1;
 
-        let cmt = self.file_line_col(feature.path.as_ref(), 0, step.span.0);
+        let cmt = self.file_line_col(feature.path.as_ref(), step.position);
         let msg = if is_bg {
             format!("(Background) {}", &step)
         } else {
@@ -315,7 +315,7 @@ impl BasicOutput {
         match event {
             ScenarioEvent::Starting => {
                 self.scenarios.total += 1;
-                let cmt = self.file_line_col(feature.path.as_ref(), 0, scenario.span.0);
+                let cmt = self.file_line_col(feature.path.as_ref(), scenario.position);
                 let indent = if rule.is_some() { "  " } else { " " };
                 self.writeln_cmt(
                     &format!("Scenario: {}", &scenario.name),
@@ -348,7 +348,7 @@ impl BasicOutput {
             RuleEvent::Starting => {
                 self.rules.total += 1;
 
-                let cmt = self.file_line_col(feature.path.as_ref(), 0, rule.span.0);
+                let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
                 self.writeln_cmt(
                     &format!("Rule: {}", &rule.name),
                     &cmt,
@@ -430,7 +430,7 @@ impl EventHandler for BasicOutput {
                     self.features.total += 1;
 
                     let msg = &format!("Feature: {}", &feature.name);
-                    let cmt = self.file_line_col(feature.path.as_ref(), 0, 0);
+                    let cmt = self.file_line_col(feature.path.as_ref(), feature.position);
                     self.writeln_cmt(msg, &cmt, "", termcolor::Color::White, true);
                     println!();
                 }
