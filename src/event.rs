@@ -33,7 +33,11 @@ impl Location {
 
 impl Display for Location {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}:{}", &self.file, self.line, self.column)
+        write!(
+            f,
+            "\u{00a0}{}:{}:{}\u{00a0}",
+            &self.file, self.line, self.column
+        )
     }
 }
 

@@ -11,7 +11,7 @@ homepage = "https://github.com/bbqsrc/cucumber-rust"
 edition = "2018"
 
 [dependencies]
-gherkin = { git = "https://github.com/bbqsrc/gherkin-rust" }
+gherkin = { package = "gherkin_rust", git = "https://github.com/bbqsrc/gherkin-rust" }
 
 async-stream = "0.2.1"
 async-trait = "0.1.31"

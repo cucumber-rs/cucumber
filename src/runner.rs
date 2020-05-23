@@ -79,7 +79,7 @@ impl<W: World> Runner<W> {
                         line: l.line(),
                         column: l.column(),
                     })
-                    .unwrap_or_else(|| Location::unknown()),
+                    .unwrap_or_else(Location::unknown),
                 payload: coerce_error(pi.payload()),
             });
         }));
@@ -113,7 +113,7 @@ impl<W: World> Runner<W> {
                 }
 
                 let mut guard = panic_info.lock().unwrap();
-                let pi = guard.take().unwrap_or_else(|| PanicInfo::unknown());
+                let pi = guard.take().unwrap_or_else(PanicInfo::unknown);
                 TestEvent::Failure(pi, output)
             }
         }

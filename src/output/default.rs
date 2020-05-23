@@ -50,7 +50,7 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
         .map(|x| format!("{}{}", indent, &x.trim()))
         .collect();
     // Fit the comment onto the last line
-    let comment_space = tw.saturating_sub(c.chars().count()).saturating_sub(2);
+    let comment_space = tw.saturating_sub(c.chars().count()).saturating_sub(1);
     let last_count = cs.last().unwrap().chars().count();
     if last_count > comment_space {
         cs.push(format!("{: <1$}", "", comment_space))
@@ -117,7 +117,7 @@ impl BasicOutput {
                     print!("{}", field);
                     self.write("|", border_color, false);
                 }
-                println!("");
+                println!();
             }
         };
 
@@ -162,9 +162,15 @@ impl BasicOutput {
     }
 
     fn file_line_col(&self, file: Option<&PathBuf>, position: (usize, usize)) -> String {
+        // the U+00A0 ensures control/cmd clicking doesn't underline weird.
         match file {
-            Some(v) => format!("{}:{}:{}", self.relpath(Some(v)), position.0, position.1),
-            None => format!("<input>:{}:{}", position.0, position.1),
+            Some(v) => format!(
+                "{}:{}:{}\u{00a0}",
+                self.relpath(Some(v)),
+                position.0,
+                position.1
+            ),
+            None => format!("<input>:{}:{}\u{00a0}", position.0, position.1),
         }
     }
 
@@ -243,7 +249,7 @@ impl BasicOutput {
                         "[!] Step failed: ",
                         textwrap::termwidth()
                             .saturating_sub(panic_info.location.to_string().chars().count())
-                            .saturating_sub(7),
+                            .saturating_sub(6),
                     ),
                     &panic_info.location.to_string(),
                     "———— ",
@@ -252,7 +258,10 @@ impl BasicOutput {
                 );
                 self.writeln(
                     &textwrap::indent(
-                        &textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4),
+                        &textwrap::fill(
+                            &panic_info.payload,
+                            textwrap::termwidth().saturating_sub(4),
+                        ),
                         "  ",
                     )
                     .trim_end(),
@@ -269,7 +278,7 @@ impl BasicOutput {
 
                     self.writeln(
                         &textwrap::indent(
-                            &textwrap::fill(&output.out, textwrap::termwidth() - 4),
+                            &textwrap::fill(&output.out, textwrap::termwidth().saturating_sub(4)),
                             "  ",
                         )
                         .trim_end(),
@@ -287,7 +296,7 @@ impl BasicOutput {
 
                     self.writeln(
                         &textwrap::indent(
-                            &textwrap::fill(&output.err, textwrap::termwidth() - 4),
+                            &textwrap::fill(&output.err, textwrap::termwidth().saturating_sub(4)),
                             "  ",
                         )
                         .trim_end(),
@@ -297,7 +306,7 @@ impl BasicOutput {
                 }
 
                 self.writeln(
-                    &format!("{:—<1$}", "", textwrap::termwidth()),
+                    &format!("{:—<1$}", "", textwrap::termwidth().saturating_sub(1)),
                     termcolor::Color::Red,
                     true,
                 );
