@@ -22,7 +22,7 @@ pub(crate) type PanicError = Box<(dyn Any + Send + 'static)>;
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, PanicError>>>>;
 
 pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W>>;
-pub type RegexStepFn<W> = Rc<dyn Fn(Vec<String>, W, Rc<gherkin::Step>) -> TestFuture<W>>;
+pub type RegexStepFn<W> = Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>>;
 
 pub enum TestFunction<W> {
     Basic(BasicStepFn<W>),
@@ -86,7 +86,7 @@ impl<W: World> Runner<W> {
 
         let result = match func {
             TestFunction::Basic(f) => (f)(world, step).await,
-            TestFunction::Regex(f, r) => (f)(r, world, step).await,
+            TestFunction::Regex(f, r) => (f)(world, r, step).await,
         };
 
         let mut out = String::new();

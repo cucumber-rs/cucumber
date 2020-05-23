@@ -1,15 +1,13 @@
 extern crate cucumber_rust as cucumber;
+use async_trait::async_trait;
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait(?Send)]
 impl cucumber::World for MyWorld {
-    // async fn new() -> Self {
-    //     todo!()
-    // }
     async fn new() -> Self {
         Self { foo: "wat".into() }
     }
@@ -28,7 +26,6 @@ mod example_steps {
                 "a thing",
                 Rc::new(|mut world, _step| {
                     async move {
-                        panic!("UUUUUU");
                         world.foo = "elho".into();
                         world
                     }
@@ -36,17 +33,10 @@ mod example_steps {
                     .boxed_local()
                 }),
             )
-            // .when_regex(
-            //     "something goes (.*)",
-            //     typed_regex!(
-            //         crate::MyWorld,
-            //         (String) | world,
-            //         item,
-            //         _step | {
-            //             world.foo = item;
-            //         }
-            //     ),
-            // )
+            .when_regex(
+                "something goes (.*)",
+                Rc::new(|world, _matches, _step| async move { world }.catch_unwind().boxed_local()),
+            )
             .given_sync(
                 "I am trying out Cucumber",
                 |mut world: crate::MyWorld, _step| {
@@ -62,56 +52,30 @@ mod example_steps {
             .then_sync("I am interested in ATDD", |world, _step| {
                 assert_eq!(world.foo, "Some string.");
                 world
-            });
-        // .then_regex(
-        //     r"^we can (.*) rules with regex$",
-        //     |_world, matches, _step| {
-        //         // And access them as an array
-        //         assert_eq!(matches[1], "implement");
-        //     },
-        // )
-        // .then_regex(
-        //     r"^we can also match (\d+) (.+) types$",
-        //     typed_regex!(
-        //         crate::MyWorld,
-        //         (usize, String) | _world,
-        //         num,
-        //         word,
-        //         _step | {
-        //             // `num` will be of type usize, `word` of type String
-        //             assert_eq!(num, 42);
-        //             assert_eq!(word, "olika");
-        //         }
-        //     ),
-        // );
+            })
+            .then_regex_sync(
+                r"^we can (.*) rules with regex$",
+                |world, matches, _step| {
+                    // And access them as an array
+                    assert_eq!(matches[1], "implement");
+                    world
+                },
+            );
 
         builder
     }
 }
 
-// // Declares a before handler function named `a_before_fn`
-// before!(a_before_fn => |_scenario| {
-
-// });
-
-// // Declares an after handler function named `an_after_fn`
-// after!(an_after_fn => |_scenario| {
-
-// });
-
-// // A setup function to be called before everything else
-// fn setup() {}
-
 fn main() {
-    let m = cucumber::Cucumber::<MyWorld>::new()
+    // Do any setup you need to do before running the Cucumber runner.
+    // e.g. setup_some_db_thing()?;
+
+    let runner = cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features"])
         .steps(example_steps::steps());
-    // let mut builder = CucumberBuilder::new(cucumber::DefaultOutput::default());
 
-    // builder
-    //     .features(vec!["./features".into()])
-    //     .setup(setup)
-    //     .steps(example_steps::steps());
-
-    futures::executor::block_on(m.run());
+    // You may choose any executor you like (Tokio, async-std, etc)
+    // You may even have an async main, it doesn't matter. The point is that
+    // Cucumber is composable. :)
+    futures::executor::block_on(runner.run());
 }

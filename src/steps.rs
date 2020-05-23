@@ -45,13 +45,13 @@ impl<W: World> Steps<W> {
     ) -> &mut Self {
         use futures::future::FutureExt;
 
-        let winner = std::rc::Rc::new(move |world: W, step| {
+        let test_fn = std::rc::Rc::new(move |world: W, step| {
             // let test_fn = Rc::clone(&test_fn);
             std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
                 .catch_unwind()
                 .boxed_local()
         });
-        self.steps.insert_basic(ty, name, winner);
+        self.steps.insert_basic(ty, name, test_fn);
         self
     }
 
@@ -63,6 +63,26 @@ impl<W: World> Steps<W> {
     ) -> &mut Self {
         let regex = regex::Regex::new(name)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
+        self.steps.insert_regex(ty, regex, test_fn);
+        self
+    }
+
+    pub fn insert_regex_sync(
+        &mut self,
+        ty: StepType,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        use futures::future::FutureExt;
+        let regex = regex::Regex::new(name)
+            .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
+
+        let test_fn = std::rc::Rc::new(move |world: W, matches, step| {
+            // let test_fn = Rc::clone(&test_fn);
+            std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, step) })
+                .catch_unwind()
+                .boxed_local()
+        });
         self.steps.insert_regex(ty, regex, test_fn);
         self
     }
@@ -113,6 +133,30 @@ impl<W: World> Steps<W> {
 
     pub fn then_regex(&mut self, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
         self.insert_regex(StepType::Then, name, test_fn)
+    }
+
+    pub fn given_regex_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_regex_sync(StepType::Given, name, test_fn)
+    }
+
+    pub fn when_regex_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_regex_sync(StepType::When, name, test_fn)
+    }
+
+    pub fn then_regex_sync(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+    ) -> &mut Self {
+        self.insert_regex_sync(StepType::Then, name, test_fn)
     }
 
     pub fn append(&mut self, other: Steps<W>) {

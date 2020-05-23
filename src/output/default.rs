@@ -399,7 +399,7 @@ impl BasicOutput {
     fn print_finish(&self) {
         use termcolor::Color::*;
 
-        cprintln!(bold Blue, "\n[Summary]");
+        cprintln!(bold Blue, "[Summary]");
         cprintln!(bold White, "{} features", self.features.total);
 
         self.print_counter("scenarios", &self.scenarios);
