@@ -1,22 +1,25 @@
 extern crate cucumber_rust as cucumber;
 use async_trait::async_trait;
+use std::cell::RefCell;
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,
     bar: usize,
+    some_value: RefCell<u8>,
 }
 
 impl MyWorld {
-    async fn test_async_fn(&self) -> Option<usize> {
-        Some(123890)
+    async fn test_async_fn(&mut self) {
+        *self.some_value.borrow_mut() = 123u8;
+        self.bar = 123;
     }
 }
 
 #[async_trait(?Send)]
 impl cucumber::World for MyWorld {
     async fn new() -> Self {
-        Self { foo: "wat".into(), bar: 0 }
+        Self { foo: "wat".into(), bar: 0, some_value: RefCell::new(0) }
     }
 }
 
@@ -32,11 +35,11 @@ mod example_steps {
             .given(
                 "a thing",
                 Rc::new(|mut world, _step| {
-                    async move {
+                    std::panic::AssertUnwindSafe(async move {
                         world.foo = "elho".into();
-                        world.bar = world.test_async_fn().await.unwrap();
+                        world.test_async_fn().await;
                         world
-                    }
+                    })
                     .catch_unwind()
                     .boxed_local()
                 }),
