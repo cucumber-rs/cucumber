@@ -8,7 +8,7 @@ pub struct MyWorld {
 }
 
 impl MyWorld {
-    async fn test_async_fn(&self) -> Option<usize> {
+    async fn test_async_fn(&mut self) -> Option<usize> {
         Some(123890)
     }
 }
