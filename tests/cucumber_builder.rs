@@ -4,12 +4,19 @@ use async_trait::async_trait;
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,
+    bar: usize,
+}
+
+impl MyWorld {
+    async fn test_async_fn(&self) -> Option<usize> {
+        Some(123890)
+    }
 }
 
 #[async_trait(?Send)]
 impl cucumber::World for MyWorld {
     async fn new() -> Self {
-        Self { foo: "wat".into() }
+        Self { foo: "wat".into(), bar: 0 }
     }
 }
 
@@ -27,6 +34,7 @@ mod example_steps {
                 Rc::new(|mut world, _step| {
                     async move {
                         world.foo = "elho".into();
+                        world.bar = world.test_async_fn().await.unwrap();
                         world
                     }
                     .catch_unwind()
