@@ -1,48 +1,44 @@
-use std;
-use std::collections::HashMap;
-use std::default::Default;
-use std::env;
-use std::io::Write;
-use std::path::Path;
+// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
-use gherkin;
-use pathdiff::diff_paths;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use textwrap;
+use std::path::PathBuf;
+use std::rc::Rc;
 
-use crate::OutputVisitor;
-use crate::TestResult;
+use crate::{
+    event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
+    EventHandler,
+};
+use gherkin::{Feature, Rule, Scenario, Step};
 
-enum ScenarioResult {
-    Pass,
-    Fail,
-    Skip,
+#[derive(Debug, Clone, Default)]
+struct Counter {
+    total: u32,
+    skipped: u32,
+    passed: u32,
+    failed: u32,
 }
 
-pub struct DefaultOutput {
-    stdout: StandardStream,
-    cur_feature: String,
-    feature_count: u32,
-    feature_error_count: u32,
-    rule_count: u32,
-    scenarios: HashMap<gherkin::Scenario, ScenarioResult>,
-    step_count: u32,
-    skipped_count: u32,
-    fail_count: u32,
+pub struct BasicOutput {
+    features: Counter,
+    rules: Counter,
+    scenarios: Counter,
+    steps: Counter,
+    started: std::time::Instant,
 }
 
-impl Default for DefaultOutput {
-    fn default() -> DefaultOutput {
-        DefaultOutput {
-            stdout: StandardStream::stdout(ColorChoice::Auto),
-            cur_feature: "".to_string(),
-            feature_count: 0,
-            feature_error_count: 0,
-            rule_count: 0,
-            scenarios: HashMap::new(),
-            step_count: 0,
-            skipped_count: 0,
-            fail_count: 0,
+impl Default for BasicOutput {
+    fn default() -> BasicOutput {
+        BasicOutput {
+            features: Default::default(),
+            rules: Default::default(),
+            scenarios: Default::default(),
+            steps: Default::default(),
+            started: std::time::Instant::now(),
         }
     }
 }
@@ -54,7 +50,7 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
         .map(|x| format!("{}{}", indent, &x.trim()))
         .collect();
     // Fit the comment onto the last line
-    let comment_space = tw.saturating_sub(c.chars().count()).saturating_sub(2);
+    let comment_space = tw.saturating_sub(c.chars().count()).saturating_sub(1);
     let last_count = cs.last().unwrap().chars().count();
     if last_count > comment_space {
         cs.push(format!("{: <1$}", "", comment_space))
@@ -66,77 +62,27 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
     cs.join("\n")
 }
 
-impl DefaultOutput {
-    fn set_color(&mut self, c: Color, b: bool) {
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(Some(c)).set_bold(b))
-            .unwrap();
-    }
-
-    fn write(&mut self, s: &str, c: Color, bold: bool) {
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold))
-            .unwrap();
-        write!(&mut self.stdout, "{}", s).unwrap();
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(None).set_bold(false))
-            .unwrap();
-    }
-
-    fn writeln(&mut self, s: &str, c: Color, bold: bool) {
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold))
-            .unwrap();
-        writeln!(&mut self.stdout, "{}", s).unwrap();
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(None).set_bold(false))
-            .unwrap();
-    }
-
-    fn writeln_cmt(&mut self, s: &str, cmt: &str, indent: &str, c: Color, bold: bool) {
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(Some(c)).set_bold(bold))
-            .unwrap();
-        write!(&mut self.stdout, "{}", wrap_with_comment(s, cmt, indent)).unwrap();
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(Some(Color::White)).set_bold(false))
-            .unwrap();
-        writeln!(&mut self.stdout, " {}", cmt).unwrap();
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(None))
-            .unwrap();
-    }
-
-    fn println(&mut self, s: &str) {
-        writeln!(&mut self.stdout, "{}", s).unwrap();
-    }
-
-    fn red(&mut self, s: &str) {
-        self.writeln(s, Color::Red, false);
-    }
-
-    fn bold_white(&mut self, s: &str) {
-        self.writeln(s, Color::Green, true);
-    }
-
-    fn bold_white_comment(&mut self, s: &str, c: &str, indent: &str) {
-        self.writeln_cmt(s, c, indent, Color::White, true);
-    }
-
-    fn relpath(&self, target: &Path) -> std::path::PathBuf {
+impl BasicOutput {
+    fn relpath(&self, target: Option<&std::path::PathBuf>) -> String {
+        let target = match target {
+            Some(v) => v,
+            None => return "<unknown>".into(),
+        };
         let target = target.canonicalize().expect("invalid target path");
-        diff_paths(
+        pathdiff::diff_paths(
             &target,
-            &env::current_dir().expect("invalid current directory"),
+            &std::env::current_dir().expect("invalid current directory"),
         )
         .expect("invalid target path")
+        .to_string_lossy()
+        .to_string()
     }
 
     fn print_step_extras(&mut self, step: &gherkin::Step) {
         let indent = "      ";
         if let Some(ref table) = &step.table {
             // Find largest sized item per column
-            let mut max_size: Vec<usize> = (&table.header).iter().map(|h| h.len()).collect();
+            let mut max_size: Vec<usize> = vec![0; table.row_width()];
 
             for row in &table.rows {
                 for (n, field) in row.iter().enumerate() {
@@ -145,13 +91,6 @@ impl DefaultOutput {
                     }
                 }
             }
-
-            // If number print in a number way
-            let formatted_header_fields: Vec<String> = (&table.header)
-                .iter()
-                .enumerate()
-                .map(|(n, field)| format!(" {: <1$} ", field, max_size[n]))
-                .collect();
 
             let formatted_row_fields: Vec<Vec<String>> = (&table.rows)
                 .iter()
@@ -169,14 +108,7 @@ impl DefaultOutput {
                 })
                 .collect();
 
-            print!("{}", indent);
-            let border_color = Color::Magenta;
-            self.write("|", border_color, true);
-            for field in formatted_header_fields {
-                self.write(&field, Color::White, true);
-                self.write("|", border_color, true);
-            }
-            self.println("");
+            let border_color = termcolor::Color::Magenta;
 
             for row in formatted_row_fields {
                 print!("{}", indent);
@@ -185,360 +117,342 @@ impl DefaultOutput {
                     print!("{}", field);
                     self.write("|", border_color, false);
                 }
-                self.println("");
+                println!();
             }
         };
 
         if let Some(ref docstring) = &step.docstring {
-            self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
+            self.writeln(
+                &format!("{}\"\"\"", indent),
+                termcolor::Color::Magenta,
+                true,
+            );
             println!("{}", textwrap::indent(docstring, indent).trim_end());
-            self.writeln(&format!("{}\"\"\"", indent), Color::Magenta, true);
+            self.writeln(
+                &format!("{}\"\"\"", indent),
+                termcolor::Color::Magenta,
+                true,
+            );
         }
     }
 
-    fn print_finish(&mut self) -> Result<(), std::io::Error> {
-        self.set_color(Color::White, true);
-
-        // Do feature count
-        write!(&mut self.stdout, "{} features", &self.feature_count)?;
-        if self.feature_error_count > 0 {
-            write!(&mut self.stdout, " (")?;
-            self.set_color(Color::Red, true);
-            write!(&mut self.stdout, "{} errored", self.feature_error_count)?;
-            self.set_color(Color::White, true);
-            write!(&mut self.stdout, ")")?;
+    fn write(&mut self, s: &str, c: termcolor::Color, bold: bool) {
+        if bold {
+            cprint!(bold c, "{}", s);
+        } else {
+            cprint!(c, "{}", s);
         }
-
-        // Do rule count
-        if self.rule_count > 0 {
-            write!(&mut self.stdout, ", {} rules", &self.rule_count)?;
-        }
-
-        self.println("");
-
-        // Do scenario count
-        let scenario_passed_count = self
-            .scenarios
-            .values()
-            .filter(|v| match v {
-                ScenarioResult::Pass => true,
-                _ => false,
-            })
-            .count();
-        let scenario_fail_count = self
-            .scenarios
-            .values()
-            .filter(|v| match v {
-                ScenarioResult::Fail => true,
-                _ => false,
-            })
-            .count();
-        let scenario_skipped_count = self
-            .scenarios
-            .values()
-            .filter(|v| match v {
-                ScenarioResult::Skip => true,
-                _ => false,
-            })
-            .count();
-
-        write!(&mut self.stdout, "{} scenarios (", &self.scenarios.len())?;
-
-        if scenario_fail_count > 0 {
-            self.set_color(Color::Red, true);
-            write!(&mut self.stdout, "{} failed", scenario_fail_count)?;
-            self.set_color(Color::White, true);
-        }
-
-        if scenario_skipped_count > 0 {
-            if scenario_fail_count > 0 {
-                write!(&mut self.stdout, ", ")?;
-            }
-            self.set_color(Color::Cyan, true);
-            write!(&mut self.stdout, "{} skipped", scenario_skipped_count)?;
-            self.set_color(Color::White, true);
-        }
-
-        if scenario_fail_count > 0 || scenario_skipped_count > 0 {
-            write!(&mut self.stdout, ", ")?;
-        }
-
-        self.set_color(Color::Green, true);
-        write!(&mut self.stdout, "{} passed", scenario_passed_count)?;
-        self.set_color(Color::White, true);
-
-        write!(&mut self.stdout, ")")?;
-
-        self.println("");
-
-        // Do steps
-        let passed_count = self.step_count - self.skipped_count - self.fail_count;
-
-        write!(&mut self.stdout, "{} steps (", &self.step_count)?;
-
-        if self.fail_count > 0 {
-            self.set_color(Color::Red, true);
-            write!(&mut self.stdout, "{} failed", self.fail_count)?;
-            self.set_color(Color::White, true);
-        }
-
-        if self.skipped_count > 0 {
-            if self.fail_count > 0 {
-                write!(&mut self.stdout, ", ")?;
-            }
-            self.set_color(Color::Cyan, true);
-            write!(&mut self.stdout, "{} skipped", self.skipped_count)?;
-            self.set_color(Color::White, true);
-        }
-
-        if self.fail_count > 0 || self.skipped_count > 0 {
-            write!(&mut self.stdout, ", ")?;
-        }
-
-        self.set_color(Color::Green, true);
-        write!(&mut self.stdout, "{} passed", passed_count)?;
-        self.set_color(Color::White, true);
-        write!(&mut self.stdout, ")")?;
-        self.println("");
-
-        self.stdout
-            .set_color(ColorSpec::new().set_fg(None).set_bold(false))?;
-        self.println("");
-
-        Ok(())
-    }
-}
-
-#[inline]
-fn error_position(error: &gherkin::Error) -> (usize, usize) {
-    use gherkin::pest::error::LineColLocation;
-
-    match error.line_col {
-        LineColLocation::Pos(v) => v,
-        LineColLocation::Span(v, _) => v,
-    }
-}
-
-impl OutputVisitor for DefaultOutput {
-    fn new() -> Self {
-        Default::default()
     }
 
-    fn visit_start(&mut self) {
-        self.bold_white(&format!("[Cucumber v{}]\n", env!("CARGO_PKG_VERSION")))
+    fn writeln(&mut self, s: &str, c: termcolor::Color, bold: bool) {
+        if bold {
+            cprintln!(bold c, "{}", s);
+        } else {
+            cprintln!(c, "{}", s);
+        }
     }
 
-    fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path) {
-        self.cur_feature = self.relpath(&path).to_string_lossy().to_string();
-        let msg = &format!("Feature: {}", &feature.name);
-        let cmt = &format!(
-            "{}:{}:{}",
-            &self.cur_feature, feature.position.0, feature.position.1
-        );
-        self.bold_white_comment(msg, cmt, "");
-        println!();
-
-        self.feature_count += 1;
+    fn writeln_cmt(&mut self, s: &str, cmt: &str, indent: &str, c: termcolor::Color, bold: bool) {
+        if bold {
+            cprint!(bold c, "{}", wrap_with_comment(s, cmt, indent));
+        } else {
+            cprint!(c, "{}", wrap_with_comment(s, cmt, indent));
+        }
+        cprintln!(termcolor::Color::White, " {}", cmt);
     }
 
-    fn visit_feature_end(&mut self, _feature: &gherkin::Feature) {}
-
-    fn visit_feature_error(&mut self, path: &Path, error: &gherkin::Error) {
-        let position = error_position(error);
-        let relpath = self.relpath(&path).to_string_lossy().to_string();
-        let loc = &format!("{}:{}:{}", &relpath, position.0, position.1);
-
-        self.writeln_cmt(
-            &format!(
-                "{:—<1$}",
-                "! Parsing feature failed: ",
-                textwrap::termwidth() - loc.chars().count() - 7
+    fn file_line_col(&self, file: Option<&PathBuf>, position: (usize, usize)) -> String {
+        // the U+00A0 ensures control/cmd clicking doesn't underline weird.
+        match file {
+            Some(v) => format!(
+                "{}:{}:{}\u{00a0}",
+                self.relpath(Some(v)),
+                position.0,
+                position.1
             ),
-            &loc,
-            "———— ",
-            Color::Red,
-            true,
-        );
-
-        self.red(
-            &textwrap::indent(
-                &textwrap::fill(&format!("{}", error), textwrap::termwidth() - 4),
-                "  ",
-            )
-            .trim_end(),
-        );
-
-        self.writeln(
-            &format!("{:—<1$}\n", "", textwrap::termwidth()),
-            Color::Red,
-            true,
-        );
-
-        self.feature_error_count += 1;
-    }
-
-    fn visit_rule(&mut self, rule: &gherkin::Rule) {
-        let cmt = &format!(
-            "{}:{}:{}",
-            &self.cur_feature, rule.position.0, rule.position.1
-        );
-        self.bold_white_comment(&format!("Rule: {}\n", &rule.name), cmt, " ");
-    }
-
-    fn visit_rule_end(&mut self, _rule: &gherkin::Rule) {
-        self.rule_count += 1;
-    }
-
-    fn visit_scenario(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
-        let cmt = &format!(
-            "{}:{}:{}",
-            &self.cur_feature, scenario.position.0, scenario.position.1
-        );
-        let indent = if rule.is_some() { "  " } else { " " };
-        self.bold_white_comment(&format!("Scenario: {}", &scenario.name), cmt, indent);
-    }
-
-    fn visit_scenario_skipped(
-        &mut self,
-        _rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-    ) {
-        if !self.scenarios.contains_key(scenario) {
-            self.scenarios
-                .insert(scenario.clone(), ScenarioResult::Skip);
+            None => format!("<input>:{}:{}\u{00a0}", position.0, position.1),
         }
     }
 
-    fn visit_scenario_end(&mut self, _rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) {
-        if !self.scenarios.contains_key(scenario) {
-            self.scenarios
-                .insert(scenario.clone(), ScenarioResult::Pass);
-        }
-        self.println("");
-    }
-
-    fn visit_step(
+    fn handle_step(
         &mut self,
-        _rule: Option<&gherkin::Rule>,
-        _scenario: &gherkin::Scenario,
-        _step: &gherkin::Step,
+        feature: Rc<Feature>,
+        rule: Option<Rc<Rule>>,
+        _scenario: Rc<Scenario>,
+        step: Rc<Step>,
+        event: StepEvent,
+        is_bg: bool,
     ) {
-        self.step_count += 1;
-    }
+        self.steps.total += 1;
 
-    fn visit_step_result(
-        &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-        step: &gherkin::Step,
-        result: &TestResult,
-    ) {
-        let cmt = &format!(
-            "{}:{}:{}",
-            &self.cur_feature, step.position.0, step.position.1
-        );
-        let msg = &step.to_string();
+        let cmt = self.file_line_col(feature.path.as_ref(), step.position);
+        let msg = if is_bg {
+            format!("(Background) {}", &step)
+        } else {
+            step.to_string()
+        };
         let indent = if rule.is_some() { "   " } else { "  " };
 
-        match result {
-            TestResult::Pass => {
-                self.writeln_cmt(&format!("✔ {}", msg), cmt, indent, Color::Green, false);
-                self.print_step_extras(step);
+        match event {
+            StepEvent::Unimplemented => {
+                self.steps.skipped += 1;
+
+                self.writeln_cmt(
+                    &format!("- {}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::Cyan,
+                    false,
+                );
+                self.print_step_extras(&*step);
+                self.write(&format!("{}  ⚡ ", indent), termcolor::Color::Yellow, false);
+                println!("Not yet implemented (skipped)");
             }
-            TestResult::Fail(panic_info, captured_stdout, captured_stderr) => {
-                self.writeln_cmt(&format!("✘ {}", msg), cmt, indent, Color::Red, false);
-                self.print_step_extras(step);
+            StepEvent::Skipped => {
+                self.steps.skipped += 1;
+
+                self.writeln_cmt(
+                    &format!("- {}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::Cyan,
+                    false,
+                );
+                self.print_step_extras(&*step);
+            }
+            StepEvent::Passed(_output) => {
+                self.steps.passed += 1;
+
+                self.writeln_cmt(
+                    &format!("✔ {}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::Green,
+                    false,
+                );
+                self.print_step_extras(&*step);
+            }
+            StepEvent::Failed(output, panic_info) => {
+                self.steps.failed += 1;
+
+                self.writeln_cmt(
+                    &format!("✘ {}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::Red,
+                    false,
+                );
+                self.print_step_extras(&*step);
                 self.writeln_cmt(
                     &format!(
                         "{:—<1$}",
-                        "! Step failed: ",
+                        "[!] Step failed: ",
                         textwrap::termwidth()
-                            .saturating_sub(panic_info.location.chars().count())
-                            .saturating_sub(7),
+                            .saturating_sub(panic_info.location.to_string().chars().count())
+                            .saturating_sub(6),
                     ),
-                    &panic_info.location,
+                    &panic_info.location.to_string(),
                     "———— ",
-                    Color::Red,
+                    termcolor::Color::Red,
                     true,
                 );
-                self.red(
+                self.writeln(
                     &textwrap::indent(
-                        &textwrap::fill(&panic_info.payload, textwrap::termwidth() - 4),
+                        &textwrap::fill(
+                            &panic_info.payload,
+                            textwrap::termwidth().saturating_sub(4),
+                        ),
                         "  ",
                     )
                     .trim_end(),
+                    termcolor::Color::Red,
+                    false,
                 );
 
-                if !captured_stdout.is_empty() {
+                if !output.out.is_empty() {
                     self.writeln(
                         &format!("{:—<1$}", "———— Captured stdout: ", textwrap::termwidth()),
-                        Color::Red,
+                        termcolor::Color::Red,
                         true,
                     );
-                    self.red(
+
+                    self.writeln(
                         &textwrap::indent(
-                            &textwrap::fill(
-                                &String::from_utf8_lossy(captured_stderr),
-                                textwrap::termwidth() - 4,
-                            ),
+                            &textwrap::fill(&output.out, textwrap::termwidth().saturating_sub(4)),
                             "  ",
                         )
                         .trim_end(),
+                        termcolor::Color::Red,
+                        false,
                     );
                 }
 
-                if !captured_stderr.is_empty() {
+                if !output.err.is_empty() {
                     self.writeln(
                         &format!("{:—<1$}", "———— Captured stderr: ", textwrap::termwidth()),
-                        Color::Red,
+                        termcolor::Color::Red,
                         true,
                     );
-                    self.red(
+
+                    self.writeln(
                         &textwrap::indent(
-                            &textwrap::fill(
-                                &String::from_utf8_lossy(captured_stderr),
-                                textwrap::termwidth() - 4,
-                            ),
+                            &textwrap::fill(&output.err, textwrap::termwidth().saturating_sub(4)),
                             "  ",
                         )
                         .trim_end(),
+                        termcolor::Color::Red,
+                        false,
                     );
                 }
 
                 self.writeln(
-                    &format!("{:—<1$}", "", textwrap::termwidth()),
-                    Color::Red,
+                    &format!("{:—<1$}", "", textwrap::termwidth().saturating_sub(1)),
+                    termcolor::Color::Red,
                     true,
                 );
-
-                self.fail_count += 1;
-                self.scenarios
-                    .insert(scenario.clone(), ScenarioResult::Fail);
             }
-            TestResult::Skipped => {
-                self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                self.print_step_extras(step);
-                self.skipped_count += 1;
-            }
-            TestResult::Unimplemented => {
-                self.writeln_cmt(&format!("- {}", msg), cmt, indent, Color::Cyan, false);
-                self.print_step_extras(step);
-                self.write(&format!("{}  ⚡ ", indent), Color::Yellow, false);
-                self.println("Not yet implemented (skipped)");
-
-                self.skipped_count += 1;
-            }
-        };
+        }
     }
 
-    fn visit_finish(&mut self) {
-        self.print_finish().unwrap();
-    }
-
-    fn visit_step_resolved<'a, W: crate::World>(
+    fn handle_scenario(
         &mut self,
-        _step: &crate::Step,
-        _test: &crate::TestCaseType<'a, W>,
+        feature: Rc<Feature>,
+        rule: Option<Rc<Rule>>,
+        scenario: Rc<Scenario>,
+        event: ScenarioEvent,
     ) {
+        match event {
+            ScenarioEvent::Starting => {
+                self.scenarios.total += 1;
+                let cmt = self.file_line_col(feature.path.as_ref(), scenario.position);
+                let indent = if rule.is_some() { "  " } else { " " };
+                self.writeln_cmt(
+                    &format!("Scenario: {}", &scenario.name),
+                    &cmt,
+                    indent,
+                    termcolor::Color::White,
+                    true,
+                );
+            }
+            ScenarioEvent::Background(step, event) => {
+                self.handle_step(feature, rule, scenario, step, event, true)
+            }
+            ScenarioEvent::Step(step, event) => {
+                self.handle_step(feature, rule, scenario, step, event, false)
+            }
+            ScenarioEvent::Skipped => {
+                self.scenarios.skipped += 1;
+            }
+            ScenarioEvent::Passed => {
+                self.scenarios.passed += 1;
+            }
+            ScenarioEvent::Failed => {
+                self.scenarios.failed += 1;
+            }
+        }
+    }
+
+    fn handle_rule(&mut self, feature: Rc<Feature>, rule: Rc<Rule>, event: RuleEvent) {
+        match event {
+            RuleEvent::Starting => {
+                self.rules.total += 1;
+
+                let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
+                self.writeln_cmt(
+                    &format!("Rule: {}", &rule.name),
+                    &cmt,
+                    " ",
+                    termcolor::Color::White,
+                    true,
+                );
+            }
+            RuleEvent::Scenario(scenario, event) => {
+                self.handle_scenario(feature, Some(rule), scenario, event)
+            }
+            RuleEvent::Skipped => {
+                self.rules.skipped += 1;
+            }
+            RuleEvent::Passed => {
+                self.rules.passed += 1;
+            }
+            RuleEvent::Failed => {
+                self.rules.failed += 1;
+            }
+        }
+    }
+
+    fn print_counter(&self, name: &str, counter: &Counter) {
+        use termcolor::Color::*;
+
+        cprint!(bold White, "{} {} (", counter.total, name);
+
+        if counter.failed > 0 {
+            cprint!(bold Red, "{} failed", counter.failed);
+        }
+
+        if counter.skipped > 0 {
+            if counter.failed > 0 {
+                cprint!(bold White, ", ");
+            }
+            cprint!(bold Cyan, "{} skipped", counter.skipped);
+        }
+
+        if counter.failed > 0 || counter.skipped > 0 {
+            cprint!(bold White, ", ");
+        }
+
+        cprint!(bold Green, "{} passed", counter.passed);
+        cprintln!(bold White, ")");
+    }
+
+    fn print_finish(&self) {
+        use termcolor::Color::*;
+
+        cprintln!(bold Blue, "[Summary]");
+        cprintln!(bold White, "{} features", self.features.total);
+
+        self.print_counter("scenarios", &self.scenarios);
+        if self.rules.total > 0 {
+            self.print_counter("rules", &self.rules);
+        }
+        self.print_counter("steps", &self.steps);
+
+        let t = self.started.elapsed();
+        println!(
+            "\nFinished in {}.{} seconds.",
+            t.as_secs(),
+            t.subsec_millis()
+        );
+    }
+}
+
+impl EventHandler for BasicOutput {
+    fn handle_event(&mut self, event: CucumberEvent) {
+        match event {
+            CucumberEvent::Starting => {
+                self.started = std::time::Instant::now();
+                cprintln!(bold termcolor::Color::Blue, "[Cucumber v{}]", env!("CARGO_PKG_VERSION"))
+            }
+            CucumberEvent::Finished => self.print_finish(),
+            CucumberEvent::Feature(feature, event) => match event {
+                crate::event::FeatureEvent::Starting => {
+                    self.features.total += 1;
+
+                    let msg = &format!("Feature: {}", &feature.name);
+                    let cmt = self.file_line_col(feature.path.as_ref(), feature.position);
+                    self.writeln_cmt(msg, &cmt, "", termcolor::Color::White, true);
+                    println!();
+                }
+                crate::event::FeatureEvent::Scenario(scenario, event) => {
+                    self.handle_scenario(feature, None, scenario, event)
+                }
+                crate::event::FeatureEvent::Rule(rule, event) => {
+                    self.handle_rule(feature, rule, event)
+                }
+                crate::event::FeatureEvent::Finished => {
+                    println!();
+                }
+            },
+        }
     }
 }

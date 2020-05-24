@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/bbqsrc/cucumber-rust.svg?branch=master)](https://travis-ci.org/bbqsrc/cucumber-rust)
-
 # cucumber-rust
 
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
@@ -20,7 +18,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "^0.6.0" } 
+cucumber = { package = "cucumber_rust", version = "^0.7.0" } 
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
@@ -39,16 +37,17 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-use cucumber::{cucumber, steps, before, after};
+use cucumber::{Cucumber, World};
+use async_trait::async_trait;
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String
 }
 
-impl cucumber::World for MyWorld {}
-impl std::default::Default for MyWorld {
-    fn default() -> MyWorld {
+#[async_trait(?Send)]
+impl World for MyWorld {
+    async fn new() -> Self {
         // This function is called every time a new scenario is started
         MyWorld { 
             foo: "a default string".to_string()
@@ -57,87 +56,72 @@ impl std::default::Default for MyWorld {
 }
 
 mod example_steps {
-    use cucumber::steps;
-    
-    // Any type that implements cucumber::World + Default can be the world
-    steps!(crate::MyWorld => {
-        given "I am trying out Cucumber" |world, step| {
-            world.foo = "Some string".to_string();
-            // Set up your context in given steps
-        };
+    use cucumber::Steps;
+    use futures::future::FutureExt;
+    use std::rc::Rc;
 
-        when "I consider what I am doing" |world, step| {
-            // Take actions
-            let new_string = format!("{}.", &world.foo);
-            world.foo = new_string;
-        };
+    pub fn steps() -> Steps<crate::MyWorld> {
+        let mut builder: Steps<crate::MyWorld> = Steps::new();
 
-        then "I am interested in ATDD" |world, step| {
-            // Check that the outcomes to be observed have occurred
-            assert_eq!(world.foo, "Some string.");
-        };
+        builder
+            .given(
+                "a thing",
+                Rc::new(|mut world, _step| {
+                    async move {
+                        world.foo = "elho".into();
+                        world
+                    }
+                    .catch_unwind()
+                    .boxed_local()
+                }),
+            )
+            .when_regex(
+                "something goes (.*)",
+                Rc::new(|world, _matches, _step| async move { world }.catch_unwind().boxed_local()),
+            )
+            .given_sync(
+                "I am trying out Cucumber",
+                |mut world: crate::MyWorld, _step| {
+                    world.foo = "Some string".to_string();
+                    world
+                },
+            )
+            .when_sync("I consider what I am doing", |mut world, _step| {
+                let new_string = format!("{}.", &world.foo);
+                world.foo = new_string;
+                world
+            })
+            .then_sync("I am interested in ATDD", |world, _step| {
+                assert_eq!(world.foo, "Some string.");
+                world
+            })
+            .then_regex_sync(
+                r"^we can (.*) rules with regex$",
+                |world, matches, _step| {
+                    // And access them as an array
+                    assert_eq!(matches[1], "implement");
+                    world
+                },
+            );
 
-        then regex r"^we can (.*) rules with regex$" |world, matches, step| {
-            // And access them as an array
-            assert_eq!(matches[1], "implement");
-        };
-
-        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |world, num, word, step| {
-            // `num` will be of type usize, `word` of type String
-            assert_eq!(num, 42);
-            assert_eq!(word, "olika");
-        };
-
-        then "we can use data tables to provide more parameters" |world, step| {
-            let table = step.table().unwrap().clone();
-
-            assert_eq!(table.header, vec!["key", "value"]);
-
-            let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
-            let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
-
-            assert_eq!(expected_keys, vec!["a", "b"]);
-            assert_eq!(expected_values, vec!["fizz", "buzz"]);
-        };
-    });
+        builder
+    }
 }
 
-// Declares a before handler function named `a_before_fn`
-before!(a_before_fn => |scenario| {
+fn main() {
+    // Do any setup you need to do before running the Cucumber runner.
+    // e.g. setup_some_db_thing()?;
 
-});
+    let runner = Cucumber::<MyWorld>::new()
+        .features(&["./features"])
+        .steps(example_steps::steps());
 
-// Declares an after handler function named `an_after_fn`
-after!(an_after_fn => |scenario| {
-
-});
-
-// A setup function to be called before everything else
-fn setup() {
-    
-}
-
-cucumber! {
-    features: "./features", // Path to our feature files
-    world: crate::MyWorld, // The world needs to be the same for steps and the main cucumber call
-    steps: &[
-        example_steps::steps // the `steps!` macro creates a `steps` function in a module
-    ],
-    setup: setup, // Optional; called once before everything
-    before: &[
-        a_before_fn // Optional; called before each scenario
-    ], 
-    after: &[
-        an_after_fn // Optional; called after each scenario
-    ] 
+    // You may choose any executor you like (Tokio, async-std, etc)
+    // You may even have an async main, it doesn't matter. The point is that
+    // Cucumber is composable. :)
+    futures::executor::block_on(runner.run());
 }
 ```
-
-The `cucumber!` creates the `main` function to be run.
-
-The `steps!` macro generates a function named `steps` with all the declared steps in the module
-it is defined in. Ordinarily you would create something like a `steps/` directory to hold your 
-steps modules instead of inline like the given example.
 
 The full gamut of Cucumber's Gherkin language is implemented by the 
 [gherkin-rust](https://github.com/bbqsrc/gherkin-rust) project. Most features of the Gherkin 

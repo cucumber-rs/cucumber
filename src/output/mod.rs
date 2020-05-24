@@ -1,46 +1,11 @@
-pub mod debug;
-pub mod default;
+// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
-use std::path::Path;
+mod default;
 
-use gherkin;
-
-use crate::TestResult;
-
-pub trait OutputVisitor {
-    fn new() -> Self
-    where
-        Self: Sized;
-    fn visit_start(&mut self);
-    fn visit_feature(&mut self, feature: &gherkin::Feature, path: &Path);
-    fn visit_feature_end(&mut self, feature: &gherkin::Feature);
-    fn visit_feature_error(&mut self, path: &Path, error: &gherkin::Error);
-    fn visit_rule(&mut self, rule: &gherkin::Rule);
-    fn visit_rule_end(&mut self, rule: &gherkin::Rule);
-    fn visit_scenario(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario);
-    fn visit_scenario_end(&mut self, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario);
-    fn visit_scenario_skipped(
-        &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-    );
-    fn visit_step(
-        &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-        step: &gherkin::Step,
-    );
-    fn visit_step_resolved<'a, W: crate::World>(
-        &mut self,
-        step: &gherkin::Step,
-        test: &crate::TestCaseType<'a, W>,
-    );
-    fn visit_step_result(
-        &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-        step: &gherkin::Step,
-        result: &TestResult,
-    );
-    fn visit_finish(&mut self);
-}
+pub use default::BasicOutput;
