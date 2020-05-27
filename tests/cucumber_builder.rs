@@ -19,7 +19,11 @@ impl MyWorld {
 #[async_trait(?Send)]
 impl cucumber::World for MyWorld {
     async fn new() -> Self {
-        Self { foo: "wat".into(), bar: 0, some_value: RefCell::new(0) }
+        Self {
+            foo: "wat".into(),
+            bar: 0,
+            some_value: RefCell::new(0),
+        }
     }
 }
 
