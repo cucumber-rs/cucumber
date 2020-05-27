@@ -22,7 +22,7 @@ impl<W: World> Default for Cucumber<W> {
         Cucumber {
             steps: Default::default(),
             features: Default::default(),
-            event_handler: Box::new(crate::output::BasicOutput::default()),
+            event_handler: Box::new(crate::output::JunitOutput::default()),
         }
     }
 }

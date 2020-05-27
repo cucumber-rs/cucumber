@@ -7,5 +7,7 @@
 // except according to those terms.
 
 mod default;
+mod junit;
 
 pub use default::BasicOutput;
+pub use junit::JunitOutput;
