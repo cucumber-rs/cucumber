@@ -1,6 +1,6 @@
 extern crate cucumber_rust as cucumber;
 use async_trait::async_trait;
-use std::cell::RefCell;
+use std::{convert::Infallible, cell::RefCell};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -18,12 +18,14 @@ impl MyWorld {
 
 #[async_trait(?Send)]
 impl cucumber::World for MyWorld {
-    async fn new() -> Self {
-        Self {
+    type Error = Infallible;
+
+    async fn new() -> Result<Self, Infallible> {
+        Ok(Self {
             foo: "wat".into(),
             bar: 0,
             some_value: RefCell::new(0),
-        }
+        })
     }
 }
 

@@ -40,7 +40,9 @@ macro_rules! skip {
 
 #[async_trait(?Send)]
 pub trait World: Sized + UnwindSafe + 'static {
-    async fn new() -> Self;
+    type Error: std::error::Error;
+
+    async fn new() -> Result<Self, Self::Error>;
 }
 
 pub trait EventHandler: 'static {

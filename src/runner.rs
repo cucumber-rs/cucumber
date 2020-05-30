@@ -187,7 +187,7 @@ impl<W: World> Runner<W> {
     ) -> ScenarioStream {
         Box::pin(stream! {
             yield ScenarioEvent::Starting;
-            let mut world = Some(W::new().await);
+            let mut world = Some(W::new().await.unwrap());
 
             if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
                 for step in scenario.steps.iter() {

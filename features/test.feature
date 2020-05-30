@@ -1,11 +1,12 @@
 Feature: Basic functionality
-
+   # Comment
   @foo
   Scenario: foo
     Given a thing
     When nothing
 
   Scenario: bar
+       # comment
     Given a thing
     When something goes wrong
 
