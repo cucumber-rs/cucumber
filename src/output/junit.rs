@@ -35,6 +35,8 @@ impl JunitOutput {
             step.value.as_ref(),
             Duration::seconds(5),
             Some(step.value.to_string()),
+            None,
+            None,
         );
         self.test_suite.add_testcase(test_case);
     }
