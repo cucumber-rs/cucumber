@@ -567,7 +567,7 @@ macro_rules! before {
     (
         $fnname:ident => $scenariofn:expr
     ) => {
-        before!($fnname: "" => $scenariofn);
+        $crate::before!($fnname: "" => $scenariofn);
     };
 }
 
@@ -577,13 +577,13 @@ macro_rules! after {
     (
         $fnname:ident: $tagrule:tt => $stepfn:expr
     ) => {
-        before!($fnname: $tagrule => $stepfn);
+        $crate::before!($fnname: $tagrule => $stepfn);
     };
 
     (
         $fnname:ident => $scenariofn:expr
     ) => {
-        before!($fnname: "" => $scenariofn);
+        $crate::before!($fnname: "" => $scenariofn);
     };
 }
 
