@@ -190,7 +190,7 @@ impl<W: World> Runner<W> {
             let mut world = Some(W::new().await.unwrap());
 
             if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
-                for step in scenario.steps.iter() {
+                for step in steps.iter() {
                     let this = Rc::clone(&self);
 
                     let step = Rc::new(step.clone());
@@ -198,7 +198,7 @@ impl<W: World> Runner<W> {
 
                     match result {
                         TestEvent::Success(w, output) => {
-                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Passed(output));
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Passed(output));
                             // Pass world result for current step to next step.
                             world = Some(w);
                         }
