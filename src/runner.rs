@@ -10,6 +10,7 @@ use std::any::Any;
 use std::panic;
 use std::pin::Pin;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use async_stream::stream;
 use futures::{Future, Stream, StreamExt};
@@ -68,8 +69,8 @@ impl<W: World> Runner<W> {
         let mut stderr = shh::stderr().unwrap();
 
         // This ugly mess here catches the panics from async calls.
-        let panic_info = std::sync::Arc::new(std::sync::Mutex::new(None));
-        let panic_info0 = std::sync::Arc::clone(&panic_info);
+        let panic_info = Arc::new(std::sync::Mutex::new(None));
+        let panic_info0 = Arc::clone(&panic_info);
         panic::set_hook(Box::new(move |pi| {
             *panic_info0.lock().unwrap() = Some(PanicInfo {
                 location: pi
