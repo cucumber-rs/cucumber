@@ -11,17 +11,17 @@ macro_rules! cprint {
         use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
         use std::io::Write;
         let mut stdout = StandardStream::stdout(ColorChoice::Always);
-        let _ = stdout.set_color(ColorSpec::new().set_fg(Some($fg)));
-        let _ = write!(&mut stdout, $($arg)*);
-        let _ = stdout.reset();
+        let _x = stdout.set_color(ColorSpec::new().set_fg(Some($fg)));
+        let _x = write!(&mut stdout, $($arg)*);
+        let _x = stdout.reset();
     }};
     (bold $fg:expr, $($arg:tt)*) => {{
         use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
         use std::io::Write;
         let mut stdout = StandardStream::stdout(ColorChoice::Always);
-        let _ = stdout.set_color(ColorSpec::new().set_fg(Some($fg)).set_bold(true));
-        let _ = write!(&mut stdout, $($arg)*);
-        let _ = stdout.reset();
+        let _x = stdout.set_color(ColorSpec::new().set_fg(Some($fg)).set_bold(true));
+        let _x = write!(&mut stdout, $($arg)*);
+        let _x = stdout.reset();
     }};
 }
 
