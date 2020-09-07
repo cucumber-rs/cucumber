@@ -1,6 +1,6 @@
 extern crate cucumber_rust as cucumber;
 use async_trait::async_trait;
-use std::{convert::Infallible, cell::RefCell};
+use std::{cell::RefCell, convert::Infallible};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -30,9 +30,8 @@ impl cucumber::World for MyWorld {
 }
 
 mod example_steps {
-    use cucumber::Steps;
-    use futures::future::FutureExt;
-    use std::rc::Rc;
+    use cucumber::{t, Steps};
+    // use futures::future::FutureExt;
 
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: Steps<crate::MyWorld> = Steps::new();
@@ -40,20 +39,13 @@ mod example_steps {
         builder
             .given_async(
                 "a thing",
-                Rc::new(|mut world, _step| {
-                    std::panic::AssertUnwindSafe(async move {
-                        world.foo = "elho".into();
-                        world.test_async_fn().await;
-                        world
-                    })
-                    .catch_unwind()
-                    .boxed_local()
+                t!(|mut world, _step| {
+                    world.foo = "elho".into();
+                    world.test_async_fn().await;
+                    world
                 }),
             )
-            .when_regex_async(
-                "something goes (.*)",
-                Rc::new(|world, _matches, _step| async move { world }.catch_unwind().boxed_local()),
-            )
+            .when_regex_async("something goes (.*)", t!(|world, _matches, _step| world))
             .given(
                 "I am trying out Cucumber",
                 |mut world: crate::MyWorld, _step| {

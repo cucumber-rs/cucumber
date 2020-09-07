@@ -27,7 +27,7 @@ impl<W: World> Steps<W> {
         }
     }
 
-    pub fn insert_async(
+    fn insert_async(
         &mut self,
         ty: StepType,
         name: &'static str,
@@ -37,7 +37,7 @@ impl<W: World> Steps<W> {
         self
     }
 
-    pub fn insert_sync(
+    fn insert_sync(
         &mut self,
         ty: StepType,
         name: &'static str,
@@ -55,7 +55,7 @@ impl<W: World> Steps<W> {
         self
     }
 
-    pub fn insert_regex_async(
+    fn insert_regex_async(
         &mut self,
         ty: StepType,
         name: &'static str,
@@ -67,7 +67,7 @@ impl<W: World> Steps<W> {
         self
     }
 
-    pub fn insert_regex_sync(
+    fn insert_regex_sync(
         &mut self,
         ty: StepType,
         name: &'static str,
@@ -159,7 +159,7 @@ impl<W: World> Steps<W> {
         self.insert_regex_sync(StepType::Then, name, test_fn)
     }
 
-    pub fn append(&mut self, other: Steps<W>) {
+    pub(crate) fn append(&mut self, other: Steps<W>) {
         self.steps.append(other.steps);
     }
 }
