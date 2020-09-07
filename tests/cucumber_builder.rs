@@ -38,7 +38,7 @@ mod example_steps {
         let mut builder: Steps<crate::MyWorld> = Steps::new();
 
         builder
-            .given(
+            .given_async(
                 "a thing",
                 Rc::new(|mut world, _step| {
                     std::panic::AssertUnwindSafe(async move {
@@ -50,27 +50,27 @@ mod example_steps {
                     .boxed_local()
                 }),
             )
-            .when_regex(
+            .when_regex_async(
                 "something goes (.*)",
                 Rc::new(|world, _matches, _step| async move { world }.catch_unwind().boxed_local()),
             )
-            .given_sync(
+            .given(
                 "I am trying out Cucumber",
                 |mut world: crate::MyWorld, _step| {
                     world.foo = "Some string".to_string();
                     world
                 },
             )
-            .when_sync("I consider what I am doing", |mut world, _step| {
+            .when("I consider what I am doing", |mut world, _step| {
                 let new_string = format!("{}.", &world.foo);
                 world.foo = new_string;
                 world
             })
-            .then_sync("I am interested in ATDD", |world, _step| {
+            .then("I am interested in ATDD", |world, _step| {
                 assert_eq!(world.foo, "Some string.");
                 world
             })
-            .then_regex_sync(
+            .then_regex(
                 r"^we can (.*) rules with regex$",
                 |world, matches, _step| {
                     // And access them as an array
