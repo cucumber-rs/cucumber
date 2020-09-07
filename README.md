@@ -1,6 +1,13 @@
 # cucumber-rust
 
+[![Documentation](https://docs.rs/cucumber_rust/badge.svg)](https://docs.rs/cucumber_rust)
+[![Actions Status](https://github.com/bbqsrc/cucumber-rust/workflows/CI/badge.svg)](https://github.com/bbqsrc/box/actions)
+
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
+
+**The 0.6.x macro has been removed. If you need to use this macro, please continue to use the 0.6 version.** 
+
+- [Changelog](CHANGELOG.md)
 
 ### Usage
 
