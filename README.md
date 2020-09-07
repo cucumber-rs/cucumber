@@ -2,10 +2,6 @@
 
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
 
-<p align="center">
-    <img src="https://rawcdn.githack.com/bbqsrc/cucumber-rust/aa0c7efe20298d77f0acd3442946290b07026653/example.svg">
-</p>
-
 ### Usage
 
 Create a directory called `tests/` in your project root and create a test target of your choice. In this example we will name it `cucumber.rs`.
@@ -37,65 +33,73 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-use cucumber::{Cucumber, World};
+extern crate cucumber_rust as cucumber;
 use async_trait::async_trait;
+use std::{convert::Infallible, cell::RefCell};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
-    foo: String
+    foo: String,
+    bar: usize,
+    some_value: RefCell<u8>,
+}
+
+impl MyWorld {
+    async fn test_async_fn(&mut self) {
+        *self.some_value.borrow_mut() = 123u8;
+        self.bar = 123;
+    }
 }
 
 #[async_trait(?Send)]
-impl World for MyWorld {
-    async fn new() -> Self {
-        // This function is called every time a new scenario is started
-        MyWorld { 
-            foo: "a default string".to_string()
-        }
+impl cucumber::World for MyWorld {
+    type Error = Infallible;
+
+    async fn new() -> Result<Self, Infallible> {
+        Ok(Self {
+            foo: "wat".into(),
+            bar: 0,
+            some_value: RefCell::new(0),
+        })
     }
 }
 
 mod example_steps {
-    use cucumber::Steps;
-    use futures::future::FutureExt;
-    use std::rc::Rc;
+    use cucumber::{Steps, t};
 
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: Steps<crate::MyWorld> = Steps::new();
 
         builder
-            .given(
+            .given_async(
                 "a thing",
-                Rc::new(|mut world, _step| {
-                    async move {
-                        world.foo = "elho".into();
-                        world
-                    }
-                    .catch_unwind()
-                    .boxed_local()
-                }),
+                t!(|mut world, _step| {
+                    world.foo = "elho".into();
+                    world.test_async_fn().await;
+                    world
+                })
             )
-            .when_regex(
+            .when_regex_async(
                 "something goes (.*)",
-                Rc::new(|world, _matches, _step| async move { world }.catch_unwind().boxed_local()),
+                t!(|world, _matches, _step| world),
             )
-            .given_sync(
+            .given(
                 "I am trying out Cucumber",
                 |mut world: crate::MyWorld, _step| {
                     world.foo = "Some string".to_string();
                     world
                 },
             )
-            .when_sync("I consider what I am doing", |mut world, _step| {
+            .when("I consider what I am doing", |mut world, _step| {
                 let new_string = format!("{}.", &world.foo);
                 world.foo = new_string;
                 world
             })
-            .then_sync("I am interested in ATDD", |world, _step| {
+            .then("I am interested in ATDD", |world, _step| {
                 assert_eq!(world.foo, "Some string.");
                 world
             })
-            .then_regex_sync(
+            .then_regex(
                 r"^we can (.*) rules with regex$",
                 |world, matches, _step| {
                     // And access them as an array
@@ -112,7 +116,7 @@ fn main() {
     // Do any setup you need to do before running the Cucumber runner.
     // e.g. setup_some_db_thing()?;
 
-    let runner = Cucumber::<MyWorld>::new()
+    let runner = cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features"])
         .steps(example_steps::steps());
 
