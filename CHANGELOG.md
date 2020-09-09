@@ -1,3 +1,6 @@
+# 0.7.1 — 2020-09-09
+
+- Fix issue with `t!` macro for unbraced blocks
 
 # 0.7.0 — 2020-09-07
 
