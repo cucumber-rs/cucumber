@@ -35,37 +35,37 @@ macro_rules! cprintln {
 #[macro_export]
 macro_rules! t {
     // Async with block and mutable world
-    (| mut $world:ident, $step:ident | $input:tt) => {
+    (| mut $world:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|mut $world, $step| {
             use futures::future::FutureExt;
-            std::panic::AssertUnwindSafe(async move { $input })
+            std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .boxed_local()
         })
     };
     // Async with block and immutable world
-    (| $world:ident, $step:ident | $input:tt) => {
+    (| $world:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|$world, $step| {
             use futures::future::FutureExt;
-            std::panic::AssertUnwindSafe(async move { $input })
+            std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .boxed_local()
         })
     };
     // Async regex with block and mutable world
-    (| mut $world:ident, $matches:ident, $step:ident | $input:tt) => {
+    (| mut $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|$world, $matches, $step| {
             use futures::future::FutureExt;
-            std::panic::AssertUnwindSafe(async move { $input })
+            std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .boxed_local()
         })
     };
     // Async regex with block and immutable world
-    (| $world:ident, $matches:ident, $step:ident | $input:tt) => {
+    (| $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|$world, $matches, $step| {
             use futures::future::FutureExt;
-            std::panic::AssertUnwindSafe(async move { $input })
+            std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .boxed_local()
         })

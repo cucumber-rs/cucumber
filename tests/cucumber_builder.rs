@@ -30,7 +30,7 @@ impl cucumber::World for MyWorld {
 }
 
 mod example_steps {
-    use cucumber::{t, Steps};
+    use cucumber::{t, Steps, World};
     // use futures::future::FutureExt;
 
     pub fn steps() -> Steps<crate::MyWorld> {
@@ -45,7 +45,10 @@ mod example_steps {
                     world
                 }),
             )
-            .when_regex_async("something goes (.*)", t!(|world, _matches, _step| world))
+            .when_regex_async(
+                "something goes (.*)",
+                t!(|world, _matches, _step| crate::MyWorld::new().await.unwrap()),
+            )
             .given(
                 "I am trying out Cucumber",
                 |mut world: crate::MyWorld, _step| {
