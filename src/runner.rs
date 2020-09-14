@@ -7,7 +7,7 @@
 // except according to those terms.
 
 use std::any::Any;
-use std::panic;
+use std::panic::{self, UnwindSafe};
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -22,8 +22,8 @@ use crate::{World, TEST_SKIPPED};
 pub(crate) type PanicError = Box<(dyn Any + Send + 'static)>;
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, PanicError>>>>;
 
-pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W>>;
-pub type RegexStepFn<W> = Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>>;
+pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
+pub type RegexStepFn<W> = Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
 
 pub enum TestFunction<W> {
     Basic(BasicStepFn<W>),
