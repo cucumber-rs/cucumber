@@ -1,3 +1,7 @@
+# 0.7.2 — 2020-09-14
+
+- Enforce `UnwindSafe` on async test types
+
 # 0.7.1 — 2020-09-09
 
 - Fix issue with `t!` macro for unbraced blocks
