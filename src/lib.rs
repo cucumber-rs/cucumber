@@ -18,6 +18,7 @@ mod macros;
 mod collection;
 mod cucumber;
 mod event;
+mod examples;
 mod output;
 mod regex;
 mod runner;
@@ -27,6 +28,7 @@ use async_trait::async_trait;
 use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
+pub use examples::ExampleValues;
 pub use steps::Steps;
 
 const TEST_SKIPPED: &str = "Cucumber: test skipped";

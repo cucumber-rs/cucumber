@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use super::ExampleValues;
 use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,7 +74,7 @@ pub enum StepEvent {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScenarioEvent {
-    Starting,
+    Starting(ExampleValues),
     Background(Rc<gherkin::Step>, StepEvent),
     Step(Rc<gherkin::Step>, StepEvent),
     Skipped,

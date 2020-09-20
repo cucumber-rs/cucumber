@@ -322,17 +322,20 @@ impl BasicOutput {
         event: ScenarioEvent,
     ) {
         match event {
-            ScenarioEvent::Starting => {
+            ScenarioEvent::Starting(example_values) => {
                 self.scenarios.total += 1;
                 let cmt = self.file_line_col(feature.path.as_ref(), scenario.position);
+                let text = if example_values.is_empty() {
+                    format!("Scenario: {} ", &scenario.name)
+                } else {
+                    format!(
+                        "Scenario: {}\nUsing example: {}",
+                        &scenario.name,
+                        &example_values.as_string(),
+                    )
+                };
                 let indent = if rule.is_some() { "  " } else { " " };
-                self.writeln_cmt(
-                    &format!("Scenario: {}", &scenario.name),
-                    &cmt,
-                    indent,
-                    termcolor::Color::White,
-                    true,
-                );
+                self.writeln_cmt(&text, &cmt, indent, termcolor::Color::White, true);
             }
             ScenarioEvent::Background(step, event) => {
                 self.handle_step(feature, rule, scenario, step, event, true)
