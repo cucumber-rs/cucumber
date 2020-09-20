@@ -1,3 +1,7 @@
+# 0.7.3 — 2020-09-20
+
+- Fix [missing mut in t! macro for regexes](https://github.com/bbqsrc/cucumber-rust/issues/68) -- thanks @stefanpieck!
+
 # 0.7.2 — 2020-09-14
 
 - Enforce `UnwindSafe` on async test types
