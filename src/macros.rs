@@ -54,7 +54,7 @@ macro_rules! t {
     };
     // Async regex with block and mutable world
     (| mut $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|$world, $matches, $step| {
+        std::rc::Rc::new(|mut $world, $matches, $step| {
             use futures::future::FutureExt;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
