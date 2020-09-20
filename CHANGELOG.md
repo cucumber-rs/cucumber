@@ -2,7 +2,7 @@
 
 #### Known issues:
 
-- Filtering of tests bug tag was refactored out by accident ([#67](https://github.com/bbqsrc/cucumber-rust/issues/67))
+- Filtering of tests by tag was refactored out by accident ([#67](https://github.com/bbqsrc/cucumber-rust/issues/67))
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/cucumber-rust/issues/19))
 
 If these issues affect you, it is recommended to stick with v0.6.x for a little longer, or contribute a fix. 😄
