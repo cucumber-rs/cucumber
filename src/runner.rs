@@ -19,11 +19,14 @@ use crate::collection::StepsCollection;
 use crate::event::*;
 use crate::{World, TEST_SKIPPED};
 
+use super::ExampleValues;
+
 pub(crate) type PanicError = Box<(dyn Any + Send + 'static)>;
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, PanicError>>>>;
 
 pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
-pub type RegexStepFn<W> = Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
+pub type RegexStepFn<W> =
+    Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
 
 pub enum TestFunction<W> {
     Basic(BasicStepFn<W>),
@@ -125,13 +128,17 @@ impl<W: World> Runner<W> {
             yield FeatureEvent::Starting;
 
             for scenario in feature.scenarios.iter() {
-                let this = Rc::clone(&self);
-                let scenario = Rc::new(scenario.clone());
+                let examples = ExampleValues::from_examples(&scenario.examples);
+                for example_values in examples {
+                    let this = Rc::clone(&self);
+                    let scenario = Rc::new(scenario.clone());
 
-                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature));
+                    let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature), example_values);
 
-                while let Some(event) = stream.next().await {
-                    yield FeatureEvent::Scenario(Rc::clone(&scenario), event);
+                    while let Some(event) = stream.next().await {
+                        yield FeatureEvent::Scenario(Rc::clone(&scenario), event);
+
+                    }
                 }
             }
 
@@ -164,7 +171,7 @@ impl<W: World> Runner<W> {
                 let this = Rc::clone(&self);
                 let scenario = Rc::new(scenario.clone());
 
-                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature));
+                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature), ExampleValues::empty());
 
                 while let Some(event) = stream.next().await {
                     match event {
@@ -185,9 +192,10 @@ impl<W: World> Runner<W> {
         self: Rc<Self>,
         scenario: Rc<gherkin::Scenario>,
         feature: Rc<gherkin::Feature>,
+        example: super::ExampleValues,
     ) -> ScenarioStream {
         Box::pin(stream! {
-            yield ScenarioEvent::Starting;
+            yield ScenarioEvent::Starting(example.clone());
             let mut world = Some(W::new().await.unwrap());
 
             if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
@@ -225,7 +233,11 @@ impl<W: World> Runner<W> {
             for step in scenario.steps.iter() {
                 let this = Rc::clone(&self);
 
-                let step = Rc::new(step.clone());
+                let mut step = step.clone();
+                if !example.is_empty() {
+                    step.value = example.insert_values(&step.value);
+                }
+                let step = Rc::new(step);
                 let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
 
                 match result {

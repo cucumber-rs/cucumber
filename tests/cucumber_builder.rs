@@ -72,6 +72,19 @@ mod example_steps {
                     assert_eq!(matches[1], "implement");
                     world
                 },
+            )
+            .given_regex(r"a number (\d+)", |mut world, matches, _step| {
+                world.foo = matches[1].to_owned();
+                world
+            })
+            .then_regex(
+                r"twice that number should be (\d+)",
+                |world, matches, _step| {
+                    let to_check = world.foo.parse::<i32>().unwrap();
+                    let expected = matches[1].parse::<i32>().unwrap();
+                    assert_eq!(to_check * 2, expected);
+                    world
+                },
             );
 
         builder
