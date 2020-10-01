@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -29,6 +30,7 @@ pub struct BasicOutput {
     scenarios: Counter,
     steps: Counter,
     started: std::time::Instant,
+    step_started: bool,
 }
 
 impl Default for BasicOutput {
@@ -39,6 +41,7 @@ impl Default for BasicOutput {
             scenarios: Default::default(),
             steps: Default::default(),
             started: std::time::Instant::now(),
+            step_started: false,
         }
     }
 }
@@ -161,6 +164,13 @@ impl BasicOutput {
         cprintln!(termcolor::Color::White, " {}", cmt);
     }
 
+    fn delete_last_line(&self) {
+        let mut out = std::io::stdout();
+        let cursor_up = "\x1b[1A";
+        let erase_line = "\x1b[2K";
+        let _x = write!(&mut out, "{}{}", cursor_up, erase_line);
+    }
+
     fn file_line_col(&self, file: Option<&PathBuf>, position: (usize, usize)) -> String {
         // the U+00A0 ensures control/cmd clicking doesn't underline weird.
         match file {
@@ -193,7 +203,23 @@ impl BasicOutput {
         };
         let indent = if rule.is_some() { "   " } else { "  " };
 
+        if self.step_started {
+            self.delete_last_line();
+            self.step_started = false;
+        }
+
         match event {
+            StepEvent::Starting => {
+                self.writeln_cmt(
+                    &format!("{}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::White,
+                    false,
+                );
+                self.print_step_extras(&*step);
+                self.step_started = true;
+            }
             StepEvent::Unimplemented => {
                 self.steps.skipped += 1;
 
