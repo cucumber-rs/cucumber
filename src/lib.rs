@@ -17,9 +17,9 @@ mod macros;
 
 mod collection;
 mod cucumber;
-mod event;
+pub mod event;
 mod examples;
-mod output;
+pub mod output;
 mod regex;
 mod runner;
 mod steps;
