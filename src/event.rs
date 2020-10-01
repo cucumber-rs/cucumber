@@ -5,16 +5,27 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//! Key occurrences in the lifecycle of a Cucumber execution.
+//!
+//! The top-level enum here is `CucumberEvent`.
+//!
+//! Each event enum contains variants indicating
+//! what stage of execution Cucumber is at and,
+//! variants with detailed content about the precise
+//! sub-event
 
-use super::ExampleValues;
+pub use super::ExampleValues;
 use std::{fmt::Display, rc::Rc};
 
+/// The stringified content of stdout and stderr
+/// captured during Step execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapturedOutput {
     pub out: String,
     pub err: String,
 }
 
+/// Panic source location information
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Location {
     pub file: String,
@@ -42,6 +53,7 @@ impl Display for Location {
     }
 }
 
+/// Panic content captured when a Step failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PanicInfo {
     pub location: Location,
@@ -57,13 +69,16 @@ impl PanicInfo {
     }
 }
 
-pub enum TestEvent<W> {
+/// Outcome of step execution, carrying along the relevant
+/// `World` state.
+pub(crate) enum TestEvent<W> {
     Unimplemented,
     Skipped,
     Success(W, CapturedOutput),
     Failure(PanicInfo, CapturedOutput),
 }
 
+/// Event specific to a particular [Step](https://cucumber.io/docs/gherkin/reference/#step)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StepEvent {
     Unimplemented,
@@ -72,6 +87,7 @@ pub enum StepEvent {
     Failed(CapturedOutput, PanicInfo),
 }
 
+/// Event specific to a particular [Scenario](https://cucumber.io/docs/gherkin/reference/#example)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScenarioEvent {
     Starting(ExampleValues),
@@ -82,6 +98,7 @@ pub enum ScenarioEvent {
     Failed,
 }
 
+/// Event specific to a particular [Rule](https://cucumber.io/docs/gherkin/reference/#rule)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuleEvent {
     Starting,
@@ -91,6 +108,7 @@ pub enum RuleEvent {
     Failed,
 }
 
+/// Event specific to a particular [Feature](https://cucumber.io/docs/gherkin/reference/#feature)
 #[derive(Debug, Clone)]
 pub enum FeatureEvent {
     Starting,
@@ -99,6 +117,7 @@ pub enum FeatureEvent {
     Finished,
 }
 
+/// Top-level cucumber run event.
 #[derive(Debug, Clone)]
 pub enum CucumberEvent {
     Starting,

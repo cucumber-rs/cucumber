@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! A library implementing the Cucumber testing framework for Rust, in Rust.
+
 #![recursion_limit = "512"]
 #![deny(rust_2018_idioms)]
 
@@ -40,6 +42,8 @@ macro_rules! skip {
     };
 }
 
+/// The `World` trait represents shared user-defined state
+/// for a cucumber run.
 #[async_trait(?Send)]
 pub trait World: Sized + UnwindSafe + 'static {
     type Error: std::error::Error;
@@ -47,6 +51,12 @@ pub trait World: Sized + UnwindSafe + 'static {
     async fn new() -> Result<Self, Self::Error>;
 }
 
+/// During test runs, a `Cucumber` instance notifies its
+/// associated `EventHandler` implementation about the
+/// key occurrences in the test lifecycle.
+///
+/// User can replace the default `EventHandler` for a `Cucumber`
+/// at construction time using `Cucumber::with_handler`.
 pub trait EventHandler: 'static {
     fn handle_event(&mut self, event: event::CucumberEvent);
 }

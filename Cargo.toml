@@ -30,3 +30,7 @@ pathdiff = "0.2.0"
 [[test]]
 name = "cucumber_builder"
 harness = false
+
+[[test]]
+name = "integration_test"
+harness = true
