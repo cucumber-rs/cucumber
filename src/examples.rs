@@ -1,7 +1,9 @@
+/// Content derived from a gherkin `Examples` table. Contains the table's keys
+/// and for values drawn from a single row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExampleValues {
-    keys: Vec<String>,
-    values: Vec<String>,
+    pub keys: Vec<String>,
+    pub values: Vec<String>,
 }
 
 impl ExampleValues {
