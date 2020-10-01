@@ -201,8 +201,10 @@ impl<W: World> Runner<W> {
             if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
                 for step in steps.iter() {
                     let this = Rc::clone(&self);
-
                     let step = Rc::new(step.clone());
+
+                    yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Starting);
+
                     let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
 
                     match result {
@@ -238,6 +240,9 @@ impl<W: World> Runner<W> {
                     step.value = example.insert_values(&step.value);
                 }
                 let step = Rc::new(step);
+
+                yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Starting);
+
                 let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
 
                 match result {

@@ -66,6 +66,7 @@ pub enum TestEvent<W> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StepEvent {
+    Starting,
     Unimplemented,
     Skipped,
     Passed(CapturedOutput),
