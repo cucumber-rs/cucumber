@@ -165,6 +165,7 @@ impl<W: World> Runner<W> {
                             }
                             Err(TryLockError::WouldBlock) => {
                                 if start_point.elapsed() < step_timeout {
+                                    futures_timer::Delay::new(Duration::from_micros(10)).await;
                                     continue;
                                 } else {
                                     break PanicInfo::unknown();
