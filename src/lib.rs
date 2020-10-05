@@ -31,6 +31,7 @@ use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
+use std::any::Any;
 pub use steps::Steps;
 
 const TEST_SKIPPED: &str = "Cucumber: test skipped";
@@ -59,4 +60,10 @@ pub trait World: Sized + UnwindSafe + 'static {
 /// at construction time using `Cucumber::with_handler`.
 pub trait EventHandler: 'static {
     fn handle_event(&mut self, event: event::CucumberEvent);
+}
+
+pub type PanicError = Box<(dyn Any + Send + 'static)>;
+pub enum TestError {
+    TimedOut,
+    PanicError(PanicError),
 }

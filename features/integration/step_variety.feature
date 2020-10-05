@@ -10,3 +10,7 @@ Feature: Variety of scenario outcomes get exposed for integration
   Scenario: A scenario with an unimplemented step
     When not implemented
     Then it's okay
+
+  Scenario: A timing out scenario
+    When something
+    Then it takes a long time

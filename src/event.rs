@@ -76,6 +76,7 @@ pub(crate) enum TestEvent<W> {
     Skipped,
     Success(W, CapturedOutput),
     Failure(PanicInfo, CapturedOutput),
+    TimedOut,
 }
 
 /// Event specific to a particular [Step](https://cucumber.io/docs/gherkin/reference/#step)
@@ -86,6 +87,7 @@ pub enum StepEvent {
     Skipped,
     Passed(CapturedOutput),
     Failed(CapturedOutput, PanicInfo),
+    TimedOut,
 }
 
 /// Event specific to a particular [Scenario](https://cucumber.io/docs/gherkin/reference/#example)
@@ -97,6 +99,7 @@ pub enum ScenarioEvent {
     Skipped,
     Passed,
     Failed,
+    TimedOut,
 }
 
 /// Event specific to a particular [Rule](https://cucumber.io/docs/gherkin/reference/#rule)
@@ -107,6 +110,7 @@ pub enum RuleEvent {
     Skipped,
     Passed,
     Failed,
+    TimedOut,
 }
 
 /// Event specific to a particular [Feature](https://cucumber.io/docs/gherkin/reference/#feature)

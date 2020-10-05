@@ -12,7 +12,8 @@ use cute_custom_default::CustomDefault;
 
 use crate::collection::StepsCollection;
 use crate::runner::{BasicStepFn, RegexStepFn};
-use crate::World;
+use crate::{TestError, World};
+use futures::TryFutureExt;
 use gherkin::StepType;
 
 #[derive(CustomDefault)]
@@ -49,6 +50,7 @@ impl<W: World> Steps<W> {
             // let test_fn = Rc::clone(&test_fn);
             std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
                 .catch_unwind()
+                .map_err(TestError::PanicError)
                 .boxed_local()
         });
         self.steps.insert_basic(ty, name, test_fn);
@@ -81,6 +83,7 @@ impl<W: World> Steps<W> {
             // let test_fn = Rc::clone(&test_fn);
             std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, step) })
                 .catch_unwind()
+                .map_err(TestError::PanicError)
                 .boxed_local()
         });
         self.steps.insert_regex(ty, regex, test_fn);
