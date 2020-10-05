@@ -17,12 +17,12 @@ use futures::{Future, Stream, StreamExt};
 
 use crate::collection::StepsCollection;
 use crate::event::*;
-use crate::{World, TEST_SKIPPED};
+use crate::{TestError, World, TEST_SKIPPED};
 
 use super::ExampleValues;
+use std::time::Duration;
 
-pub(crate) type PanicError = Box<(dyn Any + Send + 'static)>;
-pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, PanicError>>>>;
+pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, TestError>>>>;
 
 pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
 pub type RegexStepFn<W> =
@@ -46,6 +46,7 @@ fn coerce_error(err: &(dyn Any + Send + 'static)) -> String {
 pub(crate) struct Runner<W: World> {
     functions: StepsCollection<W>,
     features: Rc<Vec<gherkin::Feature>>,
+    step_timeout: Option<Duration>,
 }
 
 impl<W: World> Runner<W> {
@@ -53,10 +54,12 @@ impl<W: World> Runner<W> {
     pub fn new(
         functions: StepsCollection<W>,
         features: Rc<Vec<gherkin::Feature>>,
+        step_timeout: Option<Duration>,
     ) -> Rc<Runner<W>> {
         Rc::new(Runner {
             functions,
             features,
+            step_timeout,
         })
     }
 
@@ -88,9 +91,21 @@ impl<W: World> Runner<W> {
             });
         }));
 
-        let result = match func {
-            TestFunction::Basic(f) => (f)(world, step).await,
-            TestFunction::Regex(f, r) => (f)(world, r, step).await,
+        let step_future = match func {
+            TestFunction::Basic(f) => (f)(world, step),
+            TestFunction::Regex(f, r) => (f)(world, r, step),
+        };
+        let result = if let Some(step_timeout) = self.step_timeout {
+            let timeout = Box::pin(async {
+                futures_timer::Delay::new(step_timeout).await;
+                Err(TestError::TimedOut)
+            });
+            futures::future::select(timeout, step_future)
+                .await
+                .factor_first()
+                .0
+        } else {
+            step_future.await
         };
 
         let mut out = String::new();
@@ -110,7 +125,8 @@ impl<W: World> Runner<W> {
         let output = CapturedOutput { out, err };
         match result {
             Ok(w) => TestEvent::Success(w, output),
-            Err(e) => {
+            Err(TestError::TimedOut) => TestEvent::TimedOut,
+            Err(TestError::PanicError(e)) => {
                 let e = coerce_error(&e);
                 if &*e == TEST_SKIPPED {
                     return TestEvent::Skipped;
@@ -176,6 +192,7 @@ impl<W: World> Runner<W> {
                 while let Some(event) = stream.next().await {
                     match event {
                         ScenarioEvent::Failed => { return_event = Some(RuleEvent::Failed); },
+                        ScenarioEvent::TimedOut => { return_event = Some(RuleEvent::TimedOut); },
                         ScenarioEvent::Passed if return_event.is_none() => { return_event = Some(RuleEvent::Passed); },
                         ScenarioEvent::Skipped if return_event == Some(RuleEvent::Passed) => { return_event = Some(RuleEvent::Skipped); }
                         _ => {}
@@ -228,6 +245,11 @@ impl<W: World> Runner<W> {
                             yield ScenarioEvent::Skipped;
                             return;
                         }
+                        TestEvent::TimedOut =>{
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::TimedOut);
+                            yield ScenarioEvent::TimedOut;
+                            return;
+                        }
                     }
                 }
             }
@@ -264,6 +286,11 @@ impl<W: World> Runner<W> {
                     TestEvent::Unimplemented => {
                         yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Unimplemented);
                         yield ScenarioEvent::Skipped;
+                        return;
+                    }
+                    TestEvent::TimedOut =>{
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::TimedOut);
+                        yield ScenarioEvent::TimedOut;
                         return;
                     }
                 }

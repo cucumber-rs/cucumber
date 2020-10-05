@@ -22,6 +22,7 @@ struct Counter {
     skipped: u32,
     passed: u32,
     failed: u32,
+    timed_out: u32,
 }
 
 pub struct BasicOutput {
@@ -337,6 +338,29 @@ impl BasicOutput {
                     true,
                 );
             }
+            StepEvent::TimedOut => {
+                self.steps.timed_out += 1;
+
+                self.writeln_cmt(
+                    &format!("✘ {}", msg),
+                    &cmt,
+                    indent,
+                    termcolor::Color::Red,
+                    false,
+                );
+                self.print_step_extras(&*step);
+                self.writeln_cmt(
+                    &format!(
+                        "{:—<1$}",
+                        "[!] Step timed out",
+                        textwrap::termwidth().saturating_sub(6),
+                    ),
+                    "",
+                    "———— ",
+                    termcolor::Color::Red,
+                    true,
+                );
+            }
         }
     }
 
@@ -378,6 +402,7 @@ impl BasicOutput {
             ScenarioEvent::Failed => {
                 self.scenarios.failed += 1;
             }
+            ScenarioEvent::TimedOut => self.scenarios.timed_out += 1,
         }
     }
 
@@ -406,6 +431,9 @@ impl BasicOutput {
             }
             RuleEvent::Failed => {
                 self.rules.failed += 1;
+            }
+            RuleEvent::TimedOut => {
+                self.rules.timed_out += 1;
             }
         }
     }

@@ -40,6 +40,7 @@ macro_rules! t {
             use futures::future::FutureExt;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
+                .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
         })
     };
@@ -49,6 +50,7 @@ macro_rules! t {
             use futures::future::FutureExt;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
+                .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
         })
     };
@@ -58,6 +60,7 @@ macro_rules! t {
             use futures::future::FutureExt;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
+                .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
         })
     };
@@ -67,6 +70,7 @@ macro_rules! t {
             use futures::future::FutureExt;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
+                .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
         })
     };

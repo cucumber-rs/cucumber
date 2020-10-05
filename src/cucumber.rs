@@ -10,11 +10,13 @@ use futures::StreamExt;
 
 use crate::steps::Steps;
 use crate::{EventHandler, World};
+use std::time::Duration;
 
 pub struct Cucumber<W: World> {
     steps: Steps<W>,
     features: Vec<gherkin::Feature>,
     event_handler: Box<dyn EventHandler>,
+    step_timeout: Option<Duration>,
 }
 
 impl<W: World> Default for Cucumber<W> {
@@ -23,6 +25,7 @@ impl<W: World> Default for Cucumber<W> {
             steps: Default::default(),
             features: Default::default(),
             event_handler: Box::new(crate::output::BasicOutput::default()),
+            step_timeout: None,
         }
     }
 }
@@ -37,6 +40,7 @@ impl<W: World> Cucumber<W> {
             steps: Default::default(),
             features: Default::default(),
             event_handler: Box::new(event_handler),
+            step_timeout: None,
         }
     }
 
@@ -71,8 +75,17 @@ impl<W: World> Cucumber<W> {
         self
     }
 
+    pub fn step_timeout(mut self, step_timeout: Duration) -> Self {
+        self.step_timeout = Some(step_timeout);
+        self
+    }
+
     pub async fn run(mut self) {
-        let runner = crate::runner::Runner::new(self.steps.steps, std::rc::Rc::new(self.features));
+        let runner = crate::runner::Runner::new(
+            self.steps.steps,
+            std::rc::Rc::new(self.features),
+            self.step_timeout,
+        );
         let mut stream = runner.run();
 
         while let Some(event) = stream.next().await {
