@@ -10,7 +10,7 @@ use std::any::Any;
 use std::panic::{self, UnwindSafe};
 use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, TryLockError};
 
 use async_stream::stream;
 use futures::{Future, Stream, StreamExt};
@@ -20,7 +20,7 @@ use crate::event::*;
 use crate::{TestError, World, TEST_SKIPPED};
 
 use super::ExampleValues;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, TestError>>>>;
 
@@ -77,8 +77,9 @@ impl<W: World> Runner<W> {
         // This ugly mess here catches the panics from async calls.
         let panic_info = Arc::new(std::sync::Mutex::new(None));
         let panic_info0 = Arc::clone(&panic_info);
+        let step_timeout0 = self.step_timeout;
         panic::set_hook(Box::new(move |pi| {
-            *panic_info0.lock().unwrap() = Some(PanicInfo {
+            let panic_info = Some(PanicInfo {
                 location: pi
                     .location()
                     .map(|l| Location {
@@ -89,6 +90,29 @@ impl<W: World> Runner<W> {
                     .unwrap_or_else(Location::unknown),
                 payload: coerce_error(pi.payload()),
             });
+            if let Some(step_timeout) = step_timeout0 {
+                let start_point = Instant::now();
+                loop {
+                    match panic_info0.try_lock() {
+                        Ok(mut guard) => {
+                            *guard = panic_info;
+                            return;
+                        }
+                        Err(TryLockError::WouldBlock) => {
+                            if start_point.elapsed() < step_timeout {
+                                continue;
+                            } else {
+                                return;
+                            }
+                        }
+                        Err(TryLockError::Poisoned(_)) => {
+                            return;
+                        }
+                    }
+                }
+            } else {
+                *panic_info0.lock().unwrap() = panic_info;
+            }
         }));
 
         let step_future = match func {
@@ -132,8 +156,27 @@ impl<W: World> Runner<W> {
                     return TestEvent::Skipped;
                 }
 
-                let mut guard = panic_info.lock().unwrap();
-                let pi = guard.take().unwrap_or_else(PanicInfo::unknown);
+                let pi = if let Some(step_timeout) = self.step_timeout {
+                    let start_point = Instant::now();
+                    loop {
+                        match panic_info.try_lock() {
+                            Ok(mut guard) => {
+                                break guard.take().unwrap_or_else(PanicInfo::unknown);
+                            }
+                            Err(TryLockError::WouldBlock) => {
+                                if start_point.elapsed() < step_timeout {
+                                    continue;
+                                } else {
+                                    break PanicInfo::unknown();
+                                }
+                            }
+                            Err(TryLockError::Poisoned(_)) => break PanicInfo::unknown(),
+                        }
+                    }
+                } else {
+                    let mut guard = panic_info.lock().unwrap();
+                    guard.take().unwrap_or_else(PanicInfo::unknown)
+                };
                 TestEvent::Failure(pi, output)
             }
         }
