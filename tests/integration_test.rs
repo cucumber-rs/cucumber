@@ -1,5 +1,8 @@
 use async_trait::async_trait;
 use cucumber_rust::{event::*, t, Cucumber, EventHandler, Steps, World};
+use serial_test::serial;
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -83,9 +86,7 @@ impl World for StatelessWorld {
     }
 }
 
-#[test]
-fn user_defined_event_handlers_are_expressible() {
-    let custom_handler = CustomEventHandler::default();
+fn stateless_steps() -> Steps<StatelessWorld> {
     let mut steps = Steps::<StatelessWorld>::new();
     steps.when("something", |world, _step| world);
     steps.when("another thing", |world, _step| world);
@@ -100,9 +101,16 @@ fn user_defined_event_handlers_are_expressible() {
             world
         }),
     );
+    steps
+}
+
+#[test]
+#[serial]
+fn user_defined_event_handlers_are_expressible() {
+    let custom_handler = CustomEventHandler::default();
 
     let runner = Cucumber::with_handler(custom_handler.clone())
-        .steps(steps)
+        .steps(stateless_steps())
         .features(&["./features/integration"])
         .step_timeout(Duration::from_secs(1));
 
@@ -115,4 +123,63 @@ fn user_defined_event_handlers_are_expressible() {
     assert!(handler_state.any_step_success);
     assert!(handler_state.any_scenario_skipped);
     assert!(handler_state.any_step_timeouts);
+}
+
+fn nocapture_enabled() -> bool {
+    std::env::args_os().any(|a| {
+        if let Some(s) = a.to_str() {
+            s == "--nocapture"
+        } else {
+            false
+        }
+    }) || match std::env::var("RUST_TEST_NOCAPTURE") {
+        Ok(val) => &val != "0",
+        Err(_) => false,
+    }
+}
+
+#[test]
+#[serial]
+fn enable_capture_false_support() {
+    if !nocapture_enabled() {
+        // This test only functions when the Rust test framework is refraining
+        // from swallowing all output from this process (and child processes)
+        // Execute with `cargo test -- --nocapture` to see the real results
+        return;
+    }
+    let command_output = Command::new(built_executable_path("capture-runner"))
+        .args(&["false"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .expect("Could not execute capture-runner");
+    let stdout = String::from_utf8_lossy(&command_output.stdout);
+    let stderr = String::from_utf8_lossy(&command_output.stderr);
+    assert!(stdout.contains("everything is great"));
+    assert!(stderr.contains("something went wrong"));
+    assert!(
+        command_output.status.success(),
+        "capture-runner should exit successfully"
+    );
+}
+fn get_target_dir() -> PathBuf {
+    let bin = std::env::current_exe().expect("exe path");
+    let mut target_dir = PathBuf::from(bin.parent().expect("bin parent"));
+    while target_dir.file_name() != Some(std::ffi::OsStr::new("target")) {
+        target_dir.pop();
+    }
+    target_dir
+}
+
+fn built_executable_path(name: &str) -> PathBuf {
+    let program_path =
+        get_target_dir()
+            .join("debug")
+            .join(format!("{}{}", name, std::env::consts::EXE_SUFFIX));
+
+    program_path.canonicalize().expect(&format!(
+        "Cannot resolve {} at {:?}",
+        name,
+        program_path.display()
+    ))
 }
