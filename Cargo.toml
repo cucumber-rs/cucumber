@@ -35,3 +35,11 @@ harness = false
 [[test]]
 name = "integration_test"
 harness = true
+edition = "2018"
+
+[dev-dependencies]
+capture-runner = { path = "capture-runner" }
+serial_test = "0.5.0"
+
+[workspace]
+members = ["capture-runner"]

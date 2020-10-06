@@ -96,8 +96,9 @@ fn main() {
     // e.g. setup_some_db_thing()?;
 
     let runner = cucumber::Cucumber::<MyWorld>::new()
-        .features(&["./features"])
-        .steps(example_steps::steps());
+        .features(&["./features/basic"])
+        .steps(example_steps::steps())
+        .enable_capture(false);
 
     // You may choose any executor you like (Tokio, async-std, etc)
     // You may even have an async main, it doesn't matter. The point is that
