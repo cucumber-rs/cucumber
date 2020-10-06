@@ -24,12 +24,15 @@ impl EventHandler for CustomEventHandler {
     fn handle_event(&mut self, event: CucumberEvent) {
         let mut state = self.state.lock().unwrap();
         match event {
-            CucumberEvent::Feature(_feature, FeatureEvent::Rule(_rule, RuleEvent::Failed)) => {
+            CucumberEvent::Feature(
+                _feature,
+                FeatureEvent::Rule(_rule, RuleEvent::Failed(FailureKind::Panic)),
+            ) => {
                 state.any_rule_failures = true;
             }
             CucumberEvent::Feature(
                 _feature,
-                FeatureEvent::Scenario(_scenario, ScenarioEvent::Failed),
+                FeatureEvent::Scenario(_scenario, ScenarioEvent::Failed(FailureKind::Panic)),
             ) => {
                 state.any_scenario_failures = true;
             }
@@ -43,14 +46,17 @@ impl EventHandler for CustomEventHandler {
                 _feature,
                 FeatureEvent::Scenario(
                     _scenario,
-                    ScenarioEvent::Step(_step, StepEvent::Failed(_, _)),
+                    ScenarioEvent::Step(_step, StepEvent::Failed(StepFailureKind::Panic(_, _))),
                 ),
             ) => {
                 state.any_step_failures = true;
             }
             CucumberEvent::Feature(
                 _feature,
-                FeatureEvent::Scenario(_scenario, ScenarioEvent::Step(_step, StepEvent::TimedOut)),
+                FeatureEvent::Scenario(
+                    _scenario,
+                    ScenarioEvent::Step(_step, StepEvent::Failed(StepFailureKind::TimedOut)),
+                ),
             ) => {
                 state.any_step_timeouts = true;
             }

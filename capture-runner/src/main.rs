@@ -33,15 +33,21 @@ impl EventHandler for ProblemDetectingEventHandler {
         match &event {
             CucumberEvent::Feature(
                 _,
-                FeatureEvent::Scenario(_, ScenarioEvent::Step(_, StepEvent::Failed(_, _))),
+                FeatureEvent::Scenario(
+                    _,
+                    ScenarioEvent::Step(_, StepEvent::Failed(StepFailureKind::Panic(_, _))),
+                ),
+            )
+            | CucumberEvent::Feature(
+                _,
+                FeatureEvent::Scenario(
+                    _,
+                    ScenarioEvent::Step(_, StepEvent::Failed(StepFailureKind::TimedOut)),
+                ),
             )
             | CucumberEvent::Feature(
                 _,
                 FeatureEvent::Scenario(_, ScenarioEvent::Step(_, StepEvent::Skipped)),
-            )
-            | CucumberEvent::Feature(
-                _,
-                FeatureEvent::Scenario(_, ScenarioEvent::Step(_, StepEvent::TimedOut)),
             )
             | CucumberEvent::Feature(
                 _,

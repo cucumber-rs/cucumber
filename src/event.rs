@@ -75,8 +75,7 @@ pub(crate) enum TestEvent<W> {
     Unimplemented,
     Skipped,
     Success(W, CapturedOutput),
-    Failure(PanicInfo, CapturedOutput),
-    TimedOut,
+    Failure(StepFailureKind),
 }
 
 /// Event specific to a particular [Step](https://cucumber.io/docs/gherkin/reference/#step)
@@ -86,8 +85,7 @@ pub enum StepEvent {
     Unimplemented,
     Skipped,
     Passed(CapturedOutput),
-    Failed(CapturedOutput, PanicInfo),
-    TimedOut,
+    Failed(StepFailureKind),
 }
 
 /// Event specific to a particular [Scenario](https://cucumber.io/docs/gherkin/reference/#example)
@@ -98,8 +96,7 @@ pub enum ScenarioEvent {
     Step(Rc<gherkin::Step>, StepEvent),
     Skipped,
     Passed,
-    Failed,
-    TimedOut,
+    Failed(FailureKind),
 }
 
 /// Event specific to a particular [Rule](https://cucumber.io/docs/gherkin/reference/#rule)
@@ -109,8 +106,7 @@ pub enum RuleEvent {
     Scenario(Rc<gherkin::Scenario>, ScenarioEvent),
     Skipped,
     Passed,
-    Failed,
-    TimedOut,
+    Failed(FailureKind),
 }
 
 /// Event specific to a particular [Feature](https://cucumber.io/docs/gherkin/reference/#feature)
@@ -128,4 +124,16 @@ pub enum CucumberEvent {
     Starting,
     Feature(Rc<gherkin::Feature>, FeatureEvent),
     Finished,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FailureKind {
+    TimedOut,
+    Panic,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StepFailureKind {
+    TimedOut,
+    Panic(CapturedOutput, PanicInfo),
 }
