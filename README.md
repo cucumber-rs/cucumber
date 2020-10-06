@@ -40,7 +40,6 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-extern crate cucumber_rust as cucumber;
 use async_trait::async_trait;
 use std::{convert::Infallible, cell::RefCell};
 
@@ -133,6 +132,14 @@ fn main() {
     futures::executor::block_on(runner.run());
 }
 ```
+
+You can then run your Cucumber tests by running this command:
+
+```
+cargo test --test cucumber
+```
+
+### Supporting crates
 
 The full gamut of Cucumber's Gherkin language is implemented by the 
 [gherkin-rust](https://github.com/bbqsrc/gherkin-rust) project. Most features of the Gherkin 
