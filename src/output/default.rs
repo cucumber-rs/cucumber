@@ -10,6 +10,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::event::{FailureKind, StepFailureKind};
 use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
     EventHandler,
@@ -259,7 +260,7 @@ impl BasicOutput {
                 );
                 self.print_step_extras(&*step);
             }
-            StepEvent::Failed(output, panic_info) => {
+            StepEvent::Failed(StepFailureKind::Panic(output, panic_info)) => {
                 self.steps.failed += 1;
 
                 self.writeln_cmt(
@@ -338,7 +339,7 @@ impl BasicOutput {
                     true,
                 );
             }
-            StepEvent::TimedOut => {
+            StepEvent::Failed(StepFailureKind::TimedOut) => {
                 self.steps.timed_out += 1;
 
                 self.writeln_cmt(
@@ -399,10 +400,10 @@ impl BasicOutput {
             ScenarioEvent::Passed => {
                 self.scenarios.passed += 1;
             }
-            ScenarioEvent::Failed => {
+            ScenarioEvent::Failed(FailureKind::Panic) => {
                 self.scenarios.failed += 1;
             }
-            ScenarioEvent::TimedOut => self.scenarios.timed_out += 1,
+            ScenarioEvent::Failed(FailureKind::TimedOut) => self.scenarios.timed_out += 1,
         }
     }
 
@@ -429,10 +430,10 @@ impl BasicOutput {
             RuleEvent::Passed => {
                 self.rules.passed += 1;
             }
-            RuleEvent::Failed => {
+            RuleEvent::Failed(FailureKind::Panic) => {
                 self.rules.failed += 1;
             }
-            RuleEvent::TimedOut => {
+            RuleEvent::Failed(FailureKind::TimedOut) => {
                 self.rules.timed_out += 1;
             }
         }

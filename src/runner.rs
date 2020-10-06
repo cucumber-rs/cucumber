@@ -156,7 +156,7 @@ impl<W: World> Runner<W> {
         let output = CapturedOutput { out, err };
         match result {
             Ok(w) => TestEvent::Success(w, output),
-            Err(TestError::TimedOut) => TestEvent::TimedOut,
+            Err(TestError::TimedOut) => TestEvent::Failure(StepFailureKind::TimedOut),
             Err(TestError::PanicError(e)) => {
                 let e = coerce_error(&e);
                 if &*e == TEST_SKIPPED {
@@ -185,7 +185,7 @@ impl<W: World> Runner<W> {
                     let mut guard = panic_info.lock().unwrap();
                     guard.take().unwrap_or_else(PanicInfo::unknown)
                 };
-                TestEvent::Failure(pi, output)
+                TestEvent::Failure(StepFailureKind::Panic(output, pi))
             }
         }
     }
@@ -242,8 +242,8 @@ impl<W: World> Runner<W> {
 
                 while let Some(event) = stream.next().await {
                     match event {
-                        ScenarioEvent::Failed => { return_event = Some(RuleEvent::Failed); },
-                        ScenarioEvent::TimedOut => { return_event = Some(RuleEvent::TimedOut); },
+                        ScenarioEvent::Failed(FailureKind::Panic) => { return_event = Some(RuleEvent::Failed(FailureKind::Panic)); },
+                        ScenarioEvent::Failed(FailureKind::TimedOut) => { return_event = Some(RuleEvent::Failed(FailureKind::TimedOut)); },
                         ScenarioEvent::Passed if return_event.is_none() => { return_event = Some(RuleEvent::Passed); },
                         ScenarioEvent::Skipped if return_event == Some(RuleEvent::Passed) => { return_event = Some(RuleEvent::Skipped); }
                         _ => {}
@@ -281,11 +281,16 @@ impl<W: World> Runner<W> {
                             // Pass world result for current step to next step.
                             world = Some(w);
                         }
-                        TestEvent::Failure(e, output) => {
-                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(output, e));
-                            yield ScenarioEvent::Failed;
+                        TestEvent::Failure(StepFailureKind::Panic(output, e)) => {
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(StepFailureKind::Panic(output, e)));
+                            yield ScenarioEvent::Failed(FailureKind::Panic);
                             return;
                         },
+                        TestEvent::Failure(StepFailureKind::TimedOut) => {
+                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(StepFailureKind::TimedOut));
+                            yield ScenarioEvent::Failed(FailureKind::TimedOut);
+                            return;
+                        }
                         TestEvent::Skipped => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Skipped);
                             yield ScenarioEvent::Skipped;
@@ -294,11 +299,6 @@ impl<W: World> Runner<W> {
                         TestEvent::Unimplemented => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Unimplemented);
                             yield ScenarioEvent::Skipped;
-                            return;
-                        }
-                        TestEvent::TimedOut =>{
-                            yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::TimedOut);
-                            yield ScenarioEvent::TimedOut;
                             return;
                         }
                     }
@@ -324,11 +324,16 @@ impl<W: World> Runner<W> {
                         // Pass world result for current step to next step.
                         world = Some(w);
                     }
-                    TestEvent::Failure(e, output) => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(output, e));
-                        yield ScenarioEvent::Failed;
+                    TestEvent::Failure(StepFailureKind::Panic(output, e)) => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::Panic(output, e)));
+                        yield ScenarioEvent::Failed(FailureKind::Panic);
                         return;
                     },
+                    TestEvent::Failure(StepFailureKind::TimedOut) => {
+                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::TimedOut));
+                        yield ScenarioEvent::Failed(FailureKind::TimedOut);
+                        return;
+                    }
                     TestEvent::Skipped => {
                         yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Skipped);
                         yield ScenarioEvent::Skipped;
@@ -337,11 +342,6 @@ impl<W: World> Runner<W> {
                     TestEvent::Unimplemented => {
                         yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Unimplemented);
                         yield ScenarioEvent::Skipped;
-                        return;
-                    }
-                    TestEvent::TimedOut =>{
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::TimedOut);
-                        yield ScenarioEvent::TimedOut;
                         return;
                     }
                 }
