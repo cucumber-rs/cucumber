@@ -38,8 +38,10 @@ harness = true
 edition = "2018"
 
 [dev-dependencies]
-capture-runner = { path = "capture-runner" }
+capture-runner = { path = "tests/fixtures/capture-runner" }
 serial_test = "0.5.0"
 
 [workspace]
-members = ["capture-runner"]
+members = ["tests/fixtures/capture-runner"]
+default-members = ["."]
+
