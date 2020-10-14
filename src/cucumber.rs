@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use futures::StreamExt;
+use regex::Regex;
 
 use crate::steps::Steps;
 use crate::{EventHandler, World};
@@ -17,14 +18,19 @@ pub struct Cucumber<W: World> {
     steps: Steps<W>,
     features: Vec<gherkin::Feature>,
     event_handler: Box<dyn EventHandler>,
+
     /// If `Some`, enforce an upper bound on the amount
     /// of time a step is allowed to execute.
     /// If `Some`, also avoid indefinite locks during
     /// step clean-up handling (i.e. to recover panic info)
     step_timeout: Option<Duration>,
+
     /// If true, capture stdout and stderr content
     /// during tests.
     enable_capture: bool,
+
+    /// If given, filters the scenario which are run
+    scenario_filter: Option<Regex>,
 }
 
 impl<W: World> Default for Cucumber<W> {
@@ -35,6 +41,7 @@ impl<W: World> Default for Cucumber<W> {
             event_handler: Box::new(crate::output::BasicOutput::default()),
             step_timeout: None,
             enable_capture: true,
+            scenario_filter: None,
         }
     }
 }
@@ -56,6 +63,7 @@ impl<W: World> Cucumber<W> {
             event_handler: Box::new(event_handler),
             step_timeout: None,
             enable_capture: true,
+            scenario_filter: None,
         }
     }
 
@@ -112,12 +120,35 @@ impl<W: World> Cucumber<W> {
         self
     }
 
+    pub fn scenario_regex(mut self, regex: &str) -> Self {
+        let regex = Regex::new(regex).expect("Error compiling scenario regex");
+        self.scenario_filter = Some(regex);
+        self
+    }
+
+    /// Call this to incorporate command line options into the configuration.
+    pub fn cli(self) -> Self {
+        let opts = crate::cli::make_app();
+        let mut s = self;
+
+        if let Some(re) = opts.scenario_filter {
+            s = s.scenario_regex(&re);
+        }
+
+        if opts.nocapture {
+            s = s.enable_capture(false);
+        }
+
+        s
+    }
+
     pub async fn run(mut self) {
         let runner = crate::runner::Runner::new(
             self.steps.steps,
             std::rc::Rc::new(self.features),
             self.step_timeout,
             self.enable_capture,
+            self.scenario_filter,
         );
         let mut stream = runner.run();
 

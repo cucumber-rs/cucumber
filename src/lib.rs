@@ -17,6 +17,7 @@ pub use gherkin;
 #[macro_use]
 mod macros;
 
+mod cli;
 mod collection;
 mod cucumber;
 pub mod event;

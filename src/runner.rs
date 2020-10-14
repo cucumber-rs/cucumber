@@ -14,6 +14,7 @@ use std::sync::{Arc, TryLockError};
 
 use async_stream::stream;
 use futures::{Future, Stream, StreamExt};
+use regex::Regex;
 
 use crate::collection::StepsCollection;
 use crate::event::*;
@@ -48,6 +49,7 @@ pub(crate) struct Runner<W: World> {
     features: Rc<Vec<gherkin::Feature>>,
     step_timeout: Option<Duration>,
     enable_capture: bool,
+    scenario_filter: Option<Regex>,
 }
 
 impl<W: World> Runner<W> {
@@ -57,12 +59,14 @@ impl<W: World> Runner<W> {
         features: Rc<Vec<gherkin::Feature>>,
         step_timeout: Option<Duration>,
         enable_capture: bool,
+        scenario_filter: Option<Regex>,
     ) -> Rc<Runner<W>> {
         Rc::new(Runner {
             functions,
             features,
             step_timeout,
             enable_capture,
+            scenario_filter,
         })
     }
 
@@ -195,6 +199,13 @@ impl<W: World> Runner<W> {
             yield FeatureEvent::Starting;
 
             for scenario in feature.scenarios.iter() {
+                // If regex filter fails, skip the scenario
+                if let Some(ref regex) = self.scenario_filter {
+                    if !regex.is_match(&scenario.name) {
+                        continue;
+                    }
+                }
+
                 let examples = ExampleValues::from_examples(&scenario.examples);
                 for example_values in examples {
                     let this = Rc::clone(&self);
@@ -356,7 +367,6 @@ impl<W: World> Runner<W> {
             yield CucumberEvent::Starting;
 
             let features = self.features.iter().cloned().map(Rc::new).collect::<Vec<_>>();
-
             for feature in features.into_iter() {
                 let this = Rc::clone(&self);
                 let mut stream = this.run_feature(Rc::clone(&feature));
