@@ -33,6 +33,8 @@ pub struct BasicOutput {
     steps: Counter,
     started: std::time::Instant,
     step_started: bool,
+    pending_feature_print_info: Option<(String, String)>,
+    printed_feature_start: bool,
 }
 
 impl Default for BasicOutput {
@@ -44,6 +46,8 @@ impl Default for BasicOutput {
             steps: Default::default(),
             started: std::time::Instant::now(),
             step_started: false,
+            pending_feature_print_info: None,
+            printed_feature_start: false,
         }
     }
 }
@@ -495,20 +499,26 @@ impl EventHandler for BasicOutput {
             CucumberEvent::Feature(feature, event) => match event {
                 crate::event::FeatureEvent::Starting => {
                     self.features.total += 1;
-
-                    let msg = &format!("Feature: {}", &feature.name);
+                    let msg = format!("Feature: {}", &feature.name);
                     let cmt = self.file_line_col(feature.path.as_ref(), feature.position);
-                    self.writeln_cmt(msg, &cmt, "", termcolor::Color::White, true);
-                    println!();
+                    self.pending_feature_print_info = Some((msg, cmt));
+                    self.printed_feature_start = false;
                 }
                 crate::event::FeatureEvent::Scenario(scenario, event) => {
+                    if let Some((msg, cmt)) = self.pending_feature_print_info.take() {
+                        self.writeln_cmt(&msg, &cmt, "", termcolor::Color::White, true);
+                        println!();
+                        self.printed_feature_start = true;
+                    }
                     self.handle_scenario(feature, None, scenario, event)
                 }
                 crate::event::FeatureEvent::Rule(rule, event) => {
                     self.handle_rule(feature, rule, event)
                 }
                 crate::event::FeatureEvent::Finished => {
-                    println!();
+                    if self.printed_feature_start {
+                        println!();
+                    }
                 }
             },
         }
