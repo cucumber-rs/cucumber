@@ -124,7 +124,8 @@ fn main() {
 
     let runner = cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features"])
-        .steps(example_steps::steps());
+        .steps(example_steps::steps())
+        .cli();
 
     // You may choose any executor you like (Tokio, async-std, etc)
     // You may even have an async main, it doesn't matter. The point is that
