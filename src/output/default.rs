@@ -10,10 +10,13 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::event::{FailureKind, StepFailureKind};
 use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
     EventHandler,
+};
+use crate::{
+    event::{FailureKind, StepFailureKind},
+    CucumberError,
 };
 use gherkin::{Feature, Rule, Scenario, Step};
 
@@ -521,6 +524,14 @@ impl EventHandler for BasicOutput {
                     }
                 }
             },
+        }
+    }
+
+    fn steps_result(&self) -> Result<(), CucumberError> {
+        if self.steps.failed + self.steps.timed_out == 0 {
+            Ok(())
+        } else {
+            Err(CucumberError::FailedScenario)
         }
     }
 }

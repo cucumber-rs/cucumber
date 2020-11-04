@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use cucumber_rust::{event::*, t, Cucumber, EventHandler, Steps, World};
+use cucumber_rust::{event::*, t, Cucumber, CucumberError, EventHandler, Steps, World};
 use serial_test::serial;
 use std::path::PathBuf;
 use std::process::Command;
@@ -76,6 +76,19 @@ impl EventHandler for CustomEventHandler {
                 state.any_step_success = true;
             }
             _ => {}
+        }
+    }
+
+    fn steps_result(&self) -> Result<(), CucumberError> {
+        let state = self.state.lock().unwrap();
+        if state.any_rule_failures
+            || state.any_scenario_failures
+            || state.any_step_failures
+            || state.any_step_timeouts
+        {
+            Err(CucumberError::FailedScenario)
+        } else {
+            Ok(())
         }
     }
 }

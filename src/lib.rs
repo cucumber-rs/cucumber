@@ -62,6 +62,7 @@ pub trait World: Sized + UnwindSafe + 'static {
 /// at construction time using `Cucumber::with_handler`.
 pub trait EventHandler: 'static {
     fn handle_event(&mut self, event: event::CucumberEvent);
+    fn steps_result(&self) -> Result<(), CucumberError>;
 }
 
 pub type PanicError = Box<(dyn Any + Send + 'static)>;
