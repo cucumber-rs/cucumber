@@ -29,6 +29,7 @@ mod steps;
 
 use async_trait::async_trait;
 use std::panic::UnwindSafe;
+use thiserror::Error;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
@@ -67,4 +68,10 @@ pub type PanicError = Box<(dyn Any + Send + 'static)>;
 pub enum TestError {
     TimedOut,
     PanicError(PanicError),
+}
+
+#[derive(Error, Debug)]
+pub enum CucumberError {
+    #[error("Failed scenario")]
+    FailedScenario,
 }
