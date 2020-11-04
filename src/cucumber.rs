@@ -10,7 +10,7 @@ use futures::StreamExt;
 use regex::Regex;
 
 use crate::steps::Steps;
-use crate::{EventHandler, World};
+use crate::{CucumberError, EventHandler, World};
 use std::path::Path;
 use std::time::Duration;
 
@@ -142,7 +142,7 @@ impl<W: World> Cucumber<W> {
         s
     }
 
-    pub async fn run(mut self) {
+    pub async fn run(mut self) -> Result<(), CucumberError> {
         let runner = crate::runner::Runner::new(
             self.steps.steps,
             std::rc::Rc::new(self.features),
@@ -155,5 +155,7 @@ impl<W: World> Cucumber<W> {
         while let Some(event) = stream.next().await {
             self.event_handler.handle_event(event);
         }
+
+        self.event_handler.steps_result()
     }
 }

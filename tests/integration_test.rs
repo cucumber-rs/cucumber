@@ -133,7 +133,7 @@ fn user_defined_event_handlers_are_expressible() {
         .features(&["./features/integration"])
         .step_timeout(Duration::from_secs(1));
 
-    futures::executor::block_on(runner.run());
+    let _ = futures::executor::block_on(runner.run());
 
     let handler_state = custom_handler.state.lock().unwrap();
     assert!(!handler_state.any_rule_failures);
