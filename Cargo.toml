@@ -38,6 +38,11 @@ name = "integration_test"
 harness = true
 edition = "2018"
 
+[[test]]
+name = "result_from_run"
+harness = false
+edition = "2018"
+
 [dev-dependencies]
 capture-runner = { path = "tests/fixtures/capture-runner" }
 serial_test = "0.5.0"
