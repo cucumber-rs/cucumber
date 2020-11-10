@@ -37,7 +37,7 @@ macro_rules! t {
     // Async with block and mutable world
     (| mut $world:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|mut $world, $step| {
-            use futures::future::FutureExt;
+            use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
@@ -47,7 +47,7 @@ macro_rules! t {
     // Async with block and immutable world
     (| $world:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|$world, $step| {
-            use futures::future::FutureExt;
+            use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
@@ -57,7 +57,7 @@ macro_rules! t {
     // Async regex with block and mutable world
     (| mut $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|mut $world, $matches, $step| {
-            use futures::future::FutureExt;
+            use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
@@ -67,7 +67,7 @@ macro_rules! t {
     // Async regex with block and immutable world
     (| $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
         std::rc::Rc::new(|$world, $matches, $step| {
-            use futures::future::FutureExt;
+            use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
