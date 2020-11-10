@@ -10,6 +10,7 @@
 
 #![recursion_limit = "512"]
 #![deny(rust_2018_idioms)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 // Re-export Gherkin for the convenience of everybody
 pub use gherkin;
@@ -24,8 +25,12 @@ pub mod event;
 mod examples;
 pub mod output;
 mod regex;
-mod runner;
+pub(crate) mod runner;
 mod steps;
+
+#[cfg(feature = "macros")]
+#[doc(hidden)]
+pub mod private;
 
 use async_trait::async_trait;
 use std::panic::UnwindSafe;
@@ -34,6 +39,18 @@ pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
 use std::any::Any;
 pub use steps::Steps;
+
+#[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+#[doc(inline)]
+pub use self::private::WorldInit;
+#[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+#[doc(inline)]
+pub use cucumber_rust_codegen::{given, then, when, WorldInit};
+#[cfg(feature = "macros")]
+#[doc(hidden)]
+pub use futures;
 
 const TEST_SKIPPED: &str = "Cucumber: test skipped";
 

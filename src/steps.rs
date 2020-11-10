@@ -44,7 +44,7 @@ impl<W: World> Steps<W> {
         name: &'static str,
         test_fn: fn(W, Rc<gherkin::Step>) -> W,
     ) -> &mut Self {
-        use futures::future::FutureExt;
+        use futures::future::FutureExt as _;
 
         let test_fn = std::rc::Rc::new(move |world: W, step| {
             // let test_fn = Rc::clone(&test_fn);
@@ -75,7 +75,8 @@ impl<W: World> Steps<W> {
         name: &'static str,
         test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
     ) -> &mut Self {
-        use futures::future::FutureExt;
+        use futures::future::FutureExt as _;
+
         let regex = regex::Regex::new(name)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
 

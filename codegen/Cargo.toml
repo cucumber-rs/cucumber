@@ -1,0 +1,42 @@
+[package]
+name = "cucumber_rust_codegen"
+version = "0.1.0"
+edition = "2018"
+authors = [
+    "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
+    "Kai Ren <tyranron@gmail.com>"
+]
+description = "Code generation for `cucumber_rust` crate."
+license = "MIT OR Apache-2.0"
+keywords = ["cucumber", "codegen", "macros"]
+categories = ["asynchronous", "development-tools::testing"]
+repository = "https://github.com/bbqsrc/cucumber-rust"
+documentation = "https://docs.rs/cucumber_rust_codegen"
+homepage = "https://github.com/bbqsrc/cucumber-rust"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+inflections = "1.1"
+itertools = "0.9"
+proc-macro2 = "1.0"
+quote = "1.0"
+regex = "1.4"
+syn = { version = "1.0", features = ["derive", "extra-traits", "full"] }
+
+[dev-dependencies]
+async-trait = "0.1.41"
+futures = "0.3"
+cucumber_rust = { path = "../", features = ["macros"] }
+tokio = { version = "0.3", features = ["macros", "rt-multi-thread", "time"] }
+
+[[test]]
+name = "example"
+path = "tests/example.rs"
+harness = false
+
+[[test]]
+name = "readme"
+path = "tests/readme.rs"
+harness = false
