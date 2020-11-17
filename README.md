@@ -8,6 +8,7 @@ An implementation of the Cucumber testing framework for Rust. Fully native, no e
 **The 0.6.x macro has been removed. If you need to use this macro, please continue to use the 0.6 version.** 
 
 - [Changelog](CHANGELOG.md)
+- [Cucumber in Rust 0.7 – Beginner’s Tutorial](https://www.florianreinhard.de/2020-10-05/cucumber-07-in-rust-beginners-tutorial/) by Florian Reinhard.
 
 ### Usage
 
