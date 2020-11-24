@@ -10,28 +10,15 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::event::{FailureKind, StepFailureKind};
+use crate::runner::{RunResult, Stats};
+use crate::event::{StepFailureKind};
 use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
     EventHandler,
 };
 use gherkin::{Feature, Rule, Scenario, Step};
 
-#[derive(Debug, Clone, Default)]
-struct Counter {
-    total: u32,
-    skipped: u32,
-    passed: u32,
-    failed: u32,
-    timed_out: u32,
-}
-
 pub struct BasicOutput {
-    features: Counter,
-    rules: Counter,
-    scenarios: Counter,
-    steps: Counter,
-    started: std::time::Instant,
     step_started: bool,
     pending_feature_print_info: Option<(String, String)>,
     printed_feature_start: bool,
@@ -40,11 +27,6 @@ pub struct BasicOutput {
 impl Default for BasicOutput {
     fn default() -> BasicOutput {
         BasicOutput {
-            features: Default::default(),
-            rules: Default::default(),
-            scenarios: Default::default(),
-            steps: Default::default(),
-            started: std::time::Instant::now(),
             step_started: false,
             pending_feature_print_info: None,
             printed_feature_start: false,
@@ -199,8 +181,6 @@ impl BasicOutput {
         event: StepEvent,
         is_bg: bool,
     ) {
-        self.steps.total += 1;
-
         let cmt = self.file_line_col(feature.path.as_ref(), step.position);
         let msg = if is_bg {
             format!("(Background) {}", &step)
@@ -227,8 +207,6 @@ impl BasicOutput {
                 self.step_started = true;
             }
             StepEvent::Unimplemented => {
-                self.steps.skipped += 1;
-
                 self.writeln_cmt(
                     &format!("- {}", msg),
                     &cmt,
@@ -241,8 +219,6 @@ impl BasicOutput {
                 println!("Not yet implemented (skipped)");
             }
             StepEvent::Skipped => {
-                self.steps.skipped += 1;
-
                 self.writeln_cmt(
                     &format!("- {}", msg),
                     &cmt,
@@ -253,8 +229,6 @@ impl BasicOutput {
                 self.print_step_extras(&*step);
             }
             StepEvent::Passed(_output) => {
-                self.steps.passed += 1;
-
                 self.writeln_cmt(
                     &format!("✔ {}", msg),
                     &cmt,
@@ -265,8 +239,6 @@ impl BasicOutput {
                 self.print_step_extras(&*step);
             }
             StepEvent::Failed(StepFailureKind::Panic(output, panic_info)) => {
-                self.steps.failed += 1;
-
                 self.writeln_cmt(
                     &format!("✘ {}", msg),
                     &cmt,
@@ -344,8 +316,6 @@ impl BasicOutput {
                 );
             }
             StepEvent::Failed(StepFailureKind::TimedOut) => {
-                self.steps.timed_out += 1;
-
                 self.writeln_cmt(
                     &format!("✘ {}", msg),
                     &cmt,
@@ -378,7 +348,6 @@ impl BasicOutput {
     ) {
         match event {
             ScenarioEvent::Starting(example_values) => {
-                self.scenarios.total += 1;
                 let cmt = self.file_line_col(feature.path.as_ref(), scenario.position);
                 let text = if example_values.is_empty() {
                     format!("Scenario: {} ", &scenario.name)
@@ -398,88 +367,62 @@ impl BasicOutput {
             ScenarioEvent::Step(step, event) => {
                 self.handle_step(feature, rule, scenario, step, event, false)
             }
-            ScenarioEvent::Skipped => {
-                self.scenarios.skipped += 1;
-            }
-            ScenarioEvent::Passed => {
-                self.scenarios.passed += 1;
-            }
-            ScenarioEvent::Failed(FailureKind::Panic) => {
-                self.scenarios.failed += 1;
-            }
-            ScenarioEvent::Failed(FailureKind::TimedOut) => self.scenarios.timed_out += 1,
+            _ => {}
         }
     }
 
     fn handle_rule(&mut self, feature: Rc<Feature>, rule: Rc<Rule>, event: RuleEvent) {
-        match event {
-            RuleEvent::Starting => {
-                self.rules.total += 1;
-
-                let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
-                self.writeln_cmt(
-                    &format!("Rule: {}", &rule.name),
-                    &cmt,
-                    " ",
-                    termcolor::Color::White,
-                    true,
-                );
-            }
-            RuleEvent::Scenario(scenario, event) => {
-                self.handle_scenario(feature, Some(rule), scenario, event)
-            }
-            RuleEvent::Skipped => {
-                self.rules.skipped += 1;
-            }
-            RuleEvent::Passed => {
-                self.rules.passed += 1;
-            }
-            RuleEvent::Failed(FailureKind::Panic) => {
-                self.rules.failed += 1;
-            }
-            RuleEvent::Failed(FailureKind::TimedOut) => {
-                self.rules.timed_out += 1;
-            }
+        if let RuleEvent::Scenario(scenario, evt) = event {
+            self.handle_scenario(feature, Some(rule), scenario, evt)
+        } else if event == RuleEvent::Starting {
+            let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
+            self.writeln_cmt(
+                &format!("Rule: {}", &rule.name),
+                &cmt,
+                " ",
+                termcolor::Color::White,
+                true,
+            );
         }
     }
 
-    fn print_counter(&self, name: &str, counter: &Counter) {
+    fn print_counter(&self, name: &str, stats: &Stats) {
         use termcolor::Color::*;
 
-        cprint!(bold White, "{} {} (", counter.total, name);
+        cprint!(bold White, "{} {} (", stats.total, name);
 
-        if counter.failed > 0 {
-            cprint!(bold Red, "{} failed", counter.failed);
+        if stats.failed > 0 {
+            cprint!(bold Red, "{} failed", stats.failed);
         }
 
-        if counter.skipped > 0 {
-            if counter.failed > 0 {
+        if stats.skipped > 0 {
+            if stats.failed > 0 {
                 cprint!(bold White, ", ");
             }
-            cprint!(bold Cyan, "{} skipped", counter.skipped);
+            cprint!(bold Cyan, "{} skipped", stats.skipped);
         }
 
-        if counter.failed > 0 || counter.skipped > 0 {
+        if stats.failed > 0 || stats.skipped > 0 {
             cprint!(bold White, ", ");
         }
 
-        cprint!(bold Green, "{} passed", counter.passed);
+        cprint!(bold Green, "{} passed", stats.passed);
         cprintln!(bold White, ")");
     }
 
-    fn print_finish(&self) {
+    fn print_finish(&self, result: &RunResult) {
         use termcolor::Color::*;
 
         cprintln!(bold Blue, "[Summary]");
-        cprintln!(bold White, "{} features", self.features.total);
+        cprintln!(bold White, "{} features", result.features.total);
 
-        self.print_counter("scenarios", &self.scenarios);
-        if self.rules.total > 0 {
-            self.print_counter("rules", &self.rules);
+        self.print_counter("scenarios", &result.scenarios);
+        if result.rules.total > 0 {
+            self.print_counter("rules", &result.rules);
         }
-        self.print_counter("steps", &self.steps);
+        self.print_counter("steps", &result.steps);
 
-        let t = self.started.elapsed();
+        let t = result.elapsed;
         println!(
             "\nFinished in {}.{} seconds.",
             t.as_secs(),
@@ -492,13 +435,11 @@ impl EventHandler for BasicOutput {
     fn handle_event(&mut self, event: CucumberEvent) {
         match event {
             CucumberEvent::Starting => {
-                self.started = std::time::Instant::now();
                 cprintln!(bold termcolor::Color::Blue, "[Cucumber v{}]", env!("CARGO_PKG_VERSION"))
             }
-            CucumberEvent::Finished => self.print_finish(),
+            CucumberEvent::Finished(ref r) => self.print_finish(r),
             CucumberEvent::Feature(feature, event) => match event {
                 crate::event::FeatureEvent::Starting => {
-                    self.features.total += 1;
                     let msg = format!("Feature: {}", &feature.name);
                     let cmt = self.file_line_col(feature.path.as_ref(), feature.position);
                     self.pending_feature_print_info = Some((msg, cmt));

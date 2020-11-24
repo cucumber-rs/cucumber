@@ -143,7 +143,7 @@ impl<W: World> Cucumber<W> {
     }
 
     /// Run and report number of errors if any
-    pub async fn run(mut self) -> Result<(), u64> {
+    pub async fn run(mut self) -> crate::runner::RunResult {
         let runner = crate::runner::Runner::new(
             self.steps.steps,
             std::rc::Rc::new(self.features),
@@ -152,19 +152,23 @@ impl<W: World> Cucumber<W> {
             self.scenario_filter,
         );
         let mut stream = runner.run();
-        let mut errors: u64 = 0;
 
         while let Some(event) = stream.next().await {
-            if event.failed() {
-                errors = errors.checked_add(1).unwrap_or(errors);
-            }
+            let ret = {
+                if let crate::event::CucumberEvent::Finished(ref result) = event {
+                    Some(result.clone())
+                } else {
+                    None
+                }
+            };
 
             self.event_handler.handle_event(event);
+
+            if let Some(res) = ret {
+                return res
+            }
         }
 
-        match errors {
-            0 => Ok(()),
-            n => Err(n)
-        }
+        unimplemented!("Programmer Error - run _must end_ with the Finished Event")
     }
 }

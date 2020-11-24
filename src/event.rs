@@ -166,17 +166,7 @@ impl FeatureEvent {
 pub enum CucumberEvent {
     Starting,
     Feature(Rc<gherkin::Feature>, FeatureEvent),
-    Finished,
-}
-
-impl CucumberEvent {
-    /// Indicates this is a failing event
-    pub fn failed(&self) -> bool {
-        match self {
-            CucumberEvent::Feature(_, ref f) => f.failed(),
-            _ => false,
-        }
-    }
+    Finished(crate::runner::RunResult),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

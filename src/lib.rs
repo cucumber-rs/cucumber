@@ -37,6 +37,7 @@ use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
+pub use runner::RunResult;
 use std::any::Any;
 pub use steps::Steps;
 
