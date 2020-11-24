@@ -142,7 +142,8 @@ impl<W: World> Cucumber<W> {
         s
     }
 
-    pub async fn run(mut self) {
+    /// Run and report number of errors if any
+    pub async fn run(mut self) -> Result<(), u64> {
         let runner = crate::runner::Runner::new(
             self.steps.steps,
             std::rc::Rc::new(self.features),
@@ -151,9 +152,19 @@ impl<W: World> Cucumber<W> {
             self.scenario_filter,
         );
         let mut stream = runner.run();
+        let mut errors: u64 = 0;
 
         while let Some(event) = stream.next().await {
+            if event.failed() {
+                errors = errors.checked_add(1).unwrap_or(errors);
+            }
+
             self.event_handler.handle_event(event);
+        }
+
+        match errors {
+            0 => Ok(()),
+            n => Err(n)
         }
     }
 }

@@ -87,6 +87,15 @@ pub enum StepEvent {
     Passed(CapturedOutput),
     Failed(StepFailureKind),
 }
+impl StepEvent {
+    /// Indicates this is a failing event
+    pub fn failed(&self) -> bool {
+        match self {
+            StepEvent::Failed(_) => true,
+            _ => false,
+        }
+    }
+}
 
 /// Event specific to a particular [Scenario](https://cucumber.io/docs/gherkin/reference/#example)
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,6 +108,18 @@ pub enum ScenarioEvent {
     Failed(FailureKind),
 }
 
+impl ScenarioEvent {
+    /// Indicates this is a failing event
+    pub fn failed(&self) -> bool {
+        match self {
+            ScenarioEvent::Failed(_) => true,
+            ScenarioEvent::Background(_, ref s) |
+                ScenarioEvent::Step(_, ref s) => s.failed(),
+            _ => false,
+        }
+    }
+}
+
 /// Event specific to a particular [Rule](https://cucumber.io/docs/gherkin/reference/#rule)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuleEvent {
@@ -107,6 +128,17 @@ pub enum RuleEvent {
     Skipped,
     Passed,
     Failed(FailureKind),
+}
+
+impl RuleEvent {
+    /// Indicates this is a failing event
+    pub fn failed(&self) -> bool {
+        match self {
+            RuleEvent::Failed(_) => true,
+            RuleEvent::Scenario(_, ref s) => s.failed(),
+            _ => false,
+        }
+    }
 }
 
 /// Event specific to a particular [Feature](https://cucumber.io/docs/gherkin/reference/#feature)
@@ -118,12 +150,33 @@ pub enum FeatureEvent {
     Finished,
 }
 
+impl FeatureEvent {
+    /// Indicates this is a failing event
+    pub fn failed(&self) -> bool {
+        match self {
+            FeatureEvent::Scenario(_, ref s) => s.failed(),
+            FeatureEvent::Rule(_, ref r) => r.failed(),
+            _ => false,
+        }
+    }
+}
+
 /// Top-level cucumber run event.
 #[derive(Debug, Clone)]
 pub enum CucumberEvent {
     Starting,
     Feature(Rc<gherkin::Feature>, FeatureEvent),
     Finished,
+}
+
+impl CucumberEvent {
+    /// Indicates this is a failing event
+    pub fn failed(&self) -> bool {
+        match self {
+            CucumberEvent::Feature(_, ref f) => f.failed(),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
