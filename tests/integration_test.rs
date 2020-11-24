@@ -21,7 +21,7 @@ struct CustomEventHandlerState {
     any_step_timeouts: bool,
 }
 impl EventHandler for CustomEventHandler {
-    fn handle_event(&mut self, event: CucumberEvent) {
+    fn handle_event(&mut self, event: &CucumberEvent) {
         let mut state = self.state.lock().unwrap();
         match event {
             CucumberEvent::Feature(

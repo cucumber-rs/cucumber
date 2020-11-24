@@ -174,11 +174,11 @@ impl BasicOutput {
 
     fn handle_step(
         &mut self,
-        feature: Rc<Feature>,
-        rule: Option<Rc<Rule>>,
-        _scenario: Rc<Scenario>,
-        step: Rc<Step>,
-        event: StepEvent,
+        feature: &Rc<Feature>,
+        rule: Option<&Rc<Rule>>,
+        _scenario: &Rc<Scenario>,
+        step: &Rc<Step>,
+        event: &StepEvent,
         is_bg: bool,
     ) {
         let cmt = self.file_line_col(feature.path.as_ref(), step.position);
@@ -341,10 +341,10 @@ impl BasicOutput {
 
     fn handle_scenario(
         &mut self,
-        feature: Rc<Feature>,
-        rule: Option<Rc<Rule>>,
-        scenario: Rc<Scenario>,
-        event: ScenarioEvent,
+        feature: &Rc<Feature>,
+        rule: Option<&Rc<Rule>>,
+        scenario: &Rc<Scenario>,
+        event: &ScenarioEvent,
     ) {
         match event {
             ScenarioEvent::Starting(example_values) => {
@@ -371,10 +371,10 @@ impl BasicOutput {
         }
     }
 
-    fn handle_rule(&mut self, feature: Rc<Feature>, rule: Rc<Rule>, event: RuleEvent) {
+    fn handle_rule(&mut self, feature: &Rc<Feature>, rule: &Rc<Rule>, event: &RuleEvent) {
         if let RuleEvent::Scenario(scenario, evt) = event {
             self.handle_scenario(feature, Some(rule), scenario, evt)
-        } else if event == RuleEvent::Starting {
+        } else if *event == RuleEvent::Starting {
             let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
             self.writeln_cmt(
                 &format!("Rule: {}", &rule.name),
@@ -432,7 +432,7 @@ impl BasicOutput {
 }
 
 impl EventHandler for BasicOutput {
-    fn handle_event(&mut self, event: CucumberEvent) {
+    fn handle_event(&mut self, event: &CucumberEvent) {
         match event {
             CucumberEvent::Starting => {
                 cprintln!(bold termcolor::Color::Blue, "[Cucumber v{}]", env!("CARGO_PKG_VERSION"))

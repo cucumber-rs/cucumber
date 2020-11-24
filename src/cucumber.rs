@@ -154,21 +154,13 @@ impl<W: World> Cucumber<W> {
         let mut stream = runner.run();
 
         while let Some(event) = stream.next().await {
-            let ret = {
-                if let crate::event::CucumberEvent::Finished(ref result) = event {
-                    Some(result.clone())
-                } else {
-                    None
-                }
-            };
+            self.event_handler.handle_event(&event);
 
-            self.event_handler.handle_event(event);
-
-            if let Some(res) = ret {
-                return res
+            if let crate::event::CucumberEvent::Finished(result) = event {
+                return result
             }
         }
 
-        unimplemented!("Programmer Error - run _must end_ with the Finished Event")
+        panic!("Invariant broken: no Finish event found before stream ended")
     }
 }
