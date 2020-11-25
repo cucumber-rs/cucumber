@@ -142,7 +142,8 @@ impl<W: World> Cucumber<W> {
         s
     }
 
-    pub async fn run(mut self) {
+    /// Run and report number of errors if any
+    pub async fn run(mut self) -> crate::runner::RunResult {
         let runner = crate::runner::Runner::new(
             self.steps.steps,
             std::rc::Rc::new(self.features),
@@ -153,7 +154,13 @@ impl<W: World> Cucumber<W> {
         let mut stream = runner.run();
 
         while let Some(event) = stream.next().await {
-            self.event_handler.handle_event(event);
+            self.event_handler.handle_event(&event);
+
+            if let crate::event::CucumberEvent::Finished(result) = event {
+                return result
+            }
         }
+
+        panic!("Invariant broken: no Finish event found before stream ended")
     }
 }

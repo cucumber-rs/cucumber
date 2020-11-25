@@ -21,7 +21,7 @@ struct CustomEventHandlerState {
     any_step_timeouts: bool,
 }
 impl EventHandler for CustomEventHandler {
-    fn handle_event(&mut self, event: CucumberEvent) {
+    fn handle_event(&mut self, event: &CucumberEvent) {
         let mut state = self.state.lock().unwrap();
         match event {
             CucumberEvent::Feature(
@@ -120,7 +120,12 @@ fn user_defined_event_handlers_are_expressible() {
         .features(&["./features/integration"])
         .step_timeout(Duration::from_secs(1));
 
-    futures::executor::block_on(runner.run());
+    let results = futures::executor::block_on(runner.run());
+
+    assert_eq!(results.features.total, 1);
+    assert_eq!(results.steps.total, 14);
+    assert_eq!(results.steps.passed, 4);
+    assert_eq!(results.scenarios.failed, 1);
 
     let handler_state = custom_handler.state.lock().unwrap();
     assert!(!handler_state.any_rule_failures);
@@ -129,6 +134,7 @@ fn user_defined_event_handlers_are_expressible() {
     assert!(handler_state.any_step_success);
     assert!(handler_state.any_scenario_skipped);
     assert!(handler_state.any_step_timeouts);
+
 }
 
 fn nocapture_enabled() -> bool {

@@ -37,6 +37,7 @@ use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
+pub use runner::RunResult;
 use std::any::Any;
 pub use steps::Steps;
 
@@ -77,7 +78,7 @@ pub trait World: Sized + UnwindSafe + 'static {
 /// User can replace the default `EventHandler` for a `Cucumber`
 /// at construction time using `Cucumber::with_handler`.
 pub trait EventHandler: 'static {
-    fn handle_event(&mut self, event: event::CucumberEvent);
+    fn handle_event(&mut self, event: &event::CucumberEvent);
 }
 
 pub type PanicError = Box<(dyn Any + Send + 'static)>;

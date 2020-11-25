@@ -123,7 +123,7 @@ pub enum FeatureEvent {
 pub enum CucumberEvent {
     Starting,
     Feature(Rc<gherkin::Feature>, FeatureEvent),
-    Finished,
+    Finished(crate::runner::RunResult),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

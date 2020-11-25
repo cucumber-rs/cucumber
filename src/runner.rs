@@ -44,6 +44,187 @@ fn coerce_error(err: &(dyn Any + Send + 'static)) -> String {
     }
 }
 
+/// Stats for various event results
+#[derive(Debug, Default, Clone)]
+pub struct Stats {
+    /// total events seen
+    pub total: u32,
+    /// events skipped
+    pub skipped: u32,
+    /// events that passed
+    pub passed: u32,
+    /// events that failed
+    pub failed: u32,
+    /// events that timed out
+    pub timed_out: u32,
+}
+
+impl Stats {
+    /// Indicates this has failing states (aka failed or timed_out)
+    pub fn failed(&self) -> bool {
+        self.failed > 0 || self.timed_out > 0
+    }
+}
+
+/// The result of the Cucumber run
+#[derive(Debug, Clone)]
+pub struct RunResult {
+    /// the time when the run was started
+    pub started: std::time::Instant,
+    /// the time the run took
+    pub elapsed: std::time::Duration,
+    /// Stats of features of this run
+    pub features: Stats,
+    /// Stats of rules of this run
+    pub rules: Stats,
+    /// Stats of scenarios of this run
+    pub scenarios: Stats,
+    /// Stats of scenarios of this run
+    pub steps: Stats,
+}
+
+impl RunResult {
+    /// Indicates this has failing states (aka failed or timed_out)
+    pub fn failed(&self) -> bool {
+        self.features.failed() || self.scenarios.failed()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct StatsCollector {
+    started: std::time::Instant,
+    features: Stats,
+    rules: Stats,
+    scenarios: Stats,
+    steps: Stats,
+}
+
+impl StatsCollector {
+    fn new() -> Self {
+        StatsCollector {
+            started: std::time::Instant::now(),
+            features: Default::default(),
+            rules: Default::default(),
+            scenarios: Default::default(),
+            steps: Default::default(),
+        }
+    }
+
+    fn handle_rule_event(&mut self, event: &RuleEvent) {
+        match event {
+            RuleEvent::Starting => {
+                self.rules.total += 1;
+            }
+            RuleEvent::Scenario(_, ref event) => {
+                self.handle_scenario_event(event)
+            }
+            RuleEvent::Skipped => {
+                self.rules.skipped += 1;
+            }
+            RuleEvent::Passed => {
+                self.rules.passed += 1;
+            }
+            RuleEvent::Failed(FailureKind::Panic) => {
+                self.rules.failed += 1;
+            }
+            RuleEvent::Failed(FailureKind::TimedOut) => {
+                self.rules.timed_out += 1;
+            }
+        }
+    }
+
+    fn handle_scenario_event(
+        &mut self,
+        event: &ScenarioEvent,
+    ) {
+        match event {
+            ScenarioEvent::Starting(_) => {
+                self.scenarios.total += 1;
+            }
+            ScenarioEvent::Background(_, ref event) => {
+                self.handle_step_event(event)
+            }
+            ScenarioEvent::Step(_, ref event) => {
+                self.handle_step_event(event)
+            }
+            ScenarioEvent::Skipped => {
+                self.scenarios.skipped += 1;
+            }
+            ScenarioEvent::Passed => {
+                self.scenarios.passed += 1;
+            }
+            ScenarioEvent::Failed(FailureKind::Panic) => {
+                self.scenarios.failed += 1;
+            }
+            ScenarioEvent::Failed(FailureKind::TimedOut) => {
+                self.scenarios.timed_out += 1;
+            }
+        }
+    }
+
+    fn handle_step_event(
+        &mut self,
+        event: &StepEvent,
+    ) {
+        self.steps.total += 1;
+        match event {
+            StepEvent::Starting => {
+                // we don't have to count this
+            }
+            StepEvent::Unimplemented => {
+                self.steps.skipped += 1;
+            }
+            StepEvent::Skipped => {
+                self.steps.skipped += 1;
+            }
+            StepEvent::Passed(_) => {
+                self.steps.passed += 1;
+            }
+            StepEvent::Failed(StepFailureKind::Panic(_, _)) => {
+                self.steps.failed += 1;
+            }
+            StepEvent::Failed(StepFailureKind::TimedOut) => {
+                self.steps.timed_out += 1;
+            }
+        }
+    }
+
+    fn handle_feature_event(&mut self, event: &FeatureEvent) {
+        match event {
+            FeatureEvent::Starting => {
+                self.features.total += 1;
+            }
+            FeatureEvent::Scenario(_, ref event) => {
+                self.handle_scenario_event(event)
+            }
+            FeatureEvent::Rule(_, ref event) => {
+                self.handle_rule_event(event)
+            }
+            _ => {}
+        }
+    }
+
+    fn collect(self) -> RunResult {
+        let StatsCollector {
+            started,
+            features,
+            rules,
+            scenarios,
+            steps,
+        } = self;
+
+        RunResult {
+            elapsed: started.elapsed(),
+            started,
+            features,
+            rules,
+            scenarios,
+            steps,
+        }
+    }
+}
+
+
 pub(crate) struct Runner<W: World> {
     functions: StepsCollection<W>,
     features: Rc<Vec<gherkin::Feature>>,
@@ -364,6 +545,7 @@ impl<W: World> Runner<W> {
 
     pub fn run(self: Rc<Self>) -> CucumberStream {
         Box::pin(stream! {
+            let mut stats = StatsCollector::new();
             yield CucumberEvent::Starting;
 
             let features = self.features.iter().cloned().map(Rc::new).collect::<Vec<_>>();
@@ -372,11 +554,12 @@ impl<W: World> Runner<W> {
                 let mut stream = this.run_feature(Rc::clone(&feature));
 
                 while let Some(event) = stream.next().await {
+                    stats.handle_feature_event(&event);
                     yield CucumberEvent::Feature(Rc::clone(&feature), event);
                 }
             }
 
-            yield CucumberEvent::Finished;
+            yield CucumberEvent::Finished(stats.collect());
         })
     }
 }
