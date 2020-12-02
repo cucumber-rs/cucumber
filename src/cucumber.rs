@@ -157,10 +157,16 @@ impl<W: World> Cucumber<W> {
             self.event_handler.handle_event(&event);
 
             if let crate::event::CucumberEvent::Finished(result) = event {
-                return result
+                return result;
             }
         }
 
-        panic!("Invariant broken: no Finish event found before stream ended")
+        unreachable!("CucumberEvent::Finished must be fired")
+    }
+
+    /// Convenience function to run all tests and exit with error code 1 on failure.
+    pub async fn run_and_exit(self) {
+        let code = if self.run().await.failed() { 1 } else { 0 };
+        std::process::exit(code);
     }
 }

@@ -131,7 +131,7 @@ fn main() {
     // You may choose any executor you like (Tokio, async-std, etc)
     // You may even have an async main, it doesn't matter. The point is that
     // Cucumber is composable. :)
-    futures::executor::block_on(runner.run());
+    futures::executor::block_on(runner.run_and_exit());
 }
 ```
 
@@ -221,7 +221,7 @@ fn we_can_regex(_: &mut MyWorld, action: String) {
 
 fn main() {
     let runner = MyWorld::init(&["./features"]);
-    futures::executor::block_on(runner.run());
+    futures::executor::block_on(runner.run_and_exit());
 }
 ```
 
