@@ -15,10 +15,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
-pub(crate) fn world_init(
-    input: TokenStream,
-    steps: &[&str],
-) -> syn::Result<TokenStream> {
+pub(crate) fn world_init(input: TokenStream, steps: &[&str]) -> syn::Result<TokenStream> {
     let input = syn::parse2::<syn::DeriveInput>(input)?;
 
     let step_types = step_types(steps);
@@ -52,10 +49,7 @@ fn step_types(steps: &[&str]) -> Vec<syn::Ident> {
 }
 
 /// Generates structs and their implementations of private traits.
-fn generate_step_structs(
-    steps: &[&str],
-    world: &syn::DeriveInput,
-) -> Vec<TokenStream> {
+fn generate_step_structs(steps: &[&str], world: &syn::DeriveInput) -> Vec<TokenStream> {
     let (world, world_vis) = (&world.ident, &world.vis);
 
     let idents = [

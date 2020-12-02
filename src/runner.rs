@@ -115,9 +115,7 @@ impl StatsCollector {
             RuleEvent::Starting => {
                 self.rules.total += 1;
             }
-            RuleEvent::Scenario(_, ref event) => {
-                self.handle_scenario_event(event)
-            }
+            RuleEvent::Scenario(_, ref event) => self.handle_scenario_event(event),
             RuleEvent::Skipped => {
                 self.rules.skipped += 1;
             }
@@ -133,20 +131,13 @@ impl StatsCollector {
         }
     }
 
-    fn handle_scenario_event(
-        &mut self,
-        event: &ScenarioEvent,
-    ) {
+    fn handle_scenario_event(&mut self, event: &ScenarioEvent) {
         match event {
             ScenarioEvent::Starting(_) => {
                 self.scenarios.total += 1;
             }
-            ScenarioEvent::Background(_, ref event) => {
-                self.handle_step_event(event)
-            }
-            ScenarioEvent::Step(_, ref event) => {
-                self.handle_step_event(event)
-            }
+            ScenarioEvent::Background(_, ref event) => self.handle_step_event(event),
+            ScenarioEvent::Step(_, ref event) => self.handle_step_event(event),
             ScenarioEvent::Skipped => {
                 self.scenarios.skipped += 1;
             }
@@ -162,10 +153,7 @@ impl StatsCollector {
         }
     }
 
-    fn handle_step_event(
-        &mut self,
-        event: &StepEvent,
-    ) {
+    fn handle_step_event(&mut self, event: &StepEvent) {
         self.steps.total += 1;
         match event {
             StepEvent::Starting => {
@@ -194,12 +182,8 @@ impl StatsCollector {
             FeatureEvent::Starting => {
                 self.features.total += 1;
             }
-            FeatureEvent::Scenario(_, ref event) => {
-                self.handle_scenario_event(event)
-            }
-            FeatureEvent::Rule(_, ref event) => {
-                self.handle_rule_event(event)
-            }
+            FeatureEvent::Scenario(_, ref event) => self.handle_scenario_event(event),
+            FeatureEvent::Rule(_, ref event) => self.handle_rule_event(event),
             _ => {}
         }
     }
@@ -223,7 +207,6 @@ impl StatsCollector {
         }
     }
 }
-
 
 pub(crate) struct Runner<W: World> {
     functions: StepsCollection<W>,

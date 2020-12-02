@@ -134,7 +134,6 @@ fn user_defined_event_handlers_are_expressible() {
     assert!(handler_state.any_step_success);
     assert!(handler_state.any_scenario_skipped);
     assert!(handler_state.any_step_timeouts);
-
 }
 
 fn nocapture_enabled() -> bool {

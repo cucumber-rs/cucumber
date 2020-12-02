@@ -10,8 +10,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::event::StepFailureKind;
 use crate::runner::{RunResult, Stats};
-use crate::event::{StepFailureKind};
 use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
     EventHandler,
