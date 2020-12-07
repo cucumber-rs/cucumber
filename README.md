@@ -17,6 +17,10 @@ Create a directory called `tests/` in your project root and create a test target
 Add this to your `Cargo.toml`:
 
 ```toml
+[dependencies]
+async-trait = "0.1.42" # This is currently required to properly initialize the world in cucumber-rust
+futures = "0.3.8" # You can use a different executor if you wish
+
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
@@ -125,13 +129,12 @@ fn main() {
 
     let runner = cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features"])
-        .steps(example_steps::steps())
-        .cli();
+        .steps(example_steps::steps());
 
     // You may choose any executor you like (Tokio, async-std, etc)
     // You may even have an async main, it doesn't matter. The point is that
     // Cucumber is composable. :)
-    futures::executor::block_on(runner.run_and_exit());
+    futures::executor::block_on(runner.run());
 }
 ```
 
@@ -145,12 +148,16 @@ cargo test --test cucumber
 
 By enabling `macros` feature in `Cargo.toml`:
 ```toml
+[dependencies]
+async-trait = "0.1.42" # This is currently required to properly initialize the world in cucumber-rust
+futures = "0.3.8" # You can use a different executor if you wish
+
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = { version = "^0.7.0", features = ["macros"] } 
+cucumber_rust = { git = "https://github.com/bbqsrc/cucumber-rust", branch = "main", features = ["macros"] }
 ```
 
 You could leverage some conveniences in organizing your tests code:
