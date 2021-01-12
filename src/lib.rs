@@ -33,7 +33,6 @@ mod steps;
 pub mod private;
 
 use async_trait::async_trait;
-use std::panic::UnwindSafe;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
@@ -65,7 +64,7 @@ macro_rules! skip {
 /// The `World` trait represents shared user-defined state
 /// for a cucumber run.
 #[async_trait(?Send)]
-pub trait World: Sized + UnwindSafe + 'static {
+pub trait World: Sized + 'static {
     type Error: std::error::Error;
 
     async fn new() -> Result<Self, Self::Error>;
