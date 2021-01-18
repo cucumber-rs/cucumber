@@ -28,7 +28,7 @@ pub struct ProblemDetectingEventHandlerState {
 }
 
 impl EventHandler for ProblemDetectingEventHandler {
-    fn handle_event(&mut self, event: CucumberEvent) {
+    fn handle_event(&mut self, event: &CucumberEvent) {
         let mut state = self.state.lock().unwrap();
         match &event {
             CucumberEvent::Feature(

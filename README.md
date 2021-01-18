@@ -5,8 +5,6 @@
 
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
 
-**The 0.6.x macro has been removed. If you need to use this macro, please continue to use the 0.6 version.** 
-
 - [Changelog](CHANGELOG.md)
 - [Cucumber in Rust 0.7 – Beginner’s Tutorial](https://www.florianreinhard.de/2020-10-05/cucumber-07-in-rust-beginners-tutorial/) by Florian Reinhard.
 
@@ -26,7 +24,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "^0.7.0" } 
+cucumber = { package = "cucumber_rust", version = "^0.8.0" } 
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
