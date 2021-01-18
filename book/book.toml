@@ -1,0 +1,6 @@
+[book]
+authors = ["alvskar"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Cucumber"
