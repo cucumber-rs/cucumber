@@ -34,6 +34,7 @@ pub mod private;
 
 // Re-export for convenience
 pub use async_trait::async_trait;
+pub use futures;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
@@ -50,8 +51,6 @@ pub use self::private::WorldInit;
 #[doc(inline)]
 pub use cucumber_rust_codegen::{given, then, when, WorldInit};
 #[cfg(feature = "macros")]
-#[doc(hidden)]
-pub use futures;
 
 const TEST_SKIPPED: &str = "Cucumber: test skipped";
 
