@@ -7,6 +7,7 @@
 // except according to those terms.
 
 use futures::StreamExt;
+use gherkin::ParseFileError;
 use regex::Regex;
 
 use crate::steps::Steps;
@@ -97,7 +98,21 @@ impl<W: World> Cucumber<W> {
             .map(|entry| gherkin::Feature::parse_path(entry.path()))
             .collect::<Result<Vec<_>, _>>();
 
-        let mut features = features.unwrap_or_else(|e| panic!(e));
+        let mut features = features.unwrap_or_else(|e| match e {
+            ParseFileError::Reading { path, source } => {
+                eprintln!("Error reading '{}':", path.display());
+                eprintln!("{:?}", source);
+                std::process::exit(1);
+            }
+            ParseFileError::Parsing { path, error, source } => {
+                eprintln!("Error parsing '{}':", path.display());
+                if let Some(error) = error {
+                    eprintln!("{}", error);
+                }
+                eprintln!("{:?}", source);
+                std::process::exit(1);
+            }
+        });
         features.sort();
 
         self.features = features;

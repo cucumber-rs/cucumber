@@ -123,6 +123,7 @@ fn user_defined_event_handlers_are_expressible() {
     let results = futures::executor::block_on(runner.run());
 
     assert_eq!(results.features.total, 1);
+    assert_eq!(results.scenarios.total, 4);
     assert_eq!(results.steps.total, 14);
     assert_eq!(results.steps.passed, 4);
     assert_eq!(results.scenarios.failed, 1);

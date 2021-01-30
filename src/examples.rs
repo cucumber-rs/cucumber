@@ -52,7 +52,7 @@ impl ExampleValues {
         modified
     }
 
-    pub fn as_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let mut values = Vec::with_capacity(self.keys.len());
         for index in 0..self.keys.len() {
             values.push(format!(

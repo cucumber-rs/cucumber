@@ -183,7 +183,7 @@ impl BasicOutput {
     ) {
         let cmt = self.file_line_col(feature.path.as_ref(), step.position);
         let msg = if is_bg {
-            format!("(Background) {}", &step)
+            format!("⛓️ {}", &step)
         } else {
             step.to_string()
         };
@@ -350,12 +350,13 @@ impl BasicOutput {
             ScenarioEvent::Starting(example_values) => {
                 let cmt = self.file_line_col(feature.path.as_ref(), scenario.position);
                 let text = if example_values.is_empty() {
-                    format!("Scenario: {} ", &scenario.name)
+                    format!("{}: {} ", &scenario.keyword, &scenario.name)
                 } else {
                     format!(
-                        "Scenario: {}\nUsing example: {}",
+                        "{}: {}\n => {}",
+                        &scenario.keyword,
                         &scenario.name,
-                        &example_values.as_string(),
+                        example_values.to_string(),
                     )
                 };
                 let indent = if rule.is_some() { "  " } else { " " };
@@ -377,7 +378,7 @@ impl BasicOutput {
         } else if *event == RuleEvent::Starting {
             let cmt = self.file_line_col(feature.path.as_ref(), rule.position);
             self.writeln_cmt(
-                &format!("Rule: {}", &rule.name),
+                &format!("{}: {}", &rule.keyword, &rule.name),
                 &cmt,
                 " ",
                 termcolor::Color::White,
@@ -440,7 +441,7 @@ impl EventHandler for BasicOutput {
             CucumberEvent::Finished(ref r) => self.print_finish(r),
             CucumberEvent::Feature(feature, event) => match event {
                 crate::event::FeatureEvent::Starting => {
-                    let msg = format!("Feature: {}", &feature.name);
+                    let msg = format!("{}: {}", &feature.keyword, &feature.name);
                     let cmt = self.file_line_col(feature.path.as_ref(), feature.position);
                     self.pending_feature_print_info = Some((msg, cmt));
                     self.printed_feature_start = false;

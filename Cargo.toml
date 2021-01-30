@@ -1,6 +1,6 @@
 [package]
 name = "cucumber_rust"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2018"
 authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
 description = "Cucumber testing framework for Rust, with async support. Fully native, no external test runners or dependencies."
@@ -18,7 +18,7 @@ macros = ["cucumber_rust_codegen", "inventory"]
 [dependencies]
 cucumber_rust_codegen = { version = "0.1", path = "./codegen", optional = true }
 
-gherkin = { package = "gherkin_rust", version = "0.8.3" }
+gherkin = { package = "gherkin_rust", version = "0.9" }
 
 async-stream = "0.3.0"
 async-trait = "0.1.40"
