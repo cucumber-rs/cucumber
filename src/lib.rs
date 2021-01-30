@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -32,7 +32,8 @@ mod steps;
 #[doc(hidden)]
 pub mod private;
 
-use async_trait::async_trait;
+// Re-export for convenience
+pub use async_trait::async_trait;
 
 pub use cucumber::Cucumber;
 pub use examples::ExampleValues;
