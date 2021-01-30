@@ -4,6 +4,15 @@
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
+### 0.8.2 — 2021-01-30
+
+- Re-export `async_trait::async_trait` and `futures` crate for convenience
+- Update examples to use `tokio`
+
+### 0.8.1 — 2021-01-30
+
+- Added proper i18n support via gherkin 0.9
+
 ### 0.8.0 — 2021-01-18
 
 - Fixed filtering of tests by tag ([#67](https://github.com/bbqsrc/cucumber-rust/issues/67))
