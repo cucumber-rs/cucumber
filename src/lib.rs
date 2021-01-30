@@ -50,7 +50,6 @@ pub use self::private::WorldInit;
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 #[doc(inline)]
 pub use cucumber_rust_codegen::{given, then, when, WorldInit};
-#[cfg(feature = "macros")]
 
 const TEST_SKIPPED: &str = "Cucumber: test skipped";
 
