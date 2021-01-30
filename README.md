@@ -15,16 +15,14 @@ Create a directory called `tests/` in your project root and create a test target
 Add this to your `Cargo.toml`:
 
 ```toml
-[dependencies]
-async-trait = "0.1.42" # This is currently required to properly initialize the world in cucumber-rust
-futures = "0.3.8" # You can use a different executor if you wish
-
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "^0.8.0" } 
+cucumber = { package = "cucumber_rust", version = "0.8.2" }
+# You can use any executor you want, but we're going to use Tokio in this example.
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 Create a directory called `features/` and put a feature file in it named something like `example.feature`. It might look like:
@@ -43,7 +41,7 @@ Feature: Example feature
 And here's an example of implementing those steps using our `tests/cucumber.rs` file:
 
 ```rust
-use async_trait::async_trait;
+use cucumber::async_trait;
 use std::{convert::Infallible, cell::RefCell};
 
 pub struct MyWorld {
@@ -121,18 +119,21 @@ mod example_steps {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Do any setup you need to do before running the Cucumber runner.
     // e.g. setup_some_db_thing()?;
 
-    let runner = cucumber::Cucumber::<MyWorld>::new()
+    cucumber::Cucumber::<MyWorld>::new()
+        // Specifies where our feature files exist
         .features(&["./features"])
-        .steps(example_steps::steps());
-
-    // You may choose any executor you like (Tokio, async-std, etc)
-    // You may even have an async main, it doesn't matter. The point is that
-    // Cucumber is composable. :)
-    futures::executor::block_on(runner.run());
+        // Adds the implementation of our steps to the runner
+        .steps(example_steps::steps())
+        // Parses the command line arguments if passed
+        .cli()
+        // Runs the Cucumber tests and then exists
+        .run_and_exit()
+        .await
 }
 ```
 
@@ -146,24 +147,22 @@ cargo test --test cucumber
 
 By enabling `macros` feature in `Cargo.toml`:
 ```toml
-[dependencies]
-async-trait = "0.1.42" # This is currently required to properly initialize the world in cucumber-rust
-futures = "0.3.8" # You can use a different executor if you wish
 
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = { git = "https://github.com/bbqsrc/cucumber-rust", branch = "main", features = ["macros"] }
+cucumber = { package = "cucumber_rust", version = "0.8.2", features = ["macros"] }
+# You can use any executor you want, but we're going to use Tokio in this example.
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 You could leverage some conveniences in organizing your tests code:
 ```rust
 use std::{cell::RefCell, convert::Infallible};
 
-use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit};
+use cucumber::{async_trait, given, then, when, World, WorldInit};
 
 #[derive(WorldInit)]
 pub struct MyWorld {
@@ -224,9 +223,10 @@ fn we_can_regex(_: &mut MyWorld, action: String) {
     assert_eq!(action, "implement");
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let runner = MyWorld::init(&["./features"]);
-    futures::executor::block_on(runner.run_and_exit());
+    runner.run_and_exit().await;
 }
 ```
 

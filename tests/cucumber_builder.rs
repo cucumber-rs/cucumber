@@ -1,5 +1,6 @@
 extern crate cucumber_rust as cucumber;
-use async_trait::async_trait;
+
+use cucumber::{World, async_trait};
 use std::{cell::RefCell, convert::Infallible};
 
 pub struct MyWorld {
@@ -17,7 +18,7 @@ impl MyWorld {
 }
 
 #[async_trait(?Send)]
-impl cucumber::World for MyWorld {
+impl World for MyWorld {
     type Error = Infallible;
 
     async fn new() -> Result<Self, Infallible> {
@@ -91,17 +92,15 @@ mod example_steps {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Do any setup you need to do before running the Cucumber runner.
     // e.g. setup_some_db_thing()?;
 
-    let runner = cucumber::Cucumber::<MyWorld>::new()
+    cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features/basic"])
         .steps(example_steps::steps())
-        .enable_capture(false);
-
-    // You may choose any executor you like (Tokio, async-std, etc)
-    // You may even have an async main, it doesn't matter. The point is that
-    // Cucumber is composable. :)
-    futures::executor::block_on(runner.run_and_exit());
+        .cli()
+        .run_and_exit()
+        .await
 }
