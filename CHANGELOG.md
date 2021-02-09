@@ -4,6 +4,10 @@
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
+### 0.8.3 — 2021-02-09
+
+- Update `t!` macro to support specifying type of world argument in closure
+
 ### 0.8.2 — 2021-01-30
 
 - Re-export `async_trait::async_trait` and `futures` crate for convenience
