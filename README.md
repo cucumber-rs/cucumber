@@ -20,7 +20,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "0.8.2" }
+cucumber = { package = "cucumber_rust", version = "0.8.3" }
 # You can use any executor you want, but we're going to use Tokio in this example.
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -153,7 +153,7 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "0.8.2", features = ["macros"] }
+cucumber = { package = "cucumber_rust", version = "0.8.3", features = ["macros"] }
 # You can use any executor you want, but we're going to use Tokio in this example.
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
