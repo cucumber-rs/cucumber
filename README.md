@@ -153,16 +153,17 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber = { package = "cucumber_rust", version = "0.8.2", features = ["macros"] }
+cucumber_rust = { package = "cucumber_rust", version = "0.8.2", features = ["macros"] }
 # You can use any executor you want, but we're going to use Tokio in this example.
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
+Note: Macros rely on the name of the cucumber crate being cucumber_rust
 
 You could leverage some conveniences in organizing your tests code:
 ```rust
 use std::{cell::RefCell, convert::Infallible};
 
-use cucumber::{async_trait, given, then, when, World, WorldInit};
+use cucumber_rust::{async_trait, given, then, when, World, WorldInit};
 
 #[derive(WorldInit)]
 pub struct MyWorld {
