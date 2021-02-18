@@ -34,6 +34,7 @@ pub struct Cucumber<W: World> {
     scenario_filter: Option<Regex>,
 
     language: Option<String>,
+    debug: bool,
 }
 
 impl<W: World> Default for Cucumber<W> {
@@ -41,9 +42,10 @@ impl<W: World> Default for Cucumber<W> {
         Cucumber {
             steps: Default::default(),
             features: Default::default(),
-            event_handler: Box::new(crate::output::BasicOutput::default()),
+            event_handler: Box::new(crate::output::BasicOutput::new(false)),
             step_timeout: None,
             enable_capture: true,
+            debug: false,
             scenario_filter: None,
             language: None,
         }
@@ -67,6 +69,7 @@ impl<W: World> Cucumber<W> {
             event_handler: Box::new(event_handler),
             step_timeout: None,
             enable_capture: true,
+            debug: false,
             scenario_filter: None,
             language: None,
         }
@@ -168,6 +171,10 @@ impl<W: World> Cucumber<W> {
             s = s.enable_capture(false);
         }
 
+        if opts.debug {
+            s = s.debug(true);
+        }
+
         s
     }
 
@@ -181,6 +188,12 @@ impl<W: World> Cucumber<W> {
             );
         }
 
+        self
+    }
+
+    pub fn debug(mut self, value: bool) -> Self {
+        self.event_handler = Box::new(crate::output::BasicOutput::new(value));
+        self.debug = value;
         self
     }
 

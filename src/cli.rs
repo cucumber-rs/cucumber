@@ -4,6 +4,7 @@ use clap::{App, Arg};
 pub struct CliOptions {
     pub scenario_filter: Option<String>,
     pub nocapture: bool,
+    pub debug: bool,
 }
 
 pub fn make_app() -> CliOptions {
@@ -24,13 +25,20 @@ pub fn make_app() -> CliOptions {
                 .long("nocapture")
                 .help("Use this flag to disable suppression of output from tests"),
         )
+        .arg(
+            Arg::with_name("debug")
+                .long("debug")
+                .help("Enable verbose test logging (debug mode)"),
+        )
         .get_matches();
 
     let nocapture = matches.is_present("nocapture");
     let scenario_filter = matches.value_of("filter").map(|v| v.to_string());
+    let debug = matches.is_present("debug");
 
     CliOptions {
         nocapture,
         scenario_filter,
+        debug,
     }
 }

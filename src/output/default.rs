@@ -10,7 +10,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::event::StepFailureKind;
+use crate::event::{CapturedOutput, StepFailureKind};
 use crate::runner::{RunResult, Stats};
 use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
@@ -19,6 +19,7 @@ use crate::{
 use gherkin::{Feature, LineCol, Rule, Scenario, Step};
 
 pub struct BasicOutput {
+    debug: bool,
     step_started: bool,
     pending_feature_print_info: Option<(String, String)>,
     printed_feature_start: bool,
@@ -27,6 +28,7 @@ pub struct BasicOutput {
 impl Default for BasicOutput {
     fn default() -> BasicOutput {
         BasicOutput {
+            debug: false,
             step_started: false,
             pending_feature_print_info: None,
             printed_feature_start: false,
@@ -54,6 +56,13 @@ fn wrap_with_comment(s: &str, c: &str, indent: &str) -> String {
 }
 
 impl BasicOutput {
+    pub fn new(debug: bool) -> Self {
+        Self {
+            debug,
+            ..Default::default()
+        }
+    }
+
     fn relpath(&self, target: Option<&std::path::PathBuf>) -> String {
         let target = match target {
             Some(v) => v,
@@ -168,7 +177,57 @@ impl BasicOutput {
                 position.line,
                 position.col
             ),
-            None => format!("<input>:{}:{}\u{00a0}", position.0, position.1),
+            None => format!("<input>:{}:{}\u{00a0}", position.line, position.col),
+        }
+    }
+
+    fn print_captured(&mut self, output: &CapturedOutput, color: termcolor::Color) {
+        if !output.out.is_empty() {
+            self.writeln(
+                &format!(
+                    "{:—<1$}",
+                    "———————— Captured stdout: ",
+                    textwrap::termwidth()
+                ),
+                color,
+                true,
+            );
+
+            self.writeln(
+                &textwrap::indent(
+                    &textwrap::fill(&output.out, textwrap::termwidth().saturating_sub(4)),
+                    "  ",
+                )
+                .trim_end(),
+                color,
+                false,
+            );
+        }
+
+        if !output.err.is_empty() {
+            self.writeln(
+                &format!(
+                    "{:—<1$}",
+                    "———————— Captured stderr: ",
+                    textwrap::termwidth()
+                ),
+                color,
+                true,
+            );
+
+            self.writeln(
+                &textwrap::indent(
+                    &textwrap::fill(&output.err, textwrap::termwidth().saturating_sub(4)),
+                    "  ",
+                )
+                .trim_end(),
+                color,
+                false,
+            );
+        }
+
+        if !output.err.is_empty() || !output.out.is_empty() {
+            self.writeln(&format!("{:—<1$}", "", textwrap::termwidth()), color, true);
         }
     }
 
@@ -228,7 +287,7 @@ impl BasicOutput {
                 );
                 self.print_step_extras(&*step);
             }
-            StepEvent::Passed(_output) => {
+            StepEvent::Passed(output) => {
                 self.writeln_cmt(
                     &format!("✔ {}", msg),
                     &cmt,
@@ -237,6 +296,9 @@ impl BasicOutput {
                     false,
                 );
                 self.print_step_extras(&*step);
+                if self.debug {
+                    self.print_captured(output, termcolor::Color::Cyan);
+                }
             }
             StepEvent::Failed(StepFailureKind::Panic(output, panic_info)) => {
                 self.writeln_cmt(
@@ -272,48 +334,7 @@ impl BasicOutput {
                     termcolor::Color::Red,
                     false,
                 );
-
-                if !output.out.is_empty() {
-                    self.writeln(
-                        &format!("{:—<1$}", "———— Captured stdout: ", textwrap::termwidth()),
-                        termcolor::Color::Red,
-                        true,
-                    );
-
-                    self.writeln(
-                        &textwrap::indent(
-                            &textwrap::fill(&output.out, textwrap::termwidth().saturating_sub(4)),
-                            "  ",
-                        )
-                        .trim_end(),
-                        termcolor::Color::Red,
-                        false,
-                    );
-                }
-
-                if !output.err.is_empty() {
-                    self.writeln(
-                        &format!("{:—<1$}", "———— Captured stderr: ", textwrap::termwidth()),
-                        termcolor::Color::Red,
-                        true,
-                    );
-
-                    self.writeln(
-                        &textwrap::indent(
-                            &textwrap::fill(&output.err, textwrap::termwidth().saturating_sub(4)),
-                            "  ",
-                        )
-                        .trim_end(),
-                        termcolor::Color::Red,
-                        false,
-                    );
-                }
-
-                self.writeln(
-                    &format!("{:—<1$}", "", textwrap::termwidth().saturating_sub(1)),
-                    termcolor::Color::Red,
-                    true,
-                );
+                self.print_captured(output, termcolor::Color::Red);
             }
             StepEvent::Failed(StepFailureKind::TimedOut) => {
                 self.writeln_cmt(

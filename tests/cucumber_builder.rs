@@ -1,6 +1,6 @@
 extern crate cucumber_rust as cucumber;
 
-use cucumber::{World, async_trait};
+use cucumber::{async_trait, World};
 use std::{cell::RefCell, convert::Infallible};
 
 pub struct MyWorld {
@@ -41,6 +41,8 @@ mod example_steps {
             .given_async(
                 "a thing",
                 t!(|mut world, _step| {
+                    println!("This is on stdout");
+                    eprintln!("This is on stderr");
                     world.foo = "elho".into();
                     world.test_async_fn().await;
                     world
