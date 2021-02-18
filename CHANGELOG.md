@@ -4,6 +4,11 @@
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
+### 0.8.4 — 2021-02-18
+
+- Feature: add `language` argument to Cucumber builder to set default language for all feature files
+- Feature: add `--debug` flag to always print stdout and stderr per step
+
 ### 0.8.3 — 2021-02-09
 
 - Update `t!` macro to support specifying type of world argument in closure
