@@ -16,7 +16,7 @@ use crate::{
     event::{CucumberEvent, RuleEvent, ScenarioEvent, StepEvent},
     EventHandler,
 };
-use gherkin::{Feature, Rule, Scenario, Step};
+use gherkin::{Feature, LineCol, Rule, Scenario, Step};
 
 pub struct BasicOutput {
     step_started: bool,
@@ -159,14 +159,14 @@ impl BasicOutput {
         let _x = write!(&mut out, "{}{}", cursor_up, erase_line);
     }
 
-    fn file_line_col(&self, file: Option<&PathBuf>, position: (usize, usize)) -> String {
+    fn file_line_col(&self, file: Option<&PathBuf>, position: LineCol) -> String {
         // the U+00A0 ensures control/cmd clicking doesn't underline weird.
         match file {
             Some(v) => format!(
                 "{}:{}:{}\u{00a0}",
                 self.relpath(Some(v)),
-                position.0,
-                position.1
+                position.line,
+                position.col
             ),
             None => format!("<input>:{}:{}\u{00a0}", position.0, position.1),
         }

@@ -16,7 +16,7 @@ homepage = "https://github.com/bbqsrc/cucumber-rust"
 macros = ["cucumber_rust_codegen", "inventory"]
 
 [dependencies]
-gherkin = { package = "gherkin_rust", version = "0.9" }
+gherkin = { package = "gherkin_rust", version = "0.10" }
 async-stream = "0.3.0"
 async-trait = "0.1.40"
 cute_custom_default = "2.1.0"

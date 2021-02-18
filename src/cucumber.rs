@@ -32,6 +32,8 @@ pub struct Cucumber<W: World> {
 
     /// If given, filters the scenario which are run
     scenario_filter: Option<Regex>,
+
+    language: Option<String>,
 }
 
 impl<W: World> Default for Cucumber<W> {
@@ -43,6 +45,7 @@ impl<W: World> Default for Cucumber<W> {
             step_timeout: None,
             enable_capture: true,
             scenario_filter: None,
+            language: None,
         }
     }
 }
@@ -65,6 +68,7 @@ impl<W: World> Cucumber<W> {
             step_timeout: None,
             enable_capture: true,
             scenario_filter: None,
+            language: None,
         }
     }
 
@@ -95,7 +99,13 @@ impl<W: World> Cucumber<W> {
             })
             .flatten()
             .filter_map(Result::ok)
-            .map(|entry| gherkin::Feature::parse_path(entry.path()))
+            .map(|entry| {
+                let env = match self.language.as_ref() {
+                    Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
+                    None => Default::default(),
+                };
+                gherkin::Feature::parse_path(entry.path(), env)
+            })
             .collect::<Result<Vec<_>, _>>();
 
         let mut features = features.unwrap_or_else(|e| match e {
@@ -104,7 +114,11 @@ impl<W: World> Cucumber<W> {
                 eprintln!("{:?}", source);
                 std::process::exit(1);
             }
-            ParseFileError::Parsing { path, error, source } => {
+            ParseFileError::Parsing {
+                path,
+                error,
+                source,
+            } => {
                 eprintln!("Error parsing '{}':", path.display());
                 if let Some(error) = error {
                     eprintln!("{}", error);
@@ -155,6 +169,19 @@ impl<W: World> Cucumber<W> {
         }
 
         s
+    }
+
+    pub fn language(mut self, language: &str) -> Self {
+        if gherkin::is_language_supported(language) {
+            self.language = Some(language.to_string());
+        } else {
+            eprintln!(
+                "ERROR: Provided language '{}' not supported; ignoring.",
+                language
+            );
+        }
+
+        self
     }
 
     /// Run and report number of errors if any
