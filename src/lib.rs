@@ -37,10 +37,9 @@ pub mod private;
 pub use async_trait::async_trait;
 pub use futures;
 
-pub use cucumber::Cucumber;
+pub use cucumber::{Context, Cucumber};
 pub use examples::ExampleValues;
 pub use runner::RunResult;
-use std::any::Any;
 pub use steps::Steps;
 
 #[cfg(feature = "macros")]
@@ -80,7 +79,7 @@ pub trait EventHandler: 'static {
     fn handle_event(&mut self, event: &event::CucumberEvent);
 }
 
-pub type PanicError = Box<(dyn Any + Send + 'static)>;
+pub type PanicError = Box<(dyn std::any::Any + Send + 'static)>;
 pub enum TestError {
     TimedOut,
     PanicError(PanicError),

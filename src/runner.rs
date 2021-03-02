@@ -16,7 +16,11 @@ use async_stream::stream;
 use futures::{Future, FutureExt, Stream, StreamExt, TryFutureExt};
 use regex::Regex;
 
-use crate::{collection::StepsCollection, criteria::Criteria};
+use crate::{
+    collection::StepsCollection,
+    criteria::Criteria,
+    cucumber::{Context, StepContext},
+};
 use crate::{cucumber::LifecycleFn, event::*};
 use crate::{TestError, World, TEST_SKIPPED};
 
@@ -25,52 +29,52 @@ use std::time::{Duration, Instant};
 
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, TestError>>>>;
 
-impl<W> From<fn(W, Rc<gherkin::Step>) -> W> for TestFunction<W> {
-    fn from(f: fn(W, Rc<gherkin::Step>) -> W) -> Self {
+impl<W> From<fn(W, StepContext) -> W> for TestFunction<W> {
+    fn from(f: fn(W, StepContext) -> W) -> Self {
         TestFunction::BasicSync(f)
     }
 }
 
-impl<W> From<fn(W, Rc<gherkin::Step>) -> TestFuture<W>> for TestFunction<W> {
-    fn from(f: fn(W, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+impl<W> From<fn(W, StepContext) -> TestFuture<W>> for TestFunction<W> {
+    fn from(f: fn(W, StepContext) -> TestFuture<W>) -> Self {
         TestFunction::BasicAsync(f)
     }
 }
 
-impl<W> From<fn(W, Rc<gherkin::Step>) -> W> for BasicStepFn<W> {
-    fn from(f: fn(W, Rc<gherkin::Step>) -> W) -> Self {
+impl<W> From<fn(W, StepContext) -> W> for BasicStepFn<W> {
+    fn from(f: fn(W, StepContext) -> W) -> Self {
         BasicStepFn::Sync(f)
     }
 }
 
-impl<W> From<fn(W, Rc<gherkin::Step>) -> TestFuture<W>> for BasicStepFn<W> {
-    fn from(f: fn(W, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+impl<W> From<fn(W, StepContext) -> TestFuture<W>> for BasicStepFn<W> {
+    fn from(f: fn(W, StepContext) -> TestFuture<W>) -> Self {
         BasicStepFn::Async(f)
     }
 }
 
-impl<W> From<fn(W, Vec<String>, Rc<gherkin::Step>) -> W> for RegexStepFn<W> {
-    fn from(f: fn(W, Vec<String>, Rc<gherkin::Step>) -> W) -> Self {
+impl<W> From<fn(W, Vec<String>, StepContext) -> W> for RegexStepFn<W> {
+    fn from(f: fn(W, Vec<String>, StepContext) -> W) -> Self {
         RegexStepFn::Sync(f)
     }
 }
 
-impl<W> From<fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>> for RegexStepFn<W> {
-    fn from(f: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+impl<W> From<fn(W, Vec<String>, StepContext) -> TestFuture<W>> for RegexStepFn<W> {
+    fn from(f: fn(W, Vec<String>, StepContext) -> TestFuture<W>) -> Self {
         RegexStepFn::Async(f)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum BasicStepFn<W> {
-    Sync(fn(W, Rc<gherkin::Step>) -> W),
-    Async(fn(W, Rc<gherkin::Step>) -> TestFuture<W>),
+    Sync(fn(W, StepContext) -> W),
+    Async(fn(W, StepContext) -> TestFuture<W>),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum RegexStepFn<W> {
-    Sync(fn(W, Vec<String>, Rc<gherkin::Step>) -> W),
-    Async(fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>),
+    Sync(fn(W, Vec<String>, StepContext) -> W),
+    Async(fn(W, Vec<String>, StepContext) -> TestFuture<W>),
 }
 
 impl<W> From<&BasicStepFn<W>> for TestFunction<W> {
@@ -83,11 +87,11 @@ impl<W> From<&BasicStepFn<W>> for TestFunction<W> {
 }
 
 pub enum TestFunction<W> {
-    BasicSync(fn(W, Rc<gherkin::Step>) -> W),
-    BasicAsync(fn(W, Rc<gherkin::Step>) -> TestFuture<W>),
-    RegexSync(fn(W, Vec<String>, Rc<gherkin::Step>) -> W, Vec<String>),
+    BasicSync(fn(W, StepContext) -> W),
+    BasicAsync(fn(W, StepContext) -> TestFuture<W>),
+    RegexSync(fn(W, Vec<String>, StepContext) -> W, Vec<String>),
     RegexAsync(
-        fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+        fn(W, Vec<String>, StepContext) -> TestFuture<W>,
         Vec<String>,
     ),
 }
@@ -267,6 +271,7 @@ impl StatsCollector {
 }
 
 pub(crate) struct Runner<W: World> {
+    context: Rc<Context>,
     functions: StepsCollection<W>,
     features: Rc<Vec<gherkin::Feature>>,
     step_timeout: Option<Duration>,
@@ -279,6 +284,7 @@ pub(crate) struct Runner<W: World> {
 impl<W: World> Runner<W> {
     #[inline]
     pub fn new(
+        context: Rc<Context>,
         functions: StepsCollection<W>,
         features: Rc<Vec<gherkin::Feature>>,
         step_timeout: Option<Duration>,
@@ -288,6 +294,7 @@ impl<W: World> Runner<W> {
         after: Vec<(Criteria, LifecycleFn)>,
     ) -> Rc<Runner<W>> {
         Rc::new(Runner {
+            context,
             functions,
             features,
             step_timeout,
@@ -353,17 +360,19 @@ impl<W: World> Runner<W> {
             }
         }));
 
+        let context = StepContext::new(Rc::clone(&self.context), step);
+
         let step_future = match func {
-            TestFunction::BasicAsync(f) => (f)(world, step),
-            TestFunction::RegexAsync(f, r) => (f)(world, r, step),
+            TestFunction::BasicAsync(f) => (f)(world, context),
+            TestFunction::RegexAsync(f, r) => (f)(world, r, context),
             TestFunction::BasicSync(test_fn) => {
-                std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
+                std::panic::AssertUnwindSafe(async move { (test_fn)(world, context) })
                     .catch_unwind()
                     .map_err(TestError::PanicError)
                     .boxed_local()
             }
             TestFunction::RegexSync(test_fn, matches) => {
-                std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, step) })
+                std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, context) })
                     .catch_unwind()
                     .map_err(TestError::PanicError)
                     .boxed_local()

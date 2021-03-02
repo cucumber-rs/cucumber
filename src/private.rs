@@ -8,11 +8,9 @@
 
 //! Helper type-level glue for [`cucumber_rust_codegen`] crate.
 
-use std::rc::Rc;
-
 pub use inventory::{self, collect, submit};
 
-use crate::{runner::TestFuture, Cucumber, Steps, World};
+use crate::{cucumber::StepContext, runner::TestFuture, Cucumber, Steps, World};
 
 /// [`World`] extension with auto-wiring capabilities.
 pub trait WorldInit<G1, G2, G3, G4, W1, W2, W3, W4, T1, T2, T3, T4>:
@@ -238,10 +236,10 @@ pub trait StepRegexAsync<W> {
     fn inner(&self) -> (&'static str, CucumberAsyncRegexFn<W>);
 }
 
-pub type CucumberFn<W> = fn(W, Rc<gherkin::Step>) -> W;
+pub type CucumberFn<W> = fn(W, StepContext) -> W;
 
-pub type CucumberRegexFn<W> = fn(W, Vec<String>, Rc<gherkin::Step>) -> W;
+pub type CucumberRegexFn<W> = fn(W, Vec<String>, StepContext) -> W;
 
-pub type CucumberAsyncFn<W> = fn(W, Rc<gherkin::Step>) -> TestFuture<W>;
+pub type CucumberAsyncFn<W> = fn(W, StepContext) -> TestFuture<W>;
 
-pub type CucumberAsyncRegexFn<W> = fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>;
+pub type CucumberAsyncRegexFn<W> = fn(W, Vec<String>, StepContext) -> TestFuture<W>;

@@ -32,9 +32,9 @@ impl World for MyWorld {
     }
 }
 
-mod example_steps {
+mod example_ctxs {
+    use super::SomeString;
     use cucumber::{t, Steps, World};
-    // use futures::future::FutureExt;
 
     pub fn steps() -> Steps<crate::MyWorld> {
         let mut builder: Steps<crate::MyWorld> = Steps::new();
@@ -42,7 +42,10 @@ mod example_steps {
         builder
             .given_async(
                 "a thing",
-                t!(|mut world: crate::MyWorld, _step| {
+                t!(|mut world: crate::MyWorld, ctx| {
+                    println!("{}", ctx.get::<&'static str>().unwrap());
+                    println!("{}", ctx.get::<u32>().unwrap());
+                    println!("{}", ctx.get::<SomeString>().unwrap().0);
                     println!("This is on stdout");
                     eprintln!("This is on stderr");
                     world.foo = "elho".into();
@@ -52,39 +55,36 @@ mod example_steps {
             )
             .when_regex_async(
                 "something goes (.*)",
-                t!(|world, _matches, _step| crate::MyWorld::new().await.unwrap()),
+                t!(|world, _matches, _ctx| crate::MyWorld::new().await.unwrap()),
             )
             .given(
                 "I am trying out Cucumber",
-                |mut world: crate::MyWorld, _step| {
+                |mut world: crate::MyWorld, _ctx| {
                     world.foo = "Some string".to_string();
                     world
                 },
             )
-            .when("I consider what I am doing", |mut world, _step| {
+            .when("I consider what I am doing", |mut world, _ctx| {
                 let new_string = format!("{}.", &world.foo);
                 world.foo = new_string;
                 world
             })
-            .then("I am interested in ATDD", |world, _step| {
+            .then("I am interested in ATDD", |world, _ctx| {
                 assert_eq!(world.foo, "Some string.");
                 world
             })
-            .then_regex(
-                r"^we can (.*) rules with regex$",
-                |world, matches, _step| {
-                    // And access them as an array
-                    assert_eq!(matches[1], "implement");
-                    world
-                },
-            )
-            .given_regex(r"a number (\d+)", |mut world, matches, _step| {
+            .then_regex(r"^we can (.*) rules with regex$", |world, matches, _ctx| {
+                // And access them as an array
+                assert_eq!(matches[1], "implement");
+                world
+            })
+            .given_regex(r"a number (\d+)", |mut world, matches, _ctx| {
                 world.foo = matches[1].to_owned();
                 world
             })
             .then_regex(
                 r"twice that number should be (\d+)",
-                |world, matches, _step| {
+                |world, matches, _ctx| {
                     let to_check = world.foo.parse::<i32>().unwrap();
                     let expected = matches[1].parse::<i32>().unwrap();
                     assert_eq!(to_check * 2, expected);
@@ -96,6 +96,8 @@ mod example_steps {
     }
 }
 
+struct SomeString(&'static str);
+
 #[tokio::main]
 async fn main() {
     // Do any setup you need to do before running the Cucumber runner.
@@ -103,7 +105,13 @@ async fn main() {
 
     cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features/basic"])
-        .steps(example_steps::steps())
+        .steps(example_ctxs::steps())
+        .context(
+            cucumber::Context::new()
+                .add("This is a string from the context.")
+                .add(42u32)
+                .add(SomeString("the newtype pattern helps here")),
+        )
         .before(criteria::scenario(Regex::new(".*").unwrap()), |_, _, _| {
             async move {
                 println!("S:AHHHH");
@@ -117,6 +125,7 @@ async fn main() {
             }
             .boxed()
         })
+        .debug(true)
         .cli()
         .run_and_exit()
         .await

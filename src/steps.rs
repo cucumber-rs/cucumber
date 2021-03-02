@@ -6,14 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::rc::Rc;
-
 use cute_custom_default::CustomDefault;
 use gherkin::StepType;
 
 use crate::runner::{BasicStepFn, RegexStepFn};
-use crate::World;
 use crate::{collection::StepsCollection, runner::TestFuture};
+use crate::{cucumber::StepContext, World};
 
 #[derive(CustomDefault)]
 pub struct Steps<W: World> {
@@ -41,7 +39,7 @@ impl<W: World> Steps<W> {
         &mut self,
         ty: StepType,
         name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> W,
+        test_fn: fn(W, StepContext) -> W,
     ) -> &mut Self {
         self.steps.insert_basic(ty, name, test_fn.into());
         self
@@ -63,7 +61,7 @@ impl<W: World> Steps<W> {
         &mut self,
         ty: StepType,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+        test_fn: fn(W, Vec<String>, StepContext) -> W,
     ) -> &mut Self {
         let regex = regex::Regex::new(name)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
@@ -74,7 +72,7 @@ impl<W: World> Steps<W> {
     pub fn given_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_async(StepType::Given, name, test_fn.into())
     }
@@ -82,7 +80,7 @@ impl<W: World> Steps<W> {
     pub fn when_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_async(StepType::When, name, test_fn.into())
     }
@@ -90,39 +88,27 @@ impl<W: World> Steps<W> {
     pub fn then_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_async(StepType::Then, name, test_fn.into())
     }
 
-    pub fn given(
-        &mut self,
-        name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> W,
-    ) -> &mut Self {
+    pub fn given(&mut self, name: &'static str, test_fn: fn(W, StepContext) -> W) -> &mut Self {
         self.insert_sync(StepType::Given, name, test_fn)
     }
 
-    pub fn when(
-        &mut self,
-        name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> W,
-    ) -> &mut Self {
+    pub fn when(&mut self, name: &'static str, test_fn: fn(W, StepContext) -> W) -> &mut Self {
         self.insert_sync(StepType::When, name, test_fn)
     }
 
-    pub fn then(
-        &mut self,
-        name: &'static str,
-        test_fn: fn(W, Rc<gherkin::Step>) -> W,
-    ) -> &mut Self {
+    pub fn then(&mut self, name: &'static str, test_fn: fn(W, StepContext) -> W) -> &mut Self {
         self.insert_sync(StepType::Then, name, test_fn)
     }
 
     pub fn given_regex_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, Vec<String>, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_regex_async(StepType::Given, name, test_fn.into())
     }
@@ -130,7 +116,7 @@ impl<W: World> Steps<W> {
     pub fn when_regex_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, Vec<String>, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_regex_async(StepType::When, name, test_fn.into())
     }
@@ -138,7 +124,7 @@ impl<W: World> Steps<W> {
     pub fn then_regex_async(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+        test_fn: fn(W, Vec<String>, StepContext) -> TestFuture<W>,
     ) -> &mut Self {
         self.insert_regex_async(StepType::Then, name, test_fn.into())
     }
@@ -146,7 +132,7 @@ impl<W: World> Steps<W> {
     pub fn given_regex(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+        test_fn: fn(W, Vec<String>, StepContext) -> W,
     ) -> &mut Self {
         self.insert_regex_sync(StepType::Given, name, test_fn)
     }
@@ -154,7 +140,7 @@ impl<W: World> Steps<W> {
     pub fn when_regex(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+        test_fn: fn(W, Vec<String>, StepContext) -> W,
     ) -> &mut Self {
         self.insert_regex_sync(StepType::When, name, test_fn)
     }
@@ -162,7 +148,7 @@ impl<W: World> Steps<W> {
     pub fn then_regex(
         &mut self,
         name: &'static str,
-        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
+        test_fn: fn(W, Vec<String>, StepContext) -> W,
     ) -> &mut Self {
         self.insert_regex_sync(StepType::Then, name, test_fn)
     }

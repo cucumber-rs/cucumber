@@ -6,7 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{path::Path, rc::Rc};
+use std::{
+    any::{Any, TypeId},
+    collections::HashMap,
+    path::Path,
+    rc::Rc,
+};
 use std::{pin::Pin, time::Duration};
 
 use futures::{Future, StreamExt};
@@ -24,6 +29,8 @@ pub type LifecycleFn = fn(
 ) -> LifecycleFuture;
 
 pub struct Cucumber<W: World> {
+    context: Context,
+
     steps: Steps<W>,
     features: Vec<gherkin::Feature>,
     event_handler: Box<dyn EventHandler>,
@@ -50,9 +57,58 @@ pub struct Cucumber<W: World> {
     after: Vec<(Criteria, LifecycleFn)>,
 }
 
+pub struct StepContext {
+    context: Rc<Context>,
+    pub step: Rc<gherkin::Step>,
+    pub matches: Vec<String>,
+}
+
+impl StepContext {
+    #[inline]
+    pub(crate) fn new(context: Rc<Context>, step: Rc<gherkin::Step>, matches: Vec<String>) -> Self {
+        Self {
+            context,
+            step,
+            matches,
+        }
+    }
+
+    #[inline]
+    pub fn get<T: Any>(&self) -> Option<&T> {
+        self.context.get()
+    }
+}
+
+#[derive(Default)]
+pub struct Context {
+    data: HashMap<TypeId, Box<dyn Any>>,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn get<T: Any>(&self) -> Option<&T> {
+        self.data
+            .get(&TypeId::of::<T>())
+            .and_then(|x| x.downcast_ref::<T>())
+    }
+
+    pub fn insert<T: Any>(&mut self, value: T) {
+        self.data.insert(TypeId::of::<T>(), Box::new(value));
+    }
+
+    pub fn add<T: Any>(mut self, value: T) -> Self {
+        self.insert(value);
+        self
+    }
+}
+
 impl<W: World> Default for Cucumber<W> {
     fn default() -> Self {
         Cucumber {
+            context: Default::default(),
             steps: Default::default(),
             features: Default::default(),
             event_handler: Box::new(crate::output::BasicOutput::new(false)),
@@ -79,6 +135,7 @@ impl<W: World> Cucumber<W> {
     /// Construct a `Cucumber` instance with a custom `EventHandler`.
     pub fn with_handler<O: EventHandler>(event_handler: O) -> Self {
         Cucumber {
+            context: Default::default(),
             steps: Default::default(),
             features: Default::default(),
             event_handler: Box::new(event_handler),
@@ -238,11 +295,17 @@ impl<W: World> Cucumber<W> {
         self
     }
 
+    pub fn context(mut self, context: Context) -> Self {
+        self.context = context;
+        self
+    }
+
     /// Run and report number of errors if any
     pub async fn run(mut self) -> crate::runner::RunResult {
         let runner = crate::runner::Runner::new(
+            Rc::new(self.context),
             self.steps.steps,
-            std::rc::Rc::new(self.features),
+            Rc::new(self.features),
             self.step_timeout,
             self.enable_capture,
             self.scenario_filter,
