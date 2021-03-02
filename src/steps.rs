@@ -9,12 +9,12 @@
 use std::rc::Rc;
 
 use cute_custom_default::CustomDefault;
+use futures::TryFutureExt;
+use gherkin::StepType;
 
 use crate::collection::StepsCollection;
 use crate::runner::{BasicStepFn, RegexStepFn};
 use crate::{TestError, World};
-use futures::TryFutureExt;
-use gherkin::StepType;
 
 #[derive(CustomDefault)]
 pub struct Steps<W: World> {

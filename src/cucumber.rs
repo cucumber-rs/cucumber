@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,14 +6,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use futures::StreamExt;
+use std::{path::Path, rc::Rc};
+use std::{pin::Pin, time::Duration};
+
+use futures::{Future, StreamExt};
 use gherkin::ParseFileError;
 use regex::Regex;
 
-use crate::steps::Steps;
+use crate::{criteria::Criteria, steps::Steps};
 use crate::{EventHandler, World};
-use std::path::Path;
-use std::time::Duration;
+
+pub(crate) type LifecycleFuture = Pin<Box<dyn Future<Output = ()>>>;
+pub type LifecycleFn = fn(
+    Rc<gherkin::Feature>,
+    Option<Rc<gherkin::Rule>>,
+    Option<Rc<gherkin::Scenario>>,
+) -> LifecycleFuture;
 
 pub struct Cucumber<W: World> {
     steps: Steps<W>,
@@ -34,7 +42,12 @@ pub struct Cucumber<W: World> {
     scenario_filter: Option<Regex>,
 
     language: Option<String>,
+
     debug: bool,
+
+    before: Vec<(Criteria, LifecycleFn)>,
+
+    after: Vec<(Criteria, LifecycleFn)>,
 }
 
 impl<W: World> Default for Cucumber<W> {
@@ -48,20 +61,22 @@ impl<W: World> Default for Cucumber<W> {
             debug: false,
             scenario_filter: None,
             language: None,
+            before: vec![],
+            after: vec![],
         }
     }
 }
 
 impl<W: World> Cucumber<W> {
     /// Construct a default `Cucumber` instance.
-    /// Comes with the default EventHandler implementation
-    /// responsible for printing test execution progress.
+    ///
+    /// Comes with the default `EventHandler` implementation responsible for
+    /// printing test execution progress.
     pub fn new() -> Cucumber<W> {
         Default::default()
     }
 
-    /// Construct a `Cucumber` instance with a custom
-    /// `EventHandler`.
+    /// Construct a `Cucumber` instance with a custom `EventHandler`.
     pub fn with_handler<O: EventHandler>(event_handler: O) -> Self {
         Cucumber {
             steps: Default::default(),
@@ -72,10 +87,13 @@ impl<W: World> Cucumber<W> {
             debug: false,
             scenario_filter: None,
             language: None,
+            before: vec![],
+            after: vec![],
         }
     }
 
     /// Add some steps to the Cucumber instance.
+    ///
     /// Does *not* replace any previously added steps.
     pub fn steps(mut self, steps: Steps<W>) -> Self {
         self.steps.append(steps);
@@ -90,10 +108,29 @@ impl<W: World> Cucumber<W> {
         let features = features
             .into_iter()
             .map(|path| match path.as_ref().canonicalize() {
-                Ok(p) => globwalk::GlobWalkerBuilder::new(p, "*.feature")
-                    .case_insensitive(true)
-                    .build()
-                    .expect("feature path is invalid"),
+                Ok(p) if p.ends_with(".feature") => {
+                    let env = match self.language.as_ref() {
+                        Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
+                        None => Default::default(),
+                    };
+                    vec![gherkin::Feature::parse_path(&p, env)]
+                }
+                Ok(p) => {
+                    let walker = globwalk::GlobWalkerBuilder::new(p, "*.feature")
+                        .case_insensitive(true)
+                        .build()
+                        .expect("feature path is invalid");
+                    walker
+                        .filter_map(Result::ok)
+                        .map(|entry| {
+                            let env = match self.language.as_ref() {
+                                Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
+                                None => Default::default(),
+                            };
+                            gherkin::Feature::parse_path(entry.path(), env)
+                        })
+                        .collect::<Vec<_>>()
+                }
                 Err(e) => {
                     eprintln!("{}", e);
                     eprintln!("There was an error parsing {:?}; aborting.", path.as_ref());
@@ -101,14 +138,6 @@ impl<W: World> Cucumber<W> {
                 }
             })
             .flatten()
-            .filter_map(Result::ok)
-            .map(|entry| {
-                let env = match self.language.as_ref() {
-                    Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
-                    None => Default::default(),
-                };
-                gherkin::Feature::parse_path(entry.path(), env)
-            })
             .collect::<Result<Vec<_>, _>>();
 
         let mut features = features.unwrap_or_else(|e| match e {
@@ -178,6 +207,7 @@ impl<W: World> Cucumber<W> {
         s
     }
 
+    /// Set the default language to assume for each .feature file.
     pub fn language(mut self, language: &str) -> Self {
         if gherkin::is_language_supported(language) {
             self.language = Some(language.to_string());
@@ -191,6 +221,17 @@ impl<W: World> Cucumber<W> {
         self
     }
 
+    pub fn before(mut self, criteria: Criteria, handler: LifecycleFn) -> Self {
+        self.before.push((criteria, handler));
+        self
+    }
+
+    pub fn after(mut self, criteria: Criteria, handler: LifecycleFn) -> Self {
+        self.after.push((criteria, handler));
+        self
+    }
+
+    /// Enable printing stdout and stderr for every step, regardless of error state.
     pub fn debug(mut self, value: bool) -> Self {
         self.event_handler = Box::new(crate::output::BasicOutput::new(value));
         self.debug = value;
@@ -205,6 +246,8 @@ impl<W: World> Cucumber<W> {
             self.step_timeout,
             self.enable_capture,
             self.scenario_filter,
+            self.before,
+            self.after,
         );
         let mut stream = runner.run();
 

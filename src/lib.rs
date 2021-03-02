@@ -20,6 +20,7 @@ mod macros;
 
 mod cli;
 mod collection;
+pub mod criteria;
 mod cucumber;
 pub mod event;
 mod examples;

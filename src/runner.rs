@@ -16,8 +16,8 @@ use async_stream::stream;
 use futures::{Future, Stream, StreamExt};
 use regex::Regex;
 
-use crate::collection::StepsCollection;
-use crate::event::*;
+use crate::{collection::StepsCollection, criteria::Criteria};
+use crate::{cucumber::LifecycleFn, event::*};
 use crate::{TestError, World, TEST_SKIPPED};
 
 use super::ExampleValues;
@@ -214,6 +214,8 @@ pub(crate) struct Runner<W: World> {
     step_timeout: Option<Duration>,
     enable_capture: bool,
     scenario_filter: Option<Regex>,
+    before: Vec<(Criteria, LifecycleFn)>,
+    after: Vec<(Criteria, LifecycleFn)>,
 }
 
 impl<W: World> Runner<W> {
@@ -224,6 +226,8 @@ impl<W: World> Runner<W> {
         step_timeout: Option<Duration>,
         enable_capture: bool,
         scenario_filter: Option<Regex>,
+        before: Vec<(Criteria, LifecycleFn)>,
+        after: Vec<(Criteria, LifecycleFn)>,
     ) -> Rc<Runner<W>> {
         Rc::new(Runner {
             functions,
@@ -231,6 +235,8 @@ impl<W: World> Runner<W> {
             step_timeout,
             enable_capture,
             scenario_filter,
+            before,
+            after,
         })
     }
 
@@ -362,6 +368,16 @@ impl<W: World> Runner<W> {
         Box::pin(stream! {
             yield FeatureEvent::Starting;
 
+            for (criteria, handler) in self.before.iter() {
+                if !criteria.context().is_feature() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, None, None) {
+                    (handler)(Rc::clone(&feature), None, None).await;
+                }
+            }
+
             for scenario in feature.scenarios.iter() {
                 // If regex filter fails, skip the scenario
                 if let Some(ref regex) = self.scenario_filter {
@@ -375,11 +391,10 @@ impl<W: World> Runner<W> {
                     let this = Rc::clone(&self);
                     let scenario = Rc::new(scenario.clone());
 
-                    let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature), example_values);
+                    let mut stream = this.run_scenario(Rc::clone(&scenario), None, Rc::clone(&feature), example_values);
 
                     while let Some(event) = stream.next().await {
                         yield FeatureEvent::Scenario(Rc::clone(&scenario), event);
-
                     }
                 }
             }
@@ -395,6 +410,16 @@ impl<W: World> Runner<W> {
                 }
             }
 
+            for (criteria, handler) in self.after.iter() {
+                if !criteria.context().is_feature() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, None, None) {
+                    (handler)(Rc::clone(&feature), None, None).await;
+                }
+            }
+
             yield FeatureEvent::Finished;
         })
     }
@@ -407,13 +432,23 @@ impl<W: World> Runner<W> {
         Box::pin(stream! {
             yield RuleEvent::Starting;
 
+            for (criteria, handler) in self.before.iter() {
+                if !criteria.context().is_rule() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, Some(&*rule), None) {
+                    (handler)(Rc::clone(&feature), Some(Rc::clone(&rule)), None).await;
+                }
+            }
+
             let mut return_event = None;
 
             for scenario in rule.scenarios.iter() {
                 let this = Rc::clone(&self);
                 let scenario = Rc::new(scenario.clone());
 
-                let mut stream = this.run_scenario(Rc::clone(&scenario), Rc::clone(&feature), ExampleValues::empty());
+                let mut stream = this.run_scenario(Rc::clone(&scenario), Some(Rc::clone(&rule)), Rc::clone(&feature), ExampleValues::empty());
 
                 while let Some(event) = stream.next().await {
                     match event {
@@ -427,6 +462,16 @@ impl<W: World> Runner<W> {
                 }
             }
 
+            for (criteria, handler) in self.after.iter() {
+                if !criteria.context().is_rule() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, Some(&*rule), None) {
+                    (handler)(Rc::clone(&feature), Some(Rc::clone(&rule)), None).await;
+                }
+            }
+
             yield return_event.unwrap_or(RuleEvent::Skipped);
         })
     }
@@ -434,12 +479,26 @@ impl<W: World> Runner<W> {
     fn run_scenario(
         self: Rc<Self>,
         scenario: Rc<gherkin::Scenario>,
+        rule: Option<Rc<gherkin::Rule>>,
         feature: Rc<gherkin::Feature>,
         example: super::ExampleValues,
     ) -> ScenarioStream {
         Box::pin(stream! {
             yield ScenarioEvent::Starting(example.clone());
+
+            for (criteria, handler) in self.before.iter() {
+                if !criteria.context().is_scenario() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, rule.as_ref().map(|x| &**x), Some(&*scenario)) {
+                    (handler)(Rc::clone(&feature), rule.clone(), Some(Rc::clone(&scenario))).await;
+                }
+            }
+
             let mut world = Some(W::new().await.unwrap());
+
+            let mut is_success = true;
 
             if let Some(steps) = feature.background.as_ref().map(|x| &x.steps) {
                 for step in steps.iter() {
@@ -459,70 +518,92 @@ impl<W: World> Runner<W> {
                         TestEvent::Failure(StepFailureKind::Panic(output, e)) => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(StepFailureKind::Panic(output, e)));
                             yield ScenarioEvent::Failed(FailureKind::Panic);
-                            return;
+                            is_success = false;
+                            break;
                         },
                         TestEvent::Failure(StepFailureKind::TimedOut) => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Failed(StepFailureKind::TimedOut));
                             yield ScenarioEvent::Failed(FailureKind::TimedOut);
-                            return;
+                            is_success = false;
+                            break;
                         }
                         TestEvent::Skipped => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Skipped);
                             yield ScenarioEvent::Skipped;
-                            return;
+                            is_success = false;
+                            break;
                         }
                         TestEvent::Unimplemented => {
                             yield ScenarioEvent::Background(Rc::clone(&step), StepEvent::Unimplemented);
                             yield ScenarioEvent::Skipped;
-                            return;
+                            is_success = false;
+                            break;
                         }
                     }
                 }
             }
 
-            for step in scenario.steps.iter() {
-                let this = Rc::clone(&self);
+            if is_success {
+                for step in scenario.steps.iter() {
+                    let this = Rc::clone(&self);
 
-                let mut step = step.clone();
-                if !example.is_empty() {
-                    step.value = example.insert_values(&step.value);
-                }
-                let step = Rc::new(step);
-
-                yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Starting);
-
-                let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
-
-                match result {
-                    TestEvent::Success(w, output) => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Passed(output));
-                        // Pass world result for current step to next step.
-                        world = Some(w);
+                    let mut step = step.clone();
+                    if !example.is_empty() {
+                        step.value = example.insert_values(&step.value);
                     }
-                    TestEvent::Failure(StepFailureKind::Panic(output, e)) => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::Panic(output, e)));
-                        yield ScenarioEvent::Failed(FailureKind::Panic);
-                        return;
-                    },
-                    TestEvent::Failure(StepFailureKind::TimedOut) => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::TimedOut));
-                        yield ScenarioEvent::Failed(FailureKind::TimedOut);
-                        return;
-                    }
-                    TestEvent::Skipped => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Skipped);
-                        yield ScenarioEvent::Skipped;
-                        return;
-                    }
-                    TestEvent::Unimplemented => {
-                        yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Unimplemented);
-                        yield ScenarioEvent::Skipped;
-                        return;
+                    let step = Rc::new(step);
+
+                    yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Starting);
+
+                    let result = this.run_step(Rc::clone(&step), world.take().unwrap()).await;
+
+                    match result {
+                        TestEvent::Success(w, output) => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Passed(output));
+                            // Pass world result for current step to next step.
+                            world = Some(w);
+                        }
+                        TestEvent::Failure(StepFailureKind::Panic(output, e)) => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::Panic(output, e)));
+                            yield ScenarioEvent::Failed(FailureKind::Panic);
+                            is_success = false;
+                            break;
+                        },
+                        TestEvent::Failure(StepFailureKind::TimedOut) => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Failed(StepFailureKind::TimedOut));
+                            yield ScenarioEvent::Failed(FailureKind::TimedOut);
+                            is_success = false;
+                            break;
+                        }
+                        TestEvent::Skipped => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Skipped);
+                            yield ScenarioEvent::Skipped;
+                            is_success = false;
+                            break;
+                        }
+                        TestEvent::Unimplemented => {
+                            yield ScenarioEvent::Step(Rc::clone(&step), StepEvent::Unimplemented);
+                            yield ScenarioEvent::Skipped;
+                            is_success = false;
+                            break;
+                        }
                     }
                 }
             }
 
-            yield ScenarioEvent::Passed;
+            for (criteria, handler) in self.after.iter() {
+                if !criteria.context().is_scenario() {
+                    continue;
+                }
+
+                if criteria.eval(&*feature, rule.as_ref().map(|x| &**x), Some(&*scenario)) {
+                    (handler)(Rc::clone(&feature), rule.clone(), Some(Rc::clone(&scenario))).await;
+                }
+            }
+
+            if is_success {
+                yield ScenarioEvent::Passed;
+            }
         })
     }
 

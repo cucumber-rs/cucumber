@@ -1,6 +1,8 @@
 extern crate cucumber_rust as cucumber;
 
-use cucumber::{async_trait, World};
+use cucumber::{async_trait, criteria, World};
+use futures::FutureExt;
+use regex::Regex;
 use std::{cell::RefCell, convert::Infallible};
 
 pub struct MyWorld {
@@ -102,6 +104,19 @@ async fn main() {
     cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features/basic"])
         .steps(example_steps::steps())
+        .before(criteria::scenario(Regex::new(".*").unwrap()), |_, _, _| {
+            async move {
+                println!("S:AHHHH");
+                ()
+            }
+            .boxed()
+        })
+        .after(criteria::scenario(Regex::new(".*").unwrap()), |_, _, _| {
+            async move {
+                println!("E:AHHHH");
+            }
+            .boxed()
+        })
         .cli()
         .run_and_exit()
         .await
