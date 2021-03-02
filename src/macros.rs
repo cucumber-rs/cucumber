@@ -36,82 +36,82 @@ macro_rules! cprintln {
 macro_rules! t {
     // Async with block and mutable world
     (| mut $world:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|mut $world, $step| {
+        |mut $world, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async with block and mutable world with type
     (| mut $world:ident : $worldty:path, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|mut $world: $worldty, $step| {
+        |mut $world: $worldty, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async with block and immutable world
     (| $world:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|$world, $step| {
+        |$world, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async with block and immutable world with type
     (| $world:ident : $worldty:path, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|$world: $worldty, $step| {
+        |$world: $worldty, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async regex with block and mutable world
     (| mut $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|mut $world, $matches, $step| {
+        |mut $world, $matches, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async regex with block and immutable world
     (| $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|$world, $matches, $step| {
+        |$world, $matches, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async regex with block and mutable world with type
-    (| mut $world:ident : $worldty:path,, $matches:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|mut $world: $worldty, $matches, $step| {
+    (| mut $world:ident : $worldty:path, $matches:ident, $step:ident | $($input:tt)*) => {
+        |mut $world: $worldty, $matches, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
     // Async regex with block and immutable world with type
     (| $world:ident : $worldty:path, $matches:ident, $step:ident | $($input:tt)*) => {
-        std::rc::Rc::new(|$world: $worldty, $matches, $step| {
+        |$world: $worldty, $matches, $step| {
             use $crate::futures::future::FutureExt as _;
             std::panic::AssertUnwindSafe(async move { $($input)* })
                 .catch_unwind()
                 .map(|r| r.map_err($crate::TestError::PanicError))
                 .boxed_local()
-        })
+        }
     };
 }

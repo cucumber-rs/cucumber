@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -9,12 +9,11 @@
 use std::rc::Rc;
 
 use cute_custom_default::CustomDefault;
-use futures::TryFutureExt;
 use gherkin::StepType;
 
-use crate::collection::StepsCollection;
 use crate::runner::{BasicStepFn, RegexStepFn};
-use crate::{TestError, World};
+use crate::World;
+use crate::{collection::StepsCollection, runner::TestFuture};
 
 #[derive(CustomDefault)]
 pub struct Steps<W: World> {
@@ -34,7 +33,7 @@ impl<W: World> Steps<W> {
         name: &'static str,
         test_fn: BasicStepFn<W>,
     ) -> &mut Self {
-        self.steps.insert_basic(ty, name, test_fn);
+        self.steps.insert_basic(ty, name, test_fn.into());
         self
     }
 
@@ -44,16 +43,7 @@ impl<W: World> Steps<W> {
         name: &'static str,
         test_fn: fn(W, Rc<gherkin::Step>) -> W,
     ) -> &mut Self {
-        use futures::future::FutureExt as _;
-
-        let test_fn = std::rc::Rc::new(move |world: W, step| {
-            // let test_fn = Rc::clone(&test_fn);
-            std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
-                .catch_unwind()
-                .map_err(TestError::PanicError)
-                .boxed_local()
-        });
-        self.steps.insert_basic(ty, name, test_fn);
+        self.steps.insert_basic(ty, name, test_fn.into());
         self
     }
 
@@ -75,32 +65,34 @@ impl<W: World> Steps<W> {
         name: &'static str,
         test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> W,
     ) -> &mut Self {
-        use futures::future::FutureExt as _;
-
         let regex = regex::Regex::new(name)
             .unwrap_or_else(|_| panic!("`{}` is not a valid regular expression", name));
-
-        let test_fn = std::rc::Rc::new(move |world: W, matches, step| {
-            // let test_fn = Rc::clone(&test_fn);
-            std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, step) })
-                .catch_unwind()
-                .map_err(TestError::PanicError)
-                .boxed_local()
-        });
-        self.steps.insert_regex(ty, regex, test_fn);
+        self.steps.insert_regex(ty, regex, test_fn.into());
         self
     }
 
-    pub fn given_async(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
-        self.insert_async(StepType::Given, name, test_fn)
+    pub fn given_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_async(StepType::Given, name, test_fn.into())
     }
 
-    pub fn when_async(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
-        self.insert_async(StepType::When, name, test_fn)
+    pub fn when_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_async(StepType::When, name, test_fn.into())
     }
 
-    pub fn then_async(&mut self, name: &'static str, test_fn: BasicStepFn<W>) -> &mut Self {
-        self.insert_async(StepType::Then, name, test_fn)
+    pub fn then_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_async(StepType::Then, name, test_fn.into())
     }
 
     pub fn given(
@@ -127,16 +119,28 @@ impl<W: World> Steps<W> {
         self.insert_sync(StepType::Then, name, test_fn)
     }
 
-    pub fn given_regex_async(&mut self, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
-        self.insert_regex_async(StepType::Given, name, test_fn)
+    pub fn given_regex_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_regex_async(StepType::Given, name, test_fn.into())
     }
 
-    pub fn when_regex_async(&mut self, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
-        self.insert_regex_async(StepType::When, name, test_fn)
+    pub fn when_regex_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_regex_async(StepType::When, name, test_fn.into())
     }
 
-    pub fn then_regex_async(&mut self, name: &'static str, test_fn: RegexStepFn<W>) -> &mut Self {
-        self.insert_regex_async(StepType::Then, name, test_fn)
+    pub fn then_regex_async(
+        &mut self,
+        name: &'static str,
+        test_fn: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+    ) -> &mut Self {
+        self.insert_regex_async(StepType::Then, name, test_fn.into())
     }
 
     pub fn given_regex(

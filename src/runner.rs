@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -7,13 +7,13 @@
 // except according to those terms.
 
 use std::any::Any;
-use std::panic::{self, UnwindSafe};
+use std::panic;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::{Arc, TryLockError};
 
 use async_stream::stream;
-use futures::{Future, Stream, StreamExt};
+use futures::{Future, FutureExt, Stream, StreamExt, TryFutureExt};
 use regex::Regex;
 
 use crate::{collection::StepsCollection, criteria::Criteria};
@@ -25,13 +25,71 @@ use std::time::{Duration, Instant};
 
 pub(crate) type TestFuture<W> = Pin<Box<dyn Future<Output = Result<W, TestError>>>>;
 
-pub type BasicStepFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
-pub type RegexStepFn<W> =
-    Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
+impl<W> From<fn(W, Rc<gherkin::Step>) -> W> for TestFunction<W> {
+    fn from(f: fn(W, Rc<gherkin::Step>) -> W) -> Self {
+        TestFunction::BasicSync(f)
+    }
+}
+
+impl<W> From<fn(W, Rc<gherkin::Step>) -> TestFuture<W>> for TestFunction<W> {
+    fn from(f: fn(W, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+        TestFunction::BasicAsync(f)
+    }
+}
+
+impl<W> From<fn(W, Rc<gherkin::Step>) -> W> for BasicStepFn<W> {
+    fn from(f: fn(W, Rc<gherkin::Step>) -> W) -> Self {
+        BasicStepFn::Sync(f)
+    }
+}
+
+impl<W> From<fn(W, Rc<gherkin::Step>) -> TestFuture<W>> for BasicStepFn<W> {
+    fn from(f: fn(W, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+        BasicStepFn::Async(f)
+    }
+}
+
+impl<W> From<fn(W, Vec<String>, Rc<gherkin::Step>) -> W> for RegexStepFn<W> {
+    fn from(f: fn(W, Vec<String>, Rc<gherkin::Step>) -> W) -> Self {
+        RegexStepFn::Sync(f)
+    }
+}
+
+impl<W> From<fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>> for RegexStepFn<W> {
+    fn from(f: fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>) -> Self {
+        RegexStepFn::Async(f)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum BasicStepFn<W> {
+    Sync(fn(W, Rc<gherkin::Step>) -> W),
+    Async(fn(W, Rc<gherkin::Step>) -> TestFuture<W>),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum RegexStepFn<W> {
+    Sync(fn(W, Vec<String>, Rc<gherkin::Step>) -> W),
+    Async(fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>),
+}
+
+impl<W> From<&BasicStepFn<W>> for TestFunction<W> {
+    fn from(step: &BasicStepFn<W>) -> Self {
+        match step {
+            BasicStepFn::Sync(x) => TestFunction::BasicSync(*x),
+            BasicStepFn::Async(x) => TestFunction::BasicAsync(*x),
+        }
+    }
+}
 
 pub enum TestFunction<W> {
-    Basic(BasicStepFn<W>),
-    Regex(RegexStepFn<W>, Vec<String>),
+    BasicSync(fn(W, Rc<gherkin::Step>) -> W),
+    BasicAsync(fn(W, Rc<gherkin::Step>) -> TestFuture<W>),
+    RegexSync(fn(W, Vec<String>, Rc<gherkin::Step>) -> W, Vec<String>),
+    RegexAsync(
+        fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>,
+        Vec<String>,
+    ),
 }
 
 fn coerce_error(err: &(dyn Any + Send + 'static)) -> String {
@@ -296,8 +354,20 @@ impl<W: World> Runner<W> {
         }));
 
         let step_future = match func {
-            TestFunction::Basic(f) => (f)(world, step),
-            TestFunction::Regex(f, r) => (f)(world, r, step),
+            TestFunction::BasicAsync(f) => (f)(world, step),
+            TestFunction::RegexAsync(f, r) => (f)(world, r, step),
+            TestFunction::BasicSync(test_fn) => {
+                std::panic::AssertUnwindSafe(async move { (test_fn)(world, step) })
+                    .catch_unwind()
+                    .map_err(TestError::PanicError)
+                    .boxed_local()
+            }
+            TestFunction::RegexSync(test_fn, matches) => {
+                std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, step) })
+                    .catch_unwind()
+                    .map_err(TestError::PanicError)
+                    .boxed_local()
+            }
         };
         let result = if let Some(step_timeout) = self.step_timeout {
             let timeout = Box::pin(async {

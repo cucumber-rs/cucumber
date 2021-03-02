@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -7,7 +7,6 @@
 // except according to those terms.
 
 use std::collections::BTreeMap;
-use std::rc::Rc;
 
 use cute_custom_default::CustomDefault;
 use regex::Regex;
@@ -74,7 +73,7 @@ impl<W: World> StepsCollection<W> {
         };
 
         if let Some(function) = test_fn {
-            return Some(TestFunction::Basic(Rc::clone(function)));
+            return Some(TestFunction::from(function));
         }
 
         #[allow(clippy::mutable_key_type)]
@@ -101,7 +100,10 @@ impl<W: World> StepsCollection<W> {
                 })
                 .collect();
 
-            return Some(TestFunction::Regex(Rc::clone(function), matches));
+            return Some(match *function {
+                RegexStepFn::Sync(x) => TestFunction::RegexSync(x, matches),
+                RegexStepFn::Async(x) => TestFunction::RegexAsync(x, matches),
+            });
         }
 
         None

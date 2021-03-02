@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -8,7 +8,7 @@
 
 //! Helper type-level glue for [`cucumber_rust_codegen`] crate.
 
-use std::{panic::UnwindSafe, rc::Rc};
+use std::rc::Rc;
 
 pub use inventory::{self, collect, submit};
 
@@ -50,10 +50,10 @@ where
                 let _ = builder.given_regex(e.inner().0, e.inner().1);
             }
             for e in async_ {
-                let _ = builder.given_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.given_async(e.inner().0, e.inner().1);
             }
             for e in async_regex {
-                let _ = builder.given_regex_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.given_regex_async(e.inner().0, e.inner().1);
             }
 
             let (simple, regex, async_, async_regex) = Self::cucumber_when();
@@ -64,10 +64,10 @@ where
                 let _ = builder.when_regex(e.inner().0, e.inner().1);
             }
             for e in async_ {
-                let _ = builder.when_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.when_async(e.inner().0, e.inner().1);
             }
             for e in async_regex {
-                let _ = builder.when_regex_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.when_regex_async(e.inner().0, e.inner().1);
             }
 
             let (simple, regex, async_, async_regex) = Self::cucumber_then();
@@ -78,10 +78,10 @@ where
                 let _ = builder.then_regex(e.inner().0, e.inner().1);
             }
             for e in async_ {
-                let _ = builder.then_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.then_async(e.inner().0, e.inner().1);
             }
             for e in async_regex {
-                let _ = builder.then_regex_async(e.inner().0, e.inner().1.clone());
+                let _ = builder.then_regex_async(e.inner().0, e.inner().1);
             }
 
             builder
@@ -242,7 +242,6 @@ pub type CucumberFn<W> = fn(W, Rc<gherkin::Step>) -> W;
 
 pub type CucumberRegexFn<W> = fn(W, Vec<String>, Rc<gherkin::Step>) -> W;
 
-pub type CucumberAsyncFn<W> = Rc<dyn Fn(W, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
+pub type CucumberAsyncFn<W> = fn(W, Rc<gherkin::Step>) -> TestFuture<W>;
 
-pub type CucumberAsyncRegexFn<W> =
-    Rc<dyn Fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W> + UnwindSafe>;
+pub type CucumberAsyncRegexFn<W> = fn(W, Vec<String>, Rc<gherkin::Step>) -> TestFuture<W>;

@@ -42,7 +42,7 @@ mod example_steps {
         builder
             .given_async(
                 "a thing",
-                t!(|mut world, _step| {
+                t!(|mut world: crate::MyWorld, _step| {
                     println!("This is on stdout");
                     eprintln!("This is on stderr");
                     world.foo = "elho".into();
