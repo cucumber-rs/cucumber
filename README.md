@@ -143,6 +143,8 @@ You can then run your Cucumber tests by running this command:
 cargo test --test cucumber
 ```
 
+<!--
+
 #### Auto-wiring via macros
 
 By enabling `macros` feature in `Cargo.toml`:
@@ -230,6 +232,7 @@ async fn main() {
     runner.run_and_exit().await;
 }
 ```
+-->
 
 ### Supporting crates
 
