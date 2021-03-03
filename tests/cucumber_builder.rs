@@ -109,14 +109,14 @@ async fn main() {
                 .add(42u32)
                 .add(SomeString("the newtype pattern helps here")),
         )
-        .before(criteria::scenario(Regex::new(".*").unwrap()), |_, _, _| {
+        .before(criteria::scenario(Regex::new(".*").unwrap()), |_| {
             async move {
                 println!("S:AHHHH");
                 ()
             }
             .boxed()
         })
-        .after(criteria::scenario(Regex::new(".*").unwrap()), |_, _, _| {
+        .after(criteria::scenario(Regex::new(".*").unwrap()), |_| {
             async move {
                 println!("E:AHHHH");
             }

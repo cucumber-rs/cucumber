@@ -22,11 +22,23 @@ use crate::{criteria::Criteria, steps::Steps};
 use crate::{EventHandler, World};
 
 pub(crate) type LifecycleFuture = Pin<Box<dyn Future<Output = ()>>>;
-pub type LifecycleFn = fn(
-    Rc<gherkin::Feature>,
-    Option<Rc<gherkin::Rule>>,
-    Option<Rc<gherkin::Scenario>>,
-) -> LifecycleFuture;
+
+#[derive(Clone)]
+pub struct LifecycleContext {
+    pub(crate) context: Rc<Context>,
+    pub feature: Rc<gherkin::Feature>,
+    pub rule: Option<Rc<gherkin::Rule>>,
+    pub scenario: Option<Rc<gherkin::Scenario>>,
+}
+
+impl LifecycleContext {
+    #[inline]
+    pub fn get<T: Any>(&self) -> Option<&T> {
+        self.context.get()
+    }
+}
+
+pub type LifecycleFn = fn(LifecycleContext) -> LifecycleFuture;
 
 pub struct Cucumber<W: World> {
     context: Context,

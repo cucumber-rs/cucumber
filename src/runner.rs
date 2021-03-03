@@ -19,7 +19,7 @@ use regex::Regex;
 use crate::{
     collection::StepsCollection,
     criteria::Criteria,
-    cucumber::{Context, StepContext},
+    cucumber::{Context, LifecycleContext, StepContext},
 };
 use crate::{cucumber::LifecycleFn, event::*};
 use crate::{TestError, World, TEST_SKIPPED};
@@ -429,13 +429,20 @@ impl<W: World> Runner<W> {
         Box::pin(stream! {
             yield FeatureEvent::Starting;
 
+            let context = LifecycleContext {
+                context: self.context.clone(),
+                feature: Rc::clone(&feature),
+                rule: None,
+                scenario: None,
+            };
+
             for (criteria, handler) in self.before.iter() {
                 if !criteria.context().is_feature() {
                     continue;
                 }
 
                 if criteria.eval(&*feature, None, None) {
-                    (handler)(Rc::clone(&feature), None, None).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
@@ -477,7 +484,7 @@ impl<W: World> Runner<W> {
                 }
 
                 if criteria.eval(&*feature, None, None) {
-                    (handler)(Rc::clone(&feature), None, None).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
@@ -493,13 +500,20 @@ impl<W: World> Runner<W> {
         Box::pin(stream! {
             yield RuleEvent::Starting;
 
+            let context = LifecycleContext {
+                context: self.context.clone(),
+                feature: Rc::clone(&feature),
+                rule: Some(Rc::clone(&rule)),
+                scenario: None,
+            };
+
             for (criteria, handler) in self.before.iter() {
                 if !criteria.context().is_rule() {
                     continue;
                 }
 
                 if criteria.eval(&*feature, Some(&*rule), None) {
-                    (handler)(Rc::clone(&feature), Some(Rc::clone(&rule)), None).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
@@ -529,7 +543,7 @@ impl<W: World> Runner<W> {
                 }
 
                 if criteria.eval(&*feature, Some(&*rule), None) {
-                    (handler)(Rc::clone(&feature), Some(Rc::clone(&rule)), None).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
@@ -547,13 +561,20 @@ impl<W: World> Runner<W> {
         Box::pin(stream! {
             yield ScenarioEvent::Starting(example.clone());
 
+            let context = LifecycleContext {
+                context: self.context.clone(),
+                feature: Rc::clone(&feature),
+                rule: rule.clone(),
+                scenario: Some(Rc::clone(&scenario)),
+            };
+
             for (criteria, handler) in self.before.iter() {
                 if !criteria.context().is_scenario() {
                     continue;
                 }
 
                 if criteria.eval(&*feature, rule.as_ref().map(|x| &**x), Some(&*scenario)) {
-                    (handler)(Rc::clone(&feature), rule.clone(), Some(Rc::clone(&scenario))).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
@@ -658,7 +679,7 @@ impl<W: World> Runner<W> {
                 }
 
                 if criteria.eval(&*feature, rule.as_ref().map(|x| &**x), Some(&*scenario)) {
-                    (handler)(Rc::clone(&feature), rule.clone(), Some(Rc::clone(&scenario))).await;
+                    (handler)(context.clone()).await;
                 }
             }
 
