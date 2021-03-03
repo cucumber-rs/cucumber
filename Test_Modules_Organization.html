@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Cucumber</title>
+        <title>Test Modules Organization (WIP) - Cucumber</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Getting_Started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="Running_Against_A_Process.html"><strong aria-hidden="true">3.</strong> Running Against a Process (WIP)</a></li><li class="chapter-item expanded "><a href="Test_Modules_Organization.html"><strong aria-hidden="true">4.</strong> Test Modules Organization (WIP)</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Getting_Started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="Running_Against_A_Process.html"><strong aria-hidden="true">3.</strong> Running Against a Process (WIP)</a></li><li class="chapter-item expanded "><a href="Test_Modules_Organization.html" class="active"><strong aria-hidden="true">4.</strong> Test Modules Organization (WIP)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,39 +163,18 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="cucumber"><a class="header" href="#cucumber">Cucumber</a></h1>
-<p><a href="https://cucumber.io/">Cucumber</a> is a specification for running tests in a behavioral driven development style workflow (<a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a>). It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the langauge <a href="https://cucumber.io/docs/gherkin/reference/">Gherkin</a>. A typical feature could look something like this:</p>
-<pre><code>Feature: User login
-
-  Scenario: User tries to log in with an incorrect password
-    Given a user portal where one can login
-    When a user types in the correct username but incorrect password
-    Then the user will see a messagebox with an alert that their password is wrong
-</code></pre>
-<p>These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (&quot;Given&quot;, &quot;When&quot;, &quot;Then&quot;). Gherkin offers support for languages other than English, as well.</p>
-<p>Cucumber implementations then simply hook into these keywords and execute the logic that corresponds to the keywords. <code>cucumber-rust</code> is one such implementation and is the subject of this book.</p>
-<pre><code>.given(&quot;a user portal where one can login&quot;,
-    /* initial setup of the feature being tested */
-)
-.when(&quot;a user types in the correct username but incorrect password&quot;,
-    /* performing the relevant actions against the feature */
-)
-.then(&quot;the user will see a messagebox with an alert that their password is wrong&quot;, 
-    /* assertions and validation that the feature is working as intended */
-)
-</code></pre>
-<p>Since the goal is the testing of externally identifiable behavior of some feature, it would be a misnomer to use Cucumber to test specific private aspects or isolated modules. Cucumber tests are more likely to take the form of integration or functional testing.</p>
+                        <p>WIP</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-
-                        
-                            <a rel="next" href="Getting_Started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
+                            <a rel="prev" href="Running_Against_A_Process.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
                             </a>
+                        
+
                         
 
                         <div style="clear: both"></div>
@@ -205,11 +184,11 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-
-                
-                    <a rel="next" href="Getting_Started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
+                    <a rel="prev" href="Running_Against_A_Process.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
                     </a>
+                
+
                 
             </nav>
 

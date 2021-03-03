@@ -3,7 +3,9 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Cucumber</title>
+        <title>Cucumber</title>
+        
+        <meta name="robots" content="noindex" />
         
         
 
@@ -185,6 +187,205 @@
 )
 </code></pre>
 <p>Since the goal is the testing of externally identifiable behavior of some feature, it would be a misnomer to use Cucumber to test specific private aspects or isolated modules. Cucumber tests are more likely to take the form of integration or functional testing.</p>
+<h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<p>Adding Cucumber to your project requires some ground work. Cucumber tests are ran along with other tests via <code>cargo test</code>, but rely on a <code>.feature</code> file corresponding to the given test, as well as a set of steps described in code that corresponds to the steps in the feature file.</p>
+<p>To start, create a directory called <code>tests/</code> in the root of your project and add a file to represent your test target; in this walkthrough we use <code>cucumber.rs</code>.</p>
+<p>Add this to your Cargo.toml:</p>
+<pre><code>[dependencies]
+async-trait = &quot;0.1.42&quot; # This is currently required to properly initialize the world in cucumber-rust
+
+[[test]]
+name = &quot;cucumber&quot; # This should be the same as the filename of your test target
+harness = false # Allows Cucumber to print output instead of libtest
+
+[dev-dependencies]
+cucumber = { package = &quot;cucumber_rust&quot;, version = &quot;^0.7.0&quot; }
+</code></pre>
+<p>At this point, while it won't do anything, you should be able to successfully run <code>cargo test --test cucumber</code> without errors as long as your <code>cucumber.rs</code> has at least a <code>main()</code> function.</p>
+<p>Create a directory called <code>features/</code> in the root of your project. Put a feature file there, such as <code>animal.feature</code>. This should contain the Gherkin for a scenario that you want to test. Here's a very simple example:</p>
+<pre><code>Feature: Animal feature
+
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given A hungry cat
+    When I feed the cat
+    Then The cat is not hungry
+
+</code></pre>
+<p>Here is how we actually relate the text in this feature file to the tests themselves.</p>
+<p>Every test scenario needs a <code>World</code> object. Often <code>World</code> holds state that is changing as Cucumber goes through each step in a scenario. The basic requirement for a <code>World</code> object is a <code>new()</code> function.</p>
+<p>To enable testing of our Animal feature, add this code to <code>cucumber.rs</code>:</p>
+<pre><code>use async_trait::async_trait;
+use std::convert::Infallible;
+
+// These `Cat` definitions would normally be inside your project's code, but
+// we create them here to contain the test to just `cucumber.rs`
+struct Cat {
+    pub hungry: bool,
+}
+
+impl Cat {
+    fn feed(&amp;mut self) {
+        self.hungry = false;
+    }
+}
+
+/// A World is your shared, likely mutable state
+pub struct AnimalWorld {
+    cat: Cat,
+}
+
+/// `cucumber::World` needs to be implemented so this World is accepted in `Steps`
+#[async_trait(?Send)]
+impl cucumber::World for AnimalWorld {
+    // We require some error type
+    type Error = Infallible;
+
+    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
+        Ok(Self {
+            cat: Cat { hungry: false },
+        })
+    }
+}
+
+// These are the actual test steps that will be matched against all your features
+mod addition_steps {
+    use cucumber::Steps;
+
+    pub fn steps() -&gt; Steps&lt;crate::AnimalWorld&gt; {
+        let mut builder: Steps&lt;crate::AnimalWorld&gt; = Steps::new();
+
+        builder
+            .given(&quot;A hungry cat&quot;, |mut world, _step| {
+                world.cat.hungry = true;
+                world
+            });
+
+        builder
+    }
+}
+
+// This runs before everything else, so you can setup things here
+fn main() {
+    let runner = cucumber::Cucumber::&lt;AnimalWorld&gt;::new()
+        .features(&amp;[&quot;./features&quot;])
+        .steps(addition_steps::steps());
+
+    // You may choose any executor you like (Tokio, async-std, etc)
+    // You may even have an async main, it doesn't matter. The point is that
+    // Cucumber is composable. :)
+    futures::executor::block_on(runner.run());
+}
+</code></pre>
+<p>If you run this, you should see an output like:</p>
+<p><img src="cucumber_start.png" alt="Cucumber run with just the Given step" title="Given Step" /></p>
+<p>You will see a checkmark next to &quot;Given A hungry cat&quot;, which means that test step has been matched and executed.</p>
+<p>But then for the next step: &quot;I feed the cat&quot;, there is a &quot;⚡ Not yet implemented (skipped)&quot; below it. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked at at all.</p>
+<p>The steps are created as such:</p>
+<pre><code>builder
+    .given(&quot;A hungry cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    });
+</code></pre>
+<p>There are 3 types of steps:</p>
+<ul>
+<li>given, which is for defining the starting conditions and often initializing the data in the <code>World</code></li>
+<li>when, for events or actions that are may trigger certain changes in the <code>World</code></li>
+<li>then, to validate that the <code>World</code> has changed the way we would expect</li>
+</ul>
+<p>In order to hook up code to these steps, we use the functions provided by <code>cucumber-rust</code>: https://docs.rs/cucumber_rust/0.7.3/cucumber_rust/struct.Steps.html</p>
+<p>These various Steps functions are executed to transform the world and then return it. As such, the world must always be passed in. The step itself is also made available.</p>
+<p>The steps functions take a string, which is the name of the given <code>Step</code> (i.e., the literal string, such as &quot;A hungry cat&quot;), and then a function closure that takes a <code>World</code> and then the <code>Step</code> itself. </p>
+<p>We can add a <code>when</code> step after our <code>given</code> step:</p>
+<pre><code>builder
+    .given(&quot;A hungry cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    })
+    .when(&quot;I feed the cat&quot;, |mut world, _step| {
+        world
+    });
+</code></pre>
+<p>If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:</p>
+<p><img src="cucumber_when.png" alt="Cucumber run with a Given and When step" title="Given and When Step" /></p>
+<p>But we should actually do something in our When step so we can test our Animal feature. Or When step mentions feeding the cat, so let's change the <code>when()</code>:</p>
+<pre><code>    .when(&quot;I feed the cat&quot;, |mut world, _step| {
+        world.cat.feed();
+        world
+    });
+</code></pre>
+<p>Finally, how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then()</code> step follows to assert this, as our feature says:</p>
+<pre><code>builder
+    .given(&quot;A hungry cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    })
+    .when(&quot;I feed the cat&quot;, |mut world, _step| {
+        world.cat.feed();
+        world
+    })
+    .then(&quot;The cat is not hungry&quot;, |world, _step| {
+        assert_eq!(world.cat.hungry, false);
+        world
+    });
+</code></pre>
+<p>If you run the test now, you'll see that all steps are accounted for and the test succeeds:</p>
+<p><img src="cucumber_then.png" alt="Full Cucumber run" title="Complete scenario" /></p>
+<p>If you want to be assured that your validation is indeed happening, you can change the assert for the cat being hungry from <code>true</code> to <code>false</code> temporarily:</p>
+<pre><code>builder
+    .given(&quot;A hungry cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    })
+    .when(&quot;I feed the cat&quot;, |mut world, _step| {
+        world.cat.feed();
+        world
+    })
+    .then(&quot;The cat is not hungry&quot;, |world, _step| {
+        assert_eq!(world.cat.hungry, true);
+        world
+    });
+</code></pre>
+<p>And you should see the test fail:</p>
+<p><img src="cucumber_fail.png" alt="Failing step" title="Failing step" /></p>
+<p>What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:</p>
+<pre><code>Feature: Animal feature
+
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given A hungry cat
+    When I feed the cat
+    Then The cat is not hungry
+
+  Scenario: If we feed a satiated cat it will not become hungry
+    Given A satiated cat
+    When I feed the cat
+    Then The cat is not hungry
+
+</code></pre>
+<p>The only thing that is different is the Given. That is then the only new step we need to add to our builder (remember that the order of the steps, or the relationship between them, is expressed in the <code>.feature</code> file and not in the code):</p>
+<pre><code>builder
+    .given(&quot;A hungry cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    })
+    .given(&quot;A satiated cat&quot;, |mut world, _step| {
+        world.cat.hungry = true;
+        world
+    })
+    .when(&quot;I feed the cat&quot;, |mut world, _step| {
+        world.cat.feed();
+        world
+    })
+    .then(&quot;The cat is not hungry&quot;, |world, _step| {
+        assert_eq!(world.cat.hungry, false);
+        world
+    });
+</code></pre>
+<p>Cucumber reuses the steps:</p>
+<p><img src="cucumber_reuse.png" alt="Steps reused between two scenarious" title="Step reuse" /></p>
+<p>A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our &quot;Then&quot; step was &quot;The cat is no longer hungry&quot;, it'd imply something about the expected initial state, when that is not the purpose of a &quot;Then&quot; step, but rather of the &quot;Given&quot; step.</p>
+<p>WIP</p>
+<p>WIP</p>
 
                     </main>
 
@@ -192,10 +393,6 @@
                         <!-- Mobile navigation buttons -->
                         
 
-                        
-                            <a rel="next" href="Getting_Started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
-                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -206,10 +403,6 @@
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
 
-                
-                    <a rel="next" href="Getting_Started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
-                    </a>
                 
             </nav>
 
@@ -242,6 +435,14 @@
         <!-- Custom JS scripts -->
         
 
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
         
 
     </body>
