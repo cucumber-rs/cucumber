@@ -37,7 +37,7 @@ pub mod private;
 pub use async_trait::async_trait;
 pub use futures;
 
-pub use cucumber::{Context, Cucumber};
+pub use cucumber::{Context, Cucumber, StepContext};
 pub use examples::ExampleValues;
 pub use runner::RunResult;
 pub use steps::Steps;

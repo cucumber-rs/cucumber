@@ -40,10 +40,10 @@ struct Step {
     /// Function the attribute is applied to.
     func: syn::ItemFn,
 
-    /// Name of the function argument representing a [`gherkin::Step`][1] reference.
+    /// Name of the function argument representing a [`cucumber::StepContext`][1] reference.
     ///
-    /// [1]: cucumber_rust::gherking::Step
-    step_arg_name: Option<syn::Ident>,
+    /// [1]: cucumber_rust::StepContext
+    ctx_arg_name: Option<syn::Ident>,
 }
 
 impl Step {
@@ -52,8 +52,8 @@ impl Step {
         let attr_arg = syn::parse2::<AttributeArgument>(attr)?;
         let mut func = syn::parse2::<syn::ItemFn>(body)?;
 
-        let step_arg_name = {
-            let (arg_marked_as_step, _) = remove_all_attrs((attr_name, "step"), &mut func);
+        let ctx_arg_name = {
+            let (arg_marked_as_step, _) = remove_all_attrs((attr_name, "context"), &mut func);
 
             match arg_marked_as_step.len() {
                 0 => Ok(None),
@@ -86,7 +86,7 @@ impl Step {
             attr_arg,
             attr_name,
             func,
-            step_arg_name,
+            ctx_arg_name,
         })
     }
 
@@ -98,18 +98,13 @@ impl Step {
         let func_name = &func.sig.ident;
 
         let mut func_args = TokenStream::default();
-        let (mut addon_args, mut addon_parsing) = (None, None);
-        let mut is_step_arg_considered = false;
+        let mut addon_parsing = None;
+        let mut is_ctx_arg_considered = false;
         if is_regex {
-            addon_args = Some(if func.sig.asyncness.is_some() {
-                quote! { __cucumber_matches, }
-            } else {
-                quote! { __cucumber_matches: Vec<String>, }
-            });
-
             if let Some(elem_ty) = parse_slice_from_second_arg(&func.sig) {
                 addon_parsing = Some(quote! {
-                    let __cucumber_matches = __cucumber_matches
+                    let __cucumber_matches = __cucumber_ctx
+                        .matches
                         .iter()
                         .skip(1)
                         .enumerate()
@@ -133,10 +128,10 @@ impl Step {
                         .map(|arg| self.arg_ident_and_parse_code(arg)),
                     |i| i.unzip(),
                 )?;
-                is_step_arg_considered = true;
+                is_ctx_arg_considered = true;
 
                 addon_parsing = Some(quote! {
-                    let mut __cucumber_iter = __cucumber_matches.iter().skip(1);
+                    let mut __cucumber_iter = __cucumber_ctx.matches.iter().skip(1);
                     #( #parsings )*
                 });
                 func_args = quote! {
@@ -144,10 +139,10 @@ impl Step {
                 }
             }
         }
-        if self.step_arg_name.is_some() && !is_step_arg_considered {
+        if self.ctx_arg_name.is_some() && !is_ctx_arg_considered {
             func_args = quote! {
                 #func_args
-                ::std::borrow::Borrow::borrow(&__cucumber_step),
+                ::std::borrow::Borrow::borrow(&__cucumber_ctx),
             };
         }
 
@@ -162,8 +157,7 @@ impl Step {
                     #[automatically_derived]
                     fn #caller_name(
                         mut __cucumber_world: #world,
-                        #addon_args
-                        __cucumber_step: ::std::rc::Rc<::cucumber_rust::gherkin::Step>,
+                        __cucumber_ctx: ::cucumber_rust::StepContext,
                     ) -> #world {
                         #addon_parsing
                         #func_name(&mut __cucumber_world, #func_args);
@@ -176,7 +170,7 @@ impl Step {
         } else {
             quote! {
                 ::cucumber_rust::t!(
-                    |mut __cucumber_world, #addon_args __cucumber_step| {
+                    |mut __cucumber_world, __cucumber_ctx| {
                         #addon_parsing
                         #func_name(&mut __cucumber_world, #func_args).await;
                         __cucumber_world
@@ -231,11 +225,11 @@ impl Step {
     ) -> syn::Result<(&'a syn::Ident, TokenStream)> {
         let (ident, ty) = parse_fn_arg(arg)?;
 
-        let is_step_arg = self.step_arg_name.as_ref().map(|i| *i == *ident) == Some(true);
+        let is_ctx_arg = self.ctx_arg_name.as_ref().map(|i| *i == *ident) == Some(true);
 
-        let decl = if is_step_arg {
+        let decl = if is_ctx_arg {
             quote! {
-                let #ident = ::std::borrow::Borrow::borrow(&__cucumber_step);
+                let #ident = ::std::borrow::Borrow::borrow(&__cucumber_ctx);
             }
         } else {
             let ty = match ty {

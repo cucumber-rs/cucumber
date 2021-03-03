@@ -238,8 +238,8 @@ pub trait StepRegexAsync<W> {
 
 pub type CucumberFn<W> = fn(W, StepContext) -> W;
 
-pub type CucumberRegexFn<W> = fn(W, Vec<String>, StepContext) -> W;
+pub type CucumberRegexFn<W> = fn(W, StepContext) -> W;
 
 pub type CucumberAsyncFn<W> = fn(W, StepContext) -> TestFuture<W>;
 
-pub type CucumberAsyncRegexFn<W> = fn(W, Vec<String>, StepContext) -> TestFuture<W>;
+pub type CucumberAsyncRegexFn<W> = fn(W, StepContext) -> TestFuture<W>;

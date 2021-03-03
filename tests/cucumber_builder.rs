@@ -32,7 +32,7 @@ impl World for MyWorld {
     }
 }
 
-mod example_ctxs {
+mod example_steps {
     use super::SomeString;
     use cucumber::{t, Steps, World};
 
@@ -55,7 +55,7 @@ mod example_ctxs {
             )
             .when_regex_async(
                 "something goes (.*)",
-                t!(|world, _matches, _ctx| crate::MyWorld::new().await.unwrap()),
+                t!(|world, _ctx| crate::MyWorld::new().await.unwrap()),
             )
             .given(
                 "I am trying out Cucumber",
@@ -73,24 +73,21 @@ mod example_ctxs {
                 assert_eq!(world.foo, "Some string.");
                 world
             })
-            .then_regex(r"^we can (.*) rules with regex$", |world, matches, _ctx| {
+            .then_regex(r"^we can (.*) rules with regex$", |world, ctx| {
                 // And access them as an array
-                assert_eq!(matches[1], "implement");
+                assert_eq!(ctx.matches[1], "implement");
                 world
             })
-            .given_regex(r"a number (\d+)", |mut world, matches, _ctx| {
-                world.foo = matches[1].to_owned();
+            .given_regex(r"a number (\d+)", |mut world, ctx| {
+                world.foo = ctx.matches[1].to_owned();
                 world
             })
-            .then_regex(
-                r"twice that number should be (\d+)",
-                |world, matches, _ctx| {
-                    let to_check = world.foo.parse::<i32>().unwrap();
-                    let expected = matches[1].parse::<i32>().unwrap();
-                    assert_eq!(to_check * 2, expected);
-                    world
-                },
-            );
+            .then_regex(r"twice that number should be (\d+)", |world, ctx| {
+                let to_check = world.foo.parse::<i32>().unwrap();
+                let expected = ctx.matches[1].parse::<i32>().unwrap();
+                assert_eq!(to_check * 2, expected);
+                world
+            });
 
         builder
     }
@@ -105,7 +102,7 @@ async fn main() {
 
     cucumber::Cucumber::<MyWorld>::new()
         .features(&["./features/basic"])
-        .steps(example_ctxs::steps())
+        .steps(example_steps::steps())
         .context(
             cucumber::Context::new()
                 .add("This is a string from the context.")

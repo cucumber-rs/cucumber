@@ -12,16 +12,16 @@ use cute_custom_default::CustomDefault;
 use regex::Regex;
 
 use crate::regex::HashableRegex;
-use crate::runner::{BasicStepFn, RegexStepFn, TestFunction};
+use crate::runner::{StepFn, TestFunction};
 use crate::World;
 use gherkin::{Step, StepType};
 
 #[derive(CustomDefault)]
 struct StepMaps<W: World> {
     #[def_exp = "BTreeMap::new()"]
-    basic: BTreeMap<&'static str, BasicStepFn<W>>,
+    basic: BTreeMap<&'static str, StepFn<W>>,
     #[def_exp = "BTreeMap::new()"]
-    regex: BTreeMap<HashableRegex, RegexStepFn<W>>,
+    regex: BTreeMap<HashableRegex, StepFn<W>>,
 }
 
 #[derive(CustomDefault)]
@@ -41,12 +41,7 @@ impl<W: World> StepsCollection<W> {
         self.then.regex.append(&mut other.then.regex);
     }
 
-    pub(crate) fn insert_basic(
-        &mut self,
-        ty: StepType,
-        name: &'static str,
-        callback: BasicStepFn<W>,
-    ) {
+    pub(crate) fn insert_basic(&mut self, ty: StepType, name: &'static str, callback: StepFn<W>) {
         match ty {
             StepType::Given => self.given.basic.insert(name, callback),
             StepType::When => self.when.basic.insert(name, callback),
@@ -54,7 +49,7 @@ impl<W: World> StepsCollection<W> {
         };
     }
 
-    pub(crate) fn insert_regex(&mut self, ty: StepType, regex: Regex, callback: RegexStepFn<W>) {
+    pub(crate) fn insert_regex(&mut self, ty: StepType, regex: Regex, callback: StepFn<W>) {
         let name = HashableRegex(regex);
 
         match ty {
@@ -101,8 +96,8 @@ impl<W: World> StepsCollection<W> {
                 .collect();
 
             return Some(match *function {
-                RegexStepFn::Sync(x) => TestFunction::RegexSync(x, matches),
-                RegexStepFn::Async(x) => TestFunction::RegexAsync(x, matches),
+                StepFn::Sync(x) => TestFunction::RegexSync(x, matches),
+                StepFn::Async(x) => TestFunction::RegexAsync(x, matches),
             });
         }
 

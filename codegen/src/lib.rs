@@ -81,15 +81,15 @@ macro_rules! step_attribute {
         ///   implementer).
         /// - Other argument's types have to implement [`FromStr`] or it has to be a slice where the
         ///   element type also implements [`FromStr`].
-        /// - To use [`gherking::Step`], name the argument as `step`, **or** mark the argument with
-        ///   a `#[given(step)]` attribute.
+        /// - To use [`cucumber::StepContext`], name the argument as `context`, **or** mark the argument with
+        ///   a `#[given(context)]` attribute.
         ///
         /// ```
         /// # use std::convert::Infallible;
         /// # use std::rc::Rc;
         /// #
         /// # use async_trait::async_trait;
-        /// # use cucumber_rust::{gherkin::Step, given, World, WorldInit};
+        /// # use cucumber_rust::{StepContext, given, World, WorldInit};
         /// #
         /// #[derive(WorldInit)]
         /// struct MyWorld;
@@ -106,12 +106,11 @@ macro_rules! step_attribute {
         /// #[given(regex = r"(\S+) is not (\S+)")]
         /// fn test_step(
         ///     w: &mut MyWorld,
-        ///     matches: &[String],
-        ///     #[given(step)] s: &Step,
+        ///     #[given(context)] s: &StepContext,
         /// ) {
-        ///     assert_eq!(matches.get(0).unwrap(), "foo");
-        ///     assert_eq!(matches.get(1).unwrap(), "bar");
-        ///     assert_eq!(s.value, "foo is bar");
+        ///     assert_eq!(s.matches.get(0).unwrap(), "foo");
+        ///     assert_eq!(s.matches.get(1).unwrap(), "bar");
+        ///     assert_eq!(s.step.value, "foo is bar");
         /// }
         /// #
         /// # #[tokio::main]
@@ -122,7 +121,7 @@ macro_rules! step_attribute {
         /// ```
         ///
         /// [`FromStr`]: std::str::FromStr
-        /// [`gherking::Step`]: cucumber_rust::gherking::Step
+        /// [`cucumber::StepContext`]: cucumber_rust::StepContext
         /// [`World`]: cucumber_rust::World
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {

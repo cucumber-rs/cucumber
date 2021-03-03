@@ -41,47 +41,29 @@ impl<W> From<fn(W, StepContext) -> TestFuture<W>> for TestFunction<W> {
     }
 }
 
-impl<W> From<fn(W, StepContext) -> W> for BasicStepFn<W> {
+impl<W> From<fn(W, StepContext) -> W> for StepFn<W> {
     fn from(f: fn(W, StepContext) -> W) -> Self {
-        BasicStepFn::Sync(f)
+        StepFn::Sync(f)
     }
 }
 
-impl<W> From<fn(W, StepContext) -> TestFuture<W>> for BasicStepFn<W> {
+impl<W> From<fn(W, StepContext) -> TestFuture<W>> for StepFn<W> {
     fn from(f: fn(W, StepContext) -> TestFuture<W>) -> Self {
-        BasicStepFn::Async(f)
-    }
-}
-
-impl<W> From<fn(W, Vec<String>, StepContext) -> W> for RegexStepFn<W> {
-    fn from(f: fn(W, Vec<String>, StepContext) -> W) -> Self {
-        RegexStepFn::Sync(f)
-    }
-}
-
-impl<W> From<fn(W, Vec<String>, StepContext) -> TestFuture<W>> for RegexStepFn<W> {
-    fn from(f: fn(W, Vec<String>, StepContext) -> TestFuture<W>) -> Self {
-        RegexStepFn::Async(f)
+        StepFn::Async(f)
     }
 }
 
 #[derive(Clone, Copy)]
-pub enum BasicStepFn<W> {
+pub enum StepFn<W> {
     Sync(fn(W, StepContext) -> W),
     Async(fn(W, StepContext) -> TestFuture<W>),
 }
 
-#[derive(Clone, Copy)]
-pub enum RegexStepFn<W> {
-    Sync(fn(W, Vec<String>, StepContext) -> W),
-    Async(fn(W, Vec<String>, StepContext) -> TestFuture<W>),
-}
-
-impl<W> From<&BasicStepFn<W>> for TestFunction<W> {
-    fn from(step: &BasicStepFn<W>) -> Self {
+impl<W> From<&StepFn<W>> for TestFunction<W> {
+    fn from(step: &StepFn<W>) -> Self {
         match step {
-            BasicStepFn::Sync(x) => TestFunction::BasicSync(*x),
-            BasicStepFn::Async(x) => TestFunction::BasicAsync(*x),
+            StepFn::Sync(x) => TestFunction::BasicSync(*x),
+            StepFn::Async(x) => TestFunction::BasicAsync(*x),
         }
     }
 }
@@ -89,11 +71,8 @@ impl<W> From<&BasicStepFn<W>> for TestFunction<W> {
 pub enum TestFunction<W> {
     BasicSync(fn(W, StepContext) -> W),
     BasicAsync(fn(W, StepContext) -> TestFuture<W>),
-    RegexSync(fn(W, Vec<String>, StepContext) -> W, Vec<String>),
-    RegexAsync(
-        fn(W, Vec<String>, StepContext) -> TestFuture<W>,
-        Vec<String>,
-    ),
+    RegexSync(fn(W, StepContext) -> W, Vec<String>),
+    RegexAsync(fn(W, StepContext) -> TestFuture<W>, Vec<String>),
 }
 
 fn coerce_error(err: &(dyn Any + Send + 'static)) -> String {
@@ -360,24 +339,27 @@ impl<W: World> Runner<W> {
             }
         }));
 
-        let context = StepContext::new(Rc::clone(&self.context), step);
+        let context = Rc::clone(&self.context);
 
         let step_future = match func {
-            TestFunction::BasicAsync(f) => (f)(world, context),
-            TestFunction::RegexAsync(f, r) => (f)(world, r, context),
-            TestFunction::BasicSync(test_fn) => {
-                std::panic::AssertUnwindSafe(async move { (test_fn)(world, context) })
-                    .catch_unwind()
-                    .map_err(TestError::PanicError)
-                    .boxed_local()
-            }
-            TestFunction::RegexSync(test_fn, matches) => {
-                std::panic::AssertUnwindSafe(async move { (test_fn)(world, matches, context) })
-                    .catch_unwind()
-                    .map_err(TestError::PanicError)
-                    .boxed_local()
-            }
+            TestFunction::BasicAsync(f) => (f)(world, StepContext::new(context, step, vec![])),
+            TestFunction::RegexAsync(f, r) => (f)(world, StepContext::new(context, step, r)),
+
+            TestFunction::BasicSync(test_fn) => std::panic::AssertUnwindSafe(async move {
+                (test_fn)(world, StepContext::new(context, step, vec![]))
+            })
+            .catch_unwind()
+            .map_err(TestError::PanicError)
+            .boxed_local(),
+
+            TestFunction::RegexSync(test_fn, matches) => std::panic::AssertUnwindSafe(async move {
+                (test_fn)(world, StepContext::new(context, step, matches))
+            })
+            .catch_unwind()
+            .map_err(TestError::PanicError)
+            .boxed_local(),
         };
+
         let result = if let Some(step_timeout) = self.step_timeout {
             let timeout = Box::pin(async {
                 futures_timer::Delay::new(step_timeout).await;

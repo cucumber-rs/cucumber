@@ -74,44 +74,4 @@ macro_rules! t {
                 .boxed_local()
         }
     };
-    // Async regex with block and mutable world
-    (| mut $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
-        |mut $world, $matches, $step| {
-            use $crate::futures::future::FutureExt as _;
-            std::panic::AssertUnwindSafe(async move { $($input)* })
-                .catch_unwind()
-                .map(|r| r.map_err($crate::TestError::PanicError))
-                .boxed_local()
-        }
-    };
-    // Async regex with block and immutable world
-    (| $world:ident, $matches:ident, $step:ident | $($input:tt)*) => {
-        |$world, $matches, $step| {
-            use $crate::futures::future::FutureExt as _;
-            std::panic::AssertUnwindSafe(async move { $($input)* })
-                .catch_unwind()
-                .map(|r| r.map_err($crate::TestError::PanicError))
-                .boxed_local()
-        }
-    };
-    // Async regex with block and mutable world with type
-    (| mut $world:ident : $worldty:path, $matches:ident, $step:ident | $($input:tt)*) => {
-        |mut $world: $worldty, $matches, $step| {
-            use $crate::futures::future::FutureExt as _;
-            std::panic::AssertUnwindSafe(async move { $($input)* })
-                .catch_unwind()
-                .map(|r| r.map_err($crate::TestError::PanicError))
-                .boxed_local()
-        }
-    };
-    // Async regex with block and immutable world with type
-    (| $world:ident : $worldty:path, $matches:ident, $step:ident | $($input:tt)*) => {
-        |$world: $worldty, $matches, $step| {
-            use $crate::futures::future::FutureExt as _;
-            std::panic::AssertUnwindSafe(async move { $($input)* })
-                .catch_unwind()
-                .map(|r| r.map_err($crate::TestError::PanicError))
-                .boxed_local()
-        }
-    };
 }

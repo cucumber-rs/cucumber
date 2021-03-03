@@ -1,7 +1,7 @@
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{gherkin::Step, given, World, WorldInit};
+use cucumber_rust::{given, StepContext, World, WorldInit};
 use tokio::time;
 
 #[derive(WorldInit)]
@@ -19,21 +19,31 @@ impl World for MyWorld {
 }
 
 #[given(regex = r"(\S+) is (\d+)")]
-async fn test_regex_async(w: &mut MyWorld, step: String, #[given(step)] s: &Step, num: usize) {
+async fn test_regex_async(
+    w: &mut MyWorld,
+    step: String,
+    #[given(context)] ctx: &StepContext,
+    num: usize,
+) {
     time::sleep(Duration::new(1, 0)).await;
 
     assert_eq!(step, "foo");
     assert_eq!(num, 0);
-    assert_eq!(s.value, "foo is 0");
+    assert_eq!(ctx.step.value, "foo is 0");
 
     w.foo += 1;
 }
 
 #[given(regex = r"(\S+) is sync (\d+)")]
-async fn test_regex_sync(w: &mut MyWorld, s: String, step: &Step, num: usize) {
+async fn test_regex_sync(
+    w: &mut MyWorld,
+    s: String,
+    #[given(context)] ctx: &StepContext,
+    num: usize,
+) {
     assert_eq!(s, "foo");
     assert_eq!(num, 0);
-    assert_eq!(step.value, "foo is sync 0");
+    assert_eq!(ctx.step.value, "foo is sync 0");
 
     w.foo += 1;
 }
