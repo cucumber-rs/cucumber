@@ -173,19 +173,27 @@ impl<W: World> Cucumber<W> {
     /// find ".feature" files.
     ///
     /// Removes any previously-supplied features.
-    pub fn features<P: AsRef<Path>>(mut self, features: impl IntoIterator<Item = P>) -> Self {
-        let features = features
+    pub fn features<P: AsRef<Path>>(mut self, feature_paths: impl IntoIterator<Item = P>) -> Self {
+        let mut features = feature_paths
             .into_iter()
             .map(|path| match path.as_ref().canonicalize() {
-                Ok(p) if p.ends_with(".feature") => {
-                    let env = match self.language.as_ref() {
-                        Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
-                        None => Default::default(),
-                    };
-                    vec![gherkin::Feature::parse_path(&p, env)]
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("{}", e);
+                    eprintln!("There was an error parsing {:?}; aborting.", path.as_ref());
+                    std::process::exit(1);
                 }
-                Ok(p) => {
-                    let walker = globwalk::GlobWalkerBuilder::new(p, "*.feature")
+            })
+            .map(|path| {
+                let env = match self.language.as_ref() {
+                    Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
+                    None => Default::default(),
+                };
+
+                if path.is_file() {
+                    vec![gherkin::Feature::parse_path(&path, env)]
+                } else {
+                    let walker = globwalk::GlobWalkerBuilder::new(path, "*.feature")
                         .case_insensitive(true)
                         .build()
                         .expect("feature path is invalid");
@@ -200,34 +208,29 @@ impl<W: World> Cucumber<W> {
                         })
                         .collect::<Vec<_>>()
                 }
-                Err(e) => {
-                    eprintln!("{}", e);
-                    eprintln!("There was an error parsing {:?}; aborting.", path.as_ref());
-                    std::process::exit(1);
-                }
             })
             .flatten()
-            .collect::<Result<Vec<_>, _>>();
-
-        let mut features = features.unwrap_or_else(|e| match e {
-            ParseFileError::Reading { path, source } => {
-                eprintln!("Error reading '{}':", path.display());
-                eprintln!("{:?}", source);
-                std::process::exit(1);
-            }
-            ParseFileError::Parsing {
-                path,
-                error,
-                source,
-            } => {
-                eprintln!("Error parsing '{}':", path.display());
-                if let Some(error) = error {
-                    eprintln!("{}", error);
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap_or_else(|e| match e {
+                ParseFileError::Reading { path, source } => {
+                    eprintln!("Error reading '{}':", path.display());
+                    eprintln!("{:?}", source);
+                    std::process::exit(1);
                 }
-                eprintln!("{:?}", source);
-                std::process::exit(1);
-            }
-        });
+                ParseFileError::Parsing {
+                    path,
+                    error,
+                    source,
+                } => {
+                    eprintln!("Error parsing '{}':", path.display());
+                    if let Some(error) = error {
+                        eprintln!("{}", error);
+                    }
+                    eprintln!("{:?}", source);
+                    std::process::exit(1);
+                }
+            });
+
         features.sort();
 
         self.features = features;
