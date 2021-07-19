@@ -6,7 +6,6 @@
 An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
 
 - [Changelog](CHANGELOG.md)
-- [Cucumber in Rust 0.7 – Beginner’s Tutorial](https://www.florianreinhard.de/2020-10-05/cucumber-07-in-rust-beginners-tutorial/) by Florian Reinhard.
 
 ## Usage
 
