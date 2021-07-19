@@ -4,6 +4,14 @@
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
+### 0.9.0 — 2021-07-19
+
+- **Breaking change:** the second parameter in the test callbacks is now a `StepContext` object, which contains the `Step` as a `step` field.
+- Feature: Add `before` and `after` lifecycle functions to the Cucumber builder
+  - This function takes a selector for determining when to run 'before' or 'after', and a callback
+- Fix: literal paths to .feature files will now work in the Cucumber builder
+- Fix: remove unnecessary internal `Rc<T>` usage.
+
 ### 0.8.4 — 2021-02-18
 
 - Feature: add `language` argument to Cucumber builder to set default language for all feature files
