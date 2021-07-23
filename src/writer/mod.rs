@@ -10,6 +10,7 @@ use async_trait::async_trait;
 
 use crate::{event, World};
 
+#[doc(inline)]
 pub use self::{basic::Basic, normalized::Normalized, summary::Summary};
 
 /// Trait for outputting [`Cucumber`] events.

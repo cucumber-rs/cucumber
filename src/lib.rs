@@ -36,8 +36,11 @@ use async_trait::async_trait;
 
 #[doc(inline)]
 pub use self::{
-    cucumber::Cucumber, parser::Parser, runner::Runner, step::Step,
-    writer::Writer,
+    cucumber::Cucumber,
+    parser::Parser,
+    runner::Runner,
+    step::Step,
+    writer::{Writer, WriterExt},
 };
 
 /// The [`World`] trait represents shared user-defined state

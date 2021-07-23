@@ -6,7 +6,6 @@ use std::{
     fmt::{Debug, Formatter},
     marker::PhantomData,
     path::Path,
-    process,
 };
 
 use futures::StreamExt as _;
@@ -238,6 +237,10 @@ where
     /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
     ///
+    /// # Panics
+    ///
+    /// If at least one [`Step`] failed.
+    ///
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit(self, input: I) {
@@ -255,7 +258,12 @@ where
         }
 
         if writer.is_failed() {
-            process::exit(1);
+            let failed = writer.steps.failed;
+            panic!(
+                "{} step{} failed",
+                failed,
+                if failed > 1 { "s" } else { "" },
+            );
         }
     }
 }

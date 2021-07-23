@@ -37,6 +37,11 @@ pub trait FeatureExt: Sized {
     ///     Given there are 20 cucumbers
     ///     When I eat 5 cucumbers
     ///     Then I should have 15 cucumbers
+    ///
+    ///     Examples:
+    ///       | start | eat | left |
+    ///       |    12 |   5 |    7 |
+    ///       |    20 |   5 |   15 |
     /// ```
     ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline

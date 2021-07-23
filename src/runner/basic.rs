@@ -554,7 +554,7 @@ impl<W: World> Executor<W> {
 #[derive(Clone, Default)]
 struct Features {
     /// Storage itself.
-    scenarios: Arc<Mutex<Scenarios>>, // TODO: replace with 2 channels?
+    scenarios: Arc<Mutex<Scenarios>>,
 
     /// Indicates whether all parsed [`Feature`]s are sorted and stored.
     finished: Arc<AtomicBool>,

@@ -1,4 +1,4 @@
-use std::{convert::Infallible, time::Duration};
+use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
 use cucumber_rust::{self as cucumber, step, Cucumber};
@@ -10,12 +10,19 @@ use tokio::time;
 async fn main() {
     let re = Regex::new(r"(\d+) secs?").unwrap();
 
-    Cucumber::new()
+    let res = Cucumber::new()
         .given(re.clone(), step)
         .when(re.clone(), step)
         .then(re, step)
-        .run_and_exit("tests")
-        .await;
+        .run_and_exit("tests");
+
+    let err = AssertUnwindSafe(res)
+        .catch_unwind()
+        .await
+        .expect_err("should err");
+    let err = err.downcast_ref::<String>().unwrap();
+
+    assert_eq!(err, "1 step failed");
 }
 
 // Unfortunately, we'll still have to generate additional wrapper-function with

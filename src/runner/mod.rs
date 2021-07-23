@@ -10,7 +10,8 @@ use futures::Stream;
 
 use crate::event;
 
-pub use basic::Basic;
+#[doc(inline)]
+pub use basic::{Basic, ScenarioType};
 
 /// Trait for sourcing [`Cucumber`] events from parsed [Gherkin] files.
 ///

@@ -6,6 +6,7 @@ pub mod basic;
 
 use futures::Stream;
 
+#[doc(inline)]
 pub use basic::Basic;
 
 /// Trait for sourcing parsed [`Feature`]s.

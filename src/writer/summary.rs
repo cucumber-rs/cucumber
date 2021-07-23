@@ -10,16 +10,47 @@ use crate::{event, World, Writer};
 #[derive(Debug)]
 pub struct Summary<Writer> {
     writer: Writer,
-    features: usize,
-    scenarios: usize,
-    steps: Stats,
+
+    /// Number of started [`Feature`]s.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    pub features: usize,
+
+    /// Number of started [`Rule`]s.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    pub rules: usize,
+
+    /// Number of started [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    pub scenarios: usize,
+
+    /// [`Step`]s [`Stats`]
+    ///
+    /// [`Step`]: gherkin::Step
+    pub steps: Stats,
 }
 
-#[derive(Debug)]
-struct Stats {
-    passed: usize,
-    skipped: usize,
-    failed: usize,
+/// [`Step`]s statistics.
+///
+/// [`Step`]: gherkin::Step
+#[derive(Clone, Copy, Debug)]
+pub struct Stats {
+    /// Number of passed [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    pub passed: usize,
+
+    /// Number of skipped [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    pub skipped: usize,
+
+    /// Number of failed [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    pub failed: usize,
 }
 
 #[async_trait(?Send)]
@@ -33,6 +64,9 @@ where
         match &ev {
             event::Cucumber::Feature(_, ev) => match ev {
                 event::Feature::Started => self.features += 1,
+                event::Feature::Rule(_, event::Rule::Started) => {
+                    self.rules += 1;
+                }
                 event::Feature::Rule(_, event::Rule::Scenario(_, ev))
                 | event::Feature::Scenario(_, ev) => self.handle_scenario(ev),
                 event::Feature::Finished | event::Feature::Rule(..) => {}
@@ -47,9 +81,11 @@ where
             println!(
                 "[Summary]\n\
                  {} features\n\
+                 {} rules\n\
                  {} scenarios\n\
                  {} steps ({} passed, {} skipped, {} failed)",
                 self.features,
+                self.rules,
                 self.scenarios,
                 self.steps.passed + self.steps.skipped + self.steps.failed,
                 self.steps.passed,
@@ -66,6 +102,7 @@ impl<Writer> Summary<Writer> {
         Self {
             writer,
             features: 0,
+            rules: 0,
             scenarios: 0,
             steps: Stats {
                 passed: 0,
