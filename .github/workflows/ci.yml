@@ -1,33 +1,109 @@
-on: [push, pull_request]
-
 name: CI
 
+on: [push, pull_request]
+
+env:
+  RUST_BACKTRACE: 1
+
 jobs:
-  build:
+
+  ##########################
+  # Linting and formatting #
+  ##########################
+
+  clippy:
+    if: ${{ github.ref == 'refs/heads/master'
+      || startsWith(github.ref, 'refs/tags/v')
+      || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - beta
-          - nightly
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
+          components: clippy
+
+      - run: make lint
+
+  rustfmt:
+    if: ${{ github.ref == 'refs/heads/master'
+      || startsWith(github.ref, 'refs/tags/v')
+      || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt
+
+      - run: make fmt check=yes
+
+
+
+
+  ###########
+  # Testing #
+  ###########
+
+  test:
+    name: Test
+    if: ${{ github.ref == 'refs/heads/master'
+      || startsWith(github.ref, 'refs/tags/v')
+      || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - cucumber_rust
+          # TODO: add cucumber_codegen once it's reimplemented
+        os:
+          - ubuntu
+          - macOS
+          - windows
+        toolchain:
+          - stable
+          - beta
+          - nightly
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
           override: true
-          components: rustfmt, clippy
-      - uses: actions-rs/cargo@v1
+
+      - run: make test crate=${{ matrix.crate }}
+
+  msrv:
+    name: MSRV
+    if: ${{ github.ref == 'refs/heads/master'
+      || startsWith(github.ref, 'refs/tags/v')
+      || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        msrv: ['1.52.0']
+        os:
+          - ubuntu
+          - macOS
+          - windows
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          command: build
-          args: --all-features
-      - uses: actions-rs/cargo@v1
+          profile: minimal
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
         with:
-          command: test
-          args: -p cucumber_rust_codegen
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features
+          profile: minimal
+          toolchain: ${{ matrix.msrv }}
+          override: true
+
+      - run: cargo +nightly update -Z minimal-versions
+
+      - run: make test

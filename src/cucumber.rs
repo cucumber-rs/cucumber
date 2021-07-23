@@ -1,348 +1,239 @@
-// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>
-//
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
+//! Top-level [Cucumber] executor.
+//!
+//! [Cucumber]: https://cucumber.io
 
 use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
+    fmt::{Debug, Formatter},
+    marker::PhantomData,
     path::Path,
-    rc::Rc,
+    process,
 };
-use std::{pin::Pin, time::Duration};
 
-use futures::{Future, StreamExt};
-use gherkin::ParseFileError;
+use futures::StreamExt as _;
 use regex::Regex;
 
-use crate::{criteria::Criteria, steps::Steps};
-use crate::{EventHandler, World};
+use crate::{
+    parser,
+    runner::{self, basic::ScenarioType},
+    step,
+    writer::{self, WriterExt as _},
+    Parser, Runner, Step, World, Writer,
+};
 
-pub(crate) type LifecycleFuture = Pin<Box<dyn Future<Output = ()>>>;
-
-#[derive(Clone)]
-pub struct LifecycleContext {
-    pub(crate) context: Rc<Context>,
-    pub feature: Rc<gherkin::Feature>,
-    pub rule: Option<Rc<gherkin::Rule>>,
-    pub scenario: Option<Rc<gherkin::Scenario>>,
+/// Top-level [Cucumber] executor.
+///
+/// [Cucumber]: https://cucumber.io
+pub struct Cucumber<W, P, I, R, Wr> {
+    parser: P,
+    runner: R,
+    writer: Wr,
+    _world: PhantomData<W>,
+    _parser_input: PhantomData<I>,
 }
 
-impl LifecycleContext {
-    #[inline]
-    pub fn get<T: Any>(&self) -> Option<&T> {
-        self.context.get()
+impl<W, P, I, R, Wr> Debug for Cucumber<W, P, I, R, Wr>
+where
+    P: Debug,
+    R: Debug,
+    Wr: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Cucumber")
+            .field("parser", &self.parser)
+            .field("runner", &self.runner)
+            .field("writer", &self.writer)
+            .finish()
     }
 }
 
-pub type LifecycleFn = fn(LifecycleContext) -> LifecycleFuture;
-
-pub struct Cucumber<W: World> {
-    context: Context,
-
-    steps: Steps<W>,
-    features: Vec<gherkin::Feature>,
-    event_handler: Box<dyn EventHandler>,
-
-    /// If `Some`, enforce an upper bound on the amount
-    /// of time a step is allowed to execute.
-    /// If `Some`, also avoid indefinite locks during
-    /// step clean-up handling (i.e. to recover panic info)
-    step_timeout: Option<Duration>,
-
-    /// If true, capture stdout and stderr content
-    /// during tests.
-    enable_capture: bool,
-
-    /// If given, filters the scenario which are run
-    scenario_filter: Option<Regex>,
-
-    language: Option<String>,
-
-    debug: bool,
-
-    before: Vec<(Criteria, LifecycleFn)>,
-
-    after: Vec<(Criteria, LifecycleFn)>,
-}
-
-pub struct StepContext {
-    context: Rc<Context>,
-    pub step: Rc<gherkin::Step>,
-    pub matches: Vec<String>,
-}
-
-impl StepContext {
-    #[inline]
-    pub(crate) fn new(context: Rc<Context>, step: Rc<gherkin::Step>, matches: Vec<String>) -> Self {
-        Self {
-            context,
-            step,
-            matches,
-        }
-    }
-
-    #[inline]
-    pub fn get<T: Any>(&self) -> Option<&T> {
-        self.context.get()
-    }
-}
-
-#[derive(Default)]
-pub struct Context {
-    data: HashMap<TypeId, Box<dyn Any>>,
-}
-
-impl Context {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn get<T: Any>(&self) -> Option<&T> {
-        self.data
-            .get(&TypeId::of::<T>())
-            .and_then(|x| x.downcast_ref::<T>())
-    }
-
-    pub fn insert<T: Any>(&mut self, value: T) {
-        self.data.insert(TypeId::of::<T>(), Box::new(value));
-    }
-
-    pub fn add<T: Any>(mut self, value: T) -> Self {
-        self.insert(value);
-        self
-    }
-}
-
-impl<W: World> Default for Cucumber<W> {
+impl<W, I> Default
+    for Cucumber<
+        W,
+        parser::Basic,
+        I,
+        runner::basic::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        writer::Summary<writer::Normalized<W, writer::Basic>>,
+    >
+where
+    W: World + Debug,
+    I: AsRef<Path>,
+{
     fn default() -> Self {
+        Cucumber::custom(
+            parser::Basic,
+            runner::basic::Basic::new(
+                |sc| {
+                    sc.tags
+                        .iter()
+                        .any(|tag| tag == "serial")
+                        .then(|| ScenarioType::Serial)
+                        .unwrap_or(ScenarioType::Concurrent)
+                },
+                16,
+                step::Collection::new(),
+            ),
+            writer::Basic::new().normalize().summarize(),
+        )
+    }
+}
+
+impl<W, I>
+    Cucumber<
+        W,
+        parser::Basic,
+        I,
+        runner::basic::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        writer::Summary<writer::Normalized<W, writer::Basic>>,
+    >
+where
+    W: World + Debug,
+    I: AsRef<Path>,
+{
+    /// Creates default [`Cucumber`] instance.
+    ///
+    /// * [`Parser`] — [`parser::Basic`]
+    ///
+    /// * [`Runner`] — [`runner::Basic`]
+    ///   * [`ScenarioType`] — [`Concurrent`] by default, [`Serial`] if
+    ///     `@serial` [tag] is present on a [`Scenario`];
+    ///   * Allowed to run up to 16 [`Concurrent`] [`Scenario`]s.
+    ///
+    /// * [`Writer`] — [`Normalized`] [`writer::Basic`].
+    ///
+    /// [`Concurrent`]: runner::basic::ScenarioType::Concurrent
+    /// [`Normalized`]: writer::Normalized
+    /// [`Parser`]: parser::Parser
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Serial`]: runner::basic::ScenarioType::Serial
+    /// [`ScenarioType`]: runner::basic::ScenarioType
+    ///
+    /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
+    #[must_use]
+    pub fn new() -> Self {
+        Cucumber::default()
+    }
+
+    /// Runs [`Cucumber`] and exits with code `1` if any [`Step`] failed.
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Step`]: gherkin::Step
+    pub async fn run_and_exit(self, input: I) {
+        let Cucumber {
+            parser,
+            runner,
+            mut writer,
+            ..
+        } = self;
+
+        let events_stream = runner.run(parser.parse(input));
+        futures::pin_mut!(events_stream);
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev).await;
+        }
+
+        if writer.is_failed() {
+            process::exit(1);
+        }
+    }
+
+    /// Inserts [Given] [`Step`].
+    ///
+    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    pub fn given(self, regex: Regex, step: Step<W>) -> Self {
+        let Cucumber {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
         Cucumber {
-            context: Default::default(),
-            steps: Default::default(),
-            features: Default::default(),
-            event_handler: Box::new(crate::output::BasicOutput::new(false)),
-            step_timeout: None,
-            enable_capture: true,
-            debug: false,
-            scenario_filter: None,
-            language: None,
-            before: vec![],
-            after: vec![],
+            parser,
+            runner: runner.given(regex, step),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Inserts [When] [`Step`].
+    ///
+    /// [When]: https://cucumber.io/docs/gherkin/reference/#When
+    pub fn when(self, regex: Regex, step: Step<W>) -> Self {
+        let Cucumber {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.when(regex, step),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Inserts [Then] [`Step`].
+    ///
+    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    pub fn then(self, regex: Regex, step: Step<W>) -> Self {
+        let Cucumber {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.then(regex, step),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
         }
     }
 }
 
-impl<W: World> Cucumber<W> {
-    /// Construct a default `Cucumber` instance.
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+where
+    W: World,
+    P: Parser<I>,
+    R: Runner<W>,
+    Wr: Writer<W>,
+{
+    /// Creates [`Cucumber`] with custom [`Parser`], [`Runner`] and [`Writer`].
+    #[must_use]
+    pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
+        Self {
+            parser,
+            runner,
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Runs [`Cucumber`].
     ///
-    /// Comes with the default `EventHandler` implementation responsible for
-    /// printing test execution progress.
-    pub fn new() -> Cucumber<W> {
-        Default::default()
-    }
-
-    /// Construct a `Cucumber` instance with a custom `EventHandler`.
-    pub fn with_handler<O: EventHandler>(event_handler: O) -> Self {
-        Cucumber {
-            context: Default::default(),
-            steps: Default::default(),
-            features: Default::default(),
-            event_handler: Box::new(event_handler),
-            step_timeout: None,
-            enable_capture: true,
-            debug: false,
-            scenario_filter: None,
-            language: None,
-            before: vec![],
-            after: vec![],
-        }
-    }
-
-    /// Add some steps to the Cucumber instance.
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
     ///
-    /// Does *not* replace any previously added steps.
-    pub fn steps(mut self, steps: Steps<W>) -> Self {
-        self.steps.append(steps);
-        self
-    }
+    /// [`Feature`]: gherkin::Feature
+    pub async fn run(self, input: I) {
+        let Cucumber {
+            parser,
+            runner,
+            mut writer,
+            ..
+        } = self;
 
-    /// A collection of directory paths that will be walked to
-    /// find ".feature" files.
-    ///
-    /// Removes any previously-supplied features.
-    pub fn features<P: AsRef<Path>>(mut self, feature_paths: impl IntoIterator<Item = P>) -> Self {
-        let mut features = feature_paths
-            .into_iter()
-            .map(|path| match path.as_ref().canonicalize() {
-                Ok(v) => v,
-                Err(e) => {
-                    eprintln!("{}", e);
-                    eprintln!("There was an error parsing {:?}; aborting.", path.as_ref());
-                    std::process::exit(1);
-                }
-            })
-            .map(|path| {
-                let env = match self.language.as_ref() {
-                    Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
-                    None => Default::default(),
-                };
-
-                if path.is_file() {
-                    vec![gherkin::Feature::parse_path(&path, env)]
-                } else {
-                    let walker = globwalk::GlobWalkerBuilder::new(path, "*.feature")
-                        .case_insensitive(true)
-                        .build()
-                        .expect("feature path is invalid");
-                    walker
-                        .filter_map(Result::ok)
-                        .map(|entry| {
-                            let env = match self.language.as_ref() {
-                                Some(lang) => gherkin::GherkinEnv::new(lang).unwrap(),
-                                None => Default::default(),
-                            };
-                            gherkin::Feature::parse_path(entry.path(), env)
-                        })
-                        .collect::<Vec<_>>()
-                }
-            })
-            .flatten()
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap_or_else(|e| match e {
-                ParseFileError::Reading { path, source } => {
-                    eprintln!("Error reading '{}':", path.display());
-                    eprintln!("{:?}", source);
-                    std::process::exit(1);
-                }
-                ParseFileError::Parsing {
-                    path,
-                    error,
-                    source,
-                } => {
-                    eprintln!("Error parsing '{}':", path.display());
-                    if let Some(error) = error {
-                        eprintln!("{}", error);
-                    }
-                    eprintln!("{:?}", source);
-                    std::process::exit(1);
-                }
-            });
-
-        features.sort();
-
-        self.features = features;
-        self
-    }
-
-    /// If `Some`, enforce an upper bound on the amount
-    /// of time a step is allowed to execute.
-    /// If `Some`, also avoid indefinite locks during
-    /// step clean-up handling (i.e. to recover panic info)
-    pub fn step_timeout(mut self, step_timeout: Duration) -> Self {
-        self.step_timeout = Some(step_timeout);
-        self
-    }
-
-    /// If true, capture stdout and stderr content
-    /// during tests.
-    pub fn enable_capture(mut self, enable_capture: bool) -> Self {
-        self.enable_capture = enable_capture;
-        self
-    }
-
-    pub fn scenario_regex(mut self, regex: &str) -> Self {
-        let regex = Regex::new(regex).expect("Error compiling scenario regex");
-        self.scenario_filter = Some(regex);
-        self
-    }
-
-    /// Call this to incorporate command line options into the configuration.
-    pub fn cli(self) -> Self {
-        let opts = crate::cli::make_app();
-        let mut s = self;
-
-        if let Some(re) = opts.scenario_filter {
-            s = s.scenario_regex(&re);
+        let events_stream = runner.run(parser.parse(input));
+        futures::pin_mut!(events_stream);
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev).await;
         }
-
-        if opts.nocapture {
-            s = s.enable_capture(false);
-        }
-
-        if opts.debug {
-            s = s.debug(true);
-        }
-
-        s
-    }
-
-    /// Set the default language to assume for each .feature file.
-    pub fn language(mut self, language: &str) -> Self {
-        if gherkin::is_language_supported(language) {
-            self.language = Some(language.to_string());
-        } else {
-            eprintln!(
-                "ERROR: Provided language '{}' not supported; ignoring.",
-                language
-            );
-        }
-
-        self
-    }
-
-    pub fn before(mut self, criteria: Criteria, handler: LifecycleFn) -> Self {
-        self.before.push((criteria, handler));
-        self
-    }
-
-    pub fn after(mut self, criteria: Criteria, handler: LifecycleFn) -> Self {
-        self.after.push((criteria, handler));
-        self
-    }
-
-    /// Enable printing stdout and stderr for every step, regardless of error state.
-    pub fn debug(mut self, value: bool) -> Self {
-        self.event_handler = Box::new(crate::output::BasicOutput::new(value));
-        self.debug = value;
-        self
-    }
-
-    pub fn context(mut self, context: Context) -> Self {
-        self.context = context;
-        self
-    }
-
-    /// Run and report number of errors if any
-    pub async fn run(mut self) -> crate::runner::RunResult {
-        let runner = crate::runner::Runner::new(
-            Rc::new(self.context),
-            self.steps.steps,
-            Rc::new(self.features),
-            self.step_timeout,
-            self.enable_capture,
-            self.scenario_filter,
-            self.before,
-            self.after,
-        );
-        let mut stream = runner.run();
-
-        while let Some(event) = stream.next().await {
-            self.event_handler.handle_event(&event);
-
-            if let crate::event::CucumberEvent::Finished(result) = event {
-                return result;
-            }
-        }
-
-        unreachable!("CucumberEvent::Finished must be fired")
-    }
-
-    /// Convenience function to run all tests and exit with error code 1 on failure.
-    pub async fn run_and_exit(self) {
-        let code = if self.run().await.failed() { 1 } else { 0 };
-        std::process::exit(code);
     }
 }
