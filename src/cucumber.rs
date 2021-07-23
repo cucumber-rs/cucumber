@@ -31,6 +31,47 @@ pub struct Cucumber<W, P, I, R, Wr> {
     _parser_input: PhantomData<I>,
 }
 
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+where
+    W: World,
+    P: Parser<I>,
+    R: Runner<W>,
+    Wr: Writer<W>,
+{
+    /// Creates [`Cucumber`] with custom [`Parser`], [`Runner`] and [`Writer`].
+    #[must_use]
+    pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
+        Self {
+            parser,
+            runner,
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Runs [`Cucumber`].
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    pub async fn run(self, input: I) {
+        let Cucumber {
+            parser,
+            runner,
+            mut writer,
+            ..
+        } = self;
+
+        let events_stream = runner.run(parser.parse(input));
+        futures::pin_mut!(events_stream);
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev).await;
+        }
+    }
+}
+
 impl<W, P, I, R, Wr> Debug for Cucumber<W, P, I, R, Wr>
 where
     P: Debug,
@@ -51,7 +92,7 @@ impl<W, I> Default
         W,
         parser::Basic,
         I,
-        runner::basic::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
         writer::Summary<writer::Normalized<W, writer::Basic>>,
     >
 where
@@ -82,7 +123,7 @@ impl<W, I>
         W,
         parser::Basic,
         I,
-        runner::basic::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
         writer::Summary<writer::Normalized<W, writer::Basic>>,
     >
 where
@@ -112,33 +153,21 @@ where
     pub fn new() -> Self {
         Cucumber::default()
     }
+}
 
-    /// Runs [`Cucumber`] and exits with code `1` if any [`Step`] failed.
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Step`]: gherkin::Step
-    pub async fn run_and_exit(self, input: I) {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-
-        if writer.is_failed() {
-            process::exit(1);
-        }
-    }
-
+impl<W, I, P, Wr>
+    Cucumber<
+        W,
+        P,
+        I,
+        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        Wr,
+    >
+where
+    W: World,
+    P: Parser<I>,
+    Wr: Writer<W>,
+{
     /// Inserts [Given] [`Step`].
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
@@ -197,32 +226,21 @@ where
     }
 }
 
-impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+impl<W, I, P, R, Wr> Cucumber<W, P, I, R, writer::Summary<Wr>>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
 {
-    /// Creates [`Cucumber`] with custom [`Parser`], [`Runner`] and [`Writer`].
-    #[must_use]
-    pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
-        Self {
-            parser,
-            runner,
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
-    }
-
-    /// Runs [`Cucumber`].
+    /// Runs [`Cucumber`] and exits with code `1` if any [`Step`] failed.
     ///
     /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
     ///
     /// [`Feature`]: gherkin::Feature
-    pub async fn run(self, input: I) {
+    /// [`Step`]: gherkin::Step
+    pub async fn run_and_exit(self, input: I) {
         let Cucumber {
             parser,
             runner,
@@ -234,6 +252,10 @@ where
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
             writer.handle_event(ev).await;
+        }
+
+        if writer.is_failed() {
+            process::exit(1);
         }
     }
 }
