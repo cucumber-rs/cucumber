@@ -6,6 +6,7 @@ use std::{
     fmt::{Debug, Formatter},
     mem,
     panic::{self, AssertUnwindSafe},
+    path::PathBuf,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc,
@@ -235,9 +236,13 @@ struct Executor<W> {
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
+    /// We also store path to `.feature` file so [`Rule`]s with same names and
+    /// spans in different files will have different hashes.
+    ///
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
-    rule_scenarios_count: HashMap<gherkin::Rule, AtomicUsize>,
+    rule_scenarios_count:
+        HashMap<(Option<PathBuf>, gherkin::Rule), AtomicUsize>,
 
     /// [`Step`]s [`Collection`].
     ///
@@ -425,7 +430,7 @@ impl<W: World> Executor<W> {
     ) -> Option<event::Cucumber<W>> {
         let finished_scenarios = self
             .rule_scenarios_count
-            .get(&rule)
+            .get(&(feature.path.clone(), rule.clone()))
             .unwrap_or_else(|| panic!("No Rule {}", rule.name))
             .fetch_add(1, Ordering::SeqCst)
             + 1;
@@ -490,7 +495,7 @@ impl<W: World> Executor<W> {
         {
             let _ = self
                 .rule_scenarios_count
-                .entry(rule.clone())
+                .entry((feature.path.clone(), rule.clone()))
                 .or_insert_with(|| {
                     started_rules.push((feature, rule));
                     0.into()
@@ -524,7 +529,7 @@ impl<W: World> Executor<W> {
         self.rule_scenarios_count = self
             .rule_scenarios_count
             .drain()
-            .filter(|(r, count)| {
+            .filter(|((_, r), count)| {
                 r.scenarios.len() != count.load(Ordering::SeqCst)
             })
             .collect();
