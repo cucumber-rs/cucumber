@@ -12,6 +12,9 @@ readme = "README.md"
 repository = "https://github.com/bbqsrc/cucumber-rust"
 version = "0.8.4"
 
+[features]
+macros = ["cucumber_rust_codegen", "inventory"]
+
 [dependencies]
 async-trait = "0.1"
 console = "0.14"
@@ -24,12 +27,19 @@ linked-hash-map = "0.5"
 regex = "1.5"
 sealed = "0.3"
 
+# Codegen dependencies
+cucumber_rust_codegen = { version = "0.1", path = "./codegen", optional = true }
+inventory = { version = "0.1", optional = true }
+
 [dev-dependencies]
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 harness = false
 name = "wait"
+
+[workspace]
+members = ["codegen"]
 
 [package.metadata.docs.rs]
 all-features = true

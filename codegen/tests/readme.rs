@@ -1,9 +1,9 @@
 use std::{cell::RefCell, convert::Infallible};
 
 use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit};
+use cucumber_rust::{given, then, when, World, WorldInit, WorldRun as _};
 
-#[derive(WorldInit)]
+#[derive(Debug, WorldInit)]
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String,
@@ -13,7 +13,7 @@ pub struct MyWorld {
 
 impl MyWorld {
     async fn test_async_fn(&mut self) {
-        *self.some_value.borrow_mut() = 123u8;
+        *self.some_value.borrow_mut() = 123_u8;
         self.bar = 123;
     }
 }
@@ -38,7 +38,7 @@ async fn a_thing(world: &mut MyWorld) {
 }
 
 #[when(regex = "something goes (.*)")]
-async fn something_goes(_: &mut MyWorld, _wrong: String) {}
+fn something_goes(_: &mut MyWorld, _wrong: String) {}
 
 #[given("I am trying out Cucumber")]
 fn i_am_trying_out(world: &mut MyWorld) {
@@ -63,6 +63,6 @@ fn we_can_regex(_: &mut MyWorld, action: String) {
 }
 
 fn main() {
-    let runner = MyWorld::init(&["./features"]);
-    futures::executor::block_on(runner.run());
+    let runner = MyWorld::run("./features");
+    futures::executor::block_on(runner);
 }

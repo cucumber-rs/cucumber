@@ -30,9 +30,24 @@ pub mod runner;
 pub mod step;
 pub mod writer;
 
+#[cfg(feature = "macros")]
+#[doc(hidden)]
+pub mod private;
+
 use std::error::Error as StdError;
 
 use async_trait::async_trait;
+
+pub use gherkin;
+
+#[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+#[doc(inline)]
+pub use self::private::{WorldInit, WorldRun};
+#[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+#[doc(inline)]
+pub use cucumber_rust_codegen::{given, then, when, WorldInit};
 
 #[doc(inline)]
 pub use self::{

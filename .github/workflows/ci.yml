@@ -58,7 +58,7 @@ jobs:
       matrix:
         crate:
           - cucumber_rust
-          # TODO: add cucumber_codegen once it's reimplemented
+          - cucumber_codegen
         os:
           - ubuntu
           - macOS

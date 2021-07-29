@@ -9,17 +9,22 @@
 // except according to those terms.
 
 //! Code generation for [`cucumber_rust`] tests auto-wiring.
+//!
+//! [`cucumber_rust`]: https://docs.rs/cucumber_rust
 
 #![deny(
-    missing_debug_implementations,
     nonstandard_style,
     rust_2018_idioms,
+    rustdoc::broken_intra_doc_links,
+    rustdoc::private_intra_doc_links,
     trivial_casts,
-    trivial_numeric_casts
+    trivial_numeric_casts,
+    unsafe_code
 )]
 #![warn(
     deprecated_in_future,
     missing_copy_implementations,
+    missing_debug_implementations,
     missing_docs,
     unreachable_pub,
     unused_import_braces,
@@ -38,19 +43,19 @@ macro_rules! step_attribute {
         /// Attribute to auto-wire the test to the [`World`] implementer.
         ///
         /// There are 3 step-specific attributes:
-        /// - [`given`]
-        /// - [`when`]
-        /// - [`then`]
+        /// - [`macro@given`]
+        /// - [`macro@when`]
+        /// - [`macro@then`]
         ///
         /// # Example
         ///
         /// ```
-        /// # use std::{convert::Infallible, rc::Rc};
+        /// # use std::{convert::Infallible};
         /// #
         /// # use async_trait::async_trait;
-        /// use cucumber_rust::{given, World, WorldInit};
+        /// use cucumber_rust::{given, World, WorldInit, WorldRun as _};
         ///
-        /// #[derive(WorldInit)]
+        /// #[derive(Debug, WorldInit)]
         /// struct MyWorld;
         ///
         /// #[async_trait(?Send)]
@@ -65,34 +70,34 @@ macro_rules! step_attribute {
         /// #[given(regex = r"(\S+) is (\d+)")]
         /// fn test(w: &mut MyWorld, param: String, num: i32) {
         ///     assert_eq!(param, "foo");
-        ///     assert_eq!(num, 0);
+        ///     assert_eq!(num, 10);
         /// }
         ///
         /// #[tokio::main]
         /// async fn main() {
-        ///     let runner = MyWorld::init(&["./features"]);
-        ///     runner.run().await;
+        ///     MyWorld::run("./features").await;
         /// }
         /// ```
         ///
         /// # Arguments
         ///
-        /// - First argument has to be mutable refence to the [`WorldInit`] deriver (your [`World`]
-        ///   implementer).
-        /// - Other argument's types have to implement [`FromStr`] or it has to be a slice where the
-        ///   element type also implements [`FromStr`].
-        /// - To use [`cucumber::StepContext`], name the argument as `context`, **or** mark the argument with
-        ///   a `#[given(context)]` attribute.
+        /// - First argument has to be mutable reference to the [`WorldInit`]
+        ///   deriver (your [`World`] implementer).
+        /// - Other argument's types have to implement [`FromStr`] or it has to
+        ///   be a slice where the element type also implements [`FromStr`].
+        /// - To use [`gherkin::Step`], name the argument as `step`,
+        ///   **or** mark the argument with a `#[given(step)]` attribute.
         ///
         /// ```
         /// # use std::convert::Infallible;
-        /// # use std::rc::Rc;
         /// #
         /// # use async_trait::async_trait;
-        /// # use cucumber_rust::{StepContext, given, World, WorldInit};
+        /// # use cucumber_rust::{
+        /// #    gherkin::Step, given, World, WorldInit, WorldRun as _
+        /// # };
         /// #
-        /// #[derive(WorldInit)]
-        /// struct MyWorld;
+        /// # #[derive(Debug, WorldInit)]
+        /// # struct MyWorld;
         /// #
         /// # #[async_trait(?Send)]
         /// # impl World for MyWorld {
@@ -106,23 +111,23 @@ macro_rules! step_attribute {
         /// #[given(regex = r"(\S+) is not (\S+)")]
         /// fn test_step(
         ///     w: &mut MyWorld,
-        ///     #[given(context)] s: &StepContext,
+        ///     #[given(step)] s: &Step,
+        ///     matches: &[String],
         /// ) {
-        ///     assert_eq!(s.matches.get(0).unwrap(), "foo");
-        ///     assert_eq!(s.matches.get(1).unwrap(), "bar");
-        ///     assert_eq!(s.step.value, "foo is bar");
+        ///     assert_eq!(matches[0], "foo");
+        ///     assert_eq!(matches[1], "bar");
+        ///     assert_eq!(s.value, "foo is not bar");
         /// }
         /// #
         /// # #[tokio::main]
         /// # async fn main() {
-        /// #     let runner = MyWorld::init(&["./features"]);
-        /// #     runner.run().await;
+        /// #     MyWorld::run("./features").await;
         /// # }
         /// ```
         ///
         /// [`FromStr`]: std::str::FromStr
-        /// [`cucumber::StepContext`]: cucumber_rust::StepContext
-        /// [`World`]: cucumber_rust::World
+        /// [`gherkin::Step`]: https://bit.ly/3j42hcd
+        /// [`World`]: https://bit.ly/3j0aWw7
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {
             attribute::step(std::stringify!($name), args.into(), input.into())
@@ -136,7 +141,8 @@ macro_rules! steps {
     ($($name:ident),*) => {
         /// Derive macro for tests auto-wiring.
         ///
-        /// See [`given`], [`when`] and [`then`] attributes for further details.
+        /// See [`macro@given`], [`macro@when`] and [`macro@then`] attributes
+        /// for further details.
         #[proc_macro_derive(WorldInit)]
         pub fn derive_init(input: TokenStream) -> TokenStream {
             derive::world_init(input.into(), &[$(std::stringify!($name)),*])

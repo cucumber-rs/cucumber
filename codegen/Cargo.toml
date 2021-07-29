@@ -19,17 +19,17 @@ proc-macro = true
 
 [dependencies]
 inflections = "1.1"
-itertools = "0.9"
+itertools = "0.10"
 proc-macro2 = "1.0"
 quote = "1.0"
 regex = "1.4"
 syn = { version = "1.0", features = ["derive", "extra-traits", "full"] }
 
 [dev-dependencies]
-async-trait = "0.1.41"
+async-trait = "0.1"
 futures = "0.3"
 cucumber_rust = { path = "../", features = ["macros"] }
-tokio = { version = "0.3", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 name = "example"
