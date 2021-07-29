@@ -58,7 +58,7 @@ jobs:
       matrix:
         crate:
           - cucumber_rust
-          - cucumber_codegen
+          - cucumber_rust_codegen
         os:
           - ubuntu
           - macOS
