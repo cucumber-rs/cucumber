@@ -22,18 +22,30 @@ use crate::{
 /// Top-level [Cucumber] executor.
 ///
 /// [Cucumber]: https://cucumber.io
-pub struct Cucumber<W, P, I, R, Wr> {
+pub struct Cucumber<
+    W,
+    P,
+    I,
+    R,
+    Wr,
+    F = fn(
+        &gherkin::Feature,
+        Option<&gherkin::Rule>,
+        &gherkin::Scenario,
+    ) -> bool,
+> {
     parser: P,
     runner: R,
     writer: Wr,
     _world: PhantomData<W>,
     _parser_input: PhantomData<I>,
+    _parser_filter: PhantomData<F>,
 }
 
-impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+impl<W, P, I, R, Wr, F> Cucumber<W, P, I, R, Wr, F>
 where
     W: World,
-    P: Parser<I>,
+    P: Parser<I, F>,
     R: Runner<W>,
     Wr: Writer<W>,
 {
@@ -46,9 +58,39 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
+            _parser_filter: PhantomData,
         }
     }
 
+    /// Runs [`Cucumber`].
+    ///
+    /// [`Feature`]s sourced and filtered by [`Parser`] are fed to [`Runner`],
+    /// which produces events handled by [`Writer`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    pub async fn filter_run(self, input: I, filter: Option<F>) {
+        let Cucumber {
+            parser,
+            runner,
+            mut writer,
+            ..
+        } = self;
+
+        let events_stream = runner.run(parser.parse(input, filter));
+        futures::pin_mut!(events_stream);
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev).await;
+        }
+    }
+}
+
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+where
+    W: World,
+    P: Parser<I>,
+    R: Runner<W>,
+    Wr: Writer<W>,
+{
     /// Runs [`Cucumber`].
     ///
     /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
@@ -63,7 +105,7 @@ where
             ..
         } = self;
 
-        let events_stream = runner.run(parser.parse(input));
+        let events_stream = runner.run(parser.parse(input, None));
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
             writer.handle_event(ev).await;
@@ -183,6 +225,7 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
+            _parser_filter: PhantomData,
         }
     }
 
@@ -202,6 +245,7 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
+            _parser_filter: PhantomData,
         }
     }
 
@@ -221,6 +265,7 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
+            _parser_filter: PhantomData,
         }
     }
 }
@@ -251,7 +296,7 @@ where
             ..
         } = self;
 
-        let events_stream = runner.run(parser.parse(input));
+        let events_stream = runner.run(parser.parse(input, None));
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
             writer.handle_event(ev).await;

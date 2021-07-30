@@ -1,6 +1,6 @@
 //! Default [`Parser`] implementation.
 
-use std::{path::Path, vec};
+use std::{mem, path::Path, vec};
 
 use futures::stream;
 
@@ -13,16 +13,24 @@ use crate::Parser;
 #[derive(Clone, Copy, Debug)]
 pub struct Basic;
 
-impl<I: AsRef<Path>> Parser<I> for Basic {
+impl<I, F> Parser<I, F> for Basic
+where
+    I: AsRef<Path>,
+    F: Fn(
+        &gherkin::Feature,
+        Option<&gherkin::Rule>,
+        &gherkin::Scenario,
+    ) -> bool,
+{
     type Output = stream::Iter<vec::IntoIter<gherkin::Feature>>;
 
-    fn parse(self, path: I) -> Self::Output {
+    fn parse(self, path: I, filter: Option<F>) -> Self::Output {
         let path = path
             .as_ref()
             .canonicalize()
             .expect("failed to canonicalize path");
 
-        let features = if path.is_file() {
+        let mut features = if path.is_file() {
             let env = gherkin::GherkinEnv::default();
             gherkin::Feature::parse_path(path, env).map(|f| vec![f])
         } else {
@@ -39,6 +47,34 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .collect::<Result<_, _>>()
         }
         .expect("failed to parse gherkin::Feature");
+
+        features.iter_mut().for_each(|f| {
+            let scenarios = mem::take(&mut f.scenarios);
+            f.scenarios = scenarios
+                .into_iter()
+                .filter(|s| {
+                    filter
+                        .as_ref()
+                        .map(|filter| filter(f, None, s))
+                        .unwrap_or(true)
+                })
+                .collect();
+
+            let mut rules = mem::take(&mut f.rules);
+            for r in &mut rules {
+                let scenarios = mem::take(&mut r.scenarios);
+                r.scenarios = scenarios
+                    .into_iter()
+                    .filter(|s| {
+                        filter
+                            .as_ref()
+                            .map(|filter| filter(f, Some(&r), s))
+                            .unwrap_or(true)
+                    })
+                    .collect();
+            }
+            f.rules = rules;
+        });
 
         stream::iter(features)
     }
