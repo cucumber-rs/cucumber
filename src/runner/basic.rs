@@ -596,8 +596,21 @@ impl Features {
             .into_group_map_by(|(_, _, s)| which_scenario(s));
 
         let mut scenarios = self.scenarios.lock().await;
-        for (which, values) in local {
-            scenarios.entry(which).or_default().extend(values);
+        if local.get(&ScenarioType::Serial).is_none() {
+            // If there are no Serial Scenarios we just extending already
+            // existing Concurrent Scenarios.
+            for (which, values) in local {
+                scenarios.entry(which).or_default().extend(values);
+            }
+        } else {
+            // If there are Serial Scenarios we insert all Scenarios in front.
+            // This is done to execute them closely to one another, so the
+            // output wouldn't hang on executing other Concurrent Scenarios.
+            for (which, mut values) in local {
+                let old = mem::take(scenarios.entry(which).or_default());
+                values.extend(old);
+                scenarios.entry(which).or_default().extend(values);
+            }
         }
     }
 
