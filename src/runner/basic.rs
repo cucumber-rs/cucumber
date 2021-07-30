@@ -24,7 +24,7 @@ use itertools::Itertools as _;
 use regex::Regex;
 
 use crate::{
-    event::{self, PanicInfo},
+    event::{self, Info},
     feature::FeatureExt as _,
     step, Runner, Step, World,
 };
@@ -232,7 +232,7 @@ struct Executor<W> {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    features_scenarios_count: HashMap<gherkin::Feature, AtomicUsize>,
+    features_scenarios_count: HashMap<Arc<gherkin::Feature>, AtomicUsize>,
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
@@ -242,7 +242,7 @@ struct Executor<W> {
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     rule_scenarios_count:
-        HashMap<(Option<PathBuf>, gherkin::Rule), AtomicUsize>,
+        HashMap<(Option<PathBuf>, Arc<gherkin::Rule>), AtomicUsize>,
 
     /// [`Step`]s [`Collection`].
     ///
@@ -283,9 +283,9 @@ impl<W: World> Executor<W> {
     /// [`Scenario`]: gherkin::Scenario
     async fn run_scenario(
         &self,
-        feature: gherkin::Feature,
-        rule: Option<gherkin::Rule>,
-        scenario: gherkin::Scenario,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
     ) {
         self.send(event::Cucumber::scenario(
             feature.clone(),
@@ -294,14 +294,14 @@ impl<W: World> Executor<W> {
             event::Scenario::Started,
         ));
 
-        let ok = |e: fn(gherkin::Step) -> event::Scenario<W>| {
+        let ok = |e: fn(Arc<gherkin::Step>) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let err = |e: fn(gherkin::Step, W, PanicInfo) -> event::Scenario<W>| {
+        let err = |e: fn(Arc<gherkin::Step>, W, Info) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, world, info| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
@@ -313,7 +313,7 @@ impl<W: World> Executor<W> {
             let background = feature
                 .background
                 .as_ref()
-                .map(|b| b.steps.clone())
+                .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
                 .into_iter()
                 .flatten();
 
@@ -332,7 +332,7 @@ impl<W: World> Executor<W> {
                 })
                 .await?;
 
-            stream::iter(scenario.steps.clone())
+            stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
                 .map(Ok)
                 .try_fold(background, |world, step| {
                     self.run_step(
@@ -380,11 +380,11 @@ impl<W: World> Executor<W> {
     async fn run_step(
         &self,
         mut world: Option<W>,
-        step: gherkin::Step,
-        started: impl FnOnce(gherkin::Step) -> event::Cucumber<W>,
-        passed: impl FnOnce(gherkin::Step) -> event::Cucumber<W>,
-        skipped: impl FnOnce(gherkin::Step) -> event::Cucumber<W>,
-        failed: impl FnOnce(gherkin::Step, W, PanicInfo) -> event::Cucumber<W>,
+        step: Arc<gherkin::Step>,
+        started: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        passed: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        skipped: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        failed: impl FnOnce(Arc<gherkin::Step>, W, Info) -> event::Cucumber<W>,
     ) -> Result<W, ()> {
         self.send(started(step.clone()));
 
@@ -394,7 +394,7 @@ impl<W: World> Executor<W> {
                     Some(W::new().await.expect("failed to initialize World"));
             }
 
-            let (step_fn, ctx) = self.collection.find(step.clone())?;
+            let (step_fn, ctx) = self.collection.find(&step)?;
             step_fn(world.as_mut().unwrap(), ctx).await;
             Some(())
         };
@@ -425,8 +425,8 @@ impl<W: World> Executor<W> {
     /// [`Scenario`]: gherkin::Scenario
     fn rule_scenario_finished(
         &self,
-        feature: gherkin::Feature,
-        rule: gherkin::Rule,
+        feature: Arc<gherkin::Feature>,
+        rule: Arc<gherkin::Rule>,
     ) -> Option<event::Cucumber<W>> {
         let finished_scenarios = self
             .rule_scenarios_count
@@ -446,7 +446,7 @@ impl<W: World> Executor<W> {
     /// [`Scenario`]: gherkin::Scenario
     fn feature_scenario_finished(
         &self,
-        feature: gherkin::Feature,
+        feature: Arc<gherkin::Feature>,
     ) -> Option<event::Cucumber<W>> {
         let finished_scenarios = self
             .features_scenarios_count
@@ -471,7 +471,11 @@ impl<W: World> Executor<W> {
     fn start_scenarios(
         &mut self,
         runnable: impl AsRef<
-            [(gherkin::Feature, Option<gherkin::Rule>, gherkin::Scenario)],
+            [(
+                Arc<gherkin::Feature>,
+                Option<Arc<gherkin::Rule>>,
+                Arc<gherkin::Scenario>,
+            )],
         >,
     ) -> impl Iterator<Item = event::Cucumber<W>> {
         let runnable = runnable.as_ref();
@@ -567,7 +571,11 @@ struct Features {
 
 type Scenarios = HashMap<
     ScenarioType,
-    Vec<(gherkin::Feature, Option<gherkin::Rule>, gherkin::Scenario)>,
+    Vec<(
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+    )>,
 >;
 
 impl Features {
@@ -592,7 +600,13 @@ impl Features {
                     .map(|s| (&f, Some(r), s))
                     .collect::<Vec<_>>()
             }))
-            .map(|(f, r, s)| (f.clone(), r.cloned(), s.clone()))
+            .map(|(f, r, s)| {
+                (
+                    Arc::new(f.clone()),
+                    r.map(|r| Arc::new(r.clone())),
+                    Arc::new(s.clone()),
+                )
+            })
             .into_group_map_by(|(_, _, s)| which_scenario(s));
 
         let mut scenarios = self.scenarios.lock().await;
@@ -620,7 +634,11 @@ impl Features {
     async fn get(
         &self,
         max_concurrent_scenarios: Option<usize>,
-    ) -> Vec<(gherkin::Feature, Option<gherkin::Rule>, gherkin::Scenario)> {
+    ) -> Vec<(
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+    )> {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
             .get_mut(&ScenarioType::Serial)

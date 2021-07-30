@@ -110,7 +110,10 @@ impl<World> Collection<World> {
     ///
     /// [`Step::value`]: gherkin::Step::value
     #[must_use]
-    pub fn find(&self, step: gherkin::Step) -> Option<(&Step<World>, Context)> {
+    pub fn find(
+        &self,
+        step: &gherkin::Step,
+    ) -> Option<(&Step<World>, Context)> {
         let collection = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
@@ -127,7 +130,13 @@ impl<World> Collection<World> {
             .map(|c| c.map(|c| c.as_str().to_owned()).unwrap_or_default())
             .collect();
 
-        Some((step_fn, Context { step, matches }))
+        Some((
+            step_fn,
+            Context {
+                step: step.clone(),
+                matches,
+            },
+        ))
     }
 }
 

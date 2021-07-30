@@ -65,7 +65,7 @@ where
                     .filter(|s| {
                         filter
                             .as_ref()
-                            .map_or(true, |filter| filter(f, Some(&r), s))
+                            .map_or(true, |filter| filter(f, Some(r), s))
                     })
                     .collect();
             }

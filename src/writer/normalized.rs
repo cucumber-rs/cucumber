@@ -2,6 +2,8 @@
 //!
 //! [`Parser`]: crate::Parser
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
@@ -55,9 +57,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
                 event::Feature::Rule(r, ev) => match ev {
                     event::Rule::Started => self.queue.new_rule(&f, r),
                     event::Rule::Scenario(s, ev) => {
-                        self.queue.insert_scenario_event(&f, Some(&r), s, ev);
+                        self.queue.insert_scenario_event(&f, Some(r), s, ev);
                     }
-                    event::Rule::Finished => self.queue.rule_finished(&f, &r),
+                    event::Rule::Finished => self.queue.rule_finished(&f, r),
                 },
             },
         }
@@ -88,7 +90,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 /// [`Feature::Finished`]: event::Feature::Finished
 #[derive(Debug)]
 struct Cucumber<World> {
-    events: LinkedHashMap<gherkin::Feature, FeatureEvents<World>>,
+    events: LinkedHashMap<Arc<gherkin::Feature>, FeatureEvents<World>>,
     finished: bool,
 }
 
@@ -116,7 +118,7 @@ impl<World> Cucumber<World> {
     /// Inserts new [`Feature`] on [`Feature::Started`].
     ///
     /// [`Feature::Started`]: event::Feature::Started
-    fn new_feature(&mut self, feature: gherkin::Feature) {
+    fn new_feature(&mut self, feature: Arc<gherkin::Feature>) {
         drop(self.events.insert(feature, FeatureEvents::new()));
     }
 
@@ -136,7 +138,11 @@ impl<World> Cucumber<World> {
     /// Inserts new [`Rule`] on [`Rule::Started`].
     ///
     /// [`Rule::Started`]: event::Rule::Started
-    fn new_rule(&mut self, feature: &gherkin::Feature, rule: gherkin::Rule) {
+    fn new_rule(
+        &mut self,
+        feature: &gherkin::Feature,
+        rule: Arc<gherkin::Rule>,
+    ) {
         self.events
             .get_mut(feature)
             .unwrap_or_else(|| panic!("No Feature {}", feature.name))
@@ -153,7 +159,7 @@ impl<World> Cucumber<World> {
     fn rule_finished(
         &mut self,
         feature: &gherkin::Feature,
-        rule: &gherkin::Rule,
+        rule: Arc<gherkin::Rule>,
     ) {
         self.events
             .get_mut(feature)
@@ -168,8 +174,8 @@ impl<World> Cucumber<World> {
     fn insert_scenario_event(
         &mut self,
         feature: &gherkin::Feature,
-        rule: Option<&gherkin::Rule>,
-        scenario: gherkin::Scenario,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         event: event::Scenario<World>,
     ) {
         self.events
@@ -184,7 +190,7 @@ impl<World> Cucumber<World> {
     /// [`Feature`]: gherkin::Feature
     fn next_feature(
         &mut self,
-    ) -> Option<(gherkin::Feature, &mut FeatureEvents<World>)> {
+    ) -> Option<(Arc<gherkin::Feature>, &mut FeatureEvents<World>)> {
         self.events.iter_mut().next().map(|(f, ev)| (f.clone(), ev))
     }
 
@@ -204,7 +210,7 @@ impl<World> Cucumber<World> {
     async fn emit_feature_events<Wr: Writer<World>>(
         &mut self,
         writer: &mut Wr,
-    ) -> Option<gherkin::Feature> {
+    ) -> Option<Arc<gherkin::Feature>> {
         if let Some((f, events)) = self.next_feature() {
             if !events.is_started() {
                 writer
@@ -284,7 +290,7 @@ impl<World> FeatureEvents<World> {
     /// [`remove`]: Self::remove()
     async fn emit_scenario_and_rule_events<Wr: Writer<World>>(
         &mut self,
-        feature: gherkin::Feature,
+        feature: Arc<gherkin::Feature>,
         writer: &mut Wr,
     ) -> Option<RuleOrScenario> {
         match self.events.next_rule_or_scenario() {
@@ -307,14 +313,14 @@ struct RulesAndScenarios<World>(
     LinkedHashMap<RuleOrScenario, RuleOrScenarioEvents<World>>,
 );
 
-type RuleOrScenario = Either<gherkin::Rule, gherkin::Scenario>;
+type RuleOrScenario = Either<Arc<gherkin::Rule>, Arc<gherkin::Scenario>>;
 
 type RuleOrScenarioEvents<World> =
     Either<RuleEvents<World>, ScenarioEvents<World>>;
 
 type NextRuleOrScenario<'events, World> = Either<
-    (gherkin::Rule, &'events mut RuleEvents<World>),
-    (gherkin::Scenario, &'events mut ScenarioEvents<World>),
+    (Arc<gherkin::Rule>, &'events mut RuleEvents<World>),
+    (Arc<gherkin::Scenario>, &'events mut ScenarioEvents<World>),
 >;
 
 impl<World> RulesAndScenarios<World> {
@@ -326,7 +332,7 @@ impl<World> RulesAndScenarios<World> {
     /// Inserts new [`Rule`].
     ///
     /// [`Rule`]: gherkin::Rule
-    fn new_rule(&mut self, rule: gherkin::Rule) {
+    fn new_rule(&mut self, rule: Arc<gherkin::Rule>) {
         drop(
             self.0
                 .insert(Either::Left(rule), Either::Left(RuleEvents::new())),
@@ -337,12 +343,8 @@ impl<World> RulesAndScenarios<World> {
     ///
     /// [`Rule`]: gherkin::Rule
     /// [`Rule::Finished`]: event::Rule::Finished
-    fn rule_finished(&mut self, rule: &gherkin::Rule) {
-        match self
-            .0
-            .get_mut(&Either::Left(rule.clone()))
-            .unwrap_or_else(|| panic!("No Rule {}", rule.name))
-        {
+    fn rule_finished(&mut self, rule: Arc<gherkin::Rule>) {
+        match self.0.get_mut(&Either::Left(rule)).unwrap() {
             Either::Left(ev) => {
                 ev.finished = true;
             }
@@ -355,8 +357,8 @@ impl<World> RulesAndScenarios<World> {
     /// [`Scenario`]: gherkin::Scenario
     fn insert_scenario_event(
         &mut self,
-        rule: Option<&gherkin::Rule>,
-        scenario: gherkin::Scenario,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         ev: event::Scenario<World>,
     ) {
         if let Some(rule) = rule {
@@ -407,7 +409,7 @@ impl<World> RulesAndScenarios<World> {
 #[derive(Debug)]
 struct RuleEvents<World> {
     started_emitted: bool,
-    scenarios: LinkedHashMap<gherkin::Scenario, ScenarioEvents<World>>,
+    scenarios: LinkedHashMap<Arc<gherkin::Scenario>, ScenarioEvents<World>>,
     finished: bool,
 }
 
@@ -426,7 +428,7 @@ impl<World> RuleEvents<World> {
     /// [`Scenario`]: gherkin::Scenario
     fn next_scenario(
         &mut self,
-    ) -> Option<(gherkin::Scenario, &mut ScenarioEvents<World>)> {
+    ) -> Option<(Arc<gherkin::Scenario>, &mut ScenarioEvents<World>)> {
         self.scenarios
             .iter_mut()
             .next()
@@ -439,10 +441,10 @@ impl<World> RuleEvents<World> {
     /// [`Rule`]: gherkin::Rule
     async fn emit_rule_events<Wr: Writer<World>>(
         &mut self,
-        feature: gherkin::Feature,
-        rule: gherkin::Rule,
+        feature: Arc<gherkin::Feature>,
+        rule: Arc<gherkin::Rule>,
         writer: &mut Wr,
-    ) -> Option<gherkin::Rule> {
+    ) -> Option<Arc<gherkin::Rule>> {
         if !self.started_emitted {
             writer
                 .handle_event(event::Cucumber::rule_started(
@@ -501,11 +503,11 @@ impl<World> ScenarioEvents<World> {
     /// [`Scenario`]: gherkin::Scenario
     async fn emit_scenario_events<Wr: Writer<World>>(
         &mut self,
-        feature: gherkin::Feature,
-        rule: Option<gherkin::Rule>,
-        scenario: gherkin::Scenario,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         writer: &mut Wr,
-    ) -> Option<gherkin::Scenario> {
+    ) -> Option<Arc<gherkin::Scenario>> {
         while !self.0.is_empty() {
             let ev = self.0.remove(0);
             let should_be_removed = matches!(ev, event::Scenario::Finished);

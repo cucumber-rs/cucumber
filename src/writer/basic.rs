@@ -7,7 +7,7 @@ use console::{Style, Term};
 use itertools::Itertools as _;
 
 use crate::{
-    event::{self, PanicInfo},
+    event::{self, Info},
     World, Writer,
 };
 
@@ -186,7 +186,7 @@ impl Basic {
         &self,
         step: &gherkin::Step,
         world: &W,
-        info: &PanicInfo,
+        info: &Info,
         ident: usize,
     ) {
         let world = format!("{:#?}", world)
@@ -280,7 +280,7 @@ impl Basic {
         &self,
         step: &gherkin::Step,
         world: &W,
-        info: &PanicInfo,
+        info: &Info,
         ident: usize,
     ) {
         let world = format!("{:#?}", world)
@@ -307,7 +307,7 @@ impl Basic {
     }
 }
 
-fn coerce_error(err: &PanicInfo) -> String {
+fn coerce_error(err: &Info) -> String {
     if let Some(string) = err.downcast_ref::<String>() {
         string.clone()
     } else if let Some(&string) = err.downcast_ref::<&str>() {
