@@ -69,6 +69,35 @@ where
     W: StepConstructor<Self> + inventory::Collect,
     T: StepConstructor<Self> + inventory::Collect,
 {
+    async fn filter_run<
+        I: AsRef<Path>,
+        F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> bool,
+    >(
+        input: I,
+        filter: F,
+    ) {
+        let cucumber = Cucumber::custom(
+            parser::Basic,
+            runner::basic::Basic::new(
+                |sc| {
+                    sc.tags
+                        .iter()
+                        .any(|tag| tag == "serial")
+                        .then(|| ScenarioType::Serial)
+                        .unwrap_or(ScenarioType::Concurrent)
+                },
+                Some(64),
+                Self::collection(),
+            ),
+            writer::Basic::new().normalize().summarize(),
+        );
+        cucumber.filter_run_and_exit(input, filter).await;
+    }
+
     async fn run<I: AsRef<Path>>(input: I) {
         let cucumber = Cucumber::custom(
             parser::Basic,
