@@ -48,15 +48,12 @@ where
         }
         .expect("failed to parse gherkin::Feature");
 
-        features.iter_mut().for_each(|f| {
+        for f in &mut features {
             let scenarios = mem::take(&mut f.scenarios);
             f.scenarios = scenarios
                 .into_iter()
                 .filter(|s| {
-                    filter
-                        .as_ref()
-                        .map(|filter| filter(f, None, s))
-                        .unwrap_or(true)
+                    filter.as_ref().map_or(true, |filter| filter(f, None, s))
                 })
                 .collect();
 
@@ -68,13 +65,12 @@ where
                     .filter(|s| {
                         filter
                             .as_ref()
-                            .map(|filter| filter(f, Some(&r), s))
-                            .unwrap_or(true)
+                            .map_or(true, |filter| filter(f, Some(&r), s))
                     })
                     .collect();
             }
             f.rules = rules;
-        });
+        }
 
         stream::iter(features)
     }
