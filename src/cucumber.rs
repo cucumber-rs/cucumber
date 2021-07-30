@@ -109,7 +109,7 @@ where
                         .then(|| ScenarioType::Serial)
                         .unwrap_or(ScenarioType::Concurrent)
                 },
-                16,
+                Some(64),
                 step::Collection::new(),
             ),
             writer::Basic::new().normalize().summarize(),

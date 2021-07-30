@@ -37,7 +37,7 @@ use crate::{
 ///
 /// [`Scenario`]: gherkin::Scenario
 pub struct Basic<World, F> {
-    max_concurrent_scenarios: usize,
+    max_concurrent_scenarios: Option<usize>,
     steps: step::Collection<World>,
     which_scenario: F,
 }
@@ -76,7 +76,7 @@ where
     #[must_use]
     pub fn new(
         which_scenario: F,
-        max_concurrent_scenarios: usize,
+        max_concurrent_scenarios: Option<usize>,
         steps: step::Collection<World>,
     ) -> Self {
         Basic {
@@ -176,7 +176,7 @@ where
 /// [`Feature`]: gherkin::Feature
 async fn execute<W: World>(
     features: Features,
-    max_concurrent_scenarios: usize,
+    max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
     sender: mpsc::UnboundedSender<event::Cucumber<W>>,
 ) {
@@ -619,7 +619,7 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn get(
         &self,
-        max_concurrent_scenarios: usize,
+        max_concurrent_scenarios: Option<usize>,
     ) -> Vec<(gherkin::Feature, Option<gherkin::Rule>, gherkin::Scenario)> {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
@@ -628,7 +628,10 @@ impl Features {
             .or_else(|| {
                 scenarios.get_mut(&ScenarioType::Concurrent).and_then(|s| {
                     (!s.is_empty()).then(|| {
-                        let end = cmp::min(s.len(), max_concurrent_scenarios);
+                        let end = cmp::min(
+                            s.len(),
+                            max_concurrent_scenarios.unwrap_or(s.len()),
+                        );
                         s.drain(0..end).collect()
                     })
                 })
