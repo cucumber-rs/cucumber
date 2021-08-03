@@ -12,15 +12,7 @@ pub use basic::Basic;
 /// Trait for sourcing parsed [`Feature`]s.
 ///
 /// [`Feature`]: gherkin::Feature
-pub trait Parser<
-    I,
-    F = fn(
-        &gherkin::Feature,
-        Option<&gherkin::Rule>,
-        &gherkin::Scenario,
-    ) -> bool,
->
-{
+pub trait Parser<I> {
     /// Output [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -29,5 +21,5 @@ pub trait Parser<
     /// Parses `input` into [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn parse(self, input: I, filter: Option<F>) -> Self::Output;
+    fn parse(self, input: I) -> Self::Output;
 }

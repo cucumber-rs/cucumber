@@ -5,6 +5,7 @@
 use std::{
     fmt::{Debug, Formatter},
     marker::PhantomData,
+    mem,
     path::Path,
 };
 
@@ -22,30 +23,18 @@ use crate::{
 /// Top-level [Cucumber] executor.
 ///
 /// [Cucumber]: https://cucumber.io
-pub struct Cucumber<
-    W,
-    P,
-    I,
-    R,
-    Wr,
-    F = fn(
-        &gherkin::Feature,
-        Option<&gherkin::Rule>,
-        &gherkin::Scenario,
-    ) -> bool,
-> {
+pub struct Cucumber<W, P, I, R, Wr> {
     parser: P,
     runner: R,
     writer: Wr,
     _world: PhantomData<W>,
     _parser_input: PhantomData<I>,
-    _parser_filter: PhantomData<F>,
 }
 
-impl<W, P, I, R, Wr, F> Cucumber<W, P, I, R, Wr, F>
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
 where
     W: World,
-    P: Parser<I, F>,
+    P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
 {
@@ -58,43 +47,12 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
-            _parser_filter: PhantomData,
         }
     }
 
     /// Runs [`Cucumber`].
     ///
-    /// [`Feature`]s sourced and filtered by [`Parser`] are fed to [`Runner`],
-    /// which produces events handled by [`Writer`].
-    ///
-    /// [`Feature`]: gherkin::Feature
-    pub async fn filter_run(self, input: I, filter: F) -> Wr {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input, Some(filter)));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-        writer
-    }
-}
-
-impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
-where
-    W: World,
-    P: Parser<I>,
-    R: Runner<W>,
-    Wr: Writer<W>,
-{
-    /// Runs [`Cucumber`].
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
     ///
     /// [`Feature`]: gherkin::Feature
@@ -106,7 +64,60 @@ where
             ..
         } = self;
 
-        let events_stream = runner.run(parser.parse(input, None));
+        let events_stream = runner.run(parser.parse(input));
+        futures::pin_mut!(events_stream);
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev).await;
+        }
+        writer
+    }
+
+    /// Runs [`Cucumber`] with [`Scenario`]s filter.
+    ///
+    /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Scenario`]: gherkin::Scenario
+    pub async fn filter_run<F>(self, input: I, filter: F) -> Wr
+    where
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    {
+        let Cucumber {
+            parser,
+            runner,
+            mut writer,
+            ..
+        } = self;
+
+        let features = parser.parse(input);
+
+        let filtered = features.map(move |mut feature| {
+            let scenarios = mem::take(&mut feature.scenarios);
+            feature.scenarios = scenarios
+                .into_iter()
+                .filter(|s| filter(&feature, None, s))
+                .collect();
+
+            let mut rules = mem::take(&mut feature.rules);
+            for r in &mut rules {
+                let scenarios = mem::take(&mut r.scenarios);
+                r.scenarios = scenarios
+                    .into_iter()
+                    .filter(|s| filter(&feature, Some(r), s))
+                    .collect();
+            }
+            feature.rules = rules;
+
+            feature
+        });
+
+        let events_stream = runner.run(filtered);
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
             writer.handle_event(ev).await;
@@ -227,7 +238,6 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
-            _parser_filter: PhantomData,
         }
     }
 
@@ -247,7 +257,6 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
-            _parser_filter: PhantomData,
         }
     }
 
@@ -267,7 +276,6 @@ where
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
-            _parser_filter: PhantomData,
         }
     }
 }
@@ -279,7 +287,7 @@ where
     R: Runner<W>,
     Wr: Writer<W>,
 {
-    /// Runs [`Cucumber`] and exits with code `1` if any [`Step`] failed.
+    /// Runs [`Cucumber`].
     ///
     /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
@@ -291,21 +299,9 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit(self, input: I) {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input, None));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-
-        if writer.is_failed() {
-            let failed = writer.steps.failed;
+        let summary = self.run(input).await;
+        if summary.is_failed() {
+            let failed = summary.steps.failed;
             panic!(
                 "{} step{} failed",
                 failed,
@@ -313,42 +309,31 @@ where
             );
         }
     }
-}
 
-impl<W, I, P, R, Wr, F> Cucumber<W, P, I, R, writer::Summary<Wr>, F>
-where
-    W: World,
-    P: Parser<I, F>,
-    R: Runner<W>,
-    Wr: Writer<W>,
-{
-    /// Runs [`Cucumber`] and exits with code `1` if any [`Step`] failed.
+    /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced and filtered by [`Parser`] are fed to [`Runner`],
-    /// which produces events handled by [`Writer`].
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
     ///
     /// # Panics
     ///
     /// If at least one [`Step`] failed.
     ///
     /// [`Feature`]: gherkin::Feature
+    /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    pub async fn filter_run_and_exit(self, input: I, filter: F) {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input, Some(filter)));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-
-        if writer.is_failed() {
-            let failed = writer.steps.failed;
+    pub async fn filter_run_and_exit<F>(self, input: I, filter: F)
+    where
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    {
+        let summary = self.filter_run(input, filter).await;
+        if summary.is_failed() {
+            let failed = summary.steps.failed;
             panic!(
                 "{} step{} failed",
                 failed,

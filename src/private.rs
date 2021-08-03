@@ -69,35 +69,20 @@ where
     W: StepConstructor<Self> + inventory::Collect,
     T: StepConstructor<Self> + inventory::Collect,
 {
-    async fn filter_run<
-        I: AsRef<Path>,
-        F: Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-        ) -> bool,
-    >(
-        input: I,
-        filter: F,
-    ) {
-        let cucumber = Cucumber::custom(
-            parser::Basic,
-            runner::basic::Basic::new(
-                |sc| {
-                    sc.tags
-                        .iter()
-                        .any(|tag| tag == "serial")
-                        .then(|| ScenarioType::Serial)
-                        .unwrap_or(ScenarioType::Concurrent)
-                },
-                Some(64),
-                Self::collection(),
-            ),
-            writer::Basic::new().normalize().summarize(),
-        );
-        cucumber.filter_run_and_exit(input, filter).await;
-    }
-
+    /// Runs [`Cucumber`].
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// If at least one [`Step`] failed.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Parser`]: crate::Parser
+    /// [`Runner`]: crate::Runner
+    /// [`Step`]: gherkin::Step
+    /// [`Writer`]: crate::Writer
     async fn run<I: AsRef<Path>>(input: I) {
         let cucumber = Cucumber::custom(
             parser::Basic,
@@ -115,6 +100,49 @@ where
             writer::Basic::new().normalize().summarize(),
         );
         cucumber.run_and_exit(input).await;
+    }
+
+    /// Runs [`Cucumber`] with [`Scenario`]s filter.
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
+    /// events handled by [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// If at least one [`Step`] failed.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Parser`]: crate::Parser
+    /// [`Runner`]: crate::Runner
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    /// [`Writer`]: crate::Writer
+    async fn filter_run<I, F>(input: I, filter: F)
+    where
+        I: AsRef<Path>,
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    {
+        let cucumber = Cucumber::custom(
+            parser::Basic,
+            runner::basic::Basic::new(
+                |sc| {
+                    sc.tags
+                        .iter()
+                        .any(|tag| tag == "serial")
+                        .then(|| ScenarioType::Serial)
+                        .unwrap_or(ScenarioType::Concurrent)
+                },
+                Some(64),
+                Self::collection(),
+            ),
+            writer::Basic::new().normalize().summarize(),
+        );
+        cucumber.filter_run_and_exit(input, filter).await;
     }
 }
 
