@@ -1,6 +1,6 @@
 [package]
 name = "cucumber_rust"
-version = "0.8.4"
+version = "0.9.0"
 edition = "2018"
 description = """\
     Cucumber testing framework for Rust, with async support. \
@@ -10,11 +10,12 @@ license = "MIT OR Apache-2.0"
 authors = [
     "Brendan Molloy <brendan@bbqsrc.net>",
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
+    "Kai Ren <tyranron@gmail.com>"
 ]
 documentation = "https://docs.rs/cucumber_rust"
 homepage = "https://github.com/bbqsrc/cucumber-rust"
-readme = "README.md"
 repository = "https://github.com/bbqsrc/cucumber-rust"
+readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
 
@@ -34,7 +35,7 @@ regex = "1.5"
 sealed = "0.3"
 
 # Codegen dependencies.
-cucumber_rust_codegen = { version = "0.1", path = "./codegen", optional = true }
+cucumber_rust_codegen = { version = "0.2", path = "./codegen", optional = true }
 inventory = { version = "0.1", optional = true }
 
 [dev-dependencies]
