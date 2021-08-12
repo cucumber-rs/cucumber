@@ -1,4 +1,4 @@
-//! Tools for executing [`Step`]s on parsed [Gherkin] files.
+//! Tools for executing [`Step`]s.
 //!
 //! [`Step`]: crate::Step
 //!
@@ -22,7 +22,7 @@ pub use basic::{Basic, ScenarioType};
 /// that by rearranging __only__ sub-elements ([`Scenario`]s in a particular
 /// [`Feature`], etc...) we can restore original [`Parser`] order.
 ///
-/// Note that those rules are recommended in case you are using
+/// Note, that those rules are recommended in case you are using
 /// [`writer::Normalized`]. Strictly speaking no one is stopping you from
 /// implementing [`Runner`] which sources events completely out-of-order.
 ///

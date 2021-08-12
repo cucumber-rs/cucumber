@@ -3,7 +3,7 @@
 use std::{
     cmp,
     collections::HashMap,
-    fmt::{Debug, Formatter},
+    fmt,
     mem,
     panic::{self, AssertUnwindSafe},
     path::PathBuf,
@@ -42,8 +42,8 @@ pub struct Basic<World, F> {
     which_scenario: F,
 }
 
-impl<World, F> Debug for Basic<World, F> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<World, F> fmt::Debug for Basic<World, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Basic")
             .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
             .field("steps", &self.steps)

@@ -3,12 +3,14 @@
 use std::{path::Path, vec};
 
 use futures::stream;
+use gherkin::GherkinEnv;
+use globwalk::GlobWalkerBuilder;
 
-use crate::Parser;
+use super::Parser;
 
 /// Default [`Parser`].
 ///
-/// As there is no async runtime-agnostic way to interact with io, this
+/// As there is no async runtime-agnostic way to interact with IO, this
 /// [`Parser`] is blocking.
 #[derive(Clone, Copy, Debug)]
 pub struct Basic;
@@ -23,17 +25,17 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             .expect("failed to canonicalize path");
 
         let features = if path.is_file() {
-            let env = gherkin::GherkinEnv::default();
+            let env = GherkinEnv::default();
             gherkin::Feature::parse_path(path, env).map(|f| vec![f])
         } else {
-            let walker = globwalk::GlobWalkerBuilder::new(path, "*.feature")
+            let walker = GlobWalkerBuilder::new(path, "*.feature")
                 .case_insensitive(true)
                 .build()
                 .unwrap();
             walker
                 .filter_map(Result::ok)
                 .map(|entry| {
-                    let env = gherkin::GherkinEnv::default();
+                    let env = GherkinEnv::default();
                     gherkin::Feature::parse_path(entry.path(), env)
                 })
                 .collect::<Result<_, _>>()

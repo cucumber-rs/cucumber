@@ -268,8 +268,8 @@ impl Step {
         Ok((ident, decl))
     }
 
-    /// Returns code that borrows [`gherkin::Step`] from context if `arg`
-    /// matches `step_arg_name`, or else borrows parsed slice.
+    /// Generates code that borrows [`gherkin::Step`] from context if the given
+    /// `arg` matches `step_arg_name`, or else borrows parsed slice.
     ///
     /// [`gherkin::Step`]: https://bit.ly/3j42hcd
     fn borrow_step_or_slice(
@@ -302,7 +302,7 @@ enum AttributeArgument {
 }
 
 impl AttributeArgument {
-    /// Returns [`syn::LitStr`] to construct [`Regex`] with.
+    /// Returns [`syn::LitStr`] to construct a [`Regex`] with.
     fn regex_literal(&self) -> syn::LitStr {
         match self {
             Self::Regex(l) => l.clone(),

@@ -1,6 +1,6 @@
 //! Tools for parsing [Gherkin] files.
 //!
-//! [Gherkin]: https://cucumber.io/docs/gherkin/reference/
+//! [Gherkin]: https://cucumber.io/docs/gherkin/reference
 
 pub mod basic;
 
@@ -13,12 +13,12 @@ pub use basic::Basic;
 ///
 /// [`Feature`]: gherkin::Feature
 pub trait Parser<I> {
-    /// Output [`Stream`] of [`Feature`]s.
+    /// Output [`Stream`] of parsed [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     type Output: Stream<Item = gherkin::Feature> + 'static;
 
-    /// Parses `input` into [`Stream`] of [`Feature`]s.
+    /// Parses the given `input` into [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn parse(self, input: I) -> Self::Output;
