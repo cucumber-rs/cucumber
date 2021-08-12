@@ -20,6 +20,7 @@ categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
 
 [features]
+default = ["macros"]
 macros = ["cucumber_rust_codegen", "inventory"]
 
 [dependencies]
