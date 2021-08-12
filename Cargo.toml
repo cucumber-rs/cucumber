@@ -1,16 +1,22 @@
 [package]
-authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
-categories = ["asynchronous", "development-tools::testing"]
-description = "Cucumber testing framework for Rust, with async support. Fully native, no external test runners or dependencies."
-documentation = "https://docs.rs/cucumber_rust"
-edition = "2018"
-homepage = "https://github.com/bbqsrc/cucumber-rust"
-keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-license = "MIT OR Apache-2.0"
 name = "cucumber_rust"
+version = "0.8.4"
+edition = "2018"
+description = """\
+    Cucumber testing framework for Rust, with async support. \
+    Fully native, no external test runners or dependencies.\
+    """
+license = "MIT OR Apache-2.0"
+authors = [
+    "Brendan Molloy <brendan@bbqsrc.net>",
+    "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
+]
+documentation = "https://docs.rs/cucumber_rust"
+homepage = "https://github.com/bbqsrc/cucumber-rust"
 readme = "README.md"
 repository = "https://github.com/bbqsrc/cucumber-rust"
-version = "0.8.4"
+categories = ["asynchronous", "development-tools::testing"]
+keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
 
 [features]
 macros = ["cucumber_rust_codegen", "inventory"]
@@ -27,19 +33,19 @@ linked-hash-map = "0.5"
 regex = "1.5"
 sealed = "0.3"
 
-# Codegen dependencies
+# Codegen dependencies.
 cucumber_rust_codegen = { version = "0.1", path = "./codegen", optional = true }
 inventory = { version = "0.1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "time"] }
 
+[workspace]
+members = ["codegen"]
+
 [[test]]
 harness = false
 name = "wait"
-
-[workspace]
-members = ["codegen"]
 
 [package.metadata.docs.rs]
 all-features = true

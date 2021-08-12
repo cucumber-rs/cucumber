@@ -1,8 +1,8 @@
 /.idea/
+/.vscode/launch.json
 /*.iml
 .DS_Store
 
-/.cache/
-
-/target
-Cargo.lock
+/target/
+/Cargo.lock
+**/*.rs.bk

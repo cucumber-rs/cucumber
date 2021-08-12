@@ -1,6 +1,6 @@
 # Project configuration for rustfmt Rust code formatter.
 # See full list of configurations at:
-# https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
 
 max_width = 80
 format_strings = false

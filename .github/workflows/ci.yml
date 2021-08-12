@@ -12,10 +12,9 @@ jobs:
   ##########################
 
   clippy:
-    name: Clippy
     if: ${{ github.ref == 'refs/heads/master'
-      || startsWith(github.ref, 'refs/tags/v')
-      || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -25,13 +24,12 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - run: make lint
+      - run: make cargo.lint
 
   rustfmt:
-    name: Rustfmt
     if: ${{ github.ref == 'refs/heads/master'
-      || startsWith(github.ref, 'refs/tags/v')
-      || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -41,7 +39,7 @@ jobs:
           toolchain: nightly
           components: rustfmt
 
-      - run: make fmt check=yes
+      - run: make cargo.fmt check=yes
 
 
 
@@ -51,10 +49,9 @@ jobs:
   ###########
 
   test:
-    name: Test
     if: ${{ github.ref == 'refs/heads/master'
-      || startsWith(github.ref, 'refs/tags/v')
-      || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +85,6 @@ jobs:
   #################
 
   docs:
-    name: Documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -98,9 +94,9 @@ jobs:
           toolchain: nightly
           override: true
 
-      - run: make doc open=no
+      - run: make cargo.doc open=no
 
-      - name: Finalize documentation
+      - name: Finalize
         run: |
           CRATE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]' | cut -f2 -d"/")
           echo "<meta http-equiv=\"refresh\" content=\"0; url=${CRATE_NAME/-/_}\">" > target/doc/index.html

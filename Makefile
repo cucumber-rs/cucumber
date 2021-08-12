@@ -15,8 +15,7 @@ eq = $(if $(or $(1),$(2)),$(and $(findstring $(1),$(2)),\
 # Aliases #
 ###########
 
-
-doc: cargo.doc
+docs: cargo.doc
 
 
 fmt: cargo.fmt
@@ -35,7 +34,6 @@ lint: cargo.lint
 #
 # Usage:
 #	make cargo.doc [crate=<crate-name>] [open=(yes|no)] [clean=(no|yes)]
-#
 
 cargo.doc:
 ifeq ($(clean),yes)
@@ -86,5 +84,5 @@ test:
 # .PHONY section #
 ##################
 
-.PHONY: doc fmt lint test \
+.PHONY: docs fmt lint test \
         cargo.doc cargo.fmt cargo.lint
