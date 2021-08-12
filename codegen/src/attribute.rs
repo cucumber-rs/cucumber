@@ -62,7 +62,7 @@ impl Step {
 
         let step_arg_name = {
             let (arg_marked_as_step, _) =
-                remove_all_attrs((attr_name, "step"), &mut func);
+                remove_all_attrs_if_needed("step", &mut func);
 
             match arg_marked_as_step.len() {
                 0 => Ok(None),
@@ -349,18 +349,34 @@ impl Parse for AttributeArgument {
     }
 }
 
-/// Removes all `#[attr_path(attr_arg)]` attributes from the given function
-/// signature and returns these attributes along with the corresponding
-/// function's arguments.
-fn remove_all_attrs<'a>(
-    (attr_path, attr_arg): (&str, &str),
+/// Removes all `#[attr_arg]` attributes from the given function signature and
+/// returns these attributes along with the corresponding function's arguments
+/// in case there are no more `#[given]`, `#[when]` or `#[then]` attributes.
+fn remove_all_attrs_if_needed<'a>(
+    attr_arg: &str,
     func: &'a mut syn::ItemFn,
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
+    let has_other_step_arguments = func.attrs.iter().any(|attr| {
+        attr.path
+            .segments
+            .last()
+            .map(|segment| {
+                ["given", "when", "then"]
+                    .iter()
+                    .any(|step| segment.ident == step)
+            })
+            .unwrap_or_default()
+    });
+
     func.sig
         .inputs
         .iter_mut()
         .filter_map(|arg| {
-            if let Some(attr) = remove_attr((attr_path, attr_arg), arg) {
+            if has_other_step_arguments {
+                if let Some(attr) = find_attr(attr_arg, arg) {
+                    return Some((&*arg, attr));
+                }
+            } else if let Some(attr) = remove_attr(attr_arg, arg) {
                 return Some((&*arg, attr));
             }
             None
@@ -368,11 +384,26 @@ fn remove_all_attrs<'a>(
         .unzip()
 }
 
-/// Removes attribute `#[attr_path(attr_arg)]` from function's argument, if any.
-fn remove_attr(
-    (attr_path, attr_arg): (&str, &str),
-    arg: &mut syn::FnArg,
-) -> Option<syn::Attribute> {
+/// Finds attribute `#[attr_arg]` from function's argument, if any.
+fn find_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
+    if let syn::FnArg::Typed(typed_arg) = arg {
+        typed_arg
+            .attrs
+            .iter()
+            .find(|attr| {
+                attr.path
+                    .get_ident()
+                    .map(|ident| ident == attr_arg)
+                    .unwrap_or_default()
+            })
+            .cloned()
+    } else {
+        None
+    }
+}
+
+/// Removes attribute `#[attr_arg]` from function's argument, if any.
+fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
     use itertools::{Either, Itertools as _};
 
     if let syn::FnArg::Typed(typed_arg) = arg {
@@ -380,11 +411,12 @@ fn remove_attr(
 
         let (mut other, mut removed): (Vec<_>, Vec<_>) =
             attrs.into_iter().partition_map(|attr| {
-                if eq_path_and_arg((attr_path, attr_arg), &attr) {
-                    Either::Right(attr)
-                } else {
-                    Either::Left(attr)
+                if let Some(ident) = attr.path.get_ident() {
+                    if ident == attr_arg {
+                        return Either::Right(attr);
+                    }
                 }
+                Either::Left(attr)
             });
 
         if removed.len() == 1 {
@@ -396,23 +428,6 @@ fn remove_attr(
         typed_arg.attrs = other;
     }
     None
-}
-
-/// Compares attribute's path and argument.
-fn eq_path_and_arg(
-    (attr_path, attr_arg): (&str, &str),
-    attr: &syn::Attribute,
-) -> bool {
-    if let Ok(syn::Meta::List(meta_list)) = attr.parse_meta() {
-        if meta_list.path.is_ident(attr_path) && meta_list.nested.len() == 1 {
-            // Unwrapping is OK here, because `meta_list.nested.len() == 1`.
-            if let syn::NestedMeta::Meta(m) = meta_list.nested.first().unwrap()
-            {
-                return m.path().is_ident(attr_arg);
-            }
-        }
-    }
-    false
 }
 
 /// Parses [`syn::Ident`] and [`syn::Type`] from the given [`syn::FnArg`].

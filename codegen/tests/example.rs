@@ -1,7 +1,9 @@
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{gherkin::Step, given, World, WorldInit, WorldRun as _};
+use cucumber_rust::{
+    gherkin::Step, given, when, World, WorldInit, WorldRun as _,
+};
 use tokio::time;
 
 #[derive(Debug, WorldInit)]
@@ -24,7 +26,7 @@ fn test_non_regex_sync(w: &mut MyWorld) {
 }
 
 #[given("non-regex")]
-async fn test_non_regex_async(w: &mut MyWorld, #[given(step)] ctx: &Step) {
+async fn test_non_regex_async(w: &mut MyWorld, #[step] ctx: &Step) {
     time::sleep(Duration::new(1, 0)).await;
 
     assert_eq!(ctx.value, "non-regex");
@@ -33,10 +35,11 @@ async fn test_non_regex_async(w: &mut MyWorld, #[given(step)] ctx: &Step) {
 }
 
 #[given(regex = r"(\S+) is (\d+)")]
+#[when(regex = r"(\S+) is (\d+)")]
 async fn test_regex_async(
     w: &mut MyWorld,
     step: String,
-    #[given(step)] ctx: &Step,
+    #[step] ctx: &Step,
     num: usize,
 ) {
     time::sleep(Duration::new(1, 0)).await;

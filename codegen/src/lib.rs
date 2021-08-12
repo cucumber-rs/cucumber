@@ -86,7 +86,7 @@ macro_rules! step_attribute {
         /// - Other argument's types have to implement [`FromStr`] or it has to
         ///   be a slice where the element type also implements [`FromStr`].
         /// - To use [`gherkin::Step`], name the argument as `step`,
-        ///   **or** mark the argument with a `#[given(step)]` attribute.
+        ///   **or** mark the argument with a `#[step]` attribute.
         ///
         /// ```
         /// # use std::convert::Infallible;
@@ -111,7 +111,7 @@ macro_rules! step_attribute {
         /// #[given(regex = r"(\S+) is not (\S+)")]
         /// fn test_step(
         ///     w: &mut MyWorld,
-        ///     #[given(step)] s: &Step,
+        ///     #[step] s: &Step,
         ///     matches: &[String],
         /// ) {
         ///     assert_eq!(matches[0], "foo");
