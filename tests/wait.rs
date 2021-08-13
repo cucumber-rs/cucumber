@@ -1,15 +1,13 @@
 use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{
-    self as cucumber, given, then, when, WorldInit, WorldRun as _,
-};
+use cucumber_rust::{self as cucumber, given, then, when, WorldInit};
 use futures::FutureExt as _;
 use tokio::time;
 
 #[tokio::main]
 async fn main() {
-    let res = World::run("tests");
+    let res = World::run("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
         .catch_unwind()

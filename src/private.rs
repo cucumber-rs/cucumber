@@ -1,9 +1,18 @@
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! Helper type-level glue for [`cucumber_rust_codegen`] crate.
 
 use std::{fmt::Debug, path::Path};
 
 use async_trait::async_trait;
-use sealed::sealed;
 
 use crate::{
     parser, runner, runner::ScenarioType, step, writer, Cucumber, Step, World,
@@ -15,8 +24,10 @@ pub use inventory::{self, collect, submit};
 pub use regex::Regex;
 
 /// [`World`] extension with auto-wiring capabilities.
+#[async_trait(?Send)]
 pub trait WorldInit<G, W, T>: WorldInventory<G, W, T>
 where
+    Self: Debug,
     G: StepConstructor<Self> + inventory::Collect,
     W: StepConstructor<Self> + inventory::Collect,
     T: StepConstructor<Self> + inventory::Collect,
@@ -48,27 +59,7 @@ where
 
         collection
     }
-}
 
-impl<G, W, T, E> WorldInit<G, W, T> for E
-where
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-    E: WorldInventory<G, W, T>,
-{
-}
-
-/// [`World`] extension with auto-wiring capabilities.
-#[async_trait(?Send)]
-#[sealed]
-pub trait WorldRun<G, W, T>: WorldInit<G, W, T>
-where
-    Self: Debug,
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-{
     /// Runs [`Cucumber`].
     ///
     /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
@@ -146,13 +137,13 @@ where
     }
 }
 
-#[sealed]
-impl<G, W, T, E> WorldRun<G, W, T> for E
+impl<G, W, T, E> WorldInit<G, W, T> for E
 where
-    E: WorldInit<G, W, T> + Debug,
+    Self: Debug,
     G: StepConstructor<Self> + inventory::Collect,
     W: StepConstructor<Self> + inventory::Collect,
     T: StepConstructor<Self> + inventory::Collect,
+    E: WorldInventory<G, W, T>,
 {
 }
 

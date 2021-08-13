@@ -1,9 +1,7 @@
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{
-    gherkin::Step, given, when, World, WorldInit, WorldRun as _,
-};
+use cucumber_rust::{gherkin::Step, given, when, World, WorldInit};
 use tokio::time;
 
 #[derive(Debug, WorldInit)]

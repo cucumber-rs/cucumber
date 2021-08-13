@@ -1,3 +1,13 @@
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! [`Writer`] for outputting events in readable order.
 //!
 //! [`Parser`]: crate::Parser
@@ -26,7 +36,7 @@ use crate::{event, World, Writer};
 #[derive(Debug)]
 pub struct Normalized<World, Writer> {
     writer: Writer,
-    queue: Cucumber<World>,
+    queue: CucumberEvents<World>,
 }
 
 impl<W: World, Writer> Normalized<W, Writer> {
@@ -35,7 +45,7 @@ impl<W: World, Writer> Normalized<W, Writer> {
     pub fn new(writer: Writer) -> Self {
         Self {
             writer,
-            queue: Cucumber::new(),
+            queue: CucumberEvents::new(),
         }
     }
 }
@@ -89,12 +99,12 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 /// [`Feature`]: gherkin::Feature
 /// [`Feature::Finished`]: event::Feature::Finished
 #[derive(Debug)]
-struct Cucumber<World> {
+struct CucumberEvents<World> {
     events: LinkedHashMap<Arc<gherkin::Feature>, FeatureEvents<World>>,
     finished: bool,
 }
 
-impl<World> Cucumber<World> {
+impl<World> CucumberEvents<World> {
     /// Creates new [`Cucumber`].
     fn new() -> Self {
         Self {

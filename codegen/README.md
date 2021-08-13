@@ -2,6 +2,7 @@
 
 [![Documentation](https://docs.rs/cucumber_rust_codegen/badge.svg)](https://docs.rs/cucumber_rust_codegen)
 [![Actions Status](https://github.com/bbqsrc/cucumber-rust/workflows/CI/badge.svg)](https://github.com/bbqsrc/cucumber-rust/actions)
+[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
 Code generation for [`cucumber_rust`](https://docs.rs/cucumber_rust) tests auto-wiring.
 

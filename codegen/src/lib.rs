@@ -8,19 +8,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Code generation for [`cucumber_rust`] tests auto-wiring.
-//!
-//! [`cucumber_rust`]: https://docs.rs/cucumber_rust
-
+#![doc = include_str!("../README.md")]
 #![deny(
     nonstandard_style,
     rust_2018_idioms,
     rustdoc::broken_intra_doc_links,
     rustdoc::private_intra_doc_links,
     trivial_casts,
-    trivial_numeric_casts,
-    unsafe_code
+    trivial_numeric_casts
 )]
+#![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     deprecated_in_future,
     missing_copy_implementations,
@@ -32,6 +29,7 @@
     unused_qualifications,
     unused_results
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod attribute;
 mod derive;
@@ -53,7 +51,7 @@ macro_rules! step_attribute {
         /// # use std::{convert::Infallible};
         /// #
         /// # use async_trait::async_trait;
-        /// use cucumber_rust::{given, World, WorldInit, WorldRun as _};
+        /// use cucumber_rust::{given, World, WorldInit};
         ///
         /// #[derive(Debug, WorldInit)]
         /// struct MyWorld;
@@ -70,12 +68,12 @@ macro_rules! step_attribute {
         /// #[given(regex = r"(\S+) is (\d+)")]
         /// fn test(w: &mut MyWorld, param: String, num: i32) {
         ///     assert_eq!(param, "foo");
-        ///     assert_eq!(num, 10);
+        ///     assert_eq!(num, 0);
         /// }
         ///
         /// #[tokio::main]
         /// async fn main() {
-        ///     MyWorld::run("./features").await;
+        ///     MyWorld::run("./tests/features/doctests.feature").await;
         /// }
         /// ```
         ///
@@ -92,9 +90,7 @@ macro_rules! step_attribute {
         /// # use std::convert::Infallible;
         /// #
         /// # use async_trait::async_trait;
-        /// # use cucumber_rust::{
-        /// #    gherkin::Step, given, World, WorldInit, WorldRun as _
-        /// # };
+        /// # use cucumber_rust::{gherkin::Step, given, World, WorldInit};
         /// #
         /// # #[derive(Debug, WorldInit)]
         /// # struct MyWorld;
@@ -121,7 +117,7 @@ macro_rules! step_attribute {
         /// #
         /// # #[tokio::main]
         /// # async fn main() {
-        /// #     MyWorld::run("./features").await;
+        /// #     MyWorld::run("./tests/features/doctests.feature").await;
         /// # }
         /// ```
         ///

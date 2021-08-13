@@ -1,7 +1,7 @@
 use std::{cell::RefCell, convert::Infallible};
 
 use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit, WorldRun as _};
+use cucumber_rust::{given, then, when, World, WorldInit};
 
 #[derive(Debug, WorldInit)]
 pub struct MyWorld {
@@ -63,6 +63,6 @@ fn we_can_regex(_: &mut MyWorld, action: String) {
 }
 
 fn main() {
-    let runner = MyWorld::run("./features");
+    let runner = MyWorld::run("./tests/features");
     futures::executor::block_on(runner);
 }
