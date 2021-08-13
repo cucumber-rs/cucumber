@@ -3,6 +3,14 @@
 #### Known issues:
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
+- Book isn't updated yet according to `0.10.0` redesign
+
+### 0.10.0 - ???
+
+- **Breaking change** Complete redesign
+  - Introduce new abstractions: `Parser`, `Runner`, `Writer`
+  - Provide reference implementations for those abstractions
+  - Add ability to run `Scenario`s concurrently.
 
 ### 0.9.0 — 2021-07-19
 

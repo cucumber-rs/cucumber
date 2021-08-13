@@ -9,9 +9,6 @@
 - Update attribute according to the redesign done in `v0.10` of `cucumber_rust` crate.
 - Replace `#[given(step)]`, `#[when(step)]` and `#[then(step)]` with single `#[step]` attribute.
 
-
-
-
 ### 0.1.0 - 2021-01-18
 
 - Initial implementation for [`given`](https://docs.rs/cucumber_rust_codegen/0.9.0/cucumber_rust_codegen/attr.given.html), 
