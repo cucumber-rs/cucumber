@@ -96,7 +96,12 @@ pub enum ScenarioType {
 
 impl<World, F> Basic<World, F>
 where
-    F: Fn(&gherkin::Scenario) -> ScenarioType + 'static,
+    F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> ScenarioType
+        + 'static,
 {
     /// Creates default [`Runner`].
     #[must_use]
@@ -110,6 +115,15 @@ where
             steps,
             which_scenario,
         }
+    }
+
+    /// Replaces [`Collection`] of [`Step`]s.
+    ///
+    /// [`Collection`]: step::Collection
+    /// [`Step`]: step::Step
+    pub fn steps(mut self, steps: step::Collection<World>) -> Self {
+        self.steps = steps;
+        self
     }
 
     /// Adds [`Step`] that matched with [Given] steps which [`Step::value`]
@@ -149,7 +163,12 @@ where
 impl<W, F> Runner<W> for Basic<W, F>
 where
     W: World,
-    F: Fn(&gherkin::Scenario) -> ScenarioType + 'static,
+    F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> ScenarioType
+        + 'static,
 {
     type EventStream = LocalBoxStream<'static, event::Cucumber<W>>;
 
@@ -191,7 +210,12 @@ where
 async fn insert_features<S, F>(into: Features, features: S, which_scenario: F)
 where
     S: Stream<Item = gherkin::Feature> + 'static,
-    F: Fn(&gherkin::Scenario) -> ScenarioType,
+    F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> ScenarioType
+        + 'static,
 {
     features.for_each(|f| into.insert(f, &which_scenario)).await;
     into.finish();
@@ -612,7 +636,12 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn insert<F>(&self, feature: gherkin::Feature, which_scenario: &F)
     where
-        F: Fn(&gherkin::Scenario) -> ScenarioType,
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType
+            + 'static,
     {
         let f = feature.expand_examples();
 
@@ -633,7 +662,9 @@ impl Features {
                     Arc::new(s.clone()),
                 )
             })
-            .into_group_map_by(|(_, _, s)| which_scenario(s));
+            .into_group_map_by(|(f, r, s)| {
+                which_scenario(f, r.as_ref().map(|arc| arc.as_ref()), s)
+            });
 
         let mut scenarios = self.scenarios.lock().await;
         if local.get(&ScenarioType::Serial).is_none() {

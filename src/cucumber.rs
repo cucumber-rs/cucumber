@@ -156,7 +156,14 @@ impl<W, I> Default
         W,
         parser::Basic,
         I,
-        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        runner::Basic<
+            W,
+            fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType,
+        >,
         writer::Summary<writer::Normalized<W, writer::Basic>>,
     >
 where
@@ -167,7 +174,7 @@ where
         Cucumber::custom(
             parser::Basic,
             runner::basic::Basic::new(
-                |sc| {
+                |_, _, sc| {
                     sc.tags
                         .iter()
                         .any(|tag| tag == "serial")
@@ -187,7 +194,14 @@ impl<W, I>
         W,
         parser::Basic,
         I,
-        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        runner::Basic<
+            W,
+            fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType,
+        >,
         writer::Summary<writer::Normalized<W, writer::Basic>>,
     >
 where
@@ -201,7 +215,7 @@ where
     /// * [`Runner`] — [`runner::Basic`]
     ///   * [`ScenarioType`] — [`Concurrent`] by default, [`Serial`] if
     ///     `@serial` [tag] is present on a [`Scenario`];
-    ///   * Allowed to run up to 16 [`Concurrent`] [`Scenario`]s.
+    ///   * Allowed to run up to 64 [`Concurrent`] [`Scenario`]s.
     ///
     /// * [`Writer`] — [`Normalized`] [`writer::Basic`].
     ///
@@ -224,7 +238,14 @@ impl<W, I, P, Wr>
         W,
         P,
         I,
-        runner::Basic<W, fn(&gherkin::Scenario) -> ScenarioType>,
+        runner::Basic<
+            W,
+            fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType,
+        >,
         Wr,
     >
 where
@@ -232,6 +253,26 @@ where
     P: Parser<I>,
     Wr: Writer<W>,
 {
+    /// Replaces [`Collection`] of [`Step`]s.
+    ///
+    /// [`Collection`]: step::Collection
+    /// [`Step`]: step::Step
+    pub fn steps(self, steps: step::Collection<W>) -> Self {
+        let Cucumber {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.steps(steps),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
     /// Inserts [Given] [`Step`].
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given

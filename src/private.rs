@@ -14,10 +14,7 @@ use std::{fmt::Debug, path::Path};
 
 use async_trait::async_trait;
 
-use crate::{
-    parser, runner, runner::ScenarioType, step, writer, Cucumber, Step, World,
-    WriterExt as _,
-};
+use crate::{step, Cucumber, Step, World};
 
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
@@ -75,22 +72,10 @@ where
     /// [`Step`]: gherkin::Step
     /// [`Writer`]: crate::Writer
     async fn run<I: AsRef<Path>>(input: I) {
-        let cucumber = Cucumber::custom(
-            parser::Basic,
-            runner::basic::Basic::new(
-                |sc| {
-                    sc.tags
-                        .iter()
-                        .any(|tag| tag == "serial")
-                        .then(|| ScenarioType::Serial)
-                        .unwrap_or(ScenarioType::Concurrent)
-                },
-                Some(64),
-                Self::collection(),
-            ),
-            writer::Basic::new().normalize().summarize(),
-        );
-        cucumber.run_and_exit(input).await;
+        Cucumber::default()
+            .steps(Self::collection())
+            .run_and_exit(input)
+            .await;
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -118,22 +103,10 @@ where
             ) -> bool
             + 'static,
     {
-        let cucumber = Cucumber::custom(
-            parser::Basic,
-            runner::basic::Basic::new(
-                |sc| {
-                    sc.tags
-                        .iter()
-                        .any(|tag| tag == "serial")
-                        .then(|| ScenarioType::Serial)
-                        .unwrap_or(ScenarioType::Concurrent)
-                },
-                Some(64),
-                Self::collection(),
-            ),
-            writer::Basic::new().normalize().summarize(),
-        );
-        cucumber.filter_run_and_exit(input, filter).await;
+        Cucumber::default()
+            .steps(Self::collection())
+            .filter_run_and_exit(input, filter)
+            .await;
     }
 }
 
