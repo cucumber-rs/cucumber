@@ -38,7 +38,8 @@ use crate::{
     step, Runner, Step, World,
 };
 
-/// Default [`Runner`] implementation.
+/// Default [`Runner`] implementation which follows __Events order guarantees__
+/// from [`Runner`] docs.
 ///
 /// Can execute [`Scenario`]s concurrently based on custom function, which
 /// returns [`ScenarioType`]. Also can limit maximum number of concurrent
@@ -46,8 +47,24 @@ use crate::{
 ///
 /// [`Scenario`]: gherkin::Scenario
 pub struct Basic<World, F> {
+    /// If [`Some`], number of concurrently executed [`Scenario`]s will be
+    /// limited to that number.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     max_concurrent_scenarios: Option<usize>,
+
+    /// [`Collection`] of [`Step`] functions provided by user.
+    ///
+    /// [`Collection`]: step::Collection
+    /// [`Step`]: step::Step
     steps: step::Collection<World>,
+
+    /// Function, that determines, if [`Scenario`] is [`Concurrent`] or
+    /// [`Serial`].
+    ///
+    /// [`Concurrent`]: ScenarioType::Concurrent
+    /// [`Serial`]: ScenarioType::Serial
+    /// [`Scenario`]: gherkin::Scenario
     which_scenario: F,
 }
 
