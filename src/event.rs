@@ -29,6 +29,9 @@ pub enum Cucumber<World> {
     /// [`Feature`] event.
     Feature(Arc<gherkin::Feature>, Feature<World>),
 
+    /// Failed to parse [`Feature`] file.
+    ParsingError(gherkin::ParseFileError),
+
     /// Event for a `Cucumber` execution finished.
     Finished,
 }

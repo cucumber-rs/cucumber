@@ -107,7 +107,8 @@ where
 
         let features = parser.parse(input);
 
-        let filtered = features.map(move |mut feature| {
+        let filtered = features.map(move |feature| {
+            let mut feature = feature?;
             let scenarios = mem::take(&mut feature.scenarios);
             feature.scenarios = scenarios
                 .into_iter()
@@ -124,7 +125,7 @@ where
             }
             feature.rules = rules;
 
-            feature
+            Ok(feature)
         });
 
         let events_stream = runner.run(filtered);
@@ -350,15 +351,7 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit(self, input: I) {
-        let summary = self.run(input).await;
-        if summary.is_failed() {
-            let failed = summary.steps.failed;
-            panic!(
-                "{} step{} failed",
-                failed,
-                if failed > 1 { "s" } else { "" },
-            );
-        }
+        self.filter_run_and_exit(input, |_, _, _| true).await;
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -384,11 +377,14 @@ where
     {
         let summary = self.filter_run(input, filter).await;
         if summary.is_failed() {
-            let failed = summary.steps.failed;
+            let failed_steps = summary.steps.failed;
+            let parsing_errors = summary.parsing_errors;
             panic!(
-                "{} step{} failed",
-                failed,
-                if failed > 1 { "s" } else { "" },
+                "{} step{} failed, {} parsing error{}",
+                failed_steps,
+                if failed_steps == 1 { "" } else { "s" },
+                parsing_errors,
+                if parsing_errors == 1 { "" } else { "s" },
             );
         }
     }

@@ -35,6 +35,7 @@ impl<W: World + Debug> Writer<W> for Basic {
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
         match ev {
             event::Cucumber::Started | event::Cucumber::Finished => {}
+            event::Cucumber::ParsingError(err) => self.parsing_failed(err),
             event::Cucumber::Feature(f, ev) => match ev {
                 event::Feature::Started => self.feature_started(&f),
                 event::Feature::Scenario(sc, ev) => {
@@ -79,6 +80,14 @@ impl Basic {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    fn parsing_failed(&self, err: gherkin::ParseFileError) {
+        self.write_line(&format!(
+            "{}",
+            self.err.apply_to(format!("Failed to parse: {}", err))
+        ))
+        .unwrap();
     }
 
     fn feature_started(&self, feature: &gherkin::Feature) {

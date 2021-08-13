@@ -35,7 +35,7 @@ use regex::Regex;
 use crate::{
     event::{self, Info},
     feature::Ext as _,
-    step, Runner, Step, World,
+    parser, step, Runner, Step, World,
 };
 
 /// Default [`Runner`] implementation which follows __Events order guarantees__
@@ -174,7 +174,7 @@ where
 
     fn run<S>(self, features: S) -> Self::EventStream
     where
-        S: Stream<Item = gherkin::Feature> + 'static,
+        S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
         let Basic {
             max_concurrent_scenarios,
@@ -185,7 +185,12 @@ where
         let buffer = Features::default();
         let (sender, receiver) = mpsc::unbounded();
 
-        let insert = insert_features(buffer.clone(), features, which_scenario);
+        let insert = insert_features(
+            buffer.clone(),
+            features,
+            which_scenario,
+            sender.clone(),
+        );
         let execute = execute(buffer, max_concurrent_scenarios, steps, sender);
 
         stream::select(
@@ -207,9 +212,13 @@ where
 /// Stores [`Feature`]s for later use by [`execute()`].
 ///
 /// [`Feature`]: gherkin::Feature
-async fn insert_features<S, F>(into: Features, features: S, which_scenario: F)
-where
-    S: Stream<Item = gherkin::Feature> + 'static,
+async fn insert_features<S, F, W>(
+    into: Features,
+    features: S,
+    which_scenario: F,
+    sender: mpsc::UnboundedSender<event::Cucumber<W>>,
+) where
+    S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     F: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
@@ -217,7 +226,16 @@ where
         ) -> ScenarioType
         + 'static,
 {
-    features.for_each(|f| into.insert(f, &which_scenario)).await;
+    futures::pin_mut!(features);
+    while let Some(feature) = features.next().await {
+        match feature {
+            Ok(f) => into.insert(f, &which_scenario).await,
+            Err(e) => sender
+                .unbounded_send(event::Cucumber::ParsingError(e))
+                .unwrap(),
+        }
+    }
+
     into.finish();
 }
 

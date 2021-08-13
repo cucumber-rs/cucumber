@@ -36,6 +36,11 @@ pub struct Summary<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     pub scenarios: usize,
 
+    /// Number of [`Parse`] errors.
+    ///
+    /// [`Parse`]: crate::Parse
+    pub parsing_errors: usize,
+
     /// [`Step`]s [`Stats`]
     ///
     /// [`Step`]: gherkin::Step
@@ -72,6 +77,7 @@ where
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
         let mut finished = false;
         match &ev {
+            event::Cucumber::ParsingError(_) => self.parsing_errors += 1,
             event::Cucumber::Feature(_, ev) => match ev {
                 event::Feature::Started => self.features += 1,
                 event::Feature::Rule(_, event::Rule::Started) => {
@@ -93,7 +99,8 @@ where
                  {} features\n\
                  {} rules\n\
                  {} scenarios\n\
-                 {} steps ({} passed, {} skipped, {} failed)",
+                 {} steps ({} passed, {} skipped, {} failed)\n\
+                 {} parsing errors",
                 self.features,
                 self.rules,
                 self.scenarios,
@@ -101,6 +108,7 @@ where
                 self.steps.passed,
                 self.steps.skipped,
                 self.steps.failed,
+                self.parsing_errors,
             );
         }
     }
@@ -114,6 +122,7 @@ impl<Writer> Summary<Writer> {
             features: 0,
             rules: 0,
             scenarios: 0,
+            parsing_errors: 0,
             steps: Stats {
                 passed: 0,
                 skipped: 0,
@@ -122,11 +131,13 @@ impl<Writer> Summary<Writer> {
         }
     }
 
-    /// Indicates whether or not there have been failed [`Step`]s.
+    /// Indicates whether or not there have been failed [`Step`]s or [`Parse`]
+    /// errors.
     ///
+    /// [`Parse`]: crate::Parse
     /// [`Step`]: gherkin::Step
     pub fn is_failed(&self) -> bool {
-        self.steps.failed > 0
+        self.steps.failed > 0 || self.parsing_errors > 0
     }
 
     fn handle_step<W>(&mut self, ev: &event::Step<W>) {

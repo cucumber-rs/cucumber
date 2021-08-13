@@ -26,10 +26,15 @@ pub trait Parser<I> {
     /// Output [`Stream`] of parsed [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
-    type Output: Stream<Item = gherkin::Feature> + 'static;
+    type Output: Stream<Item = Result<gherkin::Feature>> + 'static;
 
     /// Parses the given `input` into [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn parse(self, input: I) -> Self::Output;
 }
+
+/// Result parsing [Gherkin] files.
+///
+/// [Gherkin]: https://cucumber.io/docs/gherkin/reference
+pub type Result<T> = std::result::Result<T, gherkin::ParseFileError>;

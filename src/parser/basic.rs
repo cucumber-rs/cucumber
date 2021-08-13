@@ -16,7 +16,7 @@ use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
 
-use super::Parser;
+use super::{Parser, Result as ParseResult};
 
 /// Default [`Parser`].
 ///
@@ -26,32 +26,38 @@ use super::Parser;
 pub struct Basic;
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type Output = stream::Iter<vec::IntoIter<gherkin::Feature>>;
+    type Output = stream::Iter<vec::IntoIter<ParseResult<gherkin::Feature>>>;
 
     fn parse(self, path: I) -> Self::Output {
-        let path = path
-            .as_ref()
-            .canonicalize()
-            .expect("failed to canonicalize path");
+        let features = || {
+            let path = match path.as_ref().canonicalize() {
+                Ok(path) => path,
+                Err(err) => {
+                    return vec![Err(gherkin::ParseFileError::Reading {
+                        path: path.as_ref().to_path_buf(),
+                        source: err,
+                    })];
+                }
+            };
 
-        let features = if path.is_file() {
-            let env = GherkinEnv::default();
-            gherkin::Feature::parse_path(path, env).map(|f| vec![f])
-        } else {
-            let walker = GlobWalkerBuilder::new(path, "*.feature")
-                .case_insensitive(true)
-                .build()
-                .unwrap();
-            walker
-                .filter_map(Result::ok)
-                .map(|entry| {
-                    let env = GherkinEnv::default();
-                    gherkin::Feature::parse_path(entry.path(), env)
-                })
-                .collect::<Result<_, _>>()
-        }
-        .expect("failed to parse gherkin::Feature");
+            if path.is_file() {
+                let env = GherkinEnv::default();
+                vec![gherkin::Feature::parse_path(path, env)]
+            } else {
+                let walker = GlobWalkerBuilder::new(path, "*.feature")
+                    .case_insensitive(true)
+                    .build()
+                    .unwrap();
+                walker
+                    .filter_map(Result::ok)
+                    .map(|entry| {
+                        let env = GherkinEnv::default();
+                        gherkin::Feature::parse_path(entry.path(), env)
+                    })
+                    .collect::<Vec<_>>()
+            }
+        };
 
-        stream::iter(features)
+        stream::iter(features().into_iter())
     }
 }
