@@ -57,6 +57,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
             event::Cucumber::Started => {
                 self.writer.handle_event(event::Cucumber::Started).await;
             }
+            event::Cucumber::ParsingError(err) => {
+                self.writer
+                    .handle_event(event::Cucumber::ParsingError(err))
+                    .await;
+            }
             event::Cucumber::Finished => self.queue.finished(),
             event::Cucumber::Feature(f, ev) => match ev {
                 event::Feature::Started => self.queue.new_feature(f),
