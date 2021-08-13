@@ -39,7 +39,7 @@ pub use basic::{Basic, ScenarioType};
 /// [`ScenarioType::Serial`] by [`Runner`].
 ///
 /// All those rules are applied in reference [`Runner`] implementation:
-/// [`runner::Basic`].
+/// [`Basic`].
 ///
 /// Note, that those rules are recommended in case you are using
 /// [`writer::Normalized`]. Strictly speaking no one is stopping you from
@@ -51,7 +51,10 @@ pub use basic::{Basic, ScenarioType};
 /// [`Feature`]: gherkin::Feature
 /// [`writer::Normalized`]: crate::writer::Normalized
 /// [`Parser`]: crate::Parser
+/// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
+/// [`Scenario::Finished`]: event::Scenario::Finished
+/// [`Scenario::Started`]: event::Scenario::Started
 /// [`Step`]: gherkin::Step
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before

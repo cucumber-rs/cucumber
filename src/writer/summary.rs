@@ -36,9 +36,9 @@ pub struct Summary<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     pub scenarios: usize,
 
-    /// Number of [`Parse`] errors.
+    /// Number of [`Parser`] errors.
     ///
-    /// [`Parse`]: crate::Parse
+    /// [`Parser`]: crate::Parser
     pub parsing_errors: usize,
 
     /// [`Step`]s [`Stats`]
@@ -131,10 +131,10 @@ impl<Writer> Summary<Writer> {
         }
     }
 
-    /// Indicates whether or not there have been failed [`Step`]s or [`Parse`]
+    /// Indicates whether or not there have been failed [`Step`]s or [`Parser`]
     /// errors.
     ///
-    /// [`Parse`]: crate::Parse
+    /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
     pub fn is_failed(&self) -> bool {
         self.steps.failed > 0 || self.parsing_errors > 0

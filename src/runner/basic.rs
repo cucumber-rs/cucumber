@@ -681,7 +681,7 @@ impl Features {
                 )
             })
             .into_group_map_by(|(f, r, s)| {
-                which_scenario(f, r.as_ref().map(|arc| arc.as_ref()), s)
+                which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
 
         let mut scenarios = self.scenarios.lock().await;
