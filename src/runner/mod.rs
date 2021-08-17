@@ -23,47 +23,49 @@ use crate::{event, parser};
 #[doc(inline)]
 pub use basic::{Basic, ScenarioType};
 
-/// Trait for sourcing [`Cucumber`] events from [`Parser`] output.
+/// Executor of [`Parser`] output producing [`Cucumber`] events for [`Writer`].
 ///
-/// # Events order guarantees
+/// # Order guarantees
 ///
-/// Implementors are expected to source events in [happened-before] order. For
-/// example [`Scenario::Started`] for a single [`Scenario`] should predate any
-/// other events of this [`Scenario`], while [`Scenario::Finished`] should be
-/// the last one, [`Step`] events of this [`Scenario`] should be emitted in
-/// order of declaration in `.feature` file. But as [`Scenario`]s can be
-/// executed concurrently, events from one [`Scenario`] can be interrupted by
-/// events of a different one (which are also follow [happened-before] order).
-/// Those rules are applied also to [`Rule`]s and [`Feature`]s. If you want to
-/// avoid those interruptions for some [`Scenario`], it should be resolved as
-/// [`ScenarioType::Serial`] by [`Runner`].
+/// Implementors are expected to source events in a [happened-before] order. For
+/// example [`event::Scenario::Started`] for a single [`Scenario`] should
+/// predate any other events of this [`Scenario`], while
+/// [`event::Scenario::Finished`] should be the last one. [`Step`] events of
+/// this [`Scenario`] should be emitted in order of declaration in `.feature`
+/// file. But as [`Scenario`]s can be executed concurrently, events from one
+/// [`Scenario`] can be interrupted by events of a different one (which are also
+/// follow the [happened-before] order). Those rules are applied also to
+/// [`Rule`]s and [`Feature`]s. If you want to avoid those interruptions for
+/// some [`Scenario`], it should be resolved as [`ScenarioType::Serial`] by the
+/// [`Runner`].
 ///
-/// All those rules are applied in reference [`Runner`] implementation:
-/// [`Basic`].
+/// All those rules are considered in a [`Basic`] reference [`Runner`]
+/// implementation.
 ///
-/// Note, that those rules are recommended in case you are using
+/// Note, that those rules are recommended in case you are using a
 /// [`writer::Normalized`]. Strictly speaking no one is stopping you from
 /// implementing [`Runner`] which sources events completely out-of-order or even
-/// skips some of them. For example This can be useful if you care only about
+/// skips some of them. For example, this can be useful if you care only about
 /// failed [`Step`]s.
 ///
 /// [`Cucumber`]: event::Cucumber
 /// [`Feature`]: gherkin::Feature
-/// [`writer::Normalized`]: crate::writer::Normalized
 /// [`Parser`]: crate::Parser
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-/// [`Scenario::Finished`]: event::Scenario::Finished
-/// [`Scenario::Started`]: event::Scenario::Started
 /// [`Step`]: gherkin::Step
+/// [`Writer`]: crate::Writer
+/// [`writer::Normalized`]: crate::writer::Normalized
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 pub trait Runner<World> {
     /// Output events [`Stream`].
     type EventStream: Stream<Item = event::Cucumber<World>>;
 
-    /// Transforms incoming [`Feature`]s [`Stream`] into [`Self::EventStream`].
+    /// Executes the given [`Stream`] of [`Feature`]s transforming it into
+    /// a [`Stream`] of executed [`Cucumber`] events.
     ///
+    /// [`Cucumber`]: event::Cucumber
     /// [`Feature`]: gherkin::Feature
     fn run<S>(self, features: S) -> Self::EventStream
     where

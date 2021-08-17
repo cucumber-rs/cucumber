@@ -26,6 +26,7 @@ use futures::{
     channel::mpsc,
     future::{self, Either, FutureExt as _},
     lock::Mutex,
+    pin_mut,
     stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
     TryFutureExt,
 };
@@ -38,29 +39,44 @@ use crate::{
     parser, step, Runner, Step, World,
 };
 
-/// Default [`Runner`] implementation which follows __Events order guarantees__
-/// from [`Runner`] docs.
+/// Type determining whether [`Scenario`]s should run concurrently or
+/// sequentially.
 ///
-/// Can execute [`Scenario`]s concurrently based on custom function, which
-/// returns [`ScenarioType`]. Also can limit maximum number of concurrent
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ScenarioType {
+    /// Run [`Scenario`]s sequentially (one-by-one).
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    Serial,
+
+    /// Run [`Scenario`]s concurrently.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    Concurrent,
+}
+
+/// Default [`Runner`] implementation which follows _order guarantees_ from the
+/// [`Runner`] trait docs.
+///
+/// Executes [`Scenario`]s concurrently based on the custom function, which
+/// returns [`ScenarioType`]. Also, can limit maximum number of concurrent
 /// [`Scenario`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
 pub struct Basic<World, F> {
-    /// If [`Some`], number of concurrently executed [`Scenario`]s will be
-    /// limited to that number.
+    /// Optional number of concurrently executed [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
     max_concurrent_scenarios: Option<usize>,
 
-    /// [`Collection`] of [`Step`] functions provided by user.
+    /// [`Collection`] of functions to match [`Step`]s.
     ///
     /// [`Collection`]: step::Collection
-    /// [`Step`]: step::Step
     steps: step::Collection<World>,
 
-    /// Function, that determines, if [`Scenario`] is [`Concurrent`] or
-    /// [`Serial`].
+    /// Function determining whether a [`Scenario`] is [`Concurrent`] or
+    /// a [`Serial`] one.
     ///
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
@@ -77,23 +93,6 @@ impl<World, F> fmt::Debug for Basic<World, F> {
     }
 }
 
-/// Type for determining whether [`Scenario`] should be ran concurrently or
-/// one-by-one.
-///
-/// [`Scenario`]: gherkin::Scenario
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum ScenarioType {
-    /// Run [`Scenario`]s one-by-one.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    Serial,
-
-    /// Run [`Scenario`]s concurrently.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    Concurrent,
-}
-
 impl<World, F> Basic<World, F>
 where
     F: Fn(
@@ -103,57 +102,51 @@ where
         ) -> ScenarioType
         + 'static,
 {
-    /// Creates default [`Runner`].
+    /// Creates a new default [`Runner`].
     #[must_use]
     pub fn new(
         which_scenario: F,
         max_concurrent_scenarios: Option<usize>,
         steps: step::Collection<World>,
     ) -> Self {
-        Basic {
+        Self {
             max_concurrent_scenarios,
             steps,
             which_scenario,
         }
     }
 
-    /// Replaces [`Collection`] of [`Step`]s.
+    /// Replaces [`Collection`] of [`Step`]s with the given one.
     ///
     /// [`Collection`]: step::Collection
-    /// [`Step`]: step::Step
+    #[must_use]
     pub fn steps(mut self, steps: step::Collection<World>) -> Self {
         self.steps = steps;
         self
     }
 
-    /// Adds [`Step`] that matched with [Given] steps which [`Step::value`]
-    /// matches `regex`.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).given(regex, step);
         self
     }
 
-    /// Adds [`Step`] that matched with [When] steps which [`Step::value`]
-    /// matches `regex`.
+    /// Adds a [When] [`Step`] matching the given `regex`.
     ///
-    /// [`Step::value`]: gherkin::Step::value
-    ///
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
+    /// [When]: https://cucumber.io/docs/gherkin/reference/#given
+    #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).when(regex, step);
         self
     }
 
-    /// Adds [`Step`] that matched with [Then] steps which [`Step::value`]
-    /// matches `regex`.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Adds a [Then] [`Step`] matching the given `regex`.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).then(regex, step);
         self
@@ -176,7 +169,7 @@ where
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
-        let Basic {
+        let Self {
             max_concurrent_scenarios,
             steps,
             which_scenario,
@@ -226,7 +219,7 @@ async fn insert_features<S, F, W>(
         ) -> ScenarioType
         + 'static,
 {
-    futures::pin_mut!(features);
+    pin_mut!(features);
     while let Some(feature) = features.next().await {
         match feature {
             Ok(f) => into.insert(f, &which_scenario).await,
@@ -338,7 +331,7 @@ impl<W: World> Executor<W> {
         }
     }
 
-    /// Runs [`Scenario`].
+    /// Runs a [`Scenario`].
     ///
     /// # Events
     ///
@@ -438,7 +431,7 @@ impl<W: World> Executor<W> {
         }
     }
 
-    /// Runs [`Step`].
+    /// Runs a [`Step`].
     ///
     /// # Events
     ///
@@ -732,7 +725,7 @@ impl Features {
             .unwrap_or_default()
     }
 
-    /// Indicate that there will be no additional [`Feature`]s.
+    /// Marks that there will be no additional [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn finish(&self) {

@@ -8,9 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`Writer`] for outputting events in readable order.
-//!
-//! [`Parser`]: crate::Parser
+//! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
 use std::sync::Arc;
 
@@ -20,14 +18,17 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{event, World, Writer};
 
-/// [`Writer`] implementation for outputting events in readable order.
+/// Wrapper for a [`Writer`] implementation for outputting events in a
+/// normalized readable order.
 ///
-/// Does not output anything by itself, rather used as a combinator for
+/// Doesn't output anything by itself, but rather is used as a combinator for
 /// rearranging events and sourcing them to the underlying [`Writer`].
-/// If some [`Feature`]([`Rule`]/[`Scenario`]/[`Step`]) was outputted, it will
-/// be outputted uninterrupted until the end, even if some other [`Feature`]s
-/// finished their execution. It makes much easier to understand what is really
-/// happening in [`Feature`].
+///
+/// If some [`Feature`]([`Rule`]/[`Scenario`]/[`Step`]) has started to be
+/// written into an output, then it will be written uninterruptedly until its
+/// end, even if some other [`Feature`]s have finished their execution. It makes
+/// much easier to understand what is really happening in the running
+/// [`Feature`].
 ///
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
@@ -35,17 +36,20 @@ use crate::{event, World, Writer};
 /// [`Step`]: gherkin::Step
 #[derive(Debug)]
 pub struct Normalized<World, Writer> {
+    /// [`Writer`] to normalize output of.
     writer: Writer,
-    queue: CucumberEvents<World>,
+
+    /// Normalization queue of happened events.
+    queue: CucumberQueue<World>,
 }
 
 impl<W: World, Writer> Normalized<W, Writer> {
-    /// Creates new [`Normalized`], which will rearrange events and source them
-    /// to given [`Writer`].
+    /// Creates a new [`Normalized`] wrapper, which will rearrange events and
+    /// feed them to the given [`Writer`].
     pub fn new(writer: Writer) -> Self {
         Self {
             writer,
-            queue: CucumberEvents::new(),
+            queue: CucumberQueue::new(),
         }
     }
 }
@@ -53,28 +57,28 @@ impl<W: World, Writer> Normalized<W, Writer> {
 #[async_trait(?Send)]
 impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
     async fn handle_event(&mut self, ev: event::Cucumber<World>) {
+        use event::{Cucumber, Feature, Rule};
+
         match ev {
-            event::Cucumber::Started => {
-                self.writer.handle_event(event::Cucumber::Started).await;
+            Cucumber::Started => {
+                self.writer.handle_event(Cucumber::Started).await;
             }
-            event::Cucumber::ParsingError(err) => {
-                self.writer
-                    .handle_event(event::Cucumber::ParsingError(err))
-                    .await;
+            Cucumber::ParsingError(err) => {
+                self.writer.handle_event(Cucumber::ParsingError(err)).await;
             }
-            event::Cucumber::Finished => self.queue.finished(),
-            event::Cucumber::Feature(f, ev) => match ev {
-                event::Feature::Started => self.queue.new_feature(f),
-                event::Feature::Scenario(s, ev) => {
+            Cucumber::Finished => self.queue.finished(),
+            Cucumber::Feature(f, ev) => match ev {
+                Feature::Started => self.queue.new_feature(f),
+                Feature::Scenario(s, ev) => {
                     self.queue.insert_scenario_event(&f, None, s, ev);
                 }
-                event::Feature::Finished => self.queue.feature_finished(&f),
-                event::Feature::Rule(r, ev) => match ev {
-                    event::Rule::Started => self.queue.new_rule(&f, r),
-                    event::Rule::Scenario(s, ev) => {
+                Feature::Finished => self.queue.feature_finished(&f),
+                Feature::Rule(r, ev) => match ev {
+                    Rule::Started => self.queue.new_rule(&f, r),
+                    Rule::Scenario(s, ev) => {
                         self.queue.insert_scenario_event(&f, Some(r), s, ev);
                     }
-                    event::Rule::Finished => self.queue.rule_finished(&f, r),
+                    Rule::Finished => self.queue.rule_finished(&f, r),
                 },
             },
         }
@@ -86,31 +90,34 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
         }
 
         if self.queue.is_finished() {
-            self.writer.handle_event(event::Cucumber::Finished).await;
+            self.writer.handle_event(Cucumber::Finished).await;
         }
     }
 }
 
-/// Storage for all incoming events.
+/// Normalization queue for all incoming events.
 ///
 /// We use [`LinkedHashMap`] everywhere throughout this module to ensure FIFO
 /// queue for our events. This means by calling [`next()`] we reliably get
-/// currently outputted [`Feature`]. We are doing that until it yields
-/// [`Feature::Finished`] after that we remove current [`Feature`], as all it's
-/// events are printed out and we should do it all over again with [`next()`]
-/// [`Feature`].
+/// the currently outputting [`Feature`]. We're doing that until it yields
+/// [`Feature::Finished`] event after which we remove the current [`Feature`],
+/// as all its events have been printed out and we should do it all over again
+/// with a [`next()`] [`Feature`].
 ///
 /// [`next()`]: std::iter::Iterator::next()
 /// [`Feature`]: gherkin::Feature
 /// [`Feature::Finished`]: event::Feature::Finished
 #[derive(Debug)]
-struct CucumberEvents<World> {
-    events: LinkedHashMap<Arc<gherkin::Feature>, FeatureEvents<World>>,
+struct CucumberQueue<World> {
+    /// Collected incoming events.
+    events: LinkedHashMap<Arc<gherkin::Feature>, FeatureQueue<World>>,
+
+    /// Indicator whether this queue has been finished.
     finished: bool,
 }
 
-impl<World> CucumberEvents<World> {
-    /// Creates new [`Cucumber`].
+impl<World> CucumberQueue<World> {
+    /// Creates a new [`CucumberQueue`].
     fn new() -> Self {
         Self {
             events: LinkedHashMap::new(),
@@ -118,31 +125,30 @@ impl<World> CucumberEvents<World> {
         }
     }
 
-    /// Marks [`Cucumber`] as finished on [`Cucumber::Finished`].
-    ///
-    /// [`Cucumber::Finished`]: event::Cucumber::Finished
+    /// Marks this [`CucumberQueue`] as finished on
+    /// [`event::Cucumber::Finished`].
     fn finished(&mut self) {
         self.finished = true;
     }
 
-    /// Checks if [`event::Cucumber::Finished`] was received.
+    /// Checks whether [`event::Cucumber::Finished`] has been received.
     fn is_finished(&self) -> bool {
         self.finished
     }
 
-    /// Inserts new [`Feature`] on [`Feature::Started`].
+    /// Inserts a new [`Feature`] on [`event::Feature::Started`].
     ///
-    /// [`Feature::Started`]: event::Feature::Started
+    /// [`Feature`]: gherkin::Feature
     fn new_feature(&mut self, feature: Arc<gherkin::Feature>) {
-        drop(self.events.insert(feature, FeatureEvents::new()));
+        drop(self.events.insert(feature, FeatureQueue::new()));
     }
 
-    /// Marks [`Feature`] as finished on [`Feature::Finished`].
+    /// Marks a [`Feature`] as finished on [`event::Feature::Finished`].
     ///
     /// We don't emit it by the way, as there may be other in-progress
-    /// [`Feature`] which holds the output.
+    /// [`Feature`]s which hold the output.
     ///
-    /// [`Cucumber::Finished`]: event::Cucumber::Finished
+    /// [`Feature`]: gherkin::Feature
     fn feature_finished(&mut self, feature: &gherkin::Feature) {
         self.events
             .get_mut(feature)
@@ -150,9 +156,9 @@ impl<World> CucumberEvents<World> {
             .finished = true;
     }
 
-    /// Inserts new [`Rule`] on [`Rule::Started`].
+    /// Inserts a new [`Rule`] on [`event::Rule::Started`].
     ///
-    /// [`Rule::Started`]: event::Rule::Started
+    /// [`Rule`]: gherkin::Feature
     fn new_rule(
         &mut self,
         feature: &gherkin::Feature,
@@ -165,12 +171,12 @@ impl<World> CucumberEvents<World> {
             .new_rule(rule);
     }
 
-    /// Marks [`Rule`] as finished on [`Rule::Finished`].
+    /// Marks [`Rule`] as finished on [`event::Rule::Finished`].
     ///
-    /// We don't emit it by the way, as there may be other in-progress [`Rule`]
-    /// which holds the output.
+    /// We don't emit it by the way, as there may be other in-progress [`Rule`]s
+    /// which hold the output.
     ///
-    /// [`Rule::Finished`]: event::Rule::Finished
+    /// [`Rule`]: gherkin::Feature
     fn rule_finished(
         &mut self,
         feature: &gherkin::Feature,
@@ -183,9 +189,7 @@ impl<World> CucumberEvents<World> {
             .rule_finished(rule);
     }
 
-    /// Inserts new [`Scenario::Event`].
-    ///
-    /// [`Scenario::Started`]: event::Scenario::Started
+    /// Inserts a new [`event::Scenario::Started`].
     fn insert_scenario_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -205,12 +209,12 @@ impl<World> CucumberEvents<World> {
     /// [`Feature`]: gherkin::Feature
     fn next_feature(
         &mut self,
-    ) -> Option<(Arc<gherkin::Feature>, &mut FeatureEvents<World>)> {
+    ) -> Option<(Arc<gherkin::Feature>, &mut FeatureQueue<World>)> {
         self.events.iter_mut().next().map(|(f, ev)| (f.clone(), ev))
     }
 
-    /// Removes [`Feature`]. Should be called once [`Feature`] was fully
-    /// outputted.
+    /// Removes the given [`Feature`]. Should be called once [`Feature`] was
+    /// fully outputted.
     ///
     /// [`Feature`]: gherkin::Feature
     fn remove(&mut self, feature: &gherkin::Feature) {
@@ -220,8 +224,8 @@ impl<World> CucumberEvents<World> {
     /// Emits all ready [`Feature`] events. If some [`Feature`] was fully
     /// outputted, returns it. After that it should be [`remove`]d.
     ///
-    /// [`remove`]: Self::remove()
     /// [`Feature`]: gherkin::Feature
+    /// [`remove`]: CucumberQueue::remove()
     async fn emit_feature_events<Wr: Writer<World>>(
         &mut self,
         writer: &mut Wr,
@@ -252,84 +256,86 @@ impl<World> CucumberEvents<World> {
     }
 }
 
-/// Storage for all [`Feature`] events.
+/// Queue of all events of a single [`Feature`].
 ///
 /// [`Feature`]: gherkin::Feature
 #[derive(Debug)]
-struct FeatureEvents<World> {
+struct FeatureQueue<World> {
+    /// Indicator whether this queue has been started to be written into output.
     started_emitted: bool,
-    events: RulesAndScenarios<World>,
+
+    /// Collected events of this queue.
+    events: RulesAndScenariosQueue<World>,
+
+    /// Indicator whether this queue has been finished.
     finished: bool,
 }
 
-impl<World> FeatureEvents<World> {
-    /// Creates new [`FeatureEvents`].
+impl<World> FeatureQueue<World> {
+    /// Creates a new [`FeatureQueue`].
     fn new() -> Self {
         Self {
             started_emitted: false,
-            events: RulesAndScenarios::new(),
+            events: RulesAndScenariosQueue::new(),
             finished: false,
         }
     }
 
-    /// Checks if [`Feature::Started`] was emitted.
-    ///
-    /// [`Feature::Started`]: gherkin::Feature
+    /// Checks if [`event::Feature::Started`] has been emitted.
     fn is_started(&self) -> bool {
         self.started_emitted
     }
 
-    /// Marks that [`Feature::Started`] was emitted.
-    ///
-    /// [`Feature::Started`]: gherkin::Feature
+    /// Marks that [`event::Feature::Started`] was emitted.
     fn started(&mut self) {
         self.started_emitted = true;
     }
 
-    /// Checks if [`Feature::Finished`] was emitted.
-    ///
-    /// [`Feature::Finished`]: event::Feature::Finished
+    /// Checks if [`event::Feature::Finished`] has been emitted.
     fn is_finished(&self) -> bool {
         self.finished
     }
 
-    /// Removes [`RuleOrScenario`]. Should be called once [`RuleOrScenario`] was
-    /// fully outputted.
+    /// Removes the given [`RuleOrScenario`].
+    ///
+    /// Should be called once this [`RuleOrScenario`] was fully outputted.
     fn remove(&mut self, rule_or_scenario: &RuleOrScenario) {
         drop(self.events.0.remove(rule_or_scenario));
     }
 
     /// Emits all ready [`RuleOrScenario`] events. If some [`RuleOrScenario`]
-    /// was fully outputted, returns it. After that it should be [`remove`]d.
+    /// was fully outputted, then returns it. After that it should be
+    /// [`remove`]d.
     ///
-    /// [`remove`]: Self::remove()
+    /// [`remove`]: FeatureQueue::remove()
     async fn emit_scenario_and_rule_events<Wr: Writer<World>>(
         &mut self,
         feature: Arc<gherkin::Feature>,
         writer: &mut Wr,
     ) -> Option<RuleOrScenario> {
-        match self.events.next_rule_or_scenario() {
-            Some(Either::Left((rule, events))) => events
+        match self.events.next_rule_or_scenario()? {
+            Either::Left((rule, events)) => events
                 .emit_rule_events(feature, rule, writer)
                 .await
                 .map(Either::Left),
-            Some(Either::Right((scenario, events))) => events
+            Either::Right((scenario, events)) => events
                 .emit_scenario_events(feature, None, scenario, writer)
                 .await
                 .map(Either::Right),
-            None => None,
         }
     }
 }
 
-/// Storage for all [`RuleOrScenario`] events.
+/// Queue of all [`RuleOrScenario`] events.
 #[derive(Debug)]
-struct RulesAndScenarios<World>(
+struct RulesAndScenariosQueue<World>(
     LinkedHashMap<RuleOrScenario, RuleOrScenarioEvents<World>>,
 );
 
+/// Either a [`gherkin::Rule`] or a [`gherkin::Scenario`].
 type RuleOrScenario = Either<Arc<gherkin::Rule>, Arc<gherkin::Scenario>>;
 
+/// Either a [`gherkin::Rule`] or a [`gherkin::Scenario`].
 type RuleOrScenarioEvents<World> =
     Either<RuleEvents<World>, ScenarioEvents<World>>;
 
@@ -338,10 +344,10 @@ type NextRuleOrScenario<'events, World> = Either<
     (Arc<gherkin::Scenario>, &'events mut ScenarioEvents<World>),
 >;
 
-impl<World> RulesAndScenarios<World> {
+impl<World> RulesAndScenariosQueue<World> {
     /// Creates new [`RulesAndScenarios`].
     fn new() -> Self {
-        RulesAndScenarios(LinkedHashMap::new())
+        RulesAndScenariosQueue(LinkedHashMap::new())
     }
 
     /// Inserts new [`Rule`].
@@ -418,7 +424,7 @@ impl<World> RulesAndScenarios<World> {
     }
 }
 
-/// Storage for all [`Rule`] events.
+/// Queue of all events of a single [`Rule`].
 ///
 /// [`Rule`]: gherkin::Rule
 #[derive(Debug)]

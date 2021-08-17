@@ -37,34 +37,34 @@ where
     /// [`when`]: crate::when
     #[must_use]
     fn collection() -> step::Collection<Self> {
-        let mut collection = step::Collection::new();
+        let mut out = step::Collection::new();
 
         for given in Self::cucumber_given() {
             let (regex, fun) = given.inner();
-            collection = collection.given(regex, fun);
+            out = out.given(regex, fun);
         }
 
         for when in Self::cucumber_when() {
             let (regex, fun) = when.inner();
-            collection = collection.when(regex, fun);
+            out = out.when(regex, fun);
         }
 
         for then in Self::cucumber_then() {
             let (regex, fun) = then.inner();
-            collection = collection.then(regex, fun);
+            out = out.then(regex, fun);
         }
 
-        collection
+        out
     }
 
     /// Runs [`Cucumber`].
     ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
+    /// later produces events handled by [`Writer`].
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] failed.
+    /// If at least one [`Step`] has failed.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser
@@ -80,12 +80,12 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
+    /// later produces events handled by [`Writer`].
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] failed.
+    /// If at least one [`Step`] has failed.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser
@@ -127,16 +127,15 @@ where
     W: StepConstructor<Self> + inventory::Collect,
     T: StepConstructor<Self> + inventory::Collect,
 {
-    /// Returns [`Iterator`] over items with [`given`] attribute.
+    /// Returns an [`Iterator`] over items with [`given`] attribute.
     ///
     /// [`given`]: crate::given
-    /// [`Iterator`]: std::iter::Iterator
     #[must_use]
     fn cucumber_given() -> inventory::iter<G> {
         inventory::iter
     }
 
-    /// Creates new [`Given`] [`Step`] value. Used by [`given`] attribute.
+    /// Creates a new [`Given`] [`Step`] value. Used by [`given`] attribute.
     ///
     /// [`given`]: crate::given
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
@@ -144,16 +143,15 @@ where
         G::new(regex, fun)
     }
 
-    /// Returns [`Iterator`] over items with [`when`] attribute.
+    /// Returns an [`Iterator`] over items with [`when`] attribute.
     ///
     /// [`when`]: crate::when
-    /// [`Iterator`]: std::iter::Iterator
     #[must_use]
     fn cucumber_when() -> inventory::iter<W> {
         inventory::iter
     }
 
-    /// Creates new [`When`] [`Step`] value. Used by [`when`] attribute.
+    /// Creates a new [`When`] [`Step`] value. Used by [`when`] attribute.
     ///
     /// [`when`]: crate::when
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
@@ -161,16 +159,15 @@ where
         W::new(regex, fun)
     }
 
-    /// Returns [`Iterator`] over items with [`then`] attribute.
+    /// Returns an [`Iterator`] over items with [`then`] attribute.
     ///
     /// [`then`]: crate::then
-    /// [`Iterator`]: std::iter::Iterator
     #[must_use]
     fn cucumber_then() -> inventory::iter<T> {
         inventory::iter
     }
 
-    /// Creates new [`Then`] [`Step`] value. Used by [`then`] attribute.
+    /// Creates a new [`Then`] [`Step`] value. Used by [`then`] attribute.
     ///
     /// [`then`]: crate::then
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
@@ -186,9 +183,9 @@ where
 /// [`when`]: crate::when
 /// [`then`]: crate::then
 pub trait StepConstructor<W> {
-    /// Creates new [`Step`] with corresponding [`Regex`].
+    /// Creates a new [`Step`] with the corresponding [`Regex`].
     fn new(_: Regex, _: Step<W>) -> Self;
 
-    /// Returns inner [`Step`] with corresponding [`Regex`].
+    /// Returns an inner [`Step`] with the corresponding [`Regex`].
     fn inner(&self) -> (Regex, Step<W>);
 }

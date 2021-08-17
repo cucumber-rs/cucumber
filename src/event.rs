@@ -8,104 +8,108 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Key occurrences in the lifecycle of a Cucumber execution.
+//! Key occurrences in a lifecycle of a [Cucumber] execution.
 //!
 //! The top-level enum here is [`Cucumber`].
 //!
 //! Each event enum contains variants indicating what stage of execution
-//! [`Runner`] is at and, variants with detailed content about the precise
+//! [`Runner`] is at, and variants with detailed content about the precise
 //! sub-event.
 //!
 //! [`Runner`]: crate::Runner
+//!
+//! [Cucumber]: https://cucumber.io
 
 use std::{any::Any, sync::Arc};
-
-/// Top-level cucumber run event.
-#[derive(Debug)]
-pub enum Cucumber<World> {
-    /// Event for a `Cucumber` execution started.
-    Started,
-
-    /// [`Feature`] event.
-    Feature(Arc<gherkin::Feature>, Feature<World>),
-
-    /// Failed to parse [`Feature`] file.
-    ParsingError(gherkin::ParseFileError),
-
-    /// Event for a `Cucumber` execution finished.
-    Finished,
-}
 
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 pub type Info = Box<dyn Any + Send + 'static>;
 
+/// Top-level [Cucumber] run event.
+///
+/// [Cucumber]: https://cucumber.io
+#[derive(Debug)]
+pub enum Cucumber<World> {
+    /// Event for a [`Cucumber`] execution started.
+    Started,
+
+    /// [`Feature`] event.
+    Feature(Arc<gherkin::Feature>, Feature<World>),
+
+    /// Failed to parse a [`Feature`] file.
+    ParsingError(gherkin::ParseFileError),
+
+    /// Event for a [`Cucumber`] execution finished.
+    Finished,
+}
+
 impl<World> Cucumber<World> {
-    /// Constructs event of a [`Feature`] being started.
+    /// Constructs an event of a [`Feature`] being started.
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub fn feature_started(feature: Arc<gherkin::Feature>) -> Self {
-        Cucumber::Feature(feature, Feature::Started)
+    pub fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
+        Self::Feature(feat, Feature::Started)
     }
 
-    /// Constructs event of a [`Rule`] being started.
+    /// Constructs an event of a [`Rule`] being started.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
     pub fn rule_started(
-        feature: Arc<gherkin::Feature>,
+        feat: Arc<gherkin::Feature>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
-        Cucumber::Feature(feature, Feature::Rule(rule, Rule::Started))
+        Self::Feature(feat, Feature::Rule(rule, Rule::Started))
     }
 
-    /// Constructs event of a finished [`Feature`].
+    /// Constructs an event of a [`Feature`] being finished.
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub fn feature_finished(feature: Arc<gherkin::Feature>) -> Self {
-        Cucumber::Feature(feature, Feature::Finished)
+    pub fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
+        Self::Feature(feat, Feature::Finished)
     }
 
-    /// Constructs event of a finished [`Rule`].
+    /// Constructs an event of a [`Rule`] being finished.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
     pub fn rule_finished(
-        feature: Arc<gherkin::Feature>,
+        feat: Arc<gherkin::Feature>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
-        Cucumber::Feature(feature, Feature::Rule(rule, Rule::Finished))
+        Self::Feature(feat, Feature::Rule(rule, Rule::Finished))
     }
 
-    /// Constructs [`Cucumber`] event from a [`Scenario`] and it's path.
+    /// Constructs a [`Cucumber`] event from the given [`Scenario`] event.
     #[must_use]
     pub fn scenario(
-        feature: Arc<gherkin::Feature>,
+        feat: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         event: Scenario<World>,
     ) -> Self {
-        #[allow(clippy::option_if_let_else)] // use of moved value: `ev`
+        #[allow(clippy::option_if_let_else)] // use of moved value: `event`
         if let Some(r) = rule {
-            Cucumber::Feature(
-                feature,
+            Self::Feature(
+                feat,
                 Feature::Rule(r, Rule::Scenario(scenario, event)),
             )
         } else {
-            Cucumber::Feature(feature, Feature::Scenario(scenario, event))
+            Self::Feature(feat, Feature::Scenario(scenario, event))
         }
     }
 }
 
 /// Event specific to a particular [Feature]
 ///
-/// [Feature]: (https://cucumber.io/docs/gherkin/reference/#feature)
+/// [Feature]: https://cucumber.io/docs/gherkin/reference/#feature
 #[derive(Debug)]
 pub enum Feature<World> {
-    /// Event for a [`Feature`] execution started.
+    /// [`Feature`] execution being started.
     ///
     /// [`Feature`]: gherkin::Feature
     Started,
@@ -116,18 +120,18 @@ pub enum Feature<World> {
     /// [`Scenario`] event.
     Scenario(Arc<gherkin::Scenario>, Scenario<World>),
 
-    /// Event for a [`Feature`] execution finished.
+    /// [`Feature`] execution being finished.
     ///
     /// [`Feature`]: gherkin::Feature
     Finished,
 }
 
-/// Event specific to a particular [Rule]
+/// Event specific to a particular [Rule].
 ///
-/// [Rule]: (https://cucumber.io/docs/gherkin/reference/#rule)
+/// [Rule]: https://cucumber.io/docs/gherkin/reference/#rule
 #[derive(Debug)]
 pub enum Rule<World> {
-    /// Event for a [`Rule`] execution started.
+    /// [`Rule`] execution being started.
     ///
     /// [`Rule`]: gherkin::Rule
     Started,
@@ -135,18 +139,18 @@ pub enum Rule<World> {
     /// [`Scenario`] event.
     Scenario(Arc<gherkin::Scenario>, Scenario<World>),
 
-    /// Event for a [`Rule`] execution finished.
+    /// [`Rule`] execution being finished.
     ///
     /// [`Rule`]: gherkin::Rule
     Finished,
 }
 
-/// Event specific to a particular [Scenario]
+/// Event specific to a particular [Scenario].
 ///
 /// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
 #[derive(Debug)]
 pub enum Scenario<World> {
-    /// Event for a [`Scenario`] execution started.
+    /// [`Scenario`] execution being started.
     ///
     /// [`Scenario`]: gherkin::Scenario
     Started,
@@ -159,7 +163,7 @@ pub enum Scenario<World> {
     /// [`Step`] event.
     Step(Arc<gherkin::Step>, Step<World>),
 
-    /// Event for a [`Scenario`] execution finished.
+    /// [`Scenario`] execution being finished.
     ///
     /// [`Scenario`]: gherkin::Scenario
     Finished,
@@ -170,7 +174,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     pub fn step_started(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Step(step, Step::Started)
+        Self::Step(step, Step::Started)
     }
 
     /// Event of a [`Background`] [`Step`] being started.
@@ -178,14 +182,14 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     pub fn background_step_started(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Background(step, Step::Started)
+        Self::Background(step, Step::Started)
     }
 
     /// Event of a passed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     pub fn step_passed(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Step(step, Step::Passed)
+        Self::Step(step, Step::Passed)
     }
 
     /// Event of a passed [`Background`] [`Step`].
@@ -193,21 +197,21 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     pub fn background_step_passed(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Background(step, Step::Passed)
+        Self::Background(step, Step::Passed)
     }
 
     /// Event of a skipped [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     pub fn step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Step(step, Step::Skipped)
+        Self::Step(step, Step::Skipped)
     }
     /// Event of a skipped [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     pub fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Scenario::Background(step, Step::Skipped)
+        Self::Background(step, Step::Skipped)
     }
 
     /// Event of a failed [`Step`].
@@ -218,7 +222,7 @@ impl<World> Scenario<World> {
         world: World,
         info: Info,
     ) -> Self {
-        Scenario::Step(step, Step::Failed(world, info))
+        Self::Step(step, Step::Failed(world, info))
     }
 
     /// Event of a failed [`Background`] [`Step`].
@@ -230,37 +234,36 @@ impl<World> Scenario<World> {
         world: World,
         info: Info,
     ) -> Self {
-        Scenario::Background(step, Step::Failed(world, info))
+        Self::Background(step, Step::Failed(world, info))
     }
 }
 
-/// Event specific to a particular [Step]
+/// Event specific to a particular [Step].
 ///
-/// [Step]: (https://cucumber.io/docs/gherkin/reference/#step)
+/// [Step]: https://cucumber.io/docs/gherkin/reference/#step
 #[derive(Debug)]
 pub enum Step<World> {
-    /// Event for a [`Step`] execution started.
+    /// Event of a [`Step`] execution being started.
     ///
     /// [`Step`]: gherkin::Step
     Started,
 
-    /// Event for a [`Step`] being skipped.
+    /// Event of a [`Step`] being being skipped.
     ///
-    /// That means there is no [`Regex`] matching [`Step`] in
+    /// That means there is no [`Regex`] matching [`Step`] in a
     /// [`step::Collection`].
     ///
     /// [`Regex`]: regex::Regex
-    /// [`step::Collection`]: crate::step::Collection
-    /// [`Step`]: crate::Step
     /// [`Step`]: gherkin::Step
+    /// [`step::Collection`]: crate::step::Collection
     Skipped,
 
-    /// Event for a passed [`Step`].
+    /// Event of a passed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     Passed,
 
-    /// Event for a failed [`Step`].
+    /// Event of a failed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     Failed(World, Info),

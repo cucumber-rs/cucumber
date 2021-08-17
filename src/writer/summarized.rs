@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`Writer`] for collecting summary.
+//! [`Writer`]-wrapper for collecting a summary of execution.
 
 use std::fmt::Debug;
 
@@ -17,8 +17,11 @@ use async_trait::async_trait;
 use crate::{event, World, Writer};
 
 /// [`Writer`] for collecting summary: number of features, scenarios and steps.
+///
+/// Wrapper for a [`Writer`] implementation for outputting a summary (number of
+/// features, scenarios and steps) of execution.
 #[derive(Debug)]
-pub struct Summary<Writer> {
+pub struct Summarized<Writer> {
     writer: Writer,
 
     /// Number of started [`Feature`]s.
@@ -69,26 +72,28 @@ pub struct Stats {
 }
 
 #[async_trait(?Send)]
-impl<W, Wr> Writer<W> for Summary<Wr>
+impl<W, Wr> Writer<W> for Summarized<Wr>
 where
     W: World,
     Wr: Writer<W>,
 {
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
+        use event::{Cucumber, Feature, Rule};
+
         let mut finished = false;
         match &ev {
-            event::Cucumber::ParsingError(_) => self.parsing_errors += 1,
-            event::Cucumber::Feature(_, ev) => match ev {
-                event::Feature::Started => self.features += 1,
-                event::Feature::Rule(_, event::Rule::Started) => {
+            Cucumber::ParsingError(_) => self.parsing_errors += 1,
+            Cucumber::Feature(_, ev) => match ev {
+                Feature::Started => self.features += 1,
+                Feature::Rule(_, Rule::Started) => {
                     self.rules += 1;
                 }
-                event::Feature::Rule(_, event::Rule::Scenario(_, ev))
-                | event::Feature::Scenario(_, ev) => self.handle_scenario(ev),
-                event::Feature::Finished | event::Feature::Rule(..) => {}
+                Feature::Rule(_, Rule::Scenario(_, ev))
+                | Feature::Scenario(_, ev) => self.handle_scenario(ev),
+                Feature::Finished | Feature::Rule(..) => {}
             },
-            event::Cucumber::Finished => finished = true,
-            event::Cucumber::Started => {}
+            Cucumber::Finished => finished = true,
+            Cucumber::Started => {}
         };
 
         self.writer.handle_event(ev).await;
@@ -114,7 +119,7 @@ where
     }
 }
 
-impl<Writer> Summary<Writer> {
+impl<Writer> Summarized<Writer> {
     /// Creates new [`Summary`].
     pub fn new(writer: Writer) -> Self {
         Self {
@@ -141,20 +146,25 @@ impl<Writer> Summary<Writer> {
     }
 
     fn handle_step<W>(&mut self, ev: &event::Step<W>) {
+        use event::Step;
+
         match ev {
-            event::Step::Started => {}
-            event::Step::Passed => self.steps.passed += 1,
-            event::Step::Skipped => self.steps.skipped += 1,
-            event::Step::Failed(..) => self.steps.failed += 1,
+            Step::Started => {}
+            Step::Passed => self.steps.passed += 1,
+            Step::Skipped => self.steps.skipped += 1,
+            Step::Failed(..) => self.steps.failed += 1,
         }
     }
 
     fn handle_scenario<W>(&mut self, ev: &event::Scenario<W>) {
+        use event::Scenario;
+
         match ev {
-            event::Scenario::Started => self.scenarios += 1,
-            event::Scenario::Background(_, ev)
-            | event::Scenario::Step(_, ev) => self.handle_step(ev),
-            event::Scenario::Finished => {}
+            Scenario::Started => self.scenarios += 1,
+            Scenario::Background(_, ev) | Scenario::Step(_, ev) => {
+                self.handle_step(ev);
+            }
+            Scenario::Finished => {}
         }
     }
 }

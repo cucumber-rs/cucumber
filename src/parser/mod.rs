@@ -19,7 +19,7 @@ use futures::Stream;
 #[doc(inline)]
 pub use basic::Basic;
 
-/// Trait for sourcing parsed [`Feature`]s.
+/// Source of parsed [`Feature`]s.
 ///
 /// [`Feature`]: gherkin::Feature
 pub trait Parser<I> {
@@ -28,13 +28,13 @@ pub trait Parser<I> {
     /// [`Feature`]: gherkin::Feature
     type Output: Stream<Item = Result<gherkin::Feature>> + 'static;
 
-    /// Parses the given `input` into [`Stream`] of [`Feature`]s.
+    /// Parses the given `input` into a [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn parse(self, input: I) -> Self::Output;
 }
 
-/// Result parsing [Gherkin] files.
+/// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
 pub type Result<T> = std::result::Result<T, gherkin::ParseFileError>;

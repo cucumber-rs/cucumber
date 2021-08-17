@@ -31,7 +31,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
     fn parse(self, path: I) -> Self::Output {
         let features = || {
             let path = match path.as_ref().canonicalize() {
-                Ok(path) => path,
+                Ok(p) => p,
                 Err(err) => {
                     return vec![Err(gherkin::ParseFileError::Reading {
                         path: path.as_ref().to_path_buf(),

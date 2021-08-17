@@ -8,14 +8,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Definitions for [`Collection`] which is used to store [`Step`] [`Fn`]s and
+//! Definitions for a [`Collection`] which is used to store [`Step`] [`Fn`]s and
 //! corresponding [`Regex`] patterns.
 //!
 //! [`Step`]: gherkin::Step
 
 use std::{
     collections::HashMap,
-    fmt::{self, Debug, Formatter},
+    fmt,
     hash::{Hash, Hasher},
     ops::Deref,
 };
@@ -23,6 +23,10 @@ use std::{
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use regex::Regex;
+
+/// Alias for a [`gherkin::Step`] function that returns a [`LocalBoxFuture`].
+pub type Step<World> =
+    for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
 /// Collection of [`Step`]s.
 ///
@@ -35,8 +39,8 @@ pub struct Collection<World> {
     then: HashMap<HashableRegex, Step<World>>,
 }
 
-impl<World> Debug for Collection<World> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<World> fmt::Debug for Collection<World> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Collection")
             .field(
                 "given",
@@ -77,16 +81,13 @@ impl<World> Default for Collection<World> {
 }
 
 impl<World> Collection<World> {
-    /// Creates empty [`Collection`].
+    /// Creates a new empty [`Collection`].
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Adds [`Step`] that matched with [Given] steps which [`Step::value`]
-    /// matches `regex`.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
@@ -94,10 +95,7 @@ impl<World> Collection<World> {
         self
     }
 
-    /// Adds [`Step`] that matched with [When] steps which [`Step::value`]
-    /// matches `regex`.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Adds a [When] [`Step`] matching the given `regex`.
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
     pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
@@ -105,10 +103,7 @@ impl<World> Collection<World> {
         self
     }
 
-    /// Adds [`Step`] that matched with [Then] steps which [`Step::value`]
-    /// matches `regex`.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Adds a [Then] [`Step`] matching the given `regex`.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
@@ -116,9 +111,8 @@ impl<World> Collection<World> {
         self
     }
 
-    /// Returns [`Step`] matching the [`Step::value`], if present.
-    ///
-    /// [`Step::value`]: gherkin::Step::value
+    /// Returns a [`Step`] function matching the given [`gherkin::Step`],
+    /// if any.
     #[must_use]
     pub fn find(
         &self,
@@ -150,14 +144,10 @@ impl<World> Collection<World> {
     }
 }
 
-/// Alias for a [`fn`] that returns [`LocalBoxFuture`].
-pub type Step<World> =
-    for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
-
-/// Context for a [`Fn`] execution.
+/// Context for a [`Step`] function execution.
 #[derive(Debug)]
 pub struct Context {
-    /// [`Step`] matched to a [`Fn`].
+    /// [`Step`] matched to a [`Step`] function.
     ///
     /// [`Step`]: gherkin::Step
     pub step: gherkin::Step,
@@ -168,13 +158,13 @@ pub struct Context {
     pub matches: Vec<String>,
 }
 
-/// [`Regex`] wrapper to store inside [`LinkedHashMap`].
+/// [`Regex`] wrapper to store inside a [`LinkedHashMap`].
 #[derive(Clone, Debug)]
 struct HashableRegex(Regex);
 
 impl From<Regex> for HashableRegex {
     fn from(re: Regex) -> Self {
-        HashableRegex(re)
+        Self(re)
     }
 }
 

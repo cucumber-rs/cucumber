@@ -1,6 +1,6 @@
 [package]
 name = "cucumber_rust"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2018"
 description = """\
     Cucumber testing framework for Rust, with async support. \
@@ -36,7 +36,7 @@ regex = "1.5"
 sealed = "0.3"
 
 # Codegen dependencies.
-cucumber_rust_codegen = { version = "0.2", path = "./codegen", optional = true }
+cucumber_rust_codegen = { version = "0.10", path = "./codegen", optional = true }
 inventory = { version = "0.1", optional = true }
 
 [dev-dependencies]

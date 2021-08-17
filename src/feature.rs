@@ -8,21 +8,18 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`Feature`] extension trait.
-//!
-//! [`Feature`]: gherkin::Feature
+//! [`gherkin::Feature`] extension.
 
-use std::iter;
+use std::{iter, mem};
 
 use sealed::sealed;
 
-/// Some helper-methods to operate with [`Feature`]s.
-///
-/// [`Feature`]: gherkin::Feature
+/// Helper methods to operate on [`gherkin::Feature`]s.
 #[sealed]
 pub trait Ext: Sized {
-    /// Expands [Scenario Outline][1] [Examples][2].
+    /// Expands [Scenario outline][1] [examples][2].
     ///
+    /// So this one:
     /// ```gherkin
     /// Feature: Hungry
     ///   Scenario Outline: eating
@@ -36,7 +33,7 @@ pub trait Ext: Sized {
     ///       |    20 |   5 |   15 |
     /// ```
     ///
-    /// Will be expanded to:
+    /// Will be expanded as:
     /// ```gherkin
     /// Feature: Hungry
     ///   Scenario Outline: eating
@@ -58,7 +55,7 @@ pub trait Ext: Sized {
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
     fn expand_examples(self) -> Self;
 
-    /// Counts all [`Feature`]'s [`Scenario`]s, including inside [`Rule`]s.
+    /// Counts all the [`Feature`]'s [`Scenario`]s, including [`Rule`]s inside.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
@@ -69,11 +66,10 @@ pub trait Ext: Sized {
 #[sealed]
 impl Ext for gherkin::Feature {
     fn expand_examples(mut self) -> Self {
-        let scenarios = std::mem::take(&mut self.scenarios);
-        let scenarios = scenarios
+        let scenarios = mem::take(&mut self.scenarios)
             .into_iter()
             .flat_map(|scenario| {
-                let ((header, values), examples) =
+                let ((header, vals), examples) =
                     match scenario.examples.as_ref().and_then(|ex| {
                         ex.table.rows.split_first().map(|t| (t, ex))
                     }) {
@@ -81,23 +77,22 @@ impl Ext for gherkin::Feature {
                         None => return vec![scenario],
                     };
 
-                values
-                    .iter()
+                vals.iter()
                     .zip(iter::repeat_with(|| header))
                     .enumerate()
-                    .map(|(id, (values, keys))| {
+                    .map(|(id, (vals, keys))| {
                         let mut modified = scenario.clone();
 
                         // This is done to differentiate `Hash`es of Scenario
-                        // Outlines with the same examples.
+                        // outlines with the same examples.
                         modified.position = examples.position;
                         modified.position.line += id + 1;
 
                         for step in &mut modified.steps {
-                            for (key, value) in keys.iter().zip(values) {
+                            for (key, val) in keys.iter().zip(vals) {
                                 step.value = step
                                     .value
-                                    .replace(&format!("<{}>", key), value);
+                                    .replace(&format!("<{}>", key), val);
                             }
                         }
                         modified

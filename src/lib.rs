@@ -67,13 +67,16 @@ pub use self::{
     writer::{Ext as WriterExt, Writer},
 };
 
-/// The [`World`] trait represents shared user-defined state
-/// for a cucumber run.
+/// Represents a shared user-defined state for a [Cucumber] run.
+/// It lives on per-[scenario] basis.
+///
+/// [Cucumber]: https://cucumber.io
+/// [scenario]: https://cucumber.io/docs/gherkin/reference/#descriptions
 #[async_trait(?Send)]
 pub trait World: Sized + 'static {
-    /// Error of creating [`World`] instance.
+    /// Error of creating a new [`World`] instance.
     type Error: StdError;
 
-    /// Creates new [`World`] instance.
+    /// Creates a new [`World`] instance.
     async fn new() -> Result<Self, Self::Error>;
 }

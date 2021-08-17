@@ -165,7 +165,7 @@ impl<W, I> Default
                 &gherkin::Scenario,
             ) -> ScenarioType,
         >,
-        writer::Summary<writer::Normalized<W, writer::Basic>>,
+        writer::Summarized<writer::Normalized<W, writer::Basic>>,
     >
 where
     W: World + Debug,
@@ -185,7 +185,7 @@ where
                 Some(64),
                 step::Collection::new(),
             ),
-            writer::Basic::new().normalize().summarize(),
+            writer::Basic::new().normalized().summarized(),
         )
     }
 }
@@ -203,7 +203,7 @@ impl<W, I>
                 &gherkin::Scenario,
             ) -> ScenarioType,
         >,
-        writer::Summary<writer::Normalized<W, writer::Basic>>,
+        writer::Summarized<writer::Normalized<W, writer::Basic>>,
     >
 where
     W: World + Debug,
@@ -332,7 +332,7 @@ where
     }
 }
 
-impl<W, I, P, R, Wr> Cucumber<W, P, I, R, writer::Summary<Wr>>
+impl<W, I, P, R, Wr> Cucumber<W, P, I, R, writer::Summarized<Wr>>
 where
     W: World,
     P: Parser<I>,

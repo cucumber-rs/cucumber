@@ -21,36 +21,47 @@ use crate::{
     World, Writer,
 };
 
-/// Default [`Writer`] implementation.
+/// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
+/// default).
 #[derive(Clone, Debug)]
 pub struct Basic {
+    /// Terminal to write the output into.
     terminal: Term,
+
+    /// [`Style`] for rendering successful events.
     ok: Style,
+
+    /// [`Style`] for rendering skipped events.
     skipped: Style,
+
+    /// [`Style`] for rendering errors and failed events.
     err: Style,
 }
 
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
+    #[allow(clippy::unused_async)]
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
+        use event::{Cucumber, Feature, Rule};
+
         match ev {
-            event::Cucumber::Started | event::Cucumber::Finished => {}
-            event::Cucumber::ParsingError(err) => self.parsing_failed(&err),
-            event::Cucumber::Feature(f, ev) => match ev {
-                event::Feature::Started => self.feature_started(&f),
-                event::Feature::Scenario(sc, ev) => {
+            Cucumber::Started | Cucumber::Finished => {}
+            Cucumber::ParsingError(err) => self.parsing_failed(&err),
+            Cucumber::Feature(f, ev) => match ev {
+                Feature::Started => self.feature_started(&f),
+                Feature::Scenario(sc, ev) => {
                     self.scenario(&sc, &ev, 0);
                 }
-                event::Feature::Rule(r, ev) => match ev {
-                    event::Rule::Started => {
+                Feature::Rule(r, ev) => match ev {
+                    Rule::Started => {
                         self.rule_started(&r);
                     }
-                    event::Rule::Scenario(sc, ev) => {
+                    Rule::Scenario(sc, ev) => {
                         self.scenario(&sc, &ev, 2);
                     }
-                    event::Rule::Finished => {}
+                    Rule::Finished => {}
                 },
-                event::Feature::Finished => {}
+                Feature::Finished => {}
             },
         }
     }
@@ -76,7 +87,7 @@ impl Deref for Basic {
 }
 
 impl Basic {
-    /// Creates new [`Basic`].
+    /// Creates a new [`Basic`] [`Writer`].
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -112,18 +123,20 @@ impl Basic {
         ev: &event::Scenario<W>,
         ident: usize,
     ) {
+        use event::Scenario;
+
         let offset = ident + 2;
         match ev {
-            event::Scenario::Started => {
+            Scenario::Started => {
                 self.scenario_started(scenario, offset);
             }
-            event::Scenario::Background(bg, ev) => {
+            Scenario::Background(bg, ev) => {
                 self.background(bg, ev, offset);
             }
-            event::Scenario::Step(st, ev) => {
+            Scenario::Step(st, ev) => {
                 self.step(st, ev, offset);
             }
-            event::Scenario::Finished => {}
+            Scenario::Finished => {}
         }
     }
 
@@ -145,18 +158,20 @@ impl Basic {
         ev: &event::Step<W>,
         ident: usize,
     ) {
+        use event::Step;
+
         let offset = ident + 4;
         match ev {
-            event::Step::Started => {
+            Step::Started => {
                 self.step_started(step, offset);
             }
-            event::Step::Passed => {
+            Step::Passed => {
                 self.step_passed(step, offset);
             }
-            event::Step::Skipped => {
+            Step::Skipped => {
                 self.step_skipped(step, offset);
             }
-            event::Step::Failed(world, info) => {
+            Step::Failed(world, info) => {
                 self.step_failed(step, world, info, offset);
             }
         }
@@ -238,18 +253,20 @@ impl Basic {
         ev: &event::Step<W>,
         ident: usize,
     ) {
+        use event::Step;
+
         let offset = ident + 4;
         match ev {
-            event::Step::Started => {
+            Step::Started => {
                 self.bg_step_started(bg, offset);
             }
-            event::Step::Passed => {
+            Step::Passed => {
                 self.bg_step_passed(bg, offset);
             }
-            event::Step::Skipped => {
+            Step::Skipped => {
                 self.bg_step_skipped(bg, offset);
             }
-            event::Step::Failed(world, info) => {
+            Step::Failed(world, info) => {
                 self.bg_step_failed(bg, world, info, offset);
             }
         }
