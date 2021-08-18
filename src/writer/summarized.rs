@@ -120,7 +120,7 @@ where
 }
 
 impl<Writer> Summarized<Writer> {
-    /// Creates new [`Summary`].
+    /// Creates new [`Summarized`].
     pub fn new(writer: Writer) -> Self {
         Self {
             writer,

@@ -93,26 +93,52 @@ impl<World, F> fmt::Debug for Basic<World, F> {
     }
 }
 
-impl<World, F> Basic<World, F>
-where
-    F: Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-        ) -> ScenarioType
-        + 'static,
-{
-    /// Creates a new default [`Runner`].
+impl<World> Basic<World, ()> {
+    /// Creates a new empty [`Runner`].
     #[must_use]
-    pub fn new(
-        which_scenario: F,
-        max_concurrent_scenarios: Option<usize>,
-        steps: step::Collection<World>,
-    ) -> Self {
+    pub fn custom() -> Basic<World, ()> {
         Self {
+            max_concurrent_scenarios: None,
+            steps: step::Collection::new(),
+            which_scenario: (),
+        }
+    }
+}
+
+impl<World, F> Basic<World, F> {
+    /// If `max` is [`Some`] number of concurrently executed [`Scenarios`] will
+    /// be limited.
+    #[must_use]
+    pub fn max_concurrent_scenarios(mut self, max: Option<usize>) -> Self {
+        self.max_concurrent_scenarios = max;
+        self
+    }
+
+    /// Function determining whether a [`Scenario`] is [`Concurrent`] or
+    /// a [`Serial`] one.
+    ///
+    /// [`Concurrent`]: ScenarioType::Concurrent
+    /// [`Serial`]: ScenarioType::Serial
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn which_scenario<Which>(self, func: Which) -> Basic<World, Which>
+    where
+        Which: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType
+            + 'static,
+    {
+        let Self {
             max_concurrent_scenarios,
             steps,
-            which_scenario,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario: func,
         }
     }
 

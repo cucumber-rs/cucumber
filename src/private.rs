@@ -64,7 +64,7 @@ where
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] has failed.
+    /// If failed to parse some [`Feature`] or at least one [`Step`] has failed.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser
@@ -85,7 +85,7 @@ where
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] has failed.
+    /// If failed to parse some [`Feature`] or at least one [`Step`] has failed.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser

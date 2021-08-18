@@ -1,7 +1,7 @@
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{gherkin::Step, given, when, World, WorldInit};
+use cucumber_rust::{gherkin::Step, given, when, Cucumber, World, WorldInit};
 use tokio::time;
 
 #[derive(Debug, WorldInit)]
@@ -60,5 +60,9 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
 
 #[tokio::main]
 async fn main() {
-    MyWorld::run("./tests/features").await;
+    Cucumber::new()
+        .max_concurrent_scenarios(None)
+        .steps(MyWorld::collection())
+        .run_and_exit("./tests/features")
+        .await;
 }

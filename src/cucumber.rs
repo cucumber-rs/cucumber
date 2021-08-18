@@ -41,17 +41,32 @@ pub struct Cucumber<W, P, I, R, Wr> {
     _parser_input: PhantomData<I>,
 }
 
-impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
-where
-    W: World,
-    P: Parser<I>,
-    R: Runner<W>,
-    Wr: Writer<W>,
-{
-    /// Creates [`Cucumber`] with custom [`Parser`], [`Runner`] and [`Writer`].
+impl<W> Cucumber<W, (), (), (), ()> {
+    /// Creates an empty [`Cucumber`].
     #[must_use]
-    pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
+    pub fn custom() -> Self {
         Self {
+            parser: (),
+            runner: (),
+            writer: (),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+}
+
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr> {
+    /// Replaces [`Parser`].
+    #[must_use]
+    pub fn with_parser<NewP, NewI>(
+        self,
+        parser: NewP,
+    ) -> Cucumber<W, NewP, NewI, R, Wr>
+    where
+        NewP: Parser<NewI>,
+    {
+        let Self { runner, writer, .. } = self;
+        Cucumber {
             parser,
             runner,
             writer,
@@ -60,6 +75,49 @@ where
         }
     }
 
+    /// Replaces [`Runner`].
+    #[must_use]
+    pub fn with_runner<NewR>(self, runner: NewR) -> Cucumber<W, P, I, NewR, Wr>
+    where
+        NewR: Runner<W>,
+    {
+        let Self { parser, writer, .. } = self;
+        Cucumber {
+            parser,
+            runner,
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Replaces [`Writer`].
+    #[must_use]
+    pub fn with_writer<NewWr>(
+        self,
+        writer: NewWr,
+    ) -> Cucumber<W, P, I, R, NewWr>
+    where
+        NewWr: Writer<W>,
+    {
+        let Self { parser, runner, .. } = self;
+        Cucumber {
+            parser,
+            runner,
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+}
+
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+where
+    W: World,
+    P: Parser<I>,
+    R: Runner<W>,
+    Wr: Writer<W>,
+{
     /// Runs [`Cucumber`].
     ///
     /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
@@ -152,59 +210,52 @@ where
     }
 }
 
-impl<W, I> Default
-    for Cucumber<
+type DefaultCucumber<W, I> = Cucumber<
+    W,
+    parser::Basic,
+    I,
+    runner::Basic<
         W,
-        parser::Basic,
-        I,
-        runner::Basic<
-            W,
-            fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> ScenarioType,
-        >,
-        writer::Summarized<writer::Normalized<W, writer::Basic>>,
-    >
+        fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> ScenarioType,
+    >,
+    writer::Summarized<writer::Normalized<W, writer::Basic>>,
+>;
+
+impl<W, I> Default for DefaultCucumber<W, I>
 where
     W: World + Debug,
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        Cucumber::custom(
-            parser::Basic,
-            runner::basic::Basic::new(
-                |_, _, sc| {
-                    sc.tags
-                        .iter()
-                        .any(|tag| tag == "serial")
-                        .then(|| ScenarioType::Serial)
-                        .unwrap_or(ScenarioType::Concurrent)
-                },
-                Some(64),
-                step::Collection::new(),
-            ),
-            writer::Basic::new().normalized().summarized(),
-        )
+        let f: fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> _ = |_, _, scenario| {
+            scenario
+                .tags
+                .iter()
+                .any(|tag| tag == "serial")
+                .then(|| ScenarioType::Serial)
+                .unwrap_or(ScenarioType::Concurrent)
+        };
+
+        Cucumber::custom()
+            .with_parser(parser::Basic)
+            .with_runner(
+                runner::Basic::custom()
+                    .which_scenario(f)
+                    .max_concurrent_scenarios(Some(64)),
+            )
+            .with_writer(writer::Basic::new().normalized().summarized())
     }
 }
 
-impl<W, I>
-    Cucumber<
-        W,
-        parser::Basic,
-        I,
-        runner::Basic<
-            W,
-            fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> ScenarioType,
-        >,
-        writer::Summarized<writer::Normalized<W, writer::Basic>>,
-    >
+impl<W, I> DefaultCucumber<W, I>
 where
     W: World + Debug,
     I: AsRef<Path>,
@@ -234,32 +285,45 @@ where
     }
 }
 
-impl<W, I, P, Wr>
-    Cucumber<
-        W,
-        P,
-        I,
-        runner::Basic<
-            W,
-            fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> ScenarioType,
-        >,
-        Wr,
-    >
+impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr>
 where
     W: World,
     P: Parser<I>,
     Wr: Writer<W>,
+    F: Fn(
+        &gherkin::Feature,
+        Option<&gherkin::Rule>,
+        &gherkin::Scenario,
+    ) -> ScenarioType,
 {
-    /// Replaces [`Collection`] of [`Step`]s.
+    /// If `max` is [`Some`] number of concurrently executed [`Scenarios`] will
+    /// be limited.
+    #[must_use]
+    pub fn max_concurrent_scenarios(mut self, max: Option<usize>) -> Self {
+        self.runner = self.runner.max_concurrent_scenarios(max);
+        self
+    }
+
+    /// Function determining whether a [`Scenario`] is [`Concurrent`] or
+    /// a [`Serial`] one.
     ///
-    /// [`Collection`]: step::Collection
-    /// [`Step`]: step::Step
-    pub fn steps(self, steps: step::Collection<W>) -> Self {
-        let Cucumber {
+    /// [`Concurrent`]: ScenarioType::Concurrent
+    /// [`Serial`]: ScenarioType::Serial
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn which_scenario<Which>(
+        self,
+        func: Which,
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which>, Wr>
+    where
+        Which: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> ScenarioType
+            + 'static,
+    {
+        let Self {
             parser,
             runner,
             writer,
@@ -267,68 +331,44 @@ where
         } = self;
         Cucumber {
             parser,
-            runner: runner.steps(steps),
+            runner: runner.which_scenario(func),
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
         }
+    }
+
+    /// Replaces [`Collection`] of [`Step`]s.
+    ///
+    /// [`Collection`]: step::Collection
+    /// [`Step`]: step::Step
+    pub fn steps(mut self, steps: step::Collection<W>) -> Self {
+        self.runner = self.runner.steps(steps);
+        self
     }
 
     /// Inserts [Given] [`Step`].
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
-    pub fn given(self, regex: Regex, step: Step<W>) -> Self {
-        let Cucumber {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.given(regex, step),
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
+    pub fn given(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.given(regex, step);
+        self
     }
 
     /// Inserts [When] [`Step`].
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#When
-    pub fn when(self, regex: Regex, step: Step<W>) -> Self {
-        let Cucumber {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.when(regex, step),
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
+    pub fn when(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.when(regex, step);
+        self
     }
 
     /// Inserts [Then] [`Step`].
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
-    pub fn then(self, regex: Regex, step: Step<W>) -> Self {
-        let Cucumber {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.then(regex, step),
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
+    pub fn then(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.then(regex, step);
+        self
     }
 }
 
