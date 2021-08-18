@@ -296,8 +296,10 @@ where
         &gherkin::Scenario,
     ) -> ScenarioType,
 {
-    /// If `max` is [`Some`] number of concurrently executed [`Scenarios`] will
+    /// If `max` is [`Some`] number of concurrently executed [`Scenario`]s will
     /// be limited.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn max_concurrent_scenarios(mut self, max: Option<usize>) -> Self {
         self.runner = self.runner.max_concurrent_scenarios(max);
