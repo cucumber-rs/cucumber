@@ -19,7 +19,7 @@ use crate::{event, OutputtedWriter, World, Writer};
 /// [`Writer`] for collecting summary: number of features, scenarios and steps.
 ///
 /// Wrapper for a [`Writer`] implementation for outputting a summary (number of
-/// features, scenarios and steps) of execution.
+/// features, scenarios, steps and parsing errors) of execution.
 #[derive(Debug)]
 pub struct Summarized<Writer> {
     writer: Writer,
@@ -162,6 +162,9 @@ impl<Writer> Summarized<Writer> {
         self.steps.failed > 0 || self.parsing_errors > 0
     }
 
+    /// Keeps track of [`Step`] [`Stats`].
+    ///
+    /// [`Step`]: gherkin::Step
     fn handle_step<W>(&mut self, ev: &event::Step<W>) {
         use event::Step;
 
@@ -173,6 +176,9 @@ impl<Writer> Summarized<Writer> {
         }
     }
 
+    /// Keeps track of [`Scenario`] [`Stats`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(&mut self, ev: &event::Scenario<W>) {
         use event::Scenario;
 

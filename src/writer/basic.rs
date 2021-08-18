@@ -107,6 +107,10 @@ impl Basic {
         Self::default()
     }
 
+    /// Outputs [error] encountered while parsing some [`Feature`].
+    ///
+    /// [error]: event::Cucumber::ParsingError
+    /// [`Feature`]: gherkin::Feature
     fn parsing_failed(&self, err: &gherkin::ParseFileError) {
         self.write_line(&format!(
             "{}",
@@ -115,6 +119,10 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [started] [`Feature`] to STDOUT.
+    ///
+    /// [started]: event::Feature::Started
+    /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&self, feature: &gherkin::Feature) {
         self.write_line(&format!(
             "{}",
@@ -123,6 +131,10 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [started] [`Rule`] to STDOUT.
+    ///
+    /// [started]: event::Rule::Started
+    /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&self, rule: &gherkin::Rule) {
         self.write_line(&format!(
             "{}",
@@ -131,6 +143,11 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [`Scenario`] [started]/[background]/[step] event to STDOUT.
+    ///
+    /// [background]: event::Background
+    /// [started]: event::Scenario::Started
+    /// [step]: event::Step
     fn scenario<W: Debug>(
         &self,
         scenario: &gherkin::Scenario,
@@ -154,6 +171,10 @@ impl Basic {
         }
     }
 
+    /// Outputs [started] [`Scenario`] to STDOUT.
+    ///
+    /// [started]: event::Scenario::Started
+    /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&self, scenario: &gherkin::Scenario, ident: usize) {
         self.write_line(&format!(
             "{}",
@@ -166,6 +187,13 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [`Step`] [started]/[passed]/[skipped]/[failed] event to STDOUT.
+    ///
+    /// [failed]: event::Step::Failed
+    /// [passed]: event::Step::Passed
+    /// [skipped]: event::Step::Skipped
+    /// [started]: event::Step::Started
+    /// [`Step`]: [`gherkin::Step`]
     fn step<W: Debug>(
         &self,
         step: &gherkin::Step,
@@ -191,6 +219,10 @@ impl Basic {
         }
     }
 
+    /// Outputs [started] [`Step`] to STDOUT.
+    ///
+    /// [started]: event::Step::Started
+    /// [`Step`]: [`gherkin::Step`]
     fn step_started(&self, step: &gherkin::Step, ident: usize) {
         self.write_line(&format!(
             "{}{} {}",
@@ -201,6 +233,10 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [passed] [`Step`] to STDOUT.
+    ///
+    /// [passed]: event::Step::Passed
+    /// [`Step`]: [`gherkin::Step`]
     fn step_passed(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines(1).unwrap();
         self.write_line(&format!(
@@ -216,6 +252,10 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [skipped] [`Step`] to STDOUT.
+    ///
+    /// [skipped]: event::Step::Skipped
+    /// [`Step`]: [`gherkin::Step`]
     fn step_skipped(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines(1).unwrap();
         self.write_line(&format!(
@@ -230,6 +270,10 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [failed] [`Step`] to STDOUT.
+    ///
+    /// [failed]: event::Step::Failed
+    /// [`Step`]: [`gherkin::Step`]
     fn step_failed<W: Debug>(
         &self,
         step: &gherkin::Step,
@@ -261,6 +305,15 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [`Background`] [`Step`] [started]/[passed]/[skipped]/[failed]
+    /// event to STDOUT.
+    ///
+    /// [failed]: event::Step::Failed
+    /// [passed]: event::Step::Passed
+    /// [skipped]: event::Step::Skipped
+    /// [started]: event::Step::Started
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
     fn background<W: Debug>(
         &self,
         bg: &gherkin::Step,
@@ -286,6 +339,11 @@ impl Basic {
         }
     }
 
+    /// Outputs [started] [`Background`] [`Step`] to STDOUT.
+    ///
+    /// [started]: event::Step::Started
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
     fn bg_step_started(&self, step: &gherkin::Step, ident: usize) {
         self.write_line(&format!(
             "{}{}{} {}",
@@ -297,6 +355,11 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [passed] [`Background`] [`Step`] to STDOUT.
+    ///
+    /// [passed]: event::Step::Passed
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
     fn bg_step_passed(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines(1).unwrap();
         self.write_line(&format!(
@@ -312,6 +375,11 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [skipped] [`Background`] [`Step`] to STDOUT.
+    ///
+    /// [skipped]: event::Step::Skipped
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
     fn bg_step_skipped(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines(1).unwrap();
         self.write_line(&format!(
@@ -326,6 +394,11 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [failed] [`Background`] [`Step`] to STDOUT.
+    ///
+    /// [failed]: event::Step::Failed
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
     fn bg_step_failed<W: Debug>(
         &self,
         step: &gherkin::Step,
@@ -357,6 +430,9 @@ impl Basic {
     }
 }
 
+/// Tries to coerce [`catch_unwind()`] output to [`String`].
+///
+/// [`catch_unwind()`]: std::panic::catch_unwind()
 fn coerce_error(err: &Info) -> String {
     if let Some(string) = err.downcast_ref::<String>() {
         string.clone()

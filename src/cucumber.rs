@@ -23,16 +23,29 @@ use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    parser,
-    runner::{self, basic::ScenarioType},
-    step,
+    parser, runner, step,
     writer::{self, Ext as _},
-    OutputtedWriter, Parser, Runner, Step, World, Writer,
+    OutputtedWriter, Parser, Runner, ScenarioType, Step, World, Writer,
 };
 
 /// Top-level [Cucumber] executor.
 ///
+/// Most of the time you don't need to work with it directly, just use
+/// [`WorldInit::run()`] or [`WorldInit::cucumber()`] on your [`World`] deriver
+/// to get [Cucumber] up and running.
+///
+/// Otherwise use [`Cucumber::new()`] to get default [Cucumber] executor,
+/// provide [`Step`]s with [`WorldInit::collection()`] or by hand with
+/// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
+///
+/// In case you want custom [`Parser`], [`Runner`] or [`Writer`] or
+/// some other finer control,  use [`Cucumber::custom()`] with
+/// [`Cucumber::with_parser()`], [`Cucumber::with_runner()`] and
+/// [`Cucumber::with_writer()`] to construct your dream [Cucumber] executor!
+///
 /// [Cucumber]: https://cucumber.io
+/// [`WorldInit::collection()`]: crate::WorldInit::collection()
+/// [`WorldInit::run()`]: crate::WorldInit::run()
 pub struct Cucumber<W, P, I, R, Wr> {
     parser: P,
     runner: R,
@@ -43,6 +56,9 @@ pub struct Cucumber<W, P, I, R, Wr> {
 
 impl<W> Cucumber<W, (), (), (), ()> {
     /// Creates an empty [`Cucumber`].
+    ///
+    /// Use [`Cucumber::with_parser()`], [`Cucumber::with_runner()`] and
+    /// [`Cucumber::with_writer()`] to be able to [`Cucumber::run()`] it.
     #[must_use]
     pub fn custom() -> Self {
         Self {
@@ -120,7 +136,7 @@ where
 {
     /// Runs [`Cucumber`].
     ///
-    /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
+    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
     ///
     /// [`Feature`]: gherkin::Feature
@@ -210,7 +226,8 @@ where
     }
 }
 
-type DefaultCucumber<W, I> = Cucumber<
+/// Shorthand for [`Cucumber`] type returned by [`Default`].
+pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
     parser::Basic,
     I,
@@ -269,7 +286,7 @@ where
     ///     `@serial` [tag] is present on a [`Scenario`];
     ///   * Allowed to run up to 64 [`Concurrent`] [`Scenario`]s.
     ///
-    /// * [`Writer`] — [`Normalized`] [`writer::Basic`].
+    /// * [`Writer`] — [`Normalized`] and [`Summarized`] [`writer::Basic`].
     ///
     /// [`Concurrent`]: runner::basic::ScenarioType::Concurrent
     /// [`Normalized`]: writer::Normalized
@@ -277,6 +294,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     /// [`Serial`]: runner::basic::ScenarioType::Serial
     /// [`ScenarioType`]: runner::basic::ScenarioType
+    /// [`Summarized`]: writer::Summarized
     ///
     /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
     #[must_use]
@@ -388,7 +406,8 @@ where
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] failed.
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
@@ -398,16 +417,17 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced by [`Parser`] are filtered, then fed to
+    /// [`Runner`], which produces events handled by [`Writer`].
     ///
     /// # Panics
     ///
-    /// If at least one [`Step`] failed.
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: gherkin::Step
+    /// [`Step`]: crate::Step
     pub async fn filter_run_and_exit<F>(self, input: I, filter: F)
     where
         F: Fn(

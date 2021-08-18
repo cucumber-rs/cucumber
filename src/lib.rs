@@ -61,7 +61,7 @@ pub use cucumber_rust_codegen::{given, then, when, WorldInit};
 pub use self::{
     cucumber::Cucumber,
     parser::Parser,
-    runner::Runner,
+    runner::{Runner, ScenarioType},
     step::Step,
     writer::{Ext as WriterExt, Outputted as OutputtedWriter, Writer},
 };

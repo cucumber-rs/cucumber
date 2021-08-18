@@ -26,7 +26,13 @@ pub use self::{basic::Basic, normalized::Normalized, summarized::Summarized};
 
 /// Writer of [`Cucumber`] events to some output.
 ///
+/// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
+/// inspection after execution. See [`writer::Summarized`] and
+/// [`Cucumber::run_and_exit()`] for examples.
+///
 /// [`Cucumber`]: crate::event::Cucumber
+/// [`Cucumber::run()`]: crate::Cucumber::run()
+/// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit()
 #[async_trait(?Send)]
 pub trait Writer<World> {
     /// Handles the given [`Cucumber`] event.
@@ -36,7 +42,7 @@ pub trait Writer<World> {
 }
 
 /// [`Writer`] that also can output generic value additionally to the
-/// [`Cucumber`] events.
+/// [`Cucumber`] events (STDOUT, File, etc.).
 ///
 /// [`Cucumber`]: crate::event::Cucumber
 #[async_trait(?Send)]
@@ -51,6 +57,8 @@ pub trait Outputted<'val, World, Value: 'val>: Writer<World> {
 #[sealed]
 pub trait Ext<W: World>: Writer<W> + Sized {
     /// Wraps this [`Writer`] into a [`Normalized`] version.
+    ///
+    /// See [`Normalized`] for more information.
     fn normalized(self) -> Normalized<W, Self>;
 
     /// Wraps this [`Writer`] to prints a summary at the end of an output.

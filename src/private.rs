@@ -14,7 +14,7 @@ use std::{fmt::Debug, path::Path};
 
 use async_trait::async_trait;
 
-use crate::{step, Cucumber, Step, World};
+use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
@@ -57,6 +57,12 @@ where
         out
     }
 
+    /// Returns default [`Cucumber`] with all auto-wired [`Step`]s.
+    #[must_use]
+    fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I> {
+        Cucumber::new().steps(Self::collection())
+    }
+
     /// Runs [`Cucumber`].
     ///
     /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
@@ -64,15 +70,16 @@ where
     ///
     /// # Panics
     ///
-    /// If failed to parse some [`Feature`] or at least one [`Step`] has failed.
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser
     /// [`Runner`]: crate::Runner
-    /// [`Step`]: gherkin::Step
+    /// [`Step`]: crate::Step
     /// [`Writer`]: crate::Writer
     async fn run<I: AsRef<Path>>(input: I) {
-        Cucumber::default()
+        Cucumber::new()
             .steps(Self::collection())
             .run_and_exit(input)
             .await;
@@ -85,7 +92,8 @@ where
     ///
     /// # Panics
     ///
-    /// If failed to parse some [`Feature`] or at least one [`Step`] has failed.
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Parser`]: crate::Parser

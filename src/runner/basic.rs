@@ -658,6 +658,9 @@ struct Features {
     finished: Arc<AtomicBool>,
 }
 
+/// [`Scenario`]s storage.
+///
+/// [`Scenario`]: gherkin::Scenario
 type Scenarios = HashMap<
     ScenarioType,
     Vec<(
@@ -713,7 +716,8 @@ impl Features {
                 scenarios.entry(which).or_default().extend(values);
             }
         } else {
-            // If there are Serial Scenarios we insert all Scenarios in front.
+            // If there are Serial Scenarios we insert all Serial and Concurrent
+            // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
             for (which, mut values) in local {

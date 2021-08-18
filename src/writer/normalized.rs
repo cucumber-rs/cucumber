@@ -18,8 +18,8 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{event, OutputtedWriter, World, Writer};
 
-/// Wrapper for a [`Writer`] implementation for outputting events in a
-/// normalized readable order.
+/// Wrapper for a [`Writer`] implementation for outputting events corresponding
+/// to _order guarantees_ from the [`Runner`] in a normalized readable order.
 ///
 /// Doesn't output anything by itself, but rather is used as a combinator for
 /// rearranging events and sourcing them to the underlying [`Writer`].
@@ -109,7 +109,7 @@ where
     }
 }
 
-/// Normalization queue for all incoming events.
+/// Normalization queue for incoming events.
 ///
 /// We use [`LinkedHashMap`] everywhere throughout this module to ensure FIFO
 /// queue for our events. This means by calling [`next()`] we reliably get
@@ -156,6 +156,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
         self.finished
     }
 
+    /// Removes key from the [`Queue`].
     fn remove(&mut self, key: &K) {
         drop(self.queue.remove(key));
     }
@@ -279,13 +280,24 @@ impl<World> CucumberQueue<World> {
 /// [`Feature`]: gherkin::Feature
 type FeatureQueue<World> = Queue<RuleOrScenario, RuleOrScenarioQueue<World>>;
 
-/// Either a [`gherkin::Rule`] or a [`gherkin::Scenario`].
+/// Either a [`Rule`] or a [`Scenario`].
+///
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
 type RuleOrScenario = Either<Arc<gherkin::Rule>, Arc<gherkin::Scenario>>;
 
-/// Either a [`gherkin::Rule`]'s or a [`gherkin::Scenario`]'s [`Queue`].
+/// Either a [`Rule`]'s or a [`Scenario`]'s [`Queue`].
+///
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
 type RuleOrScenarioQueue<World> =
     Either<RulesQueue<World>, ScenariosQueue<World>>;
 
+/// Either a [`Rule`]'s or a [`Scenario`]'s [`Queue`] with corresponding
+/// [`Rule`] or [`Scenario`] which is currently outputted.
+///
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
 type NextRuleOrScenario<'events, World> = Either<
     (Arc<gherkin::Rule>, &'events mut RulesQueue<World>),
     (Arc<gherkin::Scenario>, &'events mut ScenariosQueue<World>),
