@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 use crate::{
     event::{self, Info},
-    World, Writer,
+    OutputtedWriter, World, Writer,
 };
 
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
@@ -64,6 +64,20 @@ impl<W: World + Debug> Writer<W> for Basic {
                 Feature::Finished => {}
             },
         }
+    }
+}
+
+#[async_trait(?Send)]
+impl<'val, W, Output> OutputtedWriter<'val, W, Output> for Basic
+where
+    W: World + Debug,
+    Output: AsRef<str> + 'val,
+{
+    async fn write(&mut self, val: Output)
+    where
+        'val: 'async_trait,
+    {
+        self.write_line(val.as_ref()).unwrap();
     }
 }
 

@@ -27,7 +27,7 @@ use crate::{
     runner::{self, basic::ScenarioType},
     step,
     writer::{self, Ext as _},
-    Parser, Runner, Step, World, Writer,
+    OutputtedWriter, Parser, Runner, Step, World, Writer,
 };
 
 /// Top-level [Cucumber] executor.
@@ -379,7 +379,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: Writer<W>,
+    Wr: for<'val> OutputtedWriter<'val, W, String>,
 {
     /// Runs [`Cucumber`].
     ///

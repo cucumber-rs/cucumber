@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
-use crate::{event, World, Writer};
+use crate::{event, OutputtedWriter, World, Writer};
 
 /// Wrapper for a [`Writer`] implementation for outputting events in a
 /// normalized readable order.
@@ -92,6 +92,20 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
         if self.queue.is_finished() {
             self.writer.handle_event(Cucumber::Finished).await;
         }
+    }
+}
+
+#[async_trait(?Send)]
+impl<'val, W, Wr, Out> OutputtedWriter<'val, W, Out> for Normalized<W, Wr>
+where
+    Wr: OutputtedWriter<'val, W, Out>,
+    Out: 'val,
+{
+    async fn write(&mut self, val: Out)
+    where
+        'val: 'async_trait,
+    {
+        self.writer.write(val).await;
     }
 }
 

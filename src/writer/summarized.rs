@@ -14,7 +14,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 
-use crate::{event, World, Writer};
+use crate::{event, OutputtedWriter, World, Writer};
 
 /// [`Writer`] for collecting summary: number of features, scenarios and steps.
 ///
@@ -75,7 +75,7 @@ pub struct Stats {
 impl<W, Wr> Writer<W> for Summarized<Wr>
 where
     W: World,
-    Wr: Writer<W>,
+    Wr: for<'val> OutputtedWriter<'val, W, String>,
 {
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
         use event::{Cucumber, Feature, Rule};
@@ -99,7 +99,7 @@ where
         self.writer.handle_event(ev).await;
 
         if finished {
-            println!(
+            let summary = format!(
                 "[Summary]\n\
                  {} features\n\
                  {} rules\n\
@@ -115,7 +115,24 @@ where
                 self.steps.failed,
                 self.parsing_errors,
             );
+            self.writer.write(summary).await;
         }
+    }
+}
+
+#[async_trait(?Send)]
+impl<'val, W, Wr, Output> OutputtedWriter<'val, W, Output> for Summarized<Wr>
+where
+    W: World,
+    Self: Writer<W>,
+    Wr: OutputtedWriter<'val, W, Output>,
+    Output: 'val,
+{
+    async fn write(&mut self, val: Output)
+    where
+        'val: 'async_trait,
+    {
+        self.writer.write(val).await;
     }
 }
 

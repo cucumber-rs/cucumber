@@ -35,6 +35,18 @@ pub trait Writer<World> {
     async fn handle_event(&mut self, ev: event::Cucumber<World>);
 }
 
+/// [`Writer`] that also can output generic value additionally to the
+/// [`Cucumber`] events.
+///
+/// [`Cucumber`]: crate::event::Cucumber
+#[async_trait(?Send)]
+pub trait Outputted<'val, World, Value: 'val>: Writer<World> {
+    /// Writes `val` to some output.
+    async fn write(&mut self, val: Value)
+    where
+        'val: 'async_trait;
+}
+
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext<W: World>: Writer<W> + Sized {
