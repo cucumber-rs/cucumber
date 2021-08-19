@@ -88,9 +88,37 @@ test.book:
 
 
 
+####################
+# Book commands #
+####################
+
+# Build book.
+#
+# Usage:
+#	make book.build
+
+book.build:
+	mdbook build book
+
+
+# Serve book on some port.
+#
+# Usage:
+#	make book.serve [port=(3000|<port>)]
+
+serve-port = $(if $(call eq,$(port),),3000,$(port))
+
+book.serve:
+	mdbook serve book -p=$(serve-port)
+
+
+
+
 ##################
 # .PHONY section #
 ##################
 
-.PHONY: docs fmt lint test test.book \
+.PHONY: docs fmt lint \
+		test test.book \
+		book.build book.serve \
         cargo.doc cargo.fmt cargo.lint
