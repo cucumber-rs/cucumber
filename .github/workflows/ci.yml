@@ -109,6 +109,7 @@ jobs:
       - run: make cargo.doc open=no
 
       - name: Finalize
+        if: ${{ contains(github.event.head_commit.message, '[upload docs]') }}
         run: |
           CRATE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]' | cut -f2 -d"/")
           echo "<meta http-equiv=\"refresh\" content=\"0; url=${CRATE_NAME/-/_}\">" > target/doc/index.html
