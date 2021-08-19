@@ -34,7 +34,7 @@ jobs:
   deploy:
     name: Deploy book on gh-pages
     needs: [tests]
-    if: github.ref == 'refs/heads/master'
+#    if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 

@@ -10,7 +10,10 @@
 
 //! Default [`Parser`] implementation.
 
-use std::{path::Path, vec};
+use std::{
+    path::{Path, PathBuf},
+    vec,
+};
 
 use futures::stream;
 use gherkin::GherkinEnv;
@@ -30,11 +33,20 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 
     fn parse(self, path: I) -> Self::Output {
         let features = || {
-            let path = match path.as_ref().canonicalize() {
+            let path = path.as_ref();
+            let path = match path.canonicalize().or_else(|_| {
+                let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                buf.push(
+                    path.strip_prefix("/")
+                        .or_else(|_| path.strip_prefix("./"))
+                        .unwrap_or(path),
+                );
+                buf.as_path().canonicalize()
+            }) {
                 Ok(p) => p,
                 Err(err) => {
                     return vec![Err(gherkin::ParseFileError::Reading {
-                        path: path.as_ref().to_path_buf(),
+                        path: path.to_path_buf(),
                         source: err,
                     })];
                 }
