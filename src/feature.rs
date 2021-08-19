@@ -66,42 +66,48 @@ pub trait Ext: Sized {
 #[sealed]
 impl Ext for gherkin::Feature {
     fn expand_examples(mut self) -> Self {
-        let scenarios = mem::take(&mut self.scenarios)
-            .into_iter()
-            .flat_map(|scenario| {
-                let ((header, vals), examples) =
-                    match scenario.examples.as_ref().and_then(|ex| {
-                        ex.table.rows.split_first().map(|t| (t, ex))
-                    }) {
-                        Some(s) => s,
-                        None => return vec![scenario],
-                    };
+        let expand = |scenarios: Vec<gherkin::Scenario>| {
+            scenarios
+                .into_iter()
+                .flat_map(|scenario| {
+                    let ((header, vals), examples) =
+                        match scenario.examples.as_ref().and_then(|ex| {
+                            ex.table.rows.split_first().map(|t| (t, ex))
+                        }) {
+                            Some(s) => s,
+                            None => return vec![scenario],
+                        };
 
-                vals.iter()
-                    .zip(iter::repeat_with(|| header))
-                    .enumerate()
-                    .map(|(id, (vals, keys))| {
-                        let mut modified = scenario.clone();
+                    vals.iter()
+                        .zip(iter::repeat_with(|| header))
+                        .enumerate()
+                        .map(|(id, (vals, keys))| {
+                            let mut modified = scenario.clone();
 
-                        // This is done to differentiate `Hash`es of Scenario
-                        // outlines with the same examples.
-                        modified.position = examples.position;
-                        modified.position.line += id + 1;
+                            // This is done to differentiate `Hash`es of
+                            // Scenario outlines with the same examples.
+                            modified.position = examples.position;
+                            modified.position.line += id + 1;
 
-                        for step in &mut modified.steps {
-                            for (key, val) in keys.iter().zip(vals) {
-                                step.value = step
-                                    .value
-                                    .replace(&format!("<{}>", key), val);
+                            for step in &mut modified.steps {
+                                for (key, val) in keys.iter().zip(vals) {
+                                    step.value = step
+                                        .value
+                                        .replace(&format!("<{}>", key), val);
+                                }
                             }
-                        }
-                        modified
-                    })
-                    .collect()
-            })
-            .collect();
+                            modified
+                        })
+                        .collect()
+                })
+                .collect()
+        };
 
-        self.scenarios = scenarios;
+        for rule in &mut self.rules {
+            rule.scenarios = expand(mem::take(&mut rule.scenarios));
+        }
+        self.scenarios = expand(mem::take(&mut self.scenarios));
+
         self
     }
 
