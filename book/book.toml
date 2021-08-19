@@ -4,3 +4,11 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Cucumber"
+
+[build]
+build-dir = "_rendered"
+create-missing = false
+
+[output.html]
+# TODO: switch to actual repository, once it's merged
+git_repository_url = "https://github.com/ilslv/cucumber_rust"

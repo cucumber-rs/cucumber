@@ -44,6 +44,7 @@ tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [workspace]
 members = ["codegen"]
+exclude = ["book/tests"]
 
 [[test]]
 harness = false

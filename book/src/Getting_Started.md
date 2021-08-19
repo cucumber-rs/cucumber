@@ -19,7 +19,7 @@ harness = false # Allows Cucumber to print output instead of libtest
 
 At this point, while it won't do anything, you should be able to successfully run `cargo test --test example` without errors as long as your `example.rs` has at least a `main()` function.
 
-Create a directory called `features/` somewhere in your project, in this walkthrough we use `./tests/features/book` directory. Put a feature file there, such as `animal.feature`. This should contain the Gherkin for a scenario that you want to test. Here's a very simple example:
+Create a directory called `features/` somewhere in your project, in this walkthrough we use root directory. Put a feature file there, such as `animal.feature`. This should contain the Gherkin for a scenario that you want to test. Here's a very simple example:
 
 ```gherkin
 Feature: Animal feature
@@ -87,7 +87,9 @@ fn main() {
     // You may choose any executor you like (Tokio, async-std, etc)
     // You may even have an async main, it doesn't matter. The point is that
     // Cucumber is composable. :)
-    futures::executor::block_on(AnimalWorld::run("./tests/features/book"));
+    futures::executor::block_on(AnimalWorld::run(
+        format!("{}/features", env!("CARGO_MANIFEST_DIR")))
+    );
 }
 ```
 
@@ -255,7 +257,9 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 }
 
 fn main() {
-    futures::executor::block_on(AnimalWorld::run("./tests/features/book"));
+    futures::executor::block_on(AnimalWorld::run(
+        format!("{}/features", env!("CARGO_MANIFEST_DIR")))
+    );
 }
 ```
 
@@ -339,7 +343,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("./tests/features/book/").await;
+    AnimalWorld::run(format!("{}/features", env!("CARGO_MANIFEST_DIR"))).await;
 }
 ```
 

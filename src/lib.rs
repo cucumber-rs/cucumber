@@ -39,9 +39,6 @@ pub mod runner;
 pub mod step;
 pub mod writer;
 
-#[doc(hidden)]
-mod book;
-
 #[cfg(feature = "macros")]
 #[doc(hidden)]
 pub mod private;

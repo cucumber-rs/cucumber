@@ -78,11 +78,19 @@ test:
 		--all-features
 
 
+# Run Rust tests of book.
+#
+# Usage:
+#	make test.book
+test.book:
+	cargo +stable test --manifest-path book/tests/Cargo.toml
+
+
 
 
 ##################
 # .PHONY section #
 ##################
 
-.PHONY: docs fmt lint test \
+.PHONY: docs fmt lint test test.book \
         cargo.doc cargo.fmt cargo.lint
