@@ -115,6 +115,7 @@ jobs:
           touch target/doc/.nojekyll
 
       - name: Upload as artifact
+        if: ${{ contains(github.event.head_commit.message, '[upload docs]') }}
         uses: actions/upload-artifact@v2
         with:
           name: Documentation
