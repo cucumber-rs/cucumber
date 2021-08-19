@@ -108,25 +108,123 @@ These various `Step` functions are executed to transform the world. As such, mut
 
 The steps functions take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself. 
 
-It can also take regex like that:
+We also support regex:
 
-```rust,ignore
+```rust
+# use std::convert::Infallible;
+# 
+# use async_trait::async_trait;
+# use cucumber_rust::{given, World, WorldInit};
+# 
+# // These `Cat` definitions would normally be inside your project's code, but we 
+# // create them here to contain the test to just `cucumber.rs`.
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+# 
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+# 
+# // A World is your shared, likely mutable state.
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+# 
+# // `World` needs to be implemented, so Cucumber knows how to construct it on
+# // each `Scenario`.
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     // We require some error type
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+# 
 #[given(regex = r"^A hungry (\S+)$")]
 fn hungry_someone(world: &mut AnimalWorld, who: String) {
     assert_eq!(who, "cat");
     world.cat.hungry = true;
 }
+# 
+# // This runs before everything else, so you can setup things here.
+# fn main() {
+#     // You may choose any executor you like (Tokio, async-std, etc)
+#     // You may even have an async main, it doesn't matter. The point is that
+#     // Cucumber is composable. :)
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+# }
 ```
 
 We can add a `when` step after our `given` step:
 
-```rust,ignore
+```rust
+# use std::convert::Infallible;
+# 
+# use async_trait::async_trait;
+# use cucumber_rust::{given, when, World, WorldInit};
+# 
+# // These `Cat` definitions would normally be inside your project's code, but we 
+# // create them here to contain the test to just `cucumber.rs`.
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+# 
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+# 
+# // A World is your shared, likely mutable state.
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+# 
+# // `World` needs to be implemented, so Cucumber knows how to construct it on
+# // each `Scenario`.
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     // We require some error type
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+# 
+# // Steps are defined with `given`, `when` and `then` macros.
+# #[given("A hungry cat")]
+# fn hungry_cat(world: &mut AnimalWorld) {
+#     world.cat.hungry = true;
+# }
+# 
 // Don't forget to additionally `use cucumber_rust::when`.
 
 #[when("I feed the cat")]
 fn feed_cat(world: &mut AnimalWorld) {
     world.cat.feed();
 }
+# 
+# // This runs before everything else, so you can setup things here.
+# fn main() {
+#     // You may choose any executor you like (Tokio, async-std, etc)
+#     // You may even have an async main, it doesn't matter. The point is that
+#     // Cucumber is composable. :)
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+# }
 ```
 
 If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:
@@ -135,13 +233,69 @@ If you run the tests again, you'll see that two lines are green now and the next
 
 Finally, how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
 
-```rust,ignore
+```rust
+# use std::convert::Infallible;
+#
+# use async_trait::async_trait;
+# use cucumber_rust::{given, then, when, World, WorldInit};
+#
+# // These `Cat` definitions would normally be inside your project's code, but we 
+# // create them here to contain the test to just `cucumber.rs`.
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+#
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+#
+# // A World is your shared, likely mutable state.
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+#
+# // `World` needs to be implemented, so Cucumber knows how to construct it on
+# // each `Scenario`.
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     // We require some error type
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+#
+# // Steps are defined with `given`, `when` and `then` macros.
+# #[given("A hungry cat")]
+# fn hungry_cat(world: &mut AnimalWorld) {
+#     world.cat.hungry = true;
+# }
+#
+# #[when("I feed the cat")]
+# fn feed_cat(world: &mut AnimalWorld) {
+#     world.cat.feed();
+# }
+#
 // Don't forget to additionally `use cucumber_rust::then`.
 
 #[then("The cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
+# // This runs before everything else, so you can setup things here.
+# fn main() {
+#     // You may choose any executor you like (Tokio, async-std, etc)
+#     // You may even have an async main, it doesn't matter. The point is that
+#     // Cucumber is composable. :)
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+# }
 ```
 
 If you run the test now, you'll see that all steps are accounted for and the test succeeds:
@@ -150,11 +304,67 @@ If you run the test now, you'll see that all steps are accounted for and the tes
 
 If you want to be assured that your validation is indeed happening, you can change the assert for the cat being hungry from `true` to `false` temporarily:
 
-```rust,ignore
+```rust,should_panic
+# use std::convert::Infallible;
+#
+# use async_trait::async_trait;
+# use cucumber_rust::{given, then, when, World, WorldInit};
+#
+# // These `Cat` definitions would normally be inside your project's code, but we 
+# // create them here to contain the test to just `cucumber.rs`.
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+#
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+#
+# // A World is your shared, likely mutable state.
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+#
+# // `World` needs to be implemented, so Cucumber knows how to construct it on
+# // each `Scenario`.
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     // We require some error type
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+#
+# // Steps are defined with `given`, `when` and `then` macros.
+# #[given("A hungry cat")]
+# fn hungry_cat(world: &mut AnimalWorld) {
+#     world.cat.hungry = true;
+# }
+#
+# #[when("I feed the cat")]
+# fn feed_cat(world: &mut AnimalWorld) {
+#     world.cat.feed();
+# }
+#
 #[then("The cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
+# // This runs before everything else, so you can setup things here.
+# fn main() {
+#     // You may choose any executor you like (Tokio, async-std, etc)
+#     // You may even have an async main, it doesn't matter. The point is that
+#     // Cucumber is composable. :)
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+# }
 ```
 
 And you should see the test fail:
@@ -180,15 +390,70 @@ Feature: Animal feature
 
 The only thing that is different is the Given. But we don't have to write a new function! We can leverage regex support:
 
-```rust, ignore
+```rust
+# use std::convert::Infallible;
+#
+# use async_trait::async_trait;
+# use cucumber_rust::{given, then, when, World, WorldInit};
+#
+# // These `Cat` definitions would normally be inside your project's code, but we 
+# // create them here to contain the test to just `cucumber.rs`.
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+#
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+#
+# // A World is your shared, likely mutable state.
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+#
+# // `World` needs to be implemented, so Cucumber knows how to construct it on
+# // each `Scenario`.
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     // We require some error type
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+#
 #[given(regex = r"^A (hungry|satiated) cat$")]
 fn hungry_cat(world: &mut AnimalWorld, state: String) {
     match state.as_str() {
-        "hungry" =>  world.cat.hungry = true, 
+        "hungry" =>  world.cat.hungry = true,
         "satiated" =>  world.cat.hungry = false,
         _ => unreachable!(),
     }
 }
+#
+# #[when("I feed the cat")]
+# fn feed_cat(world: &mut AnimalWorld) {
+#     world.cat.feed();
+# }
+#
+# #[then("The cat is not hungry")]
+# fn cat_is_fed(world: &mut AnimalWorld) {
+#     assert!(!world.cat.hungry);
+}
+# // This runs before everything else, so you can setup things here.
+# fn main() {
+#     // You may choose any executor you like (Tokio, async-std, etc)
+#     // You may even have an async main, it doesn't matter. The point is that
+#     // Cucumber is composable. :)
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+# }
 ```
 
 We surround regex with `^..$` to unsure __exact__ match. This is much more useful as you add more and more steps, so they wouldn't interfere with each other.
@@ -199,7 +464,9 @@ Cucumber reuses the steps:
 
 A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` step was `The cat is no longer hungry`, it'd imply something about the expected initial state, when that is not the purpose of a `Then` step, but rather of the `Given` step.
 
-Full example so far:
+<details>
+<summary>Full example so far:</summary>
+<br>
 
 ```rust
 use std::convert::Infallible;
@@ -257,6 +524,7 @@ fn main() {
     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 }
 ```
+</details>
 
 ## Asyncness
 
@@ -278,39 +546,39 @@ harness = false # Allows Cucumber to print output instead of libtest
 And simply `sleep` on each step to test `async` support. In the real world you of course will switch it up to web/database requests, etc.
 
 ```rust
-use std::{convert::Infallible, time::Duration};
-
-use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit};
-use tokio::time::sleep;
-
-#[derive(Debug)]
-struct Cat {
-    pub hungry: bool,
-}
-
-impl Cat {
-    fn feed(&mut self) {
-        self.hungry = false;
-    }
-}
-
-#[derive(Debug, WorldInit)]
-pub struct AnimalWorld {
-    cat: Cat,
-}
-
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Infallible> {
-        Ok(Self {
-            cat: Cat { hungry: false },
-        })
-    }
-}
-
+# use std::{convert::Infallible, time::Duration};
+# 
+# use async_trait::async_trait;
+# use cucumber_rust::{given, then, when, World, WorldInit};
+# use tokio::time::sleep;
+# 
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: bool,
+# }
+# 
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+# 
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+# 
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat { hungry: false },
+#         })
+#     }
+# }
+#
 #[given(regex = r"^A (hungry|satiated) cat$")]
 async fn hungry_cat(world: &mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
