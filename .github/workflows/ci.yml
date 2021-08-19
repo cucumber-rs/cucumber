@@ -129,15 +129,15 @@ jobs:
 
   deploy_book:
     needs: [ test_book ]
-#    TODO: uncomment
-#    if: ${{ github.ref == 'refs/heads/master'
-#            || startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: peaceiris/actions-mdbook@v1
 
-      - run: make book.build out=gh-pages/master
+      - if: ${{ github.ref == 'refs/heads/master' }}
+        run: make book.build out=gh-pages/master
 
       - if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: make book.build out=gh-pages/current
