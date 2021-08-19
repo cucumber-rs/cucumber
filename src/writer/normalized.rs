@@ -85,7 +85,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
         }
 
         while let Some(feature_to_remove) =
-            self.queue.emit_feature_events(&mut self.writer).await
+            self.queue.emit((), &mut self.writer).await
         {
             self.queue.remove(&feature_to_remove);
         }
@@ -163,6 +163,47 @@ impl<K: Eq + Hash, V> Queue<K, V> {
     }
 }
 
+/// [`Queue`] which can remember current item ([`Feature`], [`Rule`],
+/// [`Scenario`] or [`Step`]) and pass events connected to it to the underlying
+/// `writer`.
+///
+/// [`Feature`]: gherkin::Feature
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+#[async_trait(?Send)]
+trait Emit<World> {
+    type Current;
+    type Emitted;
+    type EmittedPath;
+
+    /// Returns currently outputted item ([`Feature`], [`Rule`], [`Scenario`]
+    /// or [`Step`]).
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Rule`]: gherkin::Rule
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    async fn current_item(self) -> Option<Self::Current>;
+
+    /// Passes events of current item ([`Feature`], [`Rule`], [`Scenario`]
+    /// or [`Step`]) to the underlying `writer`.
+    ///
+    /// If this method returns [`Some`], all events of current item were passed
+    /// to underlying `writer` and that means it should be [`remove`]d.
+    ///
+    /// [`remove`]: Queue::remove()
+    /// [`Feature`]: gherkin::Feature
+    /// [`Rule`]: gherkin::Rule
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    async fn emit<W: Writer<World>>(
+        self,
+        path: Self::EmittedPath,
+        writer: &mut W,
+    ) -> Option<Self::Emitted>;
+}
+
 /// Queue of all incoming events.
 type CucumberQueue<World> = Queue<Arc<gherkin::Feature>, FeatureQueue<World>>;
 
@@ -231,26 +272,24 @@ impl<World> CucumberQueue<World> {
             .unwrap_or_else(|| panic!("No Feature {}", feature.name))
             .insert_scenario_event(rule, scenario, event);
     }
+}
 
-    /// Returns currently outputted [`Feature`].
-    ///
-    /// [`Feature`]: gherkin::Feature
-    fn next_feature(
-        &mut self,
-    ) -> Option<(Arc<gherkin::Feature>, &mut FeatureQueue<World>)> {
+#[async_trait(?Send)]
+impl<'me, World> Emit<World> for &'me mut CucumberQueue<World> {
+    type Current = (Arc<gherkin::Feature>, &'me mut FeatureQueue<World>);
+    type Emitted = Arc<gherkin::Feature>;
+    type EmittedPath = ();
+
+    async fn current_item(self) -> Option<Self::Current> {
         self.queue.iter_mut().next().map(|(f, ev)| (f.clone(), ev))
     }
 
-    /// Emits all ready [`Feature`] events. If some [`Feature`] was fully
-    /// outputted, returns it. After that it should be [`remove`]d.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`remove`]: CucumberQueue::remove()
-    async fn emit_feature_events<Wr: Writer<World>>(
-        &mut self,
-        writer: &mut Wr,
-    ) -> Option<Arc<gherkin::Feature>> {
-        if let Some((f, events)) = self.next_feature() {
+    async fn emit<W: Writer<World>>(
+        self,
+        _: (),
+        writer: &mut W,
+    ) -> Option<Self::Emitted> {
+        if let Some((f, events)) = self.current_item().await {
             if !events.is_started_emitted() {
                 writer
                     .handle_event(event::Cucumber::feature_started(f.clone()))
@@ -258,9 +297,8 @@ impl<World> CucumberQueue<World> {
                 events.started_emitted();
             }
 
-            while let Some(scenario_or_rule_to_remove) = events
-                .emit_scenario_and_rule_events(f.clone(), writer)
-                .await
+            while let Some(scenario_or_rule_to_remove) =
+                events.emit(f.clone(), writer).await
             {
                 events.remove(&scenario_or_rule_to_remove);
             }
@@ -305,28 +343,6 @@ type NextRuleOrScenario<'events, World> = Either<
 >;
 
 impl<World> FeatureQueue<World> {
-    /// Emits all ready [`RuleOrScenario`] events. If some [`RuleOrScenario`]
-    /// was fully outputted, then returns it. After that it should be
-    /// [`remove`]d.
-    ///
-    /// [`remove`]: FeatureQueue::remove()
-    async fn emit_scenario_and_rule_events<Wr: Writer<World>>(
-        &mut self,
-        feature: Arc<gherkin::Feature>,
-        writer: &mut Wr,
-    ) -> Option<RuleOrScenario> {
-        match self.next_rule_or_scenario()? {
-            Either::Left((rule, events)) => events
-                .emit_rule_events(feature, rule, writer)
-                .await
-                .map(Either::Left),
-            Either::Right((scenario, events)) => events
-                .emit_scenario_events(feature, None, scenario, writer)
-                .await
-                .map(Either::Right),
-        }
-    }
-
     /// Inserts new [`Rule`].
     ///
     /// [`Rule`]: gherkin::Rule
@@ -384,11 +400,15 @@ impl<World> FeatureQueue<World> {
             }
         }
     }
+}
 
-    /// Returns currently outputted [`RuleOrScenario`].
-    fn next_rule_or_scenario(
-        &mut self,
-    ) -> Option<NextRuleOrScenario<'_, World>> {
+#[async_trait(?Send)]
+impl<'me, World> Emit<World> for &'me mut FeatureQueue<World> {
+    type Current = NextRuleOrScenario<'me, World>;
+    type Emitted = RuleOrScenario;
+    type EmittedPath = Arc<gherkin::Feature>;
+
+    async fn current_item(self) -> Option<Self::Current> {
         Some(match self.queue.iter_mut().next()? {
             (Either::Left(rule), Either::Left(events)) => {
                 Either::Left((rule.clone(), events))
@@ -399,6 +419,22 @@ impl<World> FeatureQueue<World> {
             _ => unreachable!(),
         })
     }
+
+    async fn emit<W: Writer<World>>(
+        self,
+        feature: Self::EmittedPath,
+        writer: &mut W,
+    ) -> Option<Self::Emitted> {
+        match self.current_item().await? {
+            Either::Left((rule, events)) => {
+                events.emit((feature, rule), writer).await.map(Either::Left)
+            }
+            Either::Right((scenario, events)) => events
+                .emit((feature, None, scenario), writer)
+                .await
+                .map(Either::Right),
+        }
+    }
 }
 
 /// Queue of all events of a single [`Rule`].
@@ -406,29 +442,24 @@ impl<World> FeatureQueue<World> {
 /// [`Rule`]: gherkin::Rule
 type RulesQueue<World> = Queue<Arc<gherkin::Scenario>, ScenariosQueue<World>>;
 
-impl<World> RulesQueue<World> {
-    /// Returns currently outputted [`Scenario`].
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    fn next_scenario(
-        &mut self,
-    ) -> Option<(Arc<gherkin::Scenario>, &mut ScenariosQueue<World>)> {
+#[async_trait(?Send)]
+impl<'me, World> Emit<World> for &'me mut RulesQueue<World> {
+    type Current = (Arc<gherkin::Scenario>, &'me mut ScenariosQueue<World>);
+    type Emitted = Arc<gherkin::Rule>;
+    type EmittedPath = (Arc<gherkin::Feature>, Arc<gherkin::Rule>);
+
+    async fn current_item(self) -> Option<Self::Current> {
         self.queue
             .iter_mut()
             .next()
             .map(|(sc, ev)| (sc.clone(), ev))
     }
 
-    /// Emits all ready [`Rule`] events. If some [`Rule`] was fully outputted,
-    /// returns it. After that it should be removed.
-    ///
-    /// [`Rule`]: gherkin::Rule
-    async fn emit_rule_events<Wr: Writer<World>>(
-        &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Arc<gherkin::Rule>,
-        writer: &mut Wr,
-    ) -> Option<Arc<gherkin::Rule>> {
+    async fn emit<W: Writer<World>>(
+        self,
+        (feature, rule): Self::EmittedPath,
+        writer: &mut W,
+    ) -> Option<Self::Emitted> {
         if !self.is_started_emitted() {
             writer
                 .handle_event(event::Cucumber::rule_started(
@@ -439,14 +470,9 @@ impl<World> RulesQueue<World> {
             self.started_emitted();
         }
 
-        while let Some((scenario, events)) = self.next_scenario() {
+        while let Some((scenario, events)) = self.current_item().await {
             if let Some(should_be_removed) = events
-                .emit_scenario_events(
-                    feature.clone(),
-                    Some(rule.clone()),
-                    scenario,
-                    writer,
-                )
+                .emit((feature.clone(), Some(rule.clone()), scenario), writer)
                 .await
             {
                 self.remove(&should_be_removed);
@@ -480,20 +506,28 @@ impl<World> ScenariosQueue<World> {
     fn new() -> Self {
         Self(Vec::new())
     }
+}
 
-    /// Emits all ready [`Scenario`] events. If some [`Scenario`] was fully
-    /// outputted, returns it. After that it should be removed.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    async fn emit_scenario_events<Wr: Writer<World>>(
-        &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
-        writer: &mut Wr,
-    ) -> Option<Arc<gherkin::Scenario>> {
-        while !self.0.is_empty() {
-            let ev = self.0.remove(0);
+#[async_trait(?Send)]
+impl<'me, World> Emit<World> for &'me mut ScenariosQueue<World> {
+    type Current = event::Scenario<World>;
+    type Emitted = Arc<gherkin::Scenario>;
+    type EmittedPath = (
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+    );
+
+    async fn current_item(self) -> Option<Self::Current> {
+        (!self.0.is_empty()).then(|| self.0.remove(0))
+    }
+
+    async fn emit<W: Writer<World>>(
+        self,
+        (feature, rule, scenario): Self::EmittedPath,
+        writer: &mut W,
+    ) -> Option<Self::Emitted> {
+        while let Some(ev) = self.current_item().await {
             let should_be_removed = matches!(ev, event::Scenario::Finished);
 
             let ev = event::Cucumber::scenario(

@@ -94,9 +94,9 @@ If you run this, you should see an output like:
 
 [![Cucumber run with just the Given step](https://asciinema.org/a/DRnrcYrvPjRslamD1O1TxYxAc.svg)](https://asciinema.org/a/DRnrcYrvPjRslamD1O1TxYxAc)
 
-You will see a checkmark next to "Given A hungry cat", which means that test step has been matched and executed.
+You will see a checkmark next to `Given A hungry cat`, which means that test step has been matched and executed.
 
-But then for the next step: "I feed the cat", there is a "? ... (skipped)". This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked at all.
+But then for the next step: `I feed the cat`, there is a `? ... (skipped)`. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked at all.
 
 There are 3 types of steps:
 
@@ -106,7 +106,7 @@ There are 3 types of steps:
 
 These various `Step` functions are executed to transform the world. As such, mutable reference to the world must always be passed in. The step itself is also made available.
 
-The steps functions take a string, which is the name of the given `Step` (i.e., the literal string, such as "A hungry cat"), and then a function closure that takes a `World` and then the `Step` itself. 
+The steps functions take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself. 
 
 It can also take regex like that:
 
@@ -197,7 +197,7 @@ Cucumber reuses the steps:
 
 [![Steps reused between two scenarious](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe.svg)](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe)
 
-A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our "Then" step was "The cat is no longer hungry", it'd imply something about the expected initial state, when that is not the purpose of a "Then" step, but rather of the "Given" step.
+A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` step was `The cat is no longer hungry`, it'd imply something about the expected initial state, when that is not the purpose of a `Then` step, but rather of the `Given` step.
 
 Full example so far:
 

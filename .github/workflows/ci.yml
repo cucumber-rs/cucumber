@@ -77,6 +77,18 @@ jobs:
 
       - run: make test crate=${{ matrix.crate }}
 
+  test_book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: make test.book
+
 
 
 
@@ -107,3 +119,37 @@ jobs:
         with:
           name: Documentation
           path: target/doc
+
+
+
+
+  ##############
+  # Deployment #
+  ##############
+
+  deploy_book:
+    needs: [ test_book ]
+#    if: ${{ github.ref == 'refs/heads/master'
+#            || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: peaceiris/actions-mdbook@v1
+
+      - run: make book.build out=gh-pages/master
+
+      - if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: make book.build out=gh-pages/current
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          keep_files: true
+          publish_dir: book/gh-pages
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Documentation
+          path: book/gh-pages/master

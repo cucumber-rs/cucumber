@@ -11,7 +11,7 @@ Feature: User login
     Then the user will see a messagebox with an alert that their password is wrong
 ```
 
-These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords ("Given", "When", "Then"). Gherkin offers support for languages other than English, as well.
+These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (`Given`, `When`, `Then`). Gherkin offers support for languages other than English, as well.
 
 Cucumber implementations then simply hook into these keywords and execute the logic that corresponds to the keywords. `cucumber-rust` is one such implementation and is the subject of this book.
 

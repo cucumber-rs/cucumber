@@ -36,8 +36,3 @@ tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "time"] }
 name = "example"
 path = "tests/example.rs"
 harness = false
-
-[[test]]
-name = "readme"
-path = "tests/readme.rs"
-harness = false
