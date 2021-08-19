@@ -148,9 +148,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           keep_files: true
           publish_dir: book/gh-pages
-
-      - name: Upload as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: Documentation
-          path: book/gh-pages/master
