@@ -1,6 +1,6 @@
-# cucumber-rust Book
+# cucumber-rust book
 
-Book containing the Cucumber documentation.
+Book containing the [`cucumber_rust`](https://crates.io/crates/cucumber_rust) documentation.
 
 ## Contributing
 
