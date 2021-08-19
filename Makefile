@@ -95,10 +95,12 @@ test.book:
 # Build book.
 #
 # Usage:
-#	make book.build
+#	make book.build [out=<dir>]
+
+output_dir = $(if $(call eq,$(out),),,-d $(out))
 
 book.build:
-	mdbook build book
+	mdbook build book $(output_dir)
 
 
 # Serve book on some port.

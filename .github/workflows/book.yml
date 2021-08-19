@@ -9,45 +9,39 @@ on:
       - 'book/**'
 
 jobs:
+
+  ###########
+  # Testing #
+  ###########
+
   tests:
-    name: Test code examples
-
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           override: true
 
-      - name: Test via skeptic
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path book/tests/Cargo.toml
+      - run: make test.book
+
+
+
+
+  ##############
+  # Deployment #
+  ##############
 
   deploy:
-    name: Deploy book on gh-pages
     needs: [tests]
 #    if: github.ref == 'refs/heads/master'
-
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - uses: peaceiris/actions-mdbook@v1
 
-      - name: Install mdBook
-        uses: peaceiris/actions-mdbook@v1
-
-      - name: Render book
-        run: |
-          mdbook build -d gh-pages/master book
+      - run: make book.build out=gh-pages/master
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
