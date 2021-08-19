@@ -45,6 +45,7 @@ use crate::{
 ///
 /// [Cucumber]: https://cucumber.io
 /// [`WorldInit::collection()`]: crate::WorldInit::collection()
+/// [`WorldInit::cucumber()`]: crate::WorldInit::cucumber()
 /// [`WorldInit::run()`]: crate::WorldInit::run()
 pub struct Cucumber<W, P, I, R, Wr> {
     parser: P,

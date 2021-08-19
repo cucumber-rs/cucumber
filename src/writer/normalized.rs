@@ -32,6 +32,7 @@ use crate::{event, OutputtedWriter, World, Writer};
 ///
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
+/// [`Runner`]: crate::Runner
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
 #[derive(Debug)]

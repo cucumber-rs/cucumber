@@ -27,7 +27,7 @@ pub use self::{basic::Basic, normalized::Normalized, summarized::Summarized};
 /// Writer of [`Cucumber`] events to some output.
 ///
 /// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
-/// inspection after execution. See [`writer::Summarized`] and
+/// inspection after execution. See [`Summarized`] and
 /// [`Cucumber::run_and_exit()`] for examples.
 ///
 /// [`Cucumber`]: crate::event::Cucumber

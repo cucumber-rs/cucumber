@@ -13,7 +13,9 @@ An implementation of the Cucumber testing framework for Rust. Fully native, no e
 Describe testing scenarios in `.feature` files.
 
 ```gherkin
-Feature: eating too much cucumbers may not be good for you
+# /tests/features/readme/eating.feature
+    
+Feature: Eating too much cucumbers may not be good for you
     
   Scenario: Eating a few isn't a problem
     Given Alice is hungry
@@ -24,6 +26,8 @@ Feature: eating too much cucumbers may not be good for you
 Implement `World` trait and describe steps.
 
  ```rust
+//! tests/readme.rs 
+
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
@@ -52,37 +56,37 @@ async fn someone_is_hungry(w: &mut World, user: String) {
     w.user = Some(user);
 }
 
-#[when(regex = r"^(?:he|she|they) eat (\d+) cucumbers?$")]
+#[when(regex = r"^(?:he|she|they) eats? (\d+) cucumbers?$")]
 async fn eat_cucumbers(w: &mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
-
-    if w.capacity > 3 {
-        panic!("{} exploded!", w.user.as_ref().unwrap());
-    }
+    
+    assert!(w.capacity < 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
 #[then(regex = r"^(?:he|she|they) (?:is|are) full$")]
 async fn is_full(w: &mut World) {
     sleep(Duration::from_secs(2)).await;
 
-    assert_eq!(
-        w.capacity, 3, 
-        "{} isn't full!", 
-        w.user.as_ref().unwrap(),
-    );
+    assert_eq!(w.capacity, 3, "{} isn't full!", w.user.as_ref().unwrap());
 }
 
 #[tokio::main]
 async fn main() {
-    World::run("tests/features/example").await;
+    World::run("tests/features/readme").await;
 }
 ```
 
-Output
+Add test in `Cargo.toml`
 
-[![asciicast](https://asciinema.org/a/6AEi2r6qdl7c4CnKzjhcS673u.svg)](https://asciinema.org/a/6AEi2r6qdl7c4CnKzjhcS673u)
+```toml
+[[test]]
+harness = false
+name = "readme" # Allows Cucumber to print output instead of libtest
+```
+
+[![asciicast](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK.svg)](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK)
 
 ### Supporting crates
 
