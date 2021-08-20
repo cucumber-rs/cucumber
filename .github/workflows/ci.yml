@@ -77,7 +77,7 @@ jobs:
 
       - run: make test crate=${{ matrix.crate }}
 
-  test_book:
+  test-book:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -103,34 +103,20 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: stable
           override: true
 
       - run: make cargo.doc open=no
 
-      - name: Finalize
-        if: ${{ contains(github.event.head_commit.message, '[upload docs]') }}
-        run: |
-          CRATE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]' | cut -f2 -d"/")
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=${CRATE_NAME/-/_}\">" > target/doc/index.html
-          touch target/doc/.nojekyll
-
-      - name: Upload as artifact
-        if: ${{ contains(github.event.head_commit.message, '[upload docs]') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: Documentation
-          path: target/doc
 
 
 
+  #############
+  # Deploying #
+  #############
 
-  ##############
-  # Deployment #
-  ##############
-
-  deploy_book:
-    needs: [ test_book ]
+  deploy-book:
+    needs: [ test-book ]
     if: ${{ github.ref == 'refs/heads/master'
             || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
@@ -150,3 +136,69 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           keep_files: true
           publish_dir: book/gh-pages
+
+
+
+
+  #############
+  # Releasing #
+  #############
+
+  release-github:
+    name: Release on GitHub
+    needs: [ clippy, rustfmt, docs, test, test-book ]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Parse release version
+        id: release
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+
+      - name: Verify release version matches `cucumber_rust_codegen` Cargo manifest
+        run: >-
+          test "${{ steps.release.outputs.VERSION }}" \
+            == "$(grep -m1 'version = "' codegen/Cargo.toml | cut -d '"' -f2)"
+      - name: Verify release version matches `cucumber_rust` Cargo manifest
+        run: >-
+          test "${{ steps.release.outputs.VERSION }}" \
+            == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
+
+      - name: Parse CHANGELOG link
+        id: changelog
+        run: echo ::set-output
+          name=LINK::https://github.com/${{ github.repository }}/blob/v${{ steps.release.outputs.VERSION }}/CHANGELOG.md#$(sed -n '/^### \[${{ steps.release.outputs.VERSION }}\]/{s/^### \[\(.*\)\][^0-9]*\([0-9].*\)/\1--\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
+
+      - uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ steps.release.outputs.VERSION }}
+          body: |
+            [API docs](https://docs.rs/cucumber_rust/${{ steps.release.outputs.VERSION }})
+            [Changelog](${{ steps.changelog.outputs.LINK }})
+          prerelease: ${{ contains(steps.release.outputs.VERSION, '-') }}
+
+  release-crate:
+    name: Release on crates.io
+    needs: [ release-github ]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Publish `cucumber_rust_codegen` crate
+        run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
+        working-directory: ./codegen
+
+      - name: Wait crates.io index is updated
+        run: sleep 120
+
+      - name: Publish `cucumber_rust` crate
+        run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
+        working-directory: ./
