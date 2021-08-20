@@ -1,12 +1,9 @@
-use std::{convert::Infallible, fmt::Debug};
+use std::{borrow::Cow, convert::Infallible, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
 use cucumber_rust::{
     self as cucumber, event, given, then, when, WorldInit, Writer,
 };
-
-#[derive(Default)]
-struct DebugWriter(String);
 
 #[derive(Debug, Default, WorldInit)]
 struct World(usize);
@@ -28,10 +25,24 @@ impl cucumber::World for World {
     }
 }
 
+#[derive(Default)]
+struct DebugWriter(String);
+
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     async fn handle_event(&mut self, ev: event::Cucumber<World>) {
-        self.0.push_str(&format!("{:?}", ev));
+        let ev: Cow<_> = match ev {
+            event::Cucumber::ParsingError(_) => "ParsingError".into(),
+            event::Cucumber::Feature(f, ev) => {
+                let mut f = f.as_ref().clone();
+                f.path = None;
+                format!("{:?}", event::Cucumber::Feature(Arc::new(f), ev))
+                    .into()
+            }
+            ev => format!("{:?}", ev).into(),
+        };
+
+        self.0.push_str(ev.as_ref());
     }
 }
 
@@ -68,7 +79,7 @@ mod spec {
                 .run(format!("tests/features/output/{}", file))
                 .await;
 
-            assert_eq!(normalized.writer.0, out, "file: {}", file);
+            assert_eq!(normalized.0, out, "file: {}", file);
         }
     }
 }
