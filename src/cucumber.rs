@@ -263,7 +263,7 @@ where
         };
 
         Cucumber::custom()
-            .with_parser(parser::Basic)
+            .with_parser(parser::Basic::new())
             .with_runner(
                 runner::Basic::custom()
                     .which_scenario(f)
@@ -304,17 +304,20 @@ where
     }
 }
 
-impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr>
-where
-    W: World,
-    P: Parser<I>,
-    Wr: Writer<W>,
-    F: Fn(
-        &gherkin::Feature,
-        Option<&gherkin::Rule>,
-        &gherkin::Scenario,
-    ) -> ScenarioType,
-{
+impl<W, I, R, Wr> Cucumber<W, parser::Basic, I, R, Wr> {
+    /// Sets provided language.
+    ///
+    /// # Panics
+    ///
+    /// If provided language isn't supported.
+    #[must_use]
+    pub fn language(mut self, name: String) -> Self {
+        self.parser = self.parser.language(name);
+        self
+    }
+}
+
+impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     /// If `max` is [`Some`] number of concurrently executed [`Scenario`]s will
     /// be limited.
     ///

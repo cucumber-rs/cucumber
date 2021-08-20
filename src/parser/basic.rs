@@ -25,8 +25,10 @@ use super::{Parser, Result as ParseResult};
 ///
 /// As there is no async runtime-agnostic way to interact with IO, this
 /// [`Parser`] is blocking.
-#[derive(Clone, Copy, Debug)]
-pub struct Basic;
+#[derive(Debug, Default, Clone)]
+pub struct Basic {
+    language: Option<String>,
+}
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
     type Output = stream::Iter<vec::IntoIter<ParseResult<gherkin::Feature>>>;
@@ -53,7 +55,12 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             };
 
             if path.is_file() {
-                let env = GherkinEnv::default();
+                let env = self
+                    .language
+                    .as_ref()
+                    .map_or_else(GherkinEnv::default, |l| {
+                        GherkinEnv::new(l).unwrap()
+                    });
                 vec![gherkin::Feature::parse_path(path, env)]
             } else {
                 let walker = GlobWalkerBuilder::new(path, "*.feature")
@@ -63,7 +70,12 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 walker
                     .filter_map(Result::ok)
                     .map(|entry| {
-                        let env = GherkinEnv::default();
+                        let env = self
+                            .language
+                            .as_ref()
+                            .map_or_else(GherkinEnv::default, |l| {
+                                GherkinEnv::new(l).unwrap()
+                            });
                         gherkin::Feature::parse_path(entry.path(), env)
                     })
                     .collect::<Vec<_>>()
@@ -71,5 +83,27 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         };
 
         stream::iter(features().into_iter())
+    }
+}
+
+impl Basic {
+    /// Creates new [`Basic`].
+    #[must_use]
+    pub fn new() -> Self {
+        Self { language: None }
+    }
+
+    /// Sets provided language.
+    ///
+    /// # Panics
+    ///
+    /// If provided language isn't supported.
+    #[must_use]
+    pub fn language(mut self, name: String) -> Self {
+        if !gherkin::is_language_supported(&name) {
+            panic!("Language {} isn't supported", &name);
+        }
+        self.language = Some(name);
+        self
     }
 }
