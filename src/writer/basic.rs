@@ -23,6 +23,9 @@ use crate::{
 
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
 /// default).
+///
+/// Pretty-prints with colors if terminal was successfully detected, otherwise
+/// has simple output. Useful for running tests with CI tools.
 #[derive(Clone, Debug)]
 pub struct Basic {
     /// Terminal to write the output into.
@@ -36,6 +39,9 @@ pub struct Basic {
 
     /// [`Style`] for rendering errors and failed events.
     err: Style,
+
+    /// Indicates whether the terminal was detected.
+    is_terminal_present: bool,
 }
 
 #[async_trait(?Send)]
@@ -88,6 +94,7 @@ impl Default for Basic {
             ok: Style::new().green(),
             skipped: Style::new().cyan(),
             err: Style::new().red(),
+            is_terminal_present: atty::is(atty::Stream::Stdout),
         }
     }
 }
@@ -107,16 +114,48 @@ impl Basic {
         Self::default()
     }
 
+    /// If terminal is present colors `input` with [`Self::ok`] color or leaves
+    /// as is otherwise.
+    fn ok(&self, input: String) -> String {
+        if self.is_terminal_present {
+            self.ok.apply_to(input).to_string()
+        } else {
+            input
+        }
+    }
+
+    /// If terminal is present colors `input` with [`Self::skipped`] color or
+    /// leaves as is otherwise.
+    fn skipped(&self, input: String) -> String {
+        if self.is_terminal_present {
+            self.skipped.apply_to(input).to_string()
+        } else {
+            input
+        }
+    }
+
+    /// If terminal is present colors `input` with [`Self::err`] color or leaves
+    /// as is otherwise.
+    fn err(&self, input: String) -> String {
+        if self.is_terminal_present {
+            self.err.apply_to(input).to_string()
+        } else {
+            input
+        }
+    }
+
+    /// Clears last `n` lines if terminal is present.
+    fn clear_last_lines_if_term_present(&self, n: usize) {
+        self.clear_last_lines(n).unwrap();
+    }
+
     /// Outputs [error] encountered while parsing some [`Feature`].
     ///
     /// [error]: event::Cucumber::ParsingError
     /// [`Feature`]: gherkin::Feature
     fn parsing_failed(&self, err: &gherkin::ParseFileError) {
-        self.write_line(&format!(
-            "{}",
-            self.err.apply_to(format!("Failed to parse: {}", err))
-        ))
-        .unwrap();
+        self.write_line(&self.err(format!("Failed to parse: {}", err)))
+            .unwrap();
     }
 
     /// Outputs [started] [`Feature`] to STDOUT.
@@ -124,11 +163,8 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&self, feature: &gherkin::Feature) {
-        self.write_line(&format!(
-            "{}",
-            self.ok.apply_to(format!("Feature: {}", feature.name))
-        ))
-        .unwrap();
+        self.write_line(&self.ok(format!("Feature: {}", feature.name)))
+            .unwrap();
     }
 
     /// Outputs [started] [`Rule`] to STDOUT.
@@ -136,11 +172,8 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&self, rule: &gherkin::Rule) {
-        self.write_line(&format!(
-            "{}",
-            self.ok.apply_to(format!("  Rule: {}", rule.name))
-        ))
-        .unwrap();
+        self.write_line(&self.ok(format!("  Rule: {}", rule.name)))
+            .unwrap();
     }
 
     /// Outputs [`Scenario`] [started]/[background]/[step] event to STDOUT.
@@ -176,14 +209,11 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&self, scenario: &gherkin::Scenario, ident: usize) {
-        self.write_line(&format!(
-            "{}",
-            self.ok.apply_to(format!(
-                "{}Scenario: {}",
-                " ".repeat(ident),
-                scenario.name,
-            ))
-        ))
+        self.write_line(&self.ok(format!(
+            "{}Scenario: {}",
+            " ".repeat(ident),
+            scenario.name,
+        )))
         .unwrap();
     }
 
@@ -221,16 +251,24 @@ impl Basic {
 
     /// Outputs [started] [`Step`] to STDOUT.
     ///
+    /// This [`Step`] is printed only if terminal is present and gets
+    /// overwritten by later [passed]/[skipped]/[failed] events.
+    ///
+    /// [started]: event::Step::Started
+    /// [passed]: event::Step::Passed
+    /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
     /// [`Step`]: [`gherkin::Step`]
     fn step_started(&self, step: &gherkin::Step, ident: usize) {
-        self.write_line(&format!(
-            "{}{} {}",
-            " ".repeat(ident),
-            step.keyword,
-            step.value,
-        ))
-        .unwrap();
+        if self.is_terminal_present {
+            self.write_line(&format!(
+                "{}{} {}",
+                " ".repeat(ident),
+                step.keyword,
+                step.value,
+            ))
+            .unwrap();
+        }
     }
 
     /// Outputs [passed] [`Step`] to STDOUT.
@@ -238,17 +276,14 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [`Step`]: [`gherkin::Step`]
     fn step_passed(&self, step: &gherkin::Step, ident: usize) {
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.ok.apply_to(format!(
-                //  ✔
-                "{}\u{2714}  {} {}",
-                " ".repeat(ident - 3),
-                step.keyword,
-                step.value,
-            ))
-        ))
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.ok(format!(
+            //  ✔
+            "{}\u{2714}  {} {}",
+            " ".repeat(ident - 3),
+            step.keyword,
+            step.value,
+        )))
         .unwrap();
     }
 
@@ -257,16 +292,13 @@ impl Basic {
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: [`gherkin::Step`]
     fn step_skipped(&self, step: &gherkin::Step, ident: usize) {
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.skipped.apply_to(format!(
-                "{}?  {} {} (skipped)",
-                " ".repeat(ident - 3),
-                step.keyword,
-                step.value,
-            ))
-        ))
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.skipped(format!(
+            "{}?  {} {} (skipped)",
+            " ".repeat(ident - 3),
+            step.keyword,
+            step.value,
+        )))
         .unwrap();
     }
 
@@ -287,21 +319,18 @@ impl Basic {
             .join("");
         let world = world.trim_end_matches('\n');
 
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.err.apply_to(format!(
-                //       ✘
-                "{ident}\u{2718}  {} {}\n\
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.err(format!(
+            //       ✘
+            "{ident}\u{2718}  {} {}\n\
                  {ident}   Captured output: {}\n\
                  {}",
-                step.keyword,
-                step.value,
-                coerce_error(info),
-                world,
-                ident = " ".repeat(ident - 3),
-            ))
-        ))
+            step.keyword,
+            step.value,
+            coerce_error(info),
+            world,
+            ident = " ".repeat(ident - 3),
+        )))
         .unwrap();
     }
 
@@ -341,18 +370,26 @@ impl Basic {
 
     /// Outputs [started] [`Background`] [`Step`] to STDOUT.
     ///
+    /// This [`Step`] is printed only if terminal is present and gets
+    /// overwritten by later [passed]/[skipped]/[failed] events.
+    ///
+    /// [started]: event::Step::Started
+    /// [passed]: event::Step::Passed
+    /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_started(&self, step: &gherkin::Step, ident: usize) {
-        self.write_line(&format!(
-            "{}{}{} {}",
-            " ".repeat(ident - 2),
-            "> ",
-            step.keyword,
-            step.value,
-        ))
-        .unwrap();
+        if self.is_terminal_present {
+            self.write_line(&format!(
+                "{}{}{} {}",
+                " ".repeat(ident - 2),
+                "> ",
+                step.keyword,
+                step.value,
+            ))
+            .unwrap();
+        }
     }
 
     /// Outputs [passed] [`Background`] [`Step`] to STDOUT.
@@ -361,17 +398,14 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_passed(&self, step: &gherkin::Step, ident: usize) {
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.ok.apply_to(format!(
-                //  ✔
-                "{}\u{2714}> {} {}",
-                " ".repeat(ident - 3),
-                step.keyword,
-                step.value,
-            ))
-        ))
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.ok(format!(
+            //  ✔
+            "{}\u{2714}> {} {}",
+            " ".repeat(ident - 3),
+            step.keyword,
+            step.value,
+        )))
         .unwrap();
     }
 
@@ -381,16 +415,13 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_skipped(&self, step: &gherkin::Step, ident: usize) {
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.skipped.apply_to(format!(
-                "{}?> {} {} (skipped)",
-                " ".repeat(ident - 3),
-                step.keyword,
-                step.value,
-            ))
-        ))
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.skipped(format!(
+            "{}?> {} {} (skipped)",
+            " ".repeat(ident - 3),
+            step.keyword,
+            step.value,
+        )))
         .unwrap();
     }
 
@@ -411,21 +442,18 @@ impl Basic {
             .map(|line| format!("{}{}\n", " ".repeat(ident), line))
             .join("");
 
-        self.clear_last_lines(1).unwrap();
-        self.write_line(&format!(
-            "{}",
-            self.err.apply_to(format!(
-                //       ✘
-                "{ident}\u{2718}> {} {}\n\
+        self.clear_last_lines_if_term_present(1);
+        self.write_line(&self.err(format!(
+            //       ✘
+            "{ident}\u{2718}> {} {}\n\
                  {ident}   Captured output: {}\n\
                  {}",
-                step.keyword,
-                step.value,
-                coerce_error(info),
-                world,
-                ident = " ".repeat(ident - 3),
-            ))
-        ))
+            step.keyword,
+            step.value,
+            coerce_error(info),
+            world,
+            ident = " ".repeat(ident - 3),
+        )))
         .unwrap();
     }
 }

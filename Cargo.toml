@@ -25,6 +25,7 @@ macros = ["cucumber_rust_codegen", "inventory"]
 
 [dependencies]
 async-trait = "0.1"
+atty = "0.2"
 console = "0.14"
 either = "1.6"
 futures = "0.3"
