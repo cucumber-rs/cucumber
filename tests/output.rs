@@ -73,7 +73,8 @@ mod spec {
                 file
             ))
             .unwrap_or_default()
-            .replace("\n", "");
+            .lines()
+            .collect::<String>();
             let normalized = World::cucumber()
                 .with_writer(DebugWriter::default().normalized())
                 .run(format!("tests/features/output/{}", file))
