@@ -5,6 +5,9 @@ Feature: Outline
 
   Rule: outline
 
+    Background:
+      Given foo is 1
+
     Scenario Outline: foo
       Given foo is <bar1>
       When foo is <bar2>
@@ -12,4 +15,4 @@ Feature: Outline
 
       Examples:
         | bar1 | bar2 | bar3 |
-        | 1    |  2   |  3   |
+        | 2    |  3   |  4   |

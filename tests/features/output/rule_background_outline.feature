@@ -1,9 +1,8 @@
 Feature: Outline
 
-  Background:
-    Given foo is 0
-
   Rule: outline
+    Background:
+      Given foo is 0
 
     Scenario Outline: foo
       Given foo is <bar1>

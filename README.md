@@ -82,13 +82,13 @@ Add test in `Cargo.toml`
 
 ```toml
 [[test]]
-harness = false
-name = "readme" # Allows Cucumber to print output instead of libtest
+name = "readme"
+harness = false # Allows Cucumber to print output instead of libtest
 ```
 
 [![asciicast](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK.svg)](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK)
 
-For more examples check out Book([current](https://bbqsrc.github.io/cucumber-rust/current) | [master](https://bbqsrc.github.io/cucumber-rust/master))
+For more examples check out Book ([current](https://bbqsrc.github.io/cucumber-rust/current) | [master](https://bbqsrc.github.io/cucumber-rust/master))
 
 ### Supporting crates
 
