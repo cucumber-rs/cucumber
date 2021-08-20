@@ -399,14 +399,14 @@ impl<W: World> Executor<W> {
         };
 
         let res = async {
-            let background = feature
+            let feature_background = feature
                 .background
                 .as_ref()
                 .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
                 .into_iter()
                 .flatten();
 
-            let background = stream::iter(background)
+            let feature_background = stream::iter(feature_background)
                 .map(Ok)
                 .try_fold(None, |world, bg_step| {
                     self.run_step(
@@ -421,9 +421,36 @@ impl<W: World> Executor<W> {
                 })
                 .await?;
 
+            let rule_background = rule
+                .as_ref()
+                .map(|rule| {
+                    rule.background
+                        .as_ref()
+                        .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                        .into_iter()
+                        .flatten()
+                })
+                .into_iter()
+                .flatten();
+
+            let rule_background = stream::iter(rule_background)
+                .map(Ok)
+                .try_fold(feature_background, |world, bg_step| {
+                    self.run_step(
+                        world,
+                        bg_step,
+                        ok(event::Scenario::background_step_started),
+                        ok(event::Scenario::background_step_passed),
+                        ok(event::Scenario::background_step_skipped),
+                        err(event::Scenario::background_step_failed),
+                    )
+                    .map_ok(Some)
+                })
+                .await?;
+
             stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
                 .map(Ok)
-                .try_fold(background, |world, step| {
+                .try_fold(rule_background, |world, step| {
                     self.run_step(
                         world,
                         step,

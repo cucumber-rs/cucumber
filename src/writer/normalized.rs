@@ -13,6 +13,7 @@
 use std::{hash::Hash, sync::Arc};
 
 use async_trait::async_trait;
+use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
@@ -35,10 +36,11 @@ use crate::{event, OutputtedWriter, World, Writer};
 /// [`Runner`]: crate::Runner
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[derive(Debug)]
+#[derive(Debug, Deref)]
 pub struct Normalized<World, Writer> {
     /// [`Writer`] to normalize output of.
-    writer: Writer,
+    #[deref]
+    pub writer: Writer,
 
     /// Normalization queue of happened events.
     queue: CucumberQueue<World>,

@@ -13,6 +13,7 @@
 use std::fmt::Debug;
 
 use async_trait::async_trait;
+use derive_more::Deref;
 
 use crate::{event, OutputtedWriter, World, Writer};
 
@@ -20,9 +21,11 @@ use crate::{event, OutputtedWriter, World, Writer};
 ///
 /// Wrapper for a [`Writer`] implementation for outputting a summary (number of
 /// features, scenarios, steps and parsing errors) of execution.
-#[derive(Debug)]
+#[derive(Debug, Deref)]
 pub struct Summarized<Writer> {
-    writer: Writer,
+    #[deref]
+    /// Inner [`Writer`].
+    pub writer: Writer,
 
     /// Number of started [`Feature`]s.
     ///

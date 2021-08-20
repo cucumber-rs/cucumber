@@ -461,6 +461,7 @@ impl Basic {
 /// Tries to coerce [`catch_unwind()`] output to [`String`].
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
+#[must_use]
 fn coerce_error(err: &Info) -> String {
     if let Some(string) = err.downcast_ref::<String>() {
         string.clone()

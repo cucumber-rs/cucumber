@@ -27,6 +27,7 @@ macros = ["cucumber_rust_codegen", "inventory"]
 async-trait = "0.1"
 atty = "0.2"
 console = "0.14"
+derive_more = "0.99"
 either = "1.6"
 futures = "0.3"
 gherkin = { package = "gherkin_rust", version = "0.10" }
@@ -50,6 +51,9 @@ exclude = ["book/tests"]
 [[test]]
 harness = false
 name = "wait"
+
+[[test]]
+name = "output"
 
 [package.metadata.docs.rs]
 all-features = true
