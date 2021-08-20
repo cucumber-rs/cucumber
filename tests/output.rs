@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use cucumber_rust::{
     self as cucumber, event, given, then, when, WorldInit, Writer,
 };
+use regex::Regex;
 
 #[derive(Debug, Default, WorldInit)]
 struct World(usize);
@@ -42,7 +43,11 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
             ev => format!("{:?}", ev).into(),
         };
 
-        self.0.push_str(ev.as_ref());
+        let re =
+            Regex::new(r" span: Span \{ start: (\d+), end: (\d+) },").unwrap();
+        let without_span = re.replace_all(ev.as_ref(), "");
+
+        self.0.push_str(without_span.as_ref());
     }
 }
 
