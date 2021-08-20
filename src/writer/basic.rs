@@ -146,7 +146,9 @@ impl Basic {
 
     /// Clears last `n` lines if terminal is present.
     fn clear_last_lines_if_term_present(&self, n: usize) {
-        self.clear_last_lines(n).unwrap();
+        if self.is_terminal_present {
+            self.clear_last_lines(n).unwrap();
+        }
     }
 
     /// Outputs [error] encountered while parsing some [`Feature`].
