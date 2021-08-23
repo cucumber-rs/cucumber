@@ -25,7 +25,7 @@ use super::{Parser, Result as ParseResult};
 ///
 /// As there is no async runtime-agnostic way to interact with IO, this
 /// [`Parser`] is blocking.
-#[derive(Debug, Default, Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct Basic {
     language: Option<String>,
 }
@@ -87,17 +87,17 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 }
 
 impl Basic {
-    /// Creates new [`Basic`].
+    /// Creates a new [`Basic`] [`Parser`].
     #[must_use]
     pub fn new() -> Self {
         Self { language: None }
     }
 
-    /// Sets provided language.
+    /// Sets the provided [`gherkin`] language.
     ///
     /// # Panics
     ///
-    /// If provided language isn't supported.
+    /// If the provided language isn't supported.
     #[must_use]
     pub fn language(mut self, name: String) -> Self {
         if !gherkin::is_language_supported(&name) {

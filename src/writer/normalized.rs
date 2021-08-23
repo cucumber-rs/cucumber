@@ -99,9 +99,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Out> OutputtedWriter<'val, W, Out> for Normalized<W, Wr>
+impl<'val, W, Wr, Out> OutputtedWriter<'val, Out, W> for Normalized<W, Wr>
 where
-    Wr: OutputtedWriter<'val, W, Out>,
+    Wr: OutputtedWriter<'val, Out, W>,
     Out: 'val,
 {
     async fn write(&mut self, val: Out)

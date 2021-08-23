@@ -43,7 +43,7 @@ pub use basic::{Basic, ScenarioType};
 /// implementation.
 ///
 /// Note, that those rules are recommended in case you are using a
-/// [`writer::Normalized`]. Strictly speaking no one is stopping you from
+/// [`writer::Normalized`]. Strictly speaking, no one is stopping you from
 /// implementing [`Runner`] which sources events completely out-of-order or even
 /// skips some of them. For example, this can be useful if you care only about
 /// failed [`Step`]s.

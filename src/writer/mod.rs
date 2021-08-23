@@ -41,12 +41,12 @@ pub trait Writer<World> {
     async fn handle_event(&mut self, ev: event::Cucumber<World>);
 }
 
-/// [`Writer`] that also can output generic value additionally to the
-/// [`Cucumber`] events (STDOUT, File, etc.).
+/// [`Writer`] that also can output an arbitrary `Value` in addition to
+/// [`Cucumber`] events.
 ///
 /// [`Cucumber`]: crate::event::Cucumber
 #[async_trait(?Send)]
-pub trait Outputted<'val, World, Value: 'val>: Writer<World> {
+pub trait Outputted<'val, Value: 'val, World>: Writer<World> {
     /// Writes `val` to some output.
     async fn write(&mut self, val: Value)
     where

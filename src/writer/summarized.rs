@@ -124,11 +124,11 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Output> OutputtedWriter<'val, W, Output> for Summarized<Wr>
+impl<'val, W, Wr, Output> OutputtedWriter<'val, Output, W> for Summarized<Wr>
 where
     W: World,
     Self: Writer<W>,
-    Wr: OutputtedWriter<'val, W, Output>,
+    Wr: OutputtedWriter<'val, Output, W>,
     Output: 'val,
 {
     async fn write(&mut self, val: Output)

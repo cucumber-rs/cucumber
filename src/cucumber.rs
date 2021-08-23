@@ -401,7 +401,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: for<'val> OutputtedWriter<'val, W, String>,
+    Wr: for<'val> OutputtedWriter<'val, String, W>,
 {
     /// Runs [`Cucumber`].
     ///

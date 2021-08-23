@@ -84,6 +84,8 @@ pub struct Basic<World, F> {
     which_scenario: F,
 }
 
+// Implemented manually to omit redundant trait bounds on `World` and to omit
+// outputting `F`.
 impl<World, F> fmt::Debug for Basic<World, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Basic")
@@ -96,7 +98,7 @@ impl<World, F> fmt::Debug for Basic<World, F> {
 impl<World> Basic<World, ()> {
     /// Creates a new empty [`Runner`].
     #[must_use]
-    pub fn custom() -> Basic<World, ()> {
+    pub fn custom() -> Self {
         Self {
             max_concurrent_scenarios: None,
             steps: step::Collection::new(),
@@ -106,8 +108,8 @@ impl<World> Basic<World, ()> {
 }
 
 impl<World, F> Basic<World, F> {
-    /// If `max` is [`Some`] number of concurrently executed [`Scenario`]s will
-    /// be limited.
+    /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
+    /// will be limited.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
@@ -233,7 +235,7 @@ where
 /// Stores [`Feature`]s for later use by [`execute()`].
 ///
 /// [`Feature`]: gherkin::Feature
-async fn insert_features<S, F, W>(
+async fn insert_features<W, S, F>(
     into: Features,
     features: S,
     which_scenario: F,
@@ -346,7 +348,7 @@ struct Executor<W> {
 }
 
 impl<W: World> Executor<W> {
-    /// Creates new [`Executor`].
+    /// Creates a new [`Executor`].
     fn new(
         collection: step::Collection<W>,
         sender: mpsc::UnboundedSender<event::Cucumber<W>>,
@@ -364,7 +366,7 @@ impl<W: World> Executor<W> {
     /// # Events
     ///
     /// - Emits all [`Scenario`] events.
-    /// - If [`Scenario`] was last for particular [`Rule`] or [`Feature`] also
+    /// - If [`Scenario`] was last for particular [`Rule`] or [`Feature`], also
     ///   emits finishing events for them.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -655,14 +657,14 @@ impl<W: World> Executor<W> {
             .collect();
     }
 
-    /// Notifies with given [`Cucumber`] event.
+    /// Notifies with the given [`Cucumber`] event.
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send(&self, event: event::Cucumber<W>) {
         self.sender.unbounded_send(event).unwrap();
     }
 
-    /// Notifies with given [`Cucumber`] events.
+    /// Notifies with the given [`Cucumber`] events.
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send_all(&self, events: impl Iterator<Item = event::Cucumber<W>>) {
@@ -670,19 +672,6 @@ impl<W: World> Executor<W> {
             self.send(event);
         }
     }
-}
-
-/// Storage sorted by [`ScenarioType`] [`Feature`]'s [`Scenario`]s.
-///
-/// [`Feature`]: gherkin::Feature
-/// [`Scenario`]: gherkin::Scenario
-#[derive(Clone, Default)]
-struct Features {
-    /// Storage itself.
-    scenarios: Arc<Mutex<Scenarios>>,
-
-    /// Indicates whether all parsed [`Feature`]s are sorted and stored.
-    finished: Arc<AtomicBool>,
 }
 
 /// [`Scenario`]s storage.
@@ -696,6 +685,19 @@ type Scenarios = HashMap<
         Arc<gherkin::Scenario>,
     )>,
 >;
+
+/// Storage sorted by [`ScenarioType`] [`Feature`]'s [`Scenario`]s.
+///
+/// [`Feature`]: gherkin::Feature
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Default)]
+struct Features {
+    /// Storage itself.
+    scenarios: Arc<Mutex<Scenarios>>,
+
+    /// Indicates whether all parsed [`Feature`]s are sorted and stored.
+    finished: Arc<AtomicBool>,
+}
 
 impl Features {
     /// Splits [`Feature`] into [`Scenario`]s, sorts by [`ScenarioType`] and
@@ -784,14 +786,14 @@ impl Features {
             .unwrap_or_default()
     }
 
-    /// Marks that there will be no additional [`Feature`]s.
+    /// Marks that there will be no more [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn finish(&self) {
         self.finished.store(true, Ordering::SeqCst);
     }
 
-    /// Indicates whether there will additional [`Feature`]s.
+    /// Indicates whether there are more [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
     fn is_finished(&self) -> bool {

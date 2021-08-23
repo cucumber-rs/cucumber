@@ -74,7 +74,7 @@ impl<W: World + Debug> Writer<W> for Basic {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Output> OutputtedWriter<'val, W, Output> for Basic
+impl<'val, W, Output> OutputtedWriter<'val, Output, W> for Basic
 where
     W: World + Debug,
     Output: AsRef<str> + 'val,
