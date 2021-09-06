@@ -21,7 +21,7 @@ use futures::Stream;
 use crate::{event, parser};
 
 #[doc(inline)]
-pub use basic::{Basic, ScenarioType};
+pub use self::basic::{Basic, ScenarioType};
 
 /// Executor of [`Parser`] output producing [`Cucumber`] events for [`Writer`].
 ///

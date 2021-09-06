@@ -49,8 +49,8 @@ members = ["codegen"]
 exclude = ["book/tests"]
 
 [[test]]
-harness = false
 name = "wait"
+harness = false
 
 [[test]]
 name = "output"

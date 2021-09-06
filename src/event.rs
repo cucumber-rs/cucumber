@@ -17,7 +17,6 @@
 //! sub-event.
 //!
 //! [`Runner`]: crate::Runner
-//!
 //! [Cucumber]: https://cucumber.io
 
 use std::{any::Any, sync::Arc};
@@ -32,7 +31,7 @@ pub type Info = Box<dyn Any + Send + 'static>;
 /// [Cucumber]: https://cucumber.io
 #[derive(Debug)]
 pub enum Cucumber<World> {
-    /// Event for a [`Cucumber`] execution started.
+    /// [`Cucumber`] execution being started.
     Started,
 
     /// [`Feature`] event.
@@ -41,7 +40,7 @@ pub enum Cucumber<World> {
     /// Failed to parse a [`Feature`] file.
     ParsingError(gherkin::ParseFileError),
 
-    /// Event for a [`Cucumber`] execution finished.
+    /// [`Cucumber`] execution being finished.
     Finished,
 }
 
@@ -104,7 +103,7 @@ impl<World> Cucumber<World> {
     }
 }
 
-/// Event specific to a particular [Feature]
+/// Event specific to a particular [Feature].
 ///
 /// [Feature]: https://cucumber.io/docs/gherkin/reference/#feature
 #[derive(Debug)]
@@ -145,6 +144,37 @@ pub enum Rule<World> {
     Finished,
 }
 
+/// Event specific to a particular [Step].
+///
+/// [Step]: https://cucumber.io/docs/gherkin/reference/#step
+#[derive(Debug)]
+pub enum Step<World> {
+    /// [`Step`] execution being started.
+    ///
+    /// [`Step`]: gherkin::Step
+    Started,
+
+    /// [`Step`] being skipped.
+    ///
+    /// That means there is no [`Regex`] matching [`Step`] in a
+    /// [`step::Collection`].
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    /// [`step::Collection`]: crate::step::Collection
+    Skipped,
+
+    /// [`Step`] passed.
+    ///
+    /// [`Step`]: gherkin::Step
+    Passed,
+
+    /// [`Step`] failed.
+    ///
+    /// [`Step`]: gherkin::Step
+    Failed(World, Info),
+}
+
 /// Event specific to a particular [Scenario].
 ///
 /// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
@@ -170,53 +200,60 @@ pub enum Scenario<World> {
 }
 
 impl<World> Scenario<World> {
-    /// Event of a [`Step`] being started.
+    /// Constructs an event of a [`Step`] being started.
     ///
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn step_started(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Started)
     }
 
-    /// Event of a [`Background`] [`Step`] being started.
+    /// Constructs an event of a [`Background`] [`Step`] being started.
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn background_step_started(step: Arc<gherkin::Step>) -> Self {
         Self::Background(step, Step::Started)
     }
 
-    /// Event of a passed [`Step`].
+    /// Constructs an event of a passed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn step_passed(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Passed)
     }
 
-    /// Event of a passed [`Background`] [`Step`].
+    /// Constructs an event of a passed [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn background_step_passed(step: Arc<gherkin::Step>) -> Self {
         Self::Background(step, Step::Passed)
     }
 
-    /// Event of a skipped [`Step`].
+    /// Constructs an event of a skipped [`Step`].
     ///
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn step_skipped(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Skipped)
     }
-    /// Event of a skipped [`Background`] [`Step`].
+    /// Constructs an event of a skipped [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
         Self::Background(step, Step::Skipped)
     }
 
-    /// Event of a failed [`Step`].
+    /// Constructs an event of a failed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
         world: World,
@@ -225,10 +262,11 @@ impl<World> Scenario<World> {
         Self::Step(step, Step::Failed(world, info))
     }
 
-    /// Event of a failed [`Background`] [`Step`].
+    /// Constructs an event of a failed [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
         world: World,
@@ -236,35 +274,4 @@ impl<World> Scenario<World> {
     ) -> Self {
         Self::Background(step, Step::Failed(world, info))
     }
-}
-
-/// Event specific to a particular [Step].
-///
-/// [Step]: https://cucumber.io/docs/gherkin/reference/#step
-#[derive(Debug)]
-pub enum Step<World> {
-    /// Event of a [`Step`] execution being started.
-    ///
-    /// [`Step`]: gherkin::Step
-    Started,
-
-    /// Event of a [`Step`] being being skipped.
-    ///
-    /// That means there is no [`Regex`] matching [`Step`] in a
-    /// [`step::Collection`].
-    ///
-    /// [`Regex`]: regex::Regex
-    /// [`Step`]: gherkin::Step
-    /// [`step::Collection`]: crate::step::Collection
-    Skipped,
-
-    /// Event of a passed [`Step`].
-    ///
-    /// [`Step`]: gherkin::Step
-    Passed,
-
-    /// Event of a failed [`Step`].
-    ///
-    /// [`Step`]: gherkin::Step
-    Failed(World, Info),
 }

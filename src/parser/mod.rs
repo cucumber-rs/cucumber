@@ -17,7 +17,7 @@ pub mod basic;
 use futures::Stream;
 
 #[doc(inline)]
-pub use basic::Basic;
+pub use self::basic::Basic;
 
 /// Source of parsed [`Feature`]s.
 ///

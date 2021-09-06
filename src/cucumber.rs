@@ -25,7 +25,7 @@ use regex::Regex;
 use crate::{
     parser, runner, step,
     writer::{self, Ext as _},
-    OutputtedWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    ArbitraryWriter, Parser, Runner, ScenarioType, Step, World, Writer,
 };
 
 /// Top-level [Cucumber] executor.
@@ -305,15 +305,17 @@ where
 }
 
 impl<W, I, R, Wr> Cucumber<W, parser::Basic, I, R, Wr> {
-    /// Sets provided language.
+    /// Sets the provided language of [`gherkin`] files.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// If provided language isn't supported.
-    #[must_use]
-    pub fn language(mut self, name: String) -> Self {
-        self.parser = self.parser.language(name);
-        self
+    /// If the provided language isn't supported.
+    pub fn language(
+        mut self,
+        name: String,
+    ) -> Result<Self, parser::basic::UnsupportedLanguageError> {
+        self.parser = self.parser.language(name)?;
+        Ok(self)
     }
 }
 
@@ -401,7 +403,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: for<'val> OutputtedWriter<'val, String, W>,
+    Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
     /// Runs [`Cucumber`].
     ///

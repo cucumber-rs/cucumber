@@ -10,48 +10,10 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::fmt::Debug;
-
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{event, OutputtedWriter, World, Writer};
-
-/// [`Writer`] for collecting summary: number of features, scenarios and steps.
-///
-/// Wrapper for a [`Writer`] implementation for outputting a summary (number of
-/// features, scenarios, steps and parsing errors) of execution.
-#[derive(Debug, Deref)]
-pub struct Summarized<Writer> {
-    #[deref]
-    /// Inner [`Writer`].
-    pub writer: Writer,
-
-    /// Number of started [`Feature`]s.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    pub features: usize,
-
-    /// Number of started [`Rule`]s.
-    ///
-    /// [`Rule`]: gherkin::Rule
-    pub rules: usize,
-
-    /// Number of started [`Scenario`]s.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    pub scenarios: usize,
-
-    /// Number of [`Parser`] errors.
-    ///
-    /// [`Parser`]: crate::Parser
-    pub parsing_errors: usize,
-
-    /// [`Step`]s [`Stats`]
-    ///
-    /// [`Step`]: gherkin::Step
-    pub steps: Stats,
-}
+use crate::{event, ArbitraryWriter, World, Writer};
 
 /// [`Step`]s statistics.
 ///
@@ -74,11 +36,45 @@ pub struct Stats {
     pub failed: usize,
 }
 
+/// Wrapper for a [`Writer`] for outputting an execution summary (number of
+/// executed features, scenarios, steps and parsing errors).
+#[derive(Debug, Deref)]
+pub struct Summarized<Writer> {
+    /// Original [`Writer`] to summarize output of.
+    #[deref]
+    pub writer: Writer,
+
+    /// Number of started [`Feature`]s.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    pub features: usize,
+
+    /// Number of started [`Rule`]s.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    pub rules: usize,
+
+    /// Number of started [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    pub scenarios: usize,
+
+    /// Number of [`Parser`] errors.
+    ///
+    /// [`Parser`]: crate::Parser
+    pub parsing_errors: usize,
+
+    /// [`Step`]s [`Stats`].
+    ///
+    /// [`Step`]: gherkin::Step
+    pub steps: Stats,
+}
+
 #[async_trait(?Send)]
 impl<W, Wr> Writer<W> for Summarized<Wr>
 where
     W: World,
-    Wr: for<'val> OutputtedWriter<'val, W, String>,
+    Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
     async fn handle_event(&mut self, ev: event::Cucumber<W>) {
         use event::{Cucumber, Feature, Rule};
@@ -124,14 +120,14 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Output> OutputtedWriter<'val, Output, W> for Summarized<Wr>
+impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Summarized<Wr>
 where
     W: World,
     Self: Writer<W>,
-    Wr: OutputtedWriter<'val, Output, W>,
-    Output: 'val,
+    Wr: ArbitraryWriter<'val, W, Val>,
+    Val: 'val,
 {
-    async fn write(&mut self, val: Output)
+    async fn write(&mut self, val: Val)
     where
         'val: 'async_trait,
     {
@@ -140,7 +136,8 @@ where
 }
 
 impl<Writer> Summarized<Writer> {
-    /// Creates new [`Summarized`].
+    /// Creates a new [`Summarized`] [`Writer`].
+    #[must_use]
     pub fn new(writer: Writer) -> Self {
         Self {
             writer,
@@ -156,16 +153,16 @@ impl<Writer> Summarized<Writer> {
         }
     }
 
-    /// Indicates whether or not there have been failed [`Step`]s or [`Parser`]
-    /// errors.
+    /// Indicates whether there have been failed [`Step`]s or [`Parser`] errors.
     ///
     /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
+    #[must_use]
     pub fn is_failed(&self) -> bool {
         self.steps.failed > 0 || self.parsing_errors > 0
     }
 
-    /// Keeps track of [`Step`] [`Stats`].
+    /// Keeps track of [`Step`]'s [`Stats`].
     ///
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(&mut self, ev: &event::Step<W>) {
@@ -179,7 +176,7 @@ impl<Writer> Summarized<Writer> {
         }
     }
 
-    /// Keeps track of [`Scenario`] [`Stats`].
+    /// Keeps track of [`Scenario`]'s [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(&mut self, ev: &event::Scenario<W>) {

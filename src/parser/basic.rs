@@ -15,6 +15,7 @@ use std::{
     vec,
 };
 
+use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
@@ -27,6 +28,9 @@ use super::{Parser, Result as ParseResult};
 /// [`Parser`] is blocking.
 #[derive(Clone, Debug, Default)]
 pub struct Basic {
+    /// Optional custom language of [`gherkin`] keywords.
+    ///
+    /// Default is English.
     language: Option<String>,
 }
 
@@ -58,9 +62,8 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 let env = self
                     .language
                     .as_ref()
-                    .map_or_else(GherkinEnv::default, |l| {
-                        GherkinEnv::new(l).unwrap()
-                    });
+                    .and_then(|l| GherkinEnv::new(l).ok())
+                    .unwrap_or_default();
                 vec![gherkin::Feature::parse_path(path, env)]
             } else {
                 let walker = GlobWalkerBuilder::new(path, "*.feature")
@@ -73,9 +76,8 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                         let env = self
                             .language
                             .as_ref()
-                            .map_or_else(GherkinEnv::default, |l| {
-                                GherkinEnv::new(l).unwrap()
-                            });
+                            .and_then(|l| GherkinEnv::new(l).ok())
+                            .unwrap_or_default();
                         gherkin::Feature::parse_path(entry.path(), env)
                     })
                     .collect::<Vec<_>>()
@@ -93,17 +95,25 @@ impl Basic {
         Self { language: None }
     }
 
-    /// Sets the provided [`gherkin`] language.
+    /// Sets the provided language to parse [`gherkin`] files in instead of the
+    /// default one (English).
     ///
-    /// # Panics
+    /// # Errors
     ///
     /// If the provided language isn't supported.
-    #[must_use]
-    pub fn language(mut self, name: String) -> Self {
+    pub fn language(
+        mut self,
+        name: String,
+    ) -> Result<Self, UnsupportedLanguageError> {
         if !gherkin::is_language_supported(&name) {
-            panic!("Language {} isn't supported", &name);
+            return Err(UnsupportedLanguageError(name));
         }
         self.language = Some(name);
-        self
+        Ok(self)
     }
 }
+
+/// Error of [`gherkin`] not supporting keywords in some language.
+#[derive(Debug, Display, Error)]
+#[display(fmt = "Language {} isn't supported", _0)]
+pub struct UnsupportedLanguageError(#[error(not(source))] pub String);

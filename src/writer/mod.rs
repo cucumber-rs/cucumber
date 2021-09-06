@@ -31,8 +31,8 @@ pub use self::{basic::Basic, normalized::Normalized, summarized::Summarized};
 /// [`Cucumber::run_and_exit()`] for examples.
 ///
 /// [`Cucumber`]: crate::event::Cucumber
-/// [`Cucumber::run()`]: crate::Cucumber::run()
-/// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit()
+/// [`Cucumber::run()`]: crate::Cucumber::run
+/// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
 #[async_trait(?Send)]
 pub trait Writer<World> {
     /// Handles the given [`Cucumber`] event.
@@ -42,12 +42,12 @@ pub trait Writer<World> {
 }
 
 /// [`Writer`] that also can output an arbitrary `Value` in addition to
-/// [`Cucumber`] events.
+/// regular [`Cucumber`] events.
 ///
 /// [`Cucumber`]: crate::event::Cucumber
 #[async_trait(?Send)]
-pub trait Outputted<'val, Value: 'val, World>: Writer<World> {
-    /// Writes `val` to some output.
+pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
+    /// Writes `val` to the [`Writer`]'s output.
     async fn write(&mut self, val: Value)
     where
         'val: 'async_trait;

@@ -90,6 +90,7 @@ impl<World> Collection<World> {
     /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
         let _ = self.given.insert(regex.into(), step);
         self
@@ -98,6 +99,7 @@ impl<World> Collection<World> {
     /// Adds a [When] [`Step`] matching the given `regex`.
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
+    #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
         let _ = self.when.insert(regex.into(), step);
         self
@@ -106,6 +108,7 @@ impl<World> Collection<World> {
     /// Adds a [Then] [`Step`] matching the given `regex`.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
         let _ = self.then.insert(regex.into(), step);
         self

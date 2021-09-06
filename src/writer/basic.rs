@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 use crate::{
     event::{self, Info},
-    OutputtedWriter, World, Writer,
+    ArbitraryWriter, World, Writer,
 };
 
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
@@ -74,12 +74,13 @@ impl<W: World + Debug> Writer<W> for Basic {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Output> OutputtedWriter<'val, Output, W> for Basic
+impl<'val, W, Val> ArbitraryWriter<'val, W, Val> for Basic
 where
     W: World + Debug,
-    Output: AsRef<str> + 'val,
+    Val: AsRef<str> + 'val,
 {
-    async fn write(&mut self, val: Output)
+    #[allow(clippy::unused_async)]
+    async fn write(&mut self, val: Val)
     where
         'val: 'async_trait,
     {

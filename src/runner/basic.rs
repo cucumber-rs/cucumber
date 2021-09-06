@@ -146,7 +146,7 @@ impl<World, F> Basic<World, F> {
         }
     }
 
-    /// Replaces [`Collection`] of [`Step`]s with the given one.
+    /// Sets the given [`Collection`] of [`Step`]s to this [`Runner`].
     ///
     /// [`Collection`]: step::Collection
     #[must_use]
@@ -250,8 +250,8 @@ async fn insert_features<W, S, F>(
         + 'static,
 {
     pin_mut!(features);
-    while let Some(feature) = features.next().await {
-        match feature {
+    while let Some(feat) = features.next().await {
+        match feat {
             Ok(f) => into.insert(f, &which_scenario).await,
             Err(e) => sender
                 .unbounded_send(event::Cucumber::ParsingError(e))
@@ -757,7 +757,7 @@ impl Features {
         }
     }
 
-    /// Returns [`Scenario`]s which are ready to be run.
+    /// Returns [`Scenario`]s which are ready to run.
     ///
     /// [`Scenario`]: gherkin::Scenario
     async fn get(
@@ -786,14 +786,14 @@ impl Features {
             .unwrap_or_default()
     }
 
-    /// Marks that there will be no more [`Feature`]s.
+    /// Marks that there will be no more [`Feature`]s to execute.
     ///
     /// [`Feature`]: gherkin::Feature
     fn finish(&self) {
         self.finished.store(true, Ordering::SeqCst);
     }
 
-    /// Indicates whether there are more [`Feature`]s.
+    /// Indicates whether there are more [`Feature`]s to execute.
     ///
     /// [`Feature`]: gherkin::Feature
     fn is_finished(&self) -> bool {
