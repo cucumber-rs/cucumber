@@ -24,9 +24,8 @@ use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    parser, runner, step,
-    writer::{self, summarized, Ext as _},
-    ArbitraryWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    parser, runner, step, writer, ArbitraryWriter, Parser, Runner,
+    ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.

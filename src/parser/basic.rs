@@ -32,7 +32,7 @@ pub struct Basic {
     /// Optional custom language of [`gherkin`] keywords.
     ///
     /// Default is English.
-    language: Option<String>,
+    language: Option<Cow<'static, str>>,
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
@@ -108,9 +108,9 @@ impl Basic {
     ) -> Result<Self, UnsupportedLanguageError> {
         let name = name.into();
         if !gherkin::is_language_supported(&name) {
-            return Err(UnsupportedLanguageError(name.into_owned()));
+            return Err(UnsupportedLanguageError(name));
         }
-        self.language = Some(name.into_owned());
+        self.language = Some(name);
         Ok(self)
     }
 }
@@ -118,4 +118,6 @@ impl Basic {
 /// Error of [`gherkin`] not supporting keywords in some language.
 #[derive(Debug, Display, Error)]
 #[display(fmt = "Language {} isn't supported", _0)]
-pub struct UnsupportedLanguageError(#[error(not(source))] pub String);
+pub struct UnsupportedLanguageError(
+    #[error(not(source))] pub Cow<'static, str>,
+);
