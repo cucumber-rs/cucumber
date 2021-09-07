@@ -208,7 +208,8 @@ where
         ) -> ScenarioType
         + 'static,
 {
-    type EventStream = LocalBoxStream<'static, event::Cucumber<W>>;
+    type EventStream =
+        LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
 
     fn run<S>(self, features: S) -> Self::EventStream
     where
@@ -254,7 +255,7 @@ async fn insert_features<W, S, F>(
     into: Features,
     features: S,
     which_scenario: F,
-    sender: mpsc::UnboundedSender<event::Cucumber<W>>,
+    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     F: Fn(
@@ -268,9 +269,7 @@ async fn insert_features<W, S, F>(
     while let Some(feat) = features.next().await {
         match feat {
             Ok(f) => into.insert(f, &which_scenario).await,
-            Err(e) => sender
-                .unbounded_send(event::Cucumber::ParsingError(e))
-                .unwrap(),
+            Err(e) => sender.unbounded_send(Err(e)).unwrap(),
         }
     }
 
@@ -284,7 +283,7 @@ async fn execute<W: World>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
-    sender: mpsc::UnboundedSender<event::Cucumber<W>>,
+    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
 ) {
     // Those panic hook shenanigans are done to avoid console messages like
     // "thread 'main' panicked at ..."
@@ -359,14 +358,14 @@ struct Executor<W> {
     /// Sender for notifying state of [`Feature`]s completion.
     ///
     /// [`Feature`]: gherkin::Feature
-    sender: mpsc::UnboundedSender<event::Cucumber<W>>,
+    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
 }
 
 impl<W: World> Executor<W> {
     /// Creates a new [`Executor`].
     fn new(
         collection: step::Collection<W>,
-        sender: mpsc::UnboundedSender<event::Cucumber<W>>,
+        sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
     ) -> Self {
         Self {
             features_scenarios_count: HashMap::new(),
@@ -676,7 +675,7 @@ impl<W: World> Executor<W> {
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send(&self, event: event::Cucumber<W>) {
-        self.sender.unbounded_send(event).unwrap();
+        self.sender.unbounded_send(Ok(event)).unwrap();
     }
 
     /// Notifies with the given [`Cucumber`] events.

@@ -13,7 +13,7 @@
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{event, ArbitraryWriter, World, Writer};
+use crate::{event, parser, ArbitraryWriter, World, Writer};
 
 /// [`Step`]s statistics.
 ///
@@ -96,13 +96,13 @@ where
     ) -> bool,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
-    async fn handle_event(&mut self, ev: event::Cucumber<W>) {
+    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
         use event::{Cucumber, Feature, Rule};
 
         let mut finished = false;
         match &ev {
-            Cucumber::ParsingError(_) => self.parsing_errors += 1,
-            Cucumber::Feature(f, ev) => match ev {
+            Err(_) => self.parsing_errors += 1,
+            Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.features += 1,
                 Feature::Rule(_, Rule::Started) => {
                     self.rules += 1;
@@ -115,8 +115,8 @@ where
                 }
                 Feature::Finished | Feature::Rule(..) => {}
             },
-            Cucumber::Finished => finished = true,
-            Cucumber::Started => {}
+            Ok(Cucumber::Finished) => finished = true,
+            Ok(Cucumber::Started) => {}
         };
 
         self.writer.handle_event(ev).await;

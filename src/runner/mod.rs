@@ -60,7 +60,7 @@ pub use self::basic::{Basic, ScenarioType};
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 pub trait Runner<World> {
     /// Output events [`Stream`].
-    type EventStream: Stream<Item = event::Cucumber<World>>;
+    type EventStream: Stream<Item = parser::Result<event::Cucumber<World>>>;
 
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into
     /// a [`Stream`] of executed [`Cucumber`] events.

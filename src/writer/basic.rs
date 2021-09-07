@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 use crate::{
     event::{self, Info},
-    ArbitraryWriter, World, Writer,
+    parser, ArbitraryWriter, World, Writer,
 };
 
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
@@ -47,13 +47,13 @@ pub struct Basic {
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
     #[allow(clippy::unused_async)]
-    async fn handle_event(&mut self, ev: event::Cucumber<W>) {
+    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
         use event::{Cucumber, Feature, Rule};
 
         match ev {
-            Cucumber::Started | Cucumber::Finished => {}
-            Cucumber::ParsingError(err) => self.parsing_failed(&err),
-            Cucumber::Feature(f, ev) => match ev {
+            Err(err) => self.parsing_failed(&err),
+            Ok(Cucumber::Started | Cucumber::Finished) => {}
+            Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.feature_started(&f),
                 Feature::Scenario(sc, ev) => {
                     self.scenario(&sc, &ev, 0);

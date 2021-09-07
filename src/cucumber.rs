@@ -260,7 +260,7 @@ where
             .with_runner(
                 runner::Basic::custom()
                     .which_scenario(f)
-                    .max_concurrent_scenarios(Some(64)),
+                    .max_concurrent_scenarios(64),
             )
             .with_writer(writer::Basic::new().normalized().summarized())
     }
@@ -451,8 +451,8 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced by [`Parser`] are filtered, then fed to
-    /// [`Runner`], which produces events handled by [`Writer`].
+    /// [`Feature`]s sourced by [`Parser`] are filtered, then fed to [`Runner`],
+    /// which produces events handled by [`Writer`].
     ///
     /// # Panics
     ///

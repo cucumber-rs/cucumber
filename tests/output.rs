@@ -2,7 +2,7 @@ use std::{borrow::Cow, convert::Infallible, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
 use cucumber_rust::{
-    self as cucumber, event, given, then, when, WorldInit, Writer,
+    self as cucumber, event, given, parser, then, when, WorldInit, Writer,
 };
 use regex::Regex;
 
@@ -31,16 +31,19 @@ struct DebugWriter(String);
 
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
-    async fn handle_event(&mut self, ev: event::Cucumber<World>) {
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<World>>,
+    ) {
         let ev: Cow<_> = match ev {
-            event::Cucumber::ParsingError(_) => "ParsingError".into(),
-            event::Cucumber::Feature(f, ev) => {
+            Err(_) => "ParsingError".into(),
+            Ok(event::Cucumber::Feature(f, ev)) => {
                 let mut f = f.as_ref().clone();
                 f.path = None;
                 format!("{:?}", event::Cucumber::Feature(Arc::new(f), ev))
                     .into()
             }
-            ev => format!("{:?}", ev).into(),
+            Ok(ev) => format!("{:?}", ev).into(),
         };
 
         let re =

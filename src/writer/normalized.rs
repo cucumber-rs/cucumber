@@ -17,7 +17,7 @@ use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
-use crate::{event, ArbitraryWriter, World, Writer};
+use crate::{event, parser, ArbitraryWriter, World, Writer};
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
 /// to _order guarantees_ from the [`Runner`] in a normalized readable order.
@@ -60,18 +60,18 @@ impl<W: World, Writer> Normalized<W, Writer> {
 
 #[async_trait(?Send)]
 impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
-    async fn handle_event(&mut self, ev: event::Cucumber<World>) {
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<World>>,
+    ) {
         use event::{Cucumber, Feature, Rule};
 
         match ev {
-            Cucumber::ParsingError(err) => {
-                self.writer.handle_event(Cucumber::ParsingError(err)).await;
+            res @ (Err(_) | Ok(Cucumber::Started)) => {
+                self.writer.handle_event(res).await;
             }
-            Cucumber::Started => {
-                self.writer.handle_event(Cucumber::Started).await;
-            }
-            Cucumber::Finished => self.queue.finished(),
-            Cucumber::Feature(f, ev) => match ev {
+            Ok(Cucumber::Finished) => self.queue.finished(),
+            Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.queue.new_feature(f),
                 Feature::Scenario(s, ev) => {
                     self.queue.insert_scenario_event(&f, None, s, ev);
@@ -94,7 +94,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
         }
 
         if self.queue.is_finished() {
-            self.writer.handle_event(Cucumber::Finished).await;
+            self.writer.handle_event(Ok(Cucumber::Finished)).await;
         }
     }
 }
@@ -307,7 +307,9 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
         if let Some((f, events)) = self.current_item() {
             if !events.is_started_emitted() {
                 writer
-                    .handle_event(event::Cucumber::feature_started(f.clone()))
+                    .handle_event(Ok(event::Cucumber::feature_started(
+                        f.clone(),
+                    )))
                     .await;
                 events.started_emitted();
             }
@@ -320,7 +322,9 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 
             if events.is_finished() {
                 writer
-                    .handle_event(event::Cucumber::feature_finished(f.clone()))
+                    .handle_event(Ok(event::Cucumber::feature_finished(
+                        f.clone(),
+                    )))
                     .await;
                 return Some(f.clone());
             }
@@ -476,10 +480,10 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
     ) -> Option<Self::Emitted> {
         if !self.is_started_emitted() {
             writer
-                .handle_event(event::Cucumber::rule_started(
+                .handle_event(Ok(event::Cucumber::rule_started(
                     feature.clone(),
                     rule.clone(),
-                ))
+                )))
                 .await;
             self.started_emitted();
         }
@@ -497,10 +501,10 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 
         if self.is_finished() {
             writer
-                .handle_event(event::Cucumber::rule_finished(
+                .handle_event(Ok(event::Cucumber::rule_finished(
                     feature,
                     rule.clone(),
-                ))
+                )))
                 .await;
             return Some(rule);
         }
@@ -550,7 +554,7 @@ impl<'me, World> Emitter<World> for &'me mut ScenariosQueue<World> {
                 scenario.clone(),
                 ev,
             );
-            writer.handle_event(ev).await;
+            writer.handle_event(Ok(ev)).await;
 
             if should_be_removed {
                 return Some(scenario.clone());

@@ -19,7 +19,7 @@ pub mod summarized;
 use async_trait::async_trait;
 use sealed::sealed;
 
-use crate::{event, World};
+use crate::{event, parser, World};
 
 #[doc(inline)]
 pub use self::{basic::Basic, normalized::Normalized, summarized::Summarized};
@@ -38,7 +38,10 @@ pub trait Writer<World> {
     /// Handles the given [`Cucumber`] event.
     ///
     /// [`Cucumber`]: crate::event::Cucumber
-    async fn handle_event(&mut self, ev: event::Cucumber<World>);
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<World>>,
+    );
 }
 
 /// [`Writer`] that also can output an arbitrary `Value` in addition to
