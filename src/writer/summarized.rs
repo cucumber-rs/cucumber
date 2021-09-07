@@ -38,6 +38,12 @@ pub struct Stats {
 
 /// Wrapper for a [`Writer`] for outputting an execution summary (number of
 /// executed features, scenarios, steps and parsing errors).
+///
+/// Note that underlying [`Writer`] is expected to be [`ArbitraryWriter`] with
+/// `Value` accepting [`String`]. If your underlying [`ArbitraryWriter`]
+/// operates with something like `JSON` (or any other type), you should
+/// implement [`Writer`] on [`Summarized`] by yourself, to provide summary
+/// format.
 #[derive(Debug, Deref)]
 pub struct Summarized<Writer, F = SkipFn> {
     /// Original [`Writer`] to summarize output of.
