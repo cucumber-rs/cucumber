@@ -12,6 +12,7 @@
 
 use std::{
     borrow::Cow,
+    fs,
     path::{Path, PathBuf},
     vec,
 };
@@ -20,8 +21,10 @@ use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
+use once_cell::sync::Lazy;
+use regex::Regex;
 
-use super::{Parser, Result as ParseResult};
+use super::{Error as ParseError, Parser, Result as ParseResult};
 
 /// Default [`Parser`].
 ///
@@ -51,21 +54,40 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 buf.as_path().canonicalize()
             }) {
                 Ok(p) => p,
-                Err(err) => {
-                    return vec![Err(gherkin::ParseFileError::Reading {
+                Err(source) => {
+                    return vec![Err(ParseError::Reading {
                         path: path.to_path_buf(),
-                        source: err,
+                        source,
                     })];
                 }
             };
 
+            let parse_feature = |path: &Path| {
+                fs::read_to_string(path)
+                    .map_err(|source| ParseError::Reading {
+                        path: path.to_path_buf(),
+                        source,
+                    })
+                    .and_then(|f| {
+                        self.get_language(&f)
+                            .map(|l| (l, f))
+                            .map_err(Into::into)
+                    })
+                    .and_then(|(l, file)| {
+                        gherkin::Feature::parse(file, l)
+                            .map(|mut f| {
+                                f.path = Some(path.to_path_buf());
+                                f
+                            })
+                            .map_err(|source| ParseError::Parse {
+                                source,
+                                path: path.to_path_buf(),
+                            })
+                    })
+            };
+
             if path.is_file() {
-                let env = self
-                    .language
-                    .as_ref()
-                    .and_then(|l| GherkinEnv::new(l).ok())
-                    .unwrap_or_default();
-                vec![gherkin::Feature::parse_path(path, env)]
+                vec![parse_feature(&path)]
             } else {
                 let walker = GlobWalkerBuilder::new(path, "*.feature")
                     .case_insensitive(true)
@@ -73,15 +95,8 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                     .unwrap();
                 walker
                     .filter_map(Result::ok)
-                    .map(|entry| {
-                        let env = self
-                            .language
-                            .as_ref()
-                            .and_then(|l| GherkinEnv::new(l).ok())
-                            .unwrap_or_default();
-                        gherkin::Feature::parse_path(entry.path(), env)
-                    })
-                    .collect::<Vec<_>>()
+                    .map(|entry| parse_feature(entry.path()))
+                    .collect()
             }
         };
 
@@ -112,6 +127,32 @@ impl Basic {
         }
         self.language = Some(name);
         Ok(self)
+    }
+
+    /// Returns language to parse with `file`.
+    ///
+    /// 1. If `# language: ` comment present, use it;
+    /// 2. If default language was set with [`Self::language()`], use it;
+    /// 3. If none of the above, assume english.
+    fn get_language(
+        &self,
+        file: impl AsRef<str>,
+    ) -> Result<GherkinEnv, gherkin::EnvError> {
+        static RE: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"# language: ([^\n]*)").unwrap());
+
+        let lang = || Some(RE.captures(file.as_ref())?.get(1)?.as_str());
+
+        lang().map_or_else(
+            || {
+                Ok(self
+                    .language
+                    .as_ref()
+                    .and_then(|l| GherkinEnv::new(l).ok())
+                    .unwrap_or_default())
+            },
+            |l| GherkinEnv::new(l),
+        )
     }
 }
 

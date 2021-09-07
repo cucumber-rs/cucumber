@@ -156,7 +156,7 @@ impl Basic {
     ///
     /// [error]: event::Cucumber::ParsingError
     /// [`Feature`]: gherkin::Feature
-    fn parsing_failed(&self, err: &gherkin::ParseFileError) {
+    fn parsing_failed(&self, err: &parser::Error) {
         self.write_line(&self.err(format!("Failed to parse: {}", err)))
             .unwrap();
     }
