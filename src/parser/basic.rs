@@ -139,7 +139,7 @@ impl Basic {
         file: impl AsRef<str>,
     ) -> Result<GherkinEnv, gherkin::EnvError> {
         static RE: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"# language: (.+)").unwrap());
+            Lazy::new(|| Regex::new(r"# language: ([^\r\n]+)").unwrap());
 
         let lang = || Some(RE.captures(file.as_ref())?.get(1)?.as_str());
 
