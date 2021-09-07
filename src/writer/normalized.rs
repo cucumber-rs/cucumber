@@ -176,17 +176,32 @@ impl<K: Eq + Hash, V> Queue<K, V> {
 /// [`Step`]: gherkin::Step
 #[async_trait(?Send)]
 trait Emitter<World> {
+    /// Currently outputted key and value from this [`Queue`].
     type Current;
-    type Emitted;
-    type EmittedPath;
 
-    /// Returns the item ([`Feature`], [`Rule`], [`Scenario`] or [`Step`]) being
-    /// outputted currently.
+    /// Currently outputted item ([`Feature`], [`Rule`], [`Scenario`] or
+    /// [`Step`]). If returned from [`Self::emit()`], means that all events
+    /// associated with that item were passed to the underlying [`Writer`], so
+    /// should be removed from the [`Queue`].
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    type Emitted;
+
+    /// Path to the [`Self::Emitted`] item. For [`Feature`] its `()`, as it's
+    /// top-level item. For [`Scenario`] it's
+    /// `(`[`Feature`]`, `[`Option`]`<`[`Rule`]`>)`, because [`Scenario`]
+    /// definitely has parent [`Feature`] and optionally can have parent
+    /// [`Rule`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Rule`]: gherkin::Rule
+    /// [`Scenario`]: gherkin::Scenario
+    type EmittedPath;
+
+    /// Currently outputted key and value from this [`Queue`].
     fn current_item(self) -> Option<Self::Current>;
 
     /// Passes events of the current item ([`Feature`], [`Rule`], [`Scenario`]

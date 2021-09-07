@@ -11,6 +11,7 @@
 //! Default [`Parser`] implementation.
 
 use std::{
+    borrow::Cow,
     path::{Path, PathBuf},
     vec,
 };
@@ -103,12 +104,13 @@ impl Basic {
     /// If the provided language isn't supported.
     pub fn language(
         mut self,
-        name: String,
+        name: impl Into<Cow<'static, str>>,
     ) -> Result<Self, UnsupportedLanguageError> {
+        let name = name.into();
         if !gherkin::is_language_supported(&name) {
-            return Err(UnsupportedLanguageError(name));
+            return Err(UnsupportedLanguageError(name.into_owned()));
         }
-        self.language = Some(name);
+        self.language = Some(name.into_owned());
         Ok(self)
     }
 }

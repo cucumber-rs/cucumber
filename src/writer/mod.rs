@@ -78,6 +78,6 @@ where
     }
 
     fn summarized(self) -> Summarized<Self> {
-        Summarized::new(self)
+        Summarized::from(self)
     }
 }

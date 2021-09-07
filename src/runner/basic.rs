@@ -64,7 +64,7 @@ pub enum ScenarioType {
 /// [`Scenario`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub struct Basic<World, F> {
+pub struct Basic<World, F = WhichScenarioFn> {
     /// Optional number of concurrently executed [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -83,6 +83,18 @@ pub struct Basic<World, F> {
     /// [`Scenario`]: gherkin::Scenario
     which_scenario: F,
 }
+
+/// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
+/// or a [`Serial`] one.
+///
+/// [`Concurrent`]: ScenarioType::Concurrent
+/// [`Serial`]: ScenarioType::Serial
+/// [`Scenario`]: gherkin::Scenario
+pub type WhichScenarioFn = fn(
+    &gherkin::Feature,
+    Option<&gherkin::Rule>,
+    &gherkin::Scenario,
+) -> ScenarioType;
 
 // Implemented manually to omit redundant trait bounds on `World` and to omit
 // outputting `F`.
@@ -113,8 +125,11 @@ impl<World, F> Basic<World, F> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn max_concurrent_scenarios(mut self, max: Option<usize>) -> Self {
-        self.max_concurrent_scenarios = max;
+    pub fn max_concurrent_scenarios(
+        mut self,
+        max: impl Into<Option<usize>>,
+    ) -> Self {
+        self.max_concurrent_scenarios = max.into();
         self
     }
 

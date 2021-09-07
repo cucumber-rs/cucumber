@@ -13,6 +13,7 @@
 //! [Cucumber]: https://cucumber.io
 
 use std::{
+    borrow::Cow,
     fmt::{Debug, Formatter},
     marker::PhantomData,
     mem,
@@ -24,7 +25,7 @@ use regex::Regex;
 
 use crate::{
     parser, runner, step,
-    writer::{self, Ext as _},
+    writer::{self, summarized, Ext as _},
     ArbitraryWriter, Parser, Runner, ScenarioType, Step, World, Writer,
 };
 
@@ -232,14 +233,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
     parser::Basic,
     I,
-    runner::Basic<
-        W,
-        fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-        ) -> ScenarioType,
-    >,
+    runner::Basic<W>,
     writer::Summarized<writer::Normalized<W, writer::Basic>>,
 >;
 
@@ -312,7 +306,7 @@ impl<W, I, R, Wr> Cucumber<W, parser::Basic, I, R, Wr> {
     /// If the provided language isn't supported.
     pub fn language(
         mut self,
-        name: String,
+        name: impl Into<Cow<'static, str>>,
     ) -> Result<Self, parser::basic::UnsupportedLanguageError> {
         self.parser = self.parser.language(name)?;
         Ok(self)
@@ -325,7 +319,10 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn max_concurrent_scenarios(mut self, max: Option<usize>) -> Self {
+    pub fn max_concurrent_scenarios(
+        mut self,
+        max: impl Into<Option<usize>>,
+    ) -> Self {
         self.runner = self.runner.max_concurrent_scenarios(max);
         self
     }
@@ -398,12 +395,44 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     }
 }
 
-impl<W, I, P, R, Wr> Cucumber<W, P, I, R, writer::Summarized<Wr>>
+impl<W, I, P, R, Wr, F> Cucumber<W, P, I, R, writer::Summarized<Wr, F>>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
+{
+    /// Consider [`Skipped`] test as [`Failed`] if [`Scenario`] isn't marked
+    /// with `@allow_skipped` tag.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn fail_on_skipped(
+        self,
+    ) -> Cucumber<W, P, I, R, writer::Summarized<Wr>> {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.fail_on_skipped(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+}
+
+impl<W, I, P, R, Wr, F> Cucumber<W, P, I, R, writer::Summarized<Wr, F>>
+where
+    W: World,
+    P: Parser<I>,
+    R: Runner<W>,
+    Wr: for<'val> ArbitraryWriter<'val, W, String>,
+    F: Fn(
+        &gherkin::Feature,
+        Option<&gherkin::Rule>,
+        &gherkin::Scenario,
+    ) -> bool,
 {
     /// Runs [`Cucumber`].
     ///
@@ -434,9 +463,9 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: crate::Step
-    pub async fn filter_run_and_exit<F>(self, input: I, filter: F)
+    pub async fn filter_run_and_exit<Filter>(self, input: I, filter: Filter)
     where
-        F: Fn(
+        Filter: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,

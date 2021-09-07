@@ -62,6 +62,7 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
 async fn main() {
     MyWorld::cucumber()
         .max_concurrent_scenarios(None)
+        .fail_on_skipped()
         .run_and_exit("./tests/features")
         .await;
 }
