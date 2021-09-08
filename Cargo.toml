@@ -29,7 +29,7 @@ atty = "0.2"
 console = "0.14"
 derive_more = { version = "0.99", features = ["deref", "display", "error", "from"], default_features = false }
 either = "1"
-futures = { version = "0.3", default_features = false }
+futures = "0.3"
 gherkin = { package = "gherkin_rust", version = "0.10" }
 globwalk = "0.8"
 itertools = "0.10"
