@@ -79,10 +79,7 @@ where
     /// [`Step`]: crate::Step
     /// [`Writer`]: crate::Writer
     async fn run<I: AsRef<Path>>(input: I) {
-        Cucumber::new()
-            .steps(Self::collection())
-            .run_and_exit(input)
-            .await;
+        Self::cucumber().run_and_exit(input).await;
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -111,10 +108,7 @@ where
             ) -> bool
             + 'static,
     {
-        Cucumber::default()
-            .steps(Self::collection())
-            .filter_run_and_exit(input, filter)
-            .await;
+        Self::cucumber().filter_run_and_exit(input, filter).await;
     }
 }
 

@@ -17,7 +17,7 @@ use sealed::sealed;
 /// Helper methods to operate on [`gherkin::Feature`]s.
 #[sealed]
 pub trait Ext: Sized {
-    /// Expands [Scenario outline][1] [examples][2].
+    /// Expands [`Scenario Outline`][1] [`Examples`][2].
     ///
     /// So this one:
     /// ```gherkin

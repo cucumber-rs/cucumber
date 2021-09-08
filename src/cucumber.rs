@@ -242,11 +242,7 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        let f: fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-        ) -> _ = |_, _, scenario| {
+        let which: runner::basic::WhichScenarioFn = |_, _, scenario| {
             scenario
                 .tags
                 .iter()
@@ -259,7 +255,7 @@ where
             .with_parser(parser::Basic::new())
             .with_runner(
                 runner::Basic::custom()
-                    .which_scenario(f)
+                    .which_scenario(which)
                     .max_concurrent_scenarios(64),
             )
             .with_writer(writer::Basic::new().normalized().summarized())
@@ -401,7 +397,7 @@ where
     R: Runner<W>,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
-    /// Consider [`Skipped`] test as [`Failed`] if [`Scenario`] isn't marked
+    /// Consider [`Skipped`] step as [`Failed`] if [`Scenario`] isn't marked
     /// with `@allow_skipped` tag.
     ///
     /// [`Failed`]: crate::event::Step::Failed
@@ -415,6 +411,33 @@ where
             parser: self.parser,
             runner: self.runner,
             writer: self.writer.fail_on_skipped(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Consider [`Skipped`] step as [`Failed`] if `filter` predicate returns
+    /// `true`.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn fail_on_skipped_with<Filter>(
+        self,
+        filter: Filter,
+    ) -> Cucumber<W, P, I, R, writer::Summarized<Wr, Filter>>
+    where
+        Filter: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> bool,
+    {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.fail_on_skipped_with(filter),
             _world: PhantomData,
             _parser_input: PhantomData,
         }
@@ -441,8 +464,9 @@ where
     /// # Panics
     ///
     /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
+    /// [`Step`] [`Failed`].
     ///
+    /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit(self, input: I) {
@@ -457,8 +481,9 @@ where
     /// # Panics
     ///
     /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
+    /// [`Step`] [`Failed`].
     ///
+    /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: crate::Step

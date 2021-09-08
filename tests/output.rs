@@ -78,7 +78,7 @@ mod spec {
         for file in files {
             let out = fs::read_to_string(format!(
                 "tests/features/output/{}.out",
-                file
+                file,
             ))
             .unwrap_or_default()
             .lines()

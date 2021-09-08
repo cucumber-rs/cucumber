@@ -24,11 +24,12 @@ use std::{
 
 use futures::{
     channel::mpsc,
-    future::{self, Either, FutureExt as _},
+    future::{self, Either},
     lock::Mutex,
     pin_mut,
-    stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
-    TryFutureExt,
+    stream::{self, LocalBoxStream},
+    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
+    TryStreamExt as _,
 };
 use itertools::Itertools as _;
 use regex::Regex;
@@ -56,13 +57,14 @@ pub enum ScenarioType {
     Concurrent,
 }
 
-/// Default [`Runner`] implementation which follows _order guarantees_ from the
-/// [`Runner`] trait docs.
+/// Default [`Runner`] implementation which follows [_order guarantees_][1] from
+/// the [`Runner`] trait docs.
 ///
 /// Executes [`Scenario`]s concurrently based on the custom function, which
 /// returns [`ScenarioType`]. Also, can limit maximum number of concurrent
 /// [`Scenario`]s.
 ///
+/// [1]: Runner#order-guarantees
 /// [`Scenario`]: gherkin::Scenario
 pub struct Basic<World, F = WhichScenarioFn> {
     /// Optional number of concurrently executed [`Scenario`]s.
@@ -198,10 +200,10 @@ impl<World, F> Basic<World, F> {
     }
 }
 
-impl<W, F> Runner<W> for Basic<W, F>
+impl<W, Which> Runner<W> for Basic<W, Which>
 where
     W: World,
-    F: Fn(
+    Which: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
@@ -719,9 +721,12 @@ impl Features {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    async fn insert<F>(&self, feature: gherkin::Feature, which_scenario: &F)
-    where
-        F: Fn(
+    async fn insert<Which>(
+        &self,
+        feature: gherkin::Feature,
+        which_scenario: &Which,
+    ) where
+        Which: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,

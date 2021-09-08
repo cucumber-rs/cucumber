@@ -190,7 +190,7 @@ impl<Writer, F> Summarized<Writer, F> {
         Summarized::from(writer)
     }
 
-    /// Consider [`Skipped`] test as [`Failed`] if [`Scenario`] isn't marked
+    /// Consider [`Skipped`] step as [`Failed`] if [`Scenario`] isn't marked
     /// with `@allow_skipped` tag.
     ///
     /// [`Failed`]: event::Step::Failed
@@ -211,7 +211,7 @@ impl<Writer, F> Summarized<Writer, F> {
         }
     }
 
-    /// Consider [`Skipped`] test as [`Failed`] if `Filter` predicate returns
+    /// Consider [`Skipped`] step as [`Failed`] if `Filter` predicate returns
     /// `true`.
     ///
     /// [`Failed`]: event::Step::Failed
@@ -220,7 +220,7 @@ impl<Writer, F> Summarized<Writer, F> {
     #[must_use]
     pub fn fail_on_skipped_with<Filter>(
         self,
-        func: Filter,
+        filter: Filter,
     ) -> Summarized<Writer, Filter>
     where
         Filter: Fn(
@@ -236,7 +236,7 @@ impl<Writer, F> Summarized<Writer, F> {
             scenarios: self.scenarios,
             parsing_errors: self.parsing_errors,
             steps: self.steps,
-            fail_on_skip: Some(func),
+            fail_on_skip: Some(filter),
         }
     }
 

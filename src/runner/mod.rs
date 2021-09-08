@@ -34,7 +34,7 @@ pub use self::basic::{Basic, ScenarioType};
 /// this [`Scenario`] should be emitted in order of declaration in `.feature`
 /// file. But as [`Scenario`]s can be executed concurrently, events from one
 /// [`Scenario`] can be interrupted by events of a different one (which are also
-/// follow the [happened-before] order). Those rules are applied also to
+/// following the [happened-before] order). Those rules are applied also to
 /// [`Rule`]s and [`Feature`]s. If you want to avoid those interruptions for
 /// some [`Scenario`], it should be resolved as [`ScenarioType::Serial`] by the
 /// [`Runner`].

@@ -47,7 +47,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
-    /// Unknown language.
+    /// Unsupported language.
     #[display(fmt = "Language error: {}", _0)]
     Language(gherkin::EnvError),
 

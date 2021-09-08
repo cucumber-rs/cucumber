@@ -3,7 +3,6 @@
 #### Known issues:
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
-- Book isn't updated yet according to `0.10.0` redesign
 
 ### [0.10.0] - ???
 [0.10.0]: /../../tree/v0.10.0
