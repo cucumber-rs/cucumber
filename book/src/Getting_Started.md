@@ -25,9 +25,9 @@ Create a directory called to store `.feature` files somewhere in your project, i
 Feature: Animal feature
 
   Scenario: If we feed a hungry cat it will no longer be hungry
-    Given A hungry cat
-    When I feed the cat
-    Then The cat is not hungry
+    Given a hungry cat
+    When i feed the cat
+    Then the cat is not hungry
 ```
 
 Here is how we actually relate the text in this feature file to the tests themselves.
@@ -377,14 +377,14 @@ What if we also wanted to validate that even if the cat was never hungry to begi
 Feature: Animal feature
 
   Scenario: If we feed a hungry cat it will no longer be hungry
-    Given A hungry cat
+    Given a hungry cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
 
   Scenario: If we feed a satiated cat it will not become hungry
-    Given A satiated cat
+    Given a satiated cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
 
 ```
 
@@ -623,15 +623,15 @@ Feature: Animal feature
 
   @serial
   Scenario: If we feed a hungry cat it will no longer be hungry
-    Given A hungry cat
+    Given a hungry cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
 
   @serial
   Scenario: If we feed a satiated cat it will not become hungry
-    Given A satiated cat
+    Given a satiated cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
 ```
 
 [![Async Cucumber with @serial tests](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8.svg)](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8)
