@@ -26,7 +26,7 @@ Feature: Animal feature
 
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
-    When i feed the cat
+    When I feed the cat
     Then the cat is not hungry
 ```
 
@@ -76,7 +76,7 @@ impl World for AnimalWorld {
 }
 
 // Steps are defined with `given`, `when` and `then` macros.
-#[given("A hungry cat")]
+#[given("a hungry cat")]
 fn hungry_cat(world: &mut AnimalWorld) {
     world.cat.hungry = true;
 }
@@ -149,7 +149,7 @@ We also support regex:
 #     }
 # }
 # 
-#[given(regex = r"^A hungry (\S+)$")]
+#[given(regex = r"^a hungry (\S+)$")]
 fn hungry_someone(world: &mut AnimalWorld, who: String) {
     assert_eq!(who, "cat");
     world.cat.hungry = true;
@@ -206,7 +206,7 @@ We can add a `when` step after our `given` step:
 # }
 # 
 # // Steps are defined with `given`, `when` and `then` macros.
-# #[given("A hungry cat")]
+# #[given("a hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
 # }
@@ -273,7 +273,7 @@ Finally, how do we validate our result? We expect that this will cause some chan
 # }
 #
 # // Steps are defined with `given`, `when` and `then` macros.
-# #[given("A hungry cat")]
+# #[given("a hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
 # }
@@ -285,7 +285,7 @@ Finally, how do we validate our result? We expect that this will cause some chan
 #
 // Don't forget to additionally `use cucumber_rust::then`.
 
-#[then("The cat is not hungry")]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
@@ -344,7 +344,7 @@ If you want to be assured that your validation is indeed happening, you can chan
 # }
 #
 # // Steps are defined with `given`, `when` and `then` macros.
-# #[given("A hungry cat")]
+# #[given("a hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
 # }
@@ -354,7 +354,7 @@ If you want to be assured that your validation is indeed happening, you can chan
 #     world.cat.feed();
 # }
 #
-#[then("The cat is not hungry")]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
@@ -369,7 +369,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 
 And you should see the test fail:
 
-[![Failing step](https://asciinema.org/a/4ZYqPERxMizgbc4Ztp6Khmjag.svg)](https://asciinema.org/a/4ZYqPERxMizgbc4Ztp6Khmjag)
+[![Failing step](https://asciinema.org/a/5x3xRVWl9xFWdzAaMWB2DeWuK.svg)](https://asciinema.org/a/5x3xRVWl9xFWdzAaMWB2DeWuK)
 
 What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:
 
@@ -429,7 +429,7 @@ The only thing that is different is the Given. But we don't have to write a new 
 #     }
 # }
 #
-#[given(regex = r"^A (hungry|satiated) cat$")]
+#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &mut AnimalWorld, state: String) {
     match state.as_str() {
         "hungry" =>  world.cat.hungry = true,
@@ -443,7 +443,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #     world.cat.feed();
 # }
 #
-# #[then("The cat is not hungry")]
+# #[then("the cat is not hungry")]
 # fn cat_is_fed(world: &mut AnimalWorld) {
 #     assert!(!world.cat.hungry);
 }
@@ -501,7 +501,7 @@ impl World for AnimalWorld {
     }
 }
 
-#[given(regex = r"^A (hungry|satiated) cat$")]
+#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &mut AnimalWorld, state: String) {
     match state.as_str() {
         "hungry" => world.cat.hungry = true,
@@ -515,7 +515,7 @@ fn feed_cat(world: &mut AnimalWorld) {
     world.cat.feed();
 }
 
-#[then("The cat is not hungry")]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
@@ -579,7 +579,7 @@ And simply `sleep` on each step to test `async` support. In the real world you o
 #     }
 # }
 #
-#[given(regex = r"^A (hungry|satiated) cat$")]
+#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
@@ -597,7 +597,7 @@ async fn feed_cat(world: &mut AnimalWorld) {
     world.cat.feed();
 }
 
-#[then("The cat is not hungry")]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
