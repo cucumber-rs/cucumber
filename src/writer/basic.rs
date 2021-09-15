@@ -186,7 +186,7 @@ impl Basic {
     /// [step]: event::Step
     fn scenario<W: Debug>(
         &self,
-        feature: &gherkin::Feature,
+        feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
         ev: &event::Scenario<W>,
         ident: usize,
@@ -199,10 +199,10 @@ impl Basic {
                 self.scenario_started(scenario, offset);
             }
             Scenario::Background(bg, ev) => {
-                self.background(feature, bg, ev, offset);
+                self.background(feat, bg, ev, offset);
             }
             Scenario::Step(st, ev) => {
-                self.step(feature, st, ev, offset);
+                self.step(feat, st, ev, offset);
             }
             Scenario::Finished => {}
         }
@@ -230,7 +230,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn step<W: Debug>(
         &self,
-        feature: &gherkin::Feature,
+        feat: &gherkin::Feature,
         step: &gherkin::Step,
         ev: &event::Step<W>,
         ident: usize,
@@ -249,7 +249,7 @@ impl Basic {
                 self.step_skipped(step, offset);
             }
             Step::Failed(world, info) => {
-                self.step_failed(feature, step, world, info, offset);
+                self.step_failed(feat, step, world, info, offset);
             }
         }
     }
@@ -313,7 +313,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn step_failed<W: Debug>(
         &self,
-        feature: &gherkin::Feature,
+        feat: &gherkin::Feature,
         step: &gherkin::Step,
         world: &W,
         info: &Info,
@@ -327,24 +327,23 @@ impl Basic {
 
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.err(format!(
-                //       ✘
-                "{ident}\u{2718}  {} {}\n\
+            //       ✘
+            "{ident}\u{2718}  {} {}\n\
              {ident}   Step failed: {}:{}:{}\n\
              {ident}   Captured output: {}\n\
              {}",
-                step.keyword,
-                step.value,
-                feature
-                    .path
-                    .as_ref()
-                    .and_then(|p| p.to_str())
-                    .unwrap_or(&feature.name),
-                step.position.line,
-                step.position.col,
-                coerce_error(info),
-                world,
-                ident = " ".repeat(ident - 3),
-            )))
+            step.keyword,
+            step.value,
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            coerce_error(info),
+            world,
+            ident = " ".repeat(ident - 3),
+        )))
         .unwrap();
     }
 
@@ -359,7 +358,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn background<W: Debug>(
         &self,
-        feature: &gherkin::Feature,
+        feat: &gherkin::Feature,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
         ident: usize,
@@ -378,7 +377,7 @@ impl Basic {
                 self.bg_step_skipped(bg, offset);
             }
             Step::Failed(world, info) => {
-                self.bg_step_failed(feature, bg, world, info, offset);
+                self.bg_step_failed(feat, bg, world, info, offset);
             }
         }
     }
@@ -447,7 +446,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_failed<W: Debug>(
         &self,
-        feature: &gherkin::Feature,
+        feat: &gherkin::Feature,
         step: &gherkin::Step,
         world: &W,
         info: &Info,
@@ -460,24 +459,23 @@ impl Basic {
 
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.err(format!(
-                //       ✘
-                "{ident}\u{2718}> {} {}\n\
+            //       ✘
+            "{ident}\u{2718}> {} {}\n\
              {ident}   Background step failed: {}:{}:{}\n\
              {ident}   Captured output: {}\n\
              {}",
-                step.keyword,
-                step.value,
-                feature
-                    .path
-                    .as_ref()
-                    .and_then(|p| p.to_str())
-                    .unwrap_or(&feature.name),
-                step.position.line,
-                step.position.col,
-                coerce_error(info),
-                world,
-                ident = " ".repeat(ident - 3),
-            )))
+            step.keyword,
+            step.value,
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            coerce_error(info),
+            world,
+            ident = " ".repeat(ident - 3),
+        )))
         .unwrap();
     }
 }
