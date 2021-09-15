@@ -15,6 +15,9 @@ eq = $(if $(or $(1),$(2)),$(and $(findstring $(1),$(2)),\
 # Aliases #
 ###########
 
+book: book.build
+
+
 docs: cargo.doc
 
 
@@ -22,6 +25,9 @@ fmt: cargo.fmt
 
 
 lint: cargo.lint
+
+
+test: test.cargo test.book
 
 
 
@@ -68,50 +74,47 @@ cargo.lint:
 # Testing commands #
 ####################
 
-# Run Rust tests of project.
+# Run Rust tests of project crates.
 #
 # Usage:
-#	make test [crate=<crate-name>]
+#	make test.cargo [crate=<crate-name>]
 
-test:
+test.cargo:
 	cargo +stable test $(if $(call eq,$(crate),),--workspace,-p $(crate)) \
 		--all-features
 
 
-# Run Rust tests of book.
+# Run Rust tests of Book.
 #
 # Usage:
 #	make test.book
+
 test.book:
 	cargo +stable test --manifest-path book/tests/Cargo.toml
 
 
 
 
-####################
+#################
 # Book commands #
-####################
+#################
 
-# Build book.
+# Build Book.
 #
 # Usage:
 #	make book.build [out=<dir>]
 
-output_dir = $(if $(call eq,$(out),),,-d $(out))
-
 book.build:
-	mdbook build book $(output_dir)
+	mdbook build book/ $(if $(call eq,$(out),),,-d $(out))
 
 
-# Serve book on some port.
+# Serve Book on some port.
 #
 # Usage:
 #	make book.serve [port=(3000|<port>)]
 
-serve-port = $(if $(call eq,$(port),),3000,$(port))
-
 book.serve:
-	mdbook serve book -p=$(serve-port)
+	mdbook serve book/ -p=$(or $(port),3000)
 
 
 
@@ -120,7 +123,7 @@ book.serve:
 # .PHONY section #
 ##################
 
-.PHONY: docs fmt lint \
-		test test.book \
-		book.build book.serve \
-        cargo.doc cargo.fmt cargo.lint
+.PHONY: book docs fmt lint test \
+        cargo.doc cargo.fmt cargo.lint \
+        book.build book.serve \
+        test.cargo test.book

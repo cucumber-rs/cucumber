@@ -34,7 +34,7 @@ use crate::{
 /// [`WorldInit::run()`] or [`WorldInit::cucumber()`] on your [`World`] deriver
 /// to get [Cucumber] up and running.
 ///
-/// Otherwise use [`Cucumber::new()`] to get default [Cucumber] executor,
+/// Otherwise use [`Cucumber::new()`] to get the default [Cucumber] executor,
 /// provide [`Step`]s with [`WorldInit::collection()`] or by hand with
 /// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
 ///
@@ -56,7 +56,7 @@ pub struct Cucumber<W, P, I, R, Wr> {
 }
 
 impl<W> Cucumber<W, (), (), (), ()> {
-    /// Creates an empty [`Cucumber`].
+    /// Creates an empty [`Cucumber`] executor.
     ///
     /// Use [`Cucumber::with_parser()`], [`Cucumber::with_runner()`] and
     /// [`Cucumber::with_writer()`] to be able to [`Cucumber::run()`] it.
@@ -227,7 +227,7 @@ where
     }
 }
 
-/// Shorthand for [`Cucumber`] type returned by [`Default`].
+/// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
 pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
     parser::Basic,
@@ -267,7 +267,7 @@ where
     W: World + Debug,
     I: AsRef<Path>,
 {
-    /// Creates default [`Cucumber`] instance.
+    /// Creates a default [`Cucumber`] executor.
     ///
     /// * [`Parser`] — [`parser::Basic`]
     ///
@@ -360,6 +360,7 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     ///
     /// [`Collection`]: step::Collection
     /// [`Step`]: step::Step
+    #[must_use]
     pub fn steps(mut self, steps: step::Collection<W>) -> Self {
         self.runner = self.runner.steps(steps);
         self
@@ -368,6 +369,7 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     /// Inserts [Given] [`Step`].
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.given(regex, step);
         self
@@ -376,6 +378,7 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     /// Inserts [When] [`Step`].
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#When
+    #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.when(regex, step);
         self
@@ -384,6 +387,7 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     /// Inserts [Then] [`Step`].
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.then(regex, step);
         self

@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Key occurrences in a lifecycle of a [Cucumber] execution.
+//! Key occurrences in a lifecycle of [Cucumber] execution.
 //!
 //! The top-level enum here is [`Cucumber`].
 //!

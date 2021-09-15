@@ -55,7 +55,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             }) {
                 Ok(p) => p,
                 Err(source) => {
-                    return vec![Err(ParseError::Reading {
+                    return vec![Err(ParseError::Read {
                         path: path.to_path_buf(),
                         source,
                     })];
@@ -64,7 +64,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 
             let parse_feature = |path: &Path| {
                 fs::read_to_string(path)
-                    .map_err(|source| ParseError::Reading {
+                    .map_err(|source| ParseError::Read {
                         path: path.to_path_buf(),
                         source,
                     })
@@ -111,8 +111,8 @@ impl Basic {
         Self { language: None }
     }
 
-    /// Sets the provided language to parse [`gherkin`] files in instead of the
-    /// default one (English).
+    /// Sets the provided language to parse [`gherkin`] files with instead of
+    /// the default one (English).
     ///
     /// # Errors
     ///
@@ -129,11 +129,11 @@ impl Basic {
         Ok(self)
     }
 
-    /// Returns language to parse with `file`.
+    /// Returns a language to parse the given `file`'s content.
     ///
     /// 1. If `# language: ` comment present, use it;
-    /// 2. If default language was set with [`Self::language()`], use it;
-    /// 3. If none of the above, assume english.
+    /// 2. If default language was set with [`Basic::language()`], use it;
+    /// 3. If none of the above, assume the default one (English).
     fn get_language(
         &self,
         file: impl AsRef<str>,
@@ -142,7 +142,6 @@ impl Basic {
             Lazy::new(|| Regex::new(r"# language: ([\w-]+)").unwrap());
 
         let lang = || Some(RE.captures(file.as_ref())?.get(1)?.as_str());
-
         lang().map_or_else(
             || {
                 Ok(self
@@ -151,7 +150,7 @@ impl Basic {
                     .and_then(|l| GherkinEnv::new(l).ok())
                     .unwrap_or_default())
             },
-            |l| GherkinEnv::new(l),
+            GherkinEnv::new,
         )
     }
 }

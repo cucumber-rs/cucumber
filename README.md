@@ -4,14 +4,17 @@
 [![Actions Status](https://github.com/bbqsrc/cucumber-rust/workflows/CI/badge.svg)](https://github.com/bbqsrc/cucumber-rust/actions)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
-An implementation of the Cucumber testing framework for Rust. Fully native, no external test runners or dependencies.
+An implementation of the [Cucumber] testing framework for Rust. Fully native, no external test runners or dependencies.
 
-- [Changelog](CHANGELOG.md)
+- Book ([current][1] | [edge][2])
+- [Changelog](https://github.com/bbqsrc/cucumber-rust/blob/main/CHANGELOG.md)
+
+
+
 
 ## Usage
 
-Describe testing scenarios in `.feature` files.
-
+Describe testing scenarios in `.feature` files:
 ```gherkin
 # /tests/features/readme/eating.feature
     
@@ -23,8 +26,7 @@ Feature: Eating too much cucumbers may not be good for you
     Then she is full
 ```
 
-Implement `World` trait and describe steps.
-
+Implement `World` trait and describe steps:
  ```rust
 //! tests/readme.rs 
 
@@ -78,29 +80,41 @@ async fn main() {
 }
 ```
 
-Add test in `Cargo.toml`
-
+Add test to `Cargo.toml`:
 ```toml
 [[test]]
 name = "readme"
-harness = false # Allows Cucumber to print output instead of libtest
+harness = false  # allows Cucumber to print output instead of libtest
 ```
 
 [![asciicast](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK.svg)](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK)
 
-For more examples check out Book ([current](https://bbqsrc.github.io/cucumber-rust/current) | [master](https://bbqsrc.github.io/cucumber-rust/master))
+For more examples check out the Book ([current][1] | [edge][2]).
 
-### Supporting crates
 
-The full gamut of Cucumber's Gherkin language is implemented by the 
-[gherkin-rust](https://github.com/bbqsrc/gherkin-rust) project. Most features of the Gherkin 
-language are parsed already and accessible via the relevant structs.
 
-### License
+
+## Supporting crates
+
+The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin-rust`](https://github.com/bbqsrc/gherkin-rust) crate. Most features of the [Gherkin] language are parsed already and accessible via the relevant structs.
+
+
+
+
+## License
 
 This project is licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+ * Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+ * MIT license ([LICENSE-MIT](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
+
+
+
+
+[Cucumber]: https://cucumber.io
+[Gherkin]: https://cucumber.io/docs/gherkin/reference 
+
+[1]: https://bbqsrc.github.io/cucumber-rust/current
+[2]: https://bbqsrc.github.io/cucumber-rust/main

@@ -22,6 +22,7 @@ pub use regex::Regex;
 
 /// [`World`] extension with auto-wiring capabilities.
 #[async_trait(?Send)]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub trait WorldInit<G, W, T>: WorldInventory<G, W, T>
 where
     Self: Debug,
@@ -123,6 +124,7 @@ where
 }
 
 /// [`World`] extension allowing to register steps in [`inventory`].
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub trait WorldInventory<G, W, T>: World
 where
     G: StepConstructor<Self> + inventory::Collect,
@@ -184,8 +186,10 @@ where
 /// [`given`]: crate::given
 /// [`when`]: crate::when
 /// [`then`]: crate::then
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub trait StepConstructor<W> {
     /// Creates a new [`Step`] with the corresponding [`Regex`].
+    #[must_use]
     fn new(_: Regex, _: Step<W>) -> Self;
 
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
