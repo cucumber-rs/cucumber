@@ -2,12 +2,12 @@ Feature: Animal feature
 
   @serial
   Scenario: If we feed a hungry cat it will no longer be hungry
-    Given A hungry cat
+    Given a hungry cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
 
   @serial
   Scenario: If we feed a satiated cat it will not become hungry
-    Given A satiated cat
+    Given a satiated cat
     When I feed the cat
-    Then The cat is not hungry
+    Then the cat is not hungry
