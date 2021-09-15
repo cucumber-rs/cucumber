@@ -29,7 +29,6 @@
     unused_qualifications,
     unused_results
 )]
-#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod attribute;
 mod derive;

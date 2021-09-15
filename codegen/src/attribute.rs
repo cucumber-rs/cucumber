@@ -182,7 +182,7 @@ impl Step {
                 fn #caller_name<'w>(
                     __cucumber_world: &'w mut #world,
                     __cucumber_ctx: ::cucumber_rust::step::Context,
-                ) -> ::cucumber_rust::private::LocalBoxFuture<'w, ()> {
+                ) -> ::cucumber_rust::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
                         #func_name(__cucumber_world, #func_args)#awaiting;
@@ -198,12 +198,12 @@ impl Step {
             #func
 
             #[automatically_derived]
-            ::cucumber_rust::private::submit!(
-                #![crate = ::cucumber_rust::private] {
-                    <#world as ::cucumber_rust::private::WorldInventory<
+            ::cucumber_rust::codegen::submit!(
+                #![crate = ::cucumber_rust::codegen] {
+                    <#world as ::cucumber_rust::codegen::WorldInventory<
                         _, _, _,
                     >>::#constructor_method(
-                        ::cucumber_rust::private::Regex::new(#step_matcher)
+                        ::cucumber_rust::codegen::Regex::new(#step_matcher)
                             .unwrap(),
                         #step_caller,
                     )

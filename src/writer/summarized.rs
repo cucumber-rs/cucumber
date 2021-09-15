@@ -39,10 +39,10 @@ pub struct Stats {
 /// Wrapper for a [`Writer`] for outputting an execution summary (number of
 /// executed features, scenarios, steps and parsing errors).
 ///
-/// Note that underlying [`Writer`] is expected to be [`ArbitraryWriter`] with
-/// `Value` accepting [`String`]. If your underlying [`ArbitraryWriter`]
-/// operates with something like `JSON` (or any other type), you should
-/// implement [`Writer`] on [`Summarized`] by yourself, to provide summary
+/// __Note:__ The underlying [`Writer`] is expected to be an [`ArbitraryWriter`]
+/// with `Value` accepting [`String`]. If your underlying [`ArbitraryWriter`]
+/// operates with something like JSON (or any other type), you should implement
+/// a [`Writer`] on [`Summarized`] by yourself, to provide the required summary
 /// format.
 #[derive(Debug, Deref)]
 pub struct Summarized<Writer, F = SkipFn> {
@@ -211,8 +211,8 @@ impl<Writer, F> Summarized<Writer, F> {
         }
     }
 
-    /// Consider [`Skipped`] step as [`Failed`] if `Filter` predicate returns
-    /// `true`.
+    /// Consider [`Skipped`] step as [`Failed`] if the `Filter` predicate
+    /// returns `true`.
     ///
     /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario

@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
 
 env:
   RUST_BACKTRACE: 1
@@ -12,7 +17,7 @@ jobs:
   ##########################
 
   clippy:
-    if: ${{ github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/main'
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
@@ -27,7 +32,7 @@ jobs:
       - run: make cargo.lint
 
   rustfmt:
-    if: ${{ github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/main'
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
@@ -49,15 +54,15 @@ jobs:
   ###########
 
   test:
-    if: ${{ github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/main'
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
         crate:
-          - cucumber_rust
           - cucumber_rust_codegen
+          - cucumber_rust
         os:
           - ubuntu
           - macOS
@@ -75,9 +80,12 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           override: true
 
-      - run: make test crate=${{ matrix.crate }}
+      - run: make test.cargo crate=${{ matrix.crate }}
 
   test-book:
+    if: ${{ github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -85,7 +93,6 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          override: true
 
       - run: make test.book
 
@@ -96,7 +103,10 @@ jobs:
   # Documentation #
   #################
 
-  docs:
+  rustdoc:
+    if: ${{ github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -104,38 +114,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          override: true
 
       - run: make cargo.doc open=no
-
-
-
-
-  #############
-  # Deploying #
-  #############
-
-  deploy-book:
-    needs: [ test-book ]
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: peaceiris/actions-mdbook@v1
-
-      - if: ${{ github.ref == 'refs/heads/master' }}
-        run: make book.build out=gh-pages/master
-
-      - if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: make book.build out=gh-pages/current
-
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          keep_files: true
-          publish_dir: book/gh-pages
 
 
 
@@ -146,7 +126,7 @@ jobs:
 
   release-github:
     name: Release on GitHub
-    needs: [ clippy, rustfmt, docs, test, test-book ]
+    needs: ["clippy", "rustfmt", "rustdoc", "test", "test-book"]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
@@ -182,7 +162,7 @@ jobs:
 
   release-crate:
     name: Release on crates.io
-    needs: [ release-github ]
+    needs: ["release-github"]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
@@ -202,3 +182,33 @@ jobs:
       - name: Publish `cucumber_rust` crate
         run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
         working-directory: ./
+
+
+
+
+  ##########
+  # Deploy #
+  ##########
+
+  deploy-book:
+    name: Deploy Book
+    needs: ["test-book"]
+    if: ${{ github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: peaceiris/actions-mdbook@v1
+
+      - run: make book.build out=gh-pages/main
+        if: ${{ github.ref == 'refs/heads/main' }}
+
+      - run: make book.build out=gh-pages/current
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          keep_files: true
+          publish_dir: book/gh-pages

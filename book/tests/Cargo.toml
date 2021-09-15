@@ -2,12 +2,13 @@
 name = "cucumber_rust_book_tests"
 version = "0.1.0"
 edition = "2018"
+resolver = "2"
 authors = [
     "Brendan Molloy <brendan@bbqsrc.net>",
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
-    "Kai Ren <tyranron@gmail.com>"
+    "Kai Ren <tyranron@gmail.com>",
 ]
-build = "build.rs"
+publish = false
 
 [dependencies]
 async-trait = "0.1"

@@ -53,6 +53,7 @@ pub trait Ext: Sized {
     ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
+    #[must_use]
     fn expand_examples(self) -> Self;
 
     /// Counts all the [`Feature`]'s [`Scenario`]s, including [`Rule`]s inside.
@@ -60,6 +61,7 @@ pub trait Ext: Sized {
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
     fn count_scenarios(&self) -> usize;
 }
 
@@ -85,7 +87,7 @@ impl Ext for gherkin::Feature {
                             let mut modified = scenario.clone();
 
                             // This is done to differentiate `Hash`es of
-                            // Scenario outlines with the same examples.
+                            // scenario outlines with the same examples.
                             modified.position = examples.position;
                             modified.position.line += id + 1;
 

@@ -4,14 +4,14 @@
 
 - `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
-### [0.10.0] - ???
+### [0.10.0] — ???
 [0.10.0]: /../../tree/v0.10.0
 
-- **Breaking change** Complete redesign
-  - Introduce new abstractions: `Parser`, `Runner`, `Writer`
-  - Provide reference implementations for those abstractions
+- **Breaking change** Complete redesign:
+  - Introduce new abstractions: `Parser`, `Runner`, `Writer`.
+  - Provide reference implementations for those abstractions.
   - Add ability to run `Scenario`s concurrently.
-  - Update book to reflect redesign
+  - Update book to reflect redesign.
 
 ### [0.9.0] — 2021-07-19
 [0.9.0]: /../../tree/v0.9.0

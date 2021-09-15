@@ -2,17 +2,27 @@
 
 [![Documentation](https://docs.rs/cucumber_rust_codegen/badge.svg)](https://docs.rs/cucumber_rust_codegen)
 [![Actions Status](https://github.com/bbqsrc/cucumber-rust/workflows/CI/badge.svg)](https://github.com/bbqsrc/cucumber-rust/actions)
-[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
-Code generation for [`cucumber_rust`](https://docs.rs/cucumber_rust) tests auto-wiring.
+- [Changelog](https://github.com/bbqsrc/cucumber-rust/blob/main/codegen/CHANGELOG.md)
 
-- [Changelog](CHANGELOG.md)
+Code generation for [`cucumber_rust`] tests auto-wiring.
 
-### License
+DO NOT use it directly, use [`cucumber_rust`] crate instead.
+
+
+
+
+## License
 
 This project is licensed under either of
 
-* Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-* MIT license ([LICENSE-MIT](../LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+* Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+* MIT license ([LICENSE-MIT](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
+
+
+
+
+[`cucumber_rust`]: https://docs.rs/cucumber_rust

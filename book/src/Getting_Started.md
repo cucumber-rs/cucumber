@@ -1,11 +1,10 @@
 # Getting Started
 
-Adding Cucumber to your project requires some groundwork. Cucumber tests are ran along with other tests via `cargo test`, but rely on a `.feature` file corresponding to the given test, as well as a set of steps described in code that corresponds to the steps in the feature file.
+Adding [Cucumber] to your project requires some groundwork. [Cucumber] tests are run along with other tests via `cargo test`, but rely on `.feature` files corresponding to the given test, as well as a set of step matchers described in code corresponding to the steps in those `.feature` files.
 
-To start, create a directory called `tests/` in the root of your project and add a file to represent your test target; in this walkthrough we use `example.rs`.
+To start, create a directory called `tests/` in the root of your project and add a file to represent your test target (in this walkthrough we use `example.rs`).
 
-Add this to your Cargo.toml:
-
+Add this to your `Cargo.toml`:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
@@ -13,14 +12,13 @@ cucumber_rust = "0.10"
 futures = "0.3"
 
 [[test]]
-name = "example" # This should be the same as the filename of your test target
-harness = false # Allows Cucumber to print output instead of libtest
+name = "example" # this should be the same as the filename of your test target
+harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-At this point, while it won't do anything, you should be able to successfully run `cargo test --test example` without errors as long as your `example.rs` has at least a `main()` function.
+At this point, while it won't do anything, you should be able to successfully run `cargo test --test example` without errors, as long as your `example.rs` has at least a `main()` function defined.
 
-Create a directory called to store `.feature` files somewhere in your project, in this walkthrough we use `tests/features/book` directory. Put a feature file there, such as `animal.feature`. This should contain the Gherkin for a scenario that you want to test. Here's a very simple example:
-
+Create a directory to store `.feature` files somewhere in your project (in this walkthrough we use `tests/features/book/` directory), and put a `.feature` file there (such as `animal.feature`). This should contain the [Gherkin] spec for a scenario that you want to test. Here's a very simple example:
 ```gherkin
 Feature: Animal feature
 
@@ -30,20 +28,17 @@ Feature: Animal feature
     Then The cat is not hungry
 ```
 
-Here is how we actually relate the text in this feature file to the tests themselves.
+Here is how we actually relate the text in this `.feature` file to the tests themselves: every test scenario needs a `World` object. Often `World` holds a state that is changing as [Cucumber] goes through each step in a scenario. The basic requirement for a `World` object is a `new()` function.
 
-Every test scenario needs a `World` object. Often `World` holds state that is changing as Cucumber goes through each step in a scenario. The basic requirement for a `World` object is a `new()` function.
-
-To enable testing of our Animal feature, add this code to `example.rs`:
-
+To enable testing of our `animal.feature`, add this code to `example.rs`:
 ```rust
 use std::convert::Infallible;
 
 use async_trait::async_trait;
 use cucumber_rust::{given, World, WorldInit};
 
-// These `Cat` definitions would normally be inside your project's code, but we 
-// create them here to contain the test to just `cucumber.rs`.
+// These `Cat` definitions would normally be inside your project's code, 
+// not test code, but we create them here for the show case.
 #[derive(Debug)]
 struct Cat {
     pub hungry: bool,
@@ -55,7 +50,7 @@ impl Cat {
     }
 }
 
-// A World is your shared, likely mutable state.
+// `World` is your shared, likely mutable state.
 #[derive(Debug, WorldInit)]
 pub struct AnimalWorld {
     cat: Cat,
@@ -65,7 +60,7 @@ pub struct AnimalWorld {
 // each `Scenario`.
 #[async_trait(?Send)]
 impl World for AnimalWorld {
-    // We require some error type
+    // We require some error type.
     type Error = Infallible;
 
     async fn new() -> Result<Self, Infallible> {
@@ -83,8 +78,8 @@ fn hungry_cat(world: &mut AnimalWorld) {
 
 // This runs before everything else, so you can setup things here.
 fn main() {
-    // You may choose any executor you like (Tokio, async-std, etc)
-    // You may even have an async main, it doesn't matter. The point is that
+    // You may choose any executor you like (`tokio`, `async-std`, etc.).
+    // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 }
@@ -96,28 +91,24 @@ If you run this, you should see an output like:
 
 You will see a checkmark next to `Given A hungry cat`, which means that test step has been matched and executed.
 
-But then for the next step: `I feed the cat`, there is a `? ... (skipped)`. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked at all.
+But then for the next step `I feed the cat` there is a `? ... (skipped)`. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked and run at all.
 
 There are 3 types of steps:
+- `given`: for defining the starting conditions and often initializing the data in the `World`;
+- `when`: for events or actions that are may trigger certain changes in the `World`;
+- `then`: to validate that the `World` has changed the way we would expect.
 
-- `given`, which is for defining the starting conditions and often initializing the data in the `World`
-- `when`, for events or actions that are may trigger certain changes in the `World`
-- `then`, to validate that the `World` has changed the way we would expect
+These various `Step` functions are executed to transform the `World`. As such, mutable reference to the world must always be passed in. The `Step` itself is also made available.
 
-These various `Step` functions are executed to transform the world. As such, mutable reference to the world must always be passed in. The step itself is also made available.
+The steps matchers take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself. 
 
-The steps functions take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself. 
-
-We also support regex:
-
+We also support regexes:
 ```rust
 # use std::convert::Infallible;
 # 
 # use async_trait::async_trait;
 # use cucumber_rust::{given, World, WorldInit};
-# 
-# // These `Cat` definitions would normally be inside your project's code, but we 
-# // create them here to contain the test to just `cucumber.rs`.
+#
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
@@ -128,18 +119,14 @@ We also support regex:
 #         self.hungry = false;
 #     }
 # }
-# 
-# // A World is your shared, likely mutable state.
+#
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
-# 
-# // `World` needs to be implemented, so Cucumber knows how to construct it on
-# // each `Scenario`.
+#
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
-#     // We require some error type
 #     type Error = Infallible;
 # 
 #     async fn new() -> Result<Self, Infallible> {
@@ -154,26 +141,19 @@ fn hungry_someone(world: &mut AnimalWorld, who: String) {
     assert_eq!(who, "cat");
     world.cat.hungry = true;
 }
-# 
-# // This runs before everything else, so you can setup things here.
+#
 # fn main() {
-#     // You may choose any executor you like (Tokio, async-std, etc)
-#     // You may even have an async main, it doesn't matter. The point is that
-#     // Cucumber is composable. :)
 #     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 # }
 ```
 
 We can add a `when` step after our `given` step:
-
 ```rust
 # use std::convert::Infallible;
 # 
 # use async_trait::async_trait;
 # use cucumber_rust::{given, when, World, WorldInit};
-# 
-# // These `Cat` definitions would normally be inside your project's code, but we 
-# // create them here to contain the test to just `cucumber.rs`.
+#
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
@@ -184,18 +164,14 @@ We can add a `when` step after our `given` step:
 #         self.hungry = false;
 #     }
 # }
-# 
-# // A World is your shared, likely mutable state.
+#
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
-# 
-# // `World` needs to be implemented, so Cucumber knows how to construct it on
-# // each `Scenario`.
+#
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
-#     // We require some error type
 #     type Error = Infallible;
 # 
 #     async fn new() -> Result<Self, Infallible> {
@@ -204,8 +180,7 @@ We can add a `when` step after our `given` step:
 #         })
 #     }
 # }
-# 
-# // Steps are defined with `given`, `when` and `then` macros.
+#
 # #[given("A hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
@@ -217,12 +192,8 @@ We can add a `when` step after our `given` step:
 fn feed_cat(world: &mut AnimalWorld) {
     world.cat.feed();
 }
-# 
-# // This runs before everything else, so you can setup things here.
+#
 # fn main() {
-#     // You may choose any executor you like (Tokio, async-std, etc)
-#     // You may even have an async main, it doesn't matter. The point is that
-#     // Cucumber is composable. :)
 #     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 # }
 ```
@@ -231,16 +202,13 @@ If you run the tests again, you'll see that two lines are green now and the next
 
 [![Cucumber run with a Given and When step](https://asciinema.org/a/M8QntIucnWUTyMydBmL1t8Os3.svg)](https://asciinema.org/a/M8QntIucnWUTyMydBmL1t8Os3)
 
-Finally, how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
-
+Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
 ```rust
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
 # use cucumber_rust::{given, then, when, World, WorldInit};
 #
-# // These `Cat` definitions would normally be inside your project's code, but we 
-# // create them here to contain the test to just `cucumber.rs`.
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
@@ -252,17 +220,13 @@ Finally, how do we validate our result? We expect that this will cause some chan
 #     }
 # }
 #
-# // A World is your shared, likely mutable state.
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
 #
-# // `World` needs to be implemented, so Cucumber knows how to construct it on
-# // each `Scenario`.
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
-#     // We require some error type
 #     type Error = Infallible;
 #
 #     async fn new() -> Result<Self, Infallible> {
@@ -272,7 +236,6 @@ Finally, how do we validate our result? We expect that this will cause some chan
 #     }
 # }
 #
-# // Steps are defined with `given`, `when` and `then` macros.
 # #[given("A hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
@@ -289,11 +252,8 @@ Finally, how do we validate our result? We expect that this will cause some chan
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
-# // This runs before everything else, so you can setup things here.
+#
 # fn main() {
-#     // You may choose any executor you like (Tokio, async-std, etc)
-#     // You may even have an async main, it doesn't matter. The point is that
-#     // Cucumber is composable. :)
 #     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 # }
 ```
@@ -302,16 +262,13 @@ If you run the test now, you'll see that all steps are accounted for and the tes
 
 [![Full Cucumber run](https://asciinema.org/a/MFWAj6dwMUL6JTP1Iji68qKHW.svg)](https://asciinema.org/a/MFWAj6dwMUL6JTP1Iji68qKHW)
 
-If you want to be assured that your validation is indeed happening, you can change the assert for the cat being hungry from `true` to `false` temporarily:
-
+If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from `true` to `false` temporarily:
 ```rust,should_panic
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
 # use cucumber_rust::{given, then, when, World, WorldInit};
 #
-# // These `Cat` definitions would normally be inside your project's code, but we 
-# // create them here to contain the test to just `cucumber.rs`.
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
@@ -323,14 +280,11 @@ If you want to be assured that your validation is indeed happening, you can chan
 #     }
 # }
 #
-# // A World is your shared, likely mutable state.
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
 #
-# // `World` needs to be implemented, so Cucumber knows how to construct it on
-# // each `Scenario`.
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     // We require some error type
@@ -343,7 +297,6 @@ If you want to be assured that your validation is indeed happening, you can chan
 #     }
 # }
 #
-# // Steps are defined with `given`, `when` and `then` macros.
 # #[given("A hungry cat")]
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
@@ -358,21 +311,16 @@ If you want to be assured that your validation is indeed happening, you can chan
 fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
-# // This runs before everything else, so you can setup things here.
 # fn main() {
-#     // You may choose any executor you like (Tokio, async-std, etc)
-#     // You may even have an async main, it doesn't matter. The point is that
-#     // Cucumber is composable. :)
 #     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 # }
 ```
 
-And you should see the test fail:
+And you should see the test failing:
 
 [![Failing step](https://asciinema.org/a/4ZYqPERxMizgbc4Ztp6Khmjag.svg)](https://asciinema.org/a/4ZYqPERxMizgbc4Ztp6Khmjag)
 
 What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:
-
 ```gherkin
 Feature: Animal feature
 
@@ -388,16 +336,13 @@ Feature: Animal feature
 
 ```
 
-The only thing that is different is the Given. But we don't have to write a new function! We can leverage regex support:
-
+The only thing that is different is the `Given` step. But we don't have to write a new matcher! We can leverage regex support:
 ```rust
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
 # use cucumber_rust::{given, then, when, World, WorldInit};
 #
-# // These `Cat` definitions would normally be inside your project's code, but we 
-# // create them here to contain the test to just `cucumber.rs`.
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
@@ -409,17 +354,13 @@ The only thing that is different is the Given. But we don't have to write a new 
 #     }
 # }
 #
-# // A World is your shared, likely mutable state.
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
 #
-# // `World` needs to be implemented, so Cucumber knows how to construct it on
-# // each `Scenario`.
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
-#     // We require some error type
 #     type Error = Infallible;
 #
 #     async fn new() -> Result<Self, Infallible> {
@@ -446,19 +387,16 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # #[then("The cat is not hungry")]
 # fn cat_is_fed(world: &mut AnimalWorld) {
 #     assert!(!world.cat.hungry);
-}
-# // This runs before everything else, so you can setup things here.
+# }
+#
 # fn main() {
-#     // You may choose any executor you like (Tokio, async-std, etc)
-#     // You may even have an async main, it doesn't matter. The point is that
-#     // Cucumber is composable. :)
 #     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 # }
 ```
 
-We surround regex with `^..$` to unsure __exact__ match. This is much more useful as you add more and more steps, so they wouldn't interfere with each other.
+We surround regex with `^..$` to ensure the __exact__ match. This is much more useful as you add more and more steps, so they wouldn't interfere with each other.
 
-Cucumber reuses the steps:
+[Cucumber] will reuse these steps:
 
 [![Steps reused between two scenarious](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe.svg)](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe)
 
@@ -526,6 +464,9 @@ fn main() {
 ```
 </details>
 
+
+
+
 ## Asyncness
 
 Let's play with `async` support a bit!
@@ -539,12 +480,11 @@ cucumber_rust = "0.10"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
-name = "cucumber" # This should be the same as the filename of your test target
-harness = false # Allows Cucumber to print output instead of libtest
+name = "cucumber" # this should be the same as the filename of your test target
+harness = false   # allows Cucumber to print output instead of libtest
 ```
 
-And simply `sleep` on each step to test `async` support. In the real world you of course will switch it up to web/database requests, etc.
-
+And simply `sleep` on each step to test the `async` support. In the real world you of course will switch it up to web/database requests, etc.
 ```rust
 # use std::{convert::Infallible, time::Duration};
 # 
@@ -612,9 +552,9 @@ async fn main() {
 
 [![Async Cucumber](https://asciinema.org/a/GJjWi2Tn10jqNjWwnfOK3quad.svg)](https://asciinema.org/a/GJjWi2Tn10jqNjWwnfOK3quad)
 
-Hm, it looks like executor waited only for the first `Feature` 🤔, what's going on?
+Hm, it looks like the executor waited only for the first `Feature` 🤔, what's going on?
 
-By default `Cucumber` executes `Scenarios` [concurrently](https://en.wikipedia.org/wiki/Concurrent_computing)! That means executor actually did wait for all steps, but overlapped! This allows you to execute tests much faster!
+By default `Cucumber` executes `Scenarios` [concurrently](https://en.wikipedia.org/wiki/Concurrent_computing)! That means executor actually did wait for all the steps, but overlapped! This allows you to execute tests much faster!
 
 If for some reason you don't want to run your `Scenarios` concurrently, use `@serial` tag on them:
 
@@ -635,3 +575,9 @@ Feature: Animal feature
 ```
 
 [![Async Cucumber with @serial tests](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8.svg)](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8)
+
+
+
+
+[Cucumber]: https://cucumber.io
+[Gherkin]: https://cucumber.io/docs/gherkin/reference

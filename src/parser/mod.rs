@@ -52,9 +52,9 @@ pub enum Error {
     Language(gherkin::EnvError),
 
     /// Parsing file error.
-    #[display(fmt = "Parsing error: {}, path: {}", source, "path.display()")]
+    #[display(fmt = "Parsing error: {}, file: {}", source, "path.display()")]
     Parse {
-        /// Parsing error.
+        /// Original error of parsing.
         source: gherkin::ParseError,
 
         /// Path of the file.
@@ -62,9 +62,9 @@ pub enum Error {
     },
 
     /// Reading file error.
-    #[display(fmt = "Reading error: {}, path: {}", source, "path.display()")]
-    Reading {
-        /// Reading error.
+    #[display(fmt = "Reading error: {}, file: {}", source, "path.display()")]
+    Read {
+        /// Original reading error.
         source: io::Error,
 
         /// Path of the file.
