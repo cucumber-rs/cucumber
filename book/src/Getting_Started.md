@@ -87,7 +87,7 @@ fn main() {
 
 If you run this, you should see an output like:
 
-[![Cucumber run with just the Given step](https://asciinema.org/a/DRnrcYrvPjRslamD1O1TxYxAc.svg)](https://asciinema.org/a/DRnrcYrvPjRslamD1O1TxYxAc)
+[![Cucumber run with just the Given step](https://asciinema.org/a/t8ezu3cajA0fBkssIy04LM9pa.svg)](https://asciinema.org/a/t8ezu3cajA0fBkssIy04LM9pa)
 
 You will see a checkmark next to `Given A hungry cat`, which means that test step has been matched and executed.
 
@@ -200,7 +200,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 
 If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:
 
-[![Cucumber run with a Given and When step](https://asciinema.org/a/M8QntIucnWUTyMydBmL1t8Os3.svg)](https://asciinema.org/a/M8QntIucnWUTyMydBmL1t8Os3)
+[![Cucumber run with a Given and When step](https://asciinema.org/a/aWGpouW2F8lQRQ1O2eUQTRSlE.svg)](https://asciinema.org/a/aWGpouW2F8lQRQ1O2eUQTRSlE)
 
 Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
 ```rust
@@ -260,7 +260,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 
 If you run the test now, you'll see that all steps are accounted for and the test succeeds:
 
-[![Full Cucumber run](https://asciinema.org/a/MFWAj6dwMUL6JTP1Iji68qKHW.svg)](https://asciinema.org/a/MFWAj6dwMUL6JTP1Iji68qKHW)
+[![Full Cucumber run](https://asciinema.org/a/HaEZXiqUn0U1T8c5TaiMGX50i.svg)](https://asciinema.org/a/HaEZXiqUn0U1T8c5TaiMGX50i)
 
 If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from `true` to `false` temporarily:
 ```rust,should_panic
@@ -318,7 +318,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 
 And you should see the test failing:
 
-[![Failing step](https://asciinema.org/a/5x3xRVWl9xFWdzAaMWB2DeWuK.svg)](https://asciinema.org/a/5x3xRVWl9xFWdzAaMWB2DeWuK)
+[![Failing step](https://asciinema.org/a/KFNrNihA5ib9G7O22jwTSw0Lg.svg)](https://asciinema.org/a/KFNrNihA5ib9G7O22jwTSw0Lg)
 
 What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:
 ```gherkin
@@ -398,7 +398,7 @@ We surround regex with `^..$` to ensure the __exact__ match. This is much more u
 
 [Cucumber] will reuse these steps:
 
-[![Steps reused between two scenarious](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe.svg)](https://asciinema.org/a/UA6OiZWHW9RfXZ2wFSGXbdrqe)
+[![Steps reused between two scenarios](https://asciinema.org/a/RAteqk9p0zkvWrslK6kiOU5lc.svg)](https://asciinema.org/a/RAteqk9p0zkvWrslK6kiOU5lc)
 
 A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` step was `The cat is no longer hungry`, it'd imply something about the expected initial state, when that is not the purpose of a `Then` step, but rather of the `Given` step.
 
@@ -550,7 +550,7 @@ async fn main() {
 }
 ```
 
-[![Async Cucumber](https://asciinema.org/a/GJjWi2Tn10jqNjWwnfOK3quad.svg)](https://asciinema.org/a/GJjWi2Tn10jqNjWwnfOK3quad)
+[![Async Cucumber](https://asciinema.org/a/vufDjDlrdm5TtH20WVpIGpEz6.svg)](https://asciinema.org/a/vufDjDlrdm5TtH20WVpIGpEz6)
 
 Hm, it looks like the executor waited only for the first `Feature` 🤔, what's going on?
 
@@ -574,7 +574,7 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-[![Async Cucumber with @serial tests](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8.svg)](https://asciinema.org/a/xnt5WngXpwQBVBnxPjYD9NGS8)
+[![Async Cucumber with @serial tests](https://asciinema.org/a/KztYots1Jm6WijCmxZM1GZT1K.svg)](https://asciinema.org/a/KztYots1Jm6WijCmxZM1GZT1K)
 
 
 

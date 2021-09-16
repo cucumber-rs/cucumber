@@ -258,7 +258,7 @@ impl Styles {
         let features = self.maybe_plural("feature", summary.features);
 
         let rules = (summary.rules > 0)
-            .then(|| self.maybe_plural("rule", summary.rules))
+            .then(|| format!("{}\n", self.maybe_plural("rule", summary.rules)))
             .unwrap_or_default();
 
         let scenarios =
@@ -277,7 +277,7 @@ impl Styles {
             .unwrap_or_default();
 
         format!(
-            "{}\n{}\n{}\n{}{}\n{}{}\n{}",
+            "{}\n{}\n{}{}{}\n{}{}\n{}",
             self.bold(self.header("[Summary]")),
             features,
             rules,
@@ -287,6 +287,8 @@ impl Styles {
             steps_stats,
             parsing_errors,
         )
+        .trim_end_matches('\n')
+        .to_string()
     }
 
     /// Formats [`Stats`] for terminal output.

@@ -16,7 +16,7 @@ An implementation of the [Cucumber] testing framework for Rust. Fully native, no
 
 Describe testing scenarios in `.feature` files:
 ```gherkin
-# /tests/features/readme/eating.feature
+## /tests/features/readme/eating.feature
     
 Feature: Eating too much cucumbers may not be good for you
     
@@ -87,7 +87,7 @@ name = "readme"
 harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-[![asciicast](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK.svg)](https://asciinema.org/a/7h27mOu8ZDisP0jZ8WHmG5cIK)
+[![asciicast](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo.svg)](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo)
 
 For more examples check out the Book ([current][1] | [edge][2]).
 
