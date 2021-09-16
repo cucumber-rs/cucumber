@@ -24,8 +24,8 @@ use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    parser, runner, step, writer, ArbitraryWriter, Parser, Runner,
-    ScenarioType, Step, World, Writer, WriterExt as _,
+    parser, runner, step, writer, ArbitraryWriter, FallibleWriter, Parser,
+    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -122,6 +122,58 @@ impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr> {
             parser,
             runner,
             writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+}
+
+impl<W, P, I, R, Wr> Cucumber<W, P, I, R, Wr>
+where
+    W: World,
+    Wr: Writer<W>,
+{
+    /// Consider [`Skipped`] step as [`Failed`] if [`Scenario`] isn't marked
+    /// with `@allow_skipped` tag.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn fail_on_skipped(
+        self,
+    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr>> {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.fail_on_skipped(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Consider [`Skipped`] step as [`Failed`] if `filter` predicate returns
+    /// `true`.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn fail_on_skipped_with<Filter>(
+        self,
+        filter: Filter,
+    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr, Filter>>
+    where
+        Filter: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> bool,
+    {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.fail_on_skipped_with(filter),
             _world: PhantomData,
             _parser_input: PhantomData,
         }
@@ -394,71 +446,12 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     }
 }
 
-impl<W, I, P, R, Wr, F> Cucumber<W, P, I, R, writer::Summarized<Wr, F>>
+impl<W, I, P, R, Wr> Cucumber<W, P, I, R, Wr>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: for<'val> ArbitraryWriter<'val, W, String>,
-{
-    /// Consider [`Skipped`] step as [`Failed`] if [`Scenario`] isn't marked
-    /// with `@allow_skipped` tag.
-    ///
-    /// [`Failed`]: crate::event::Step::Failed
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
-    #[must_use]
-    pub fn fail_on_skipped(
-        self,
-    ) -> Cucumber<W, P, I, R, writer::Summarized<Wr>> {
-        Cucumber {
-            parser: self.parser,
-            runner: self.runner,
-            writer: self.writer.fail_on_skipped(),
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
-    }
-
-    /// Consider [`Skipped`] step as [`Failed`] if `filter` predicate returns
-    /// `true`.
-    ///
-    /// [`Failed`]: crate::event::Step::Failed
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
-    #[must_use]
-    pub fn fail_on_skipped_with<Filter>(
-        self,
-        filter: Filter,
-    ) -> Cucumber<W, P, I, R, writer::Summarized<Wr, Filter>>
-    where
-        Filter: Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-        ) -> bool,
-    {
-        Cucumber {
-            parser: self.parser,
-            runner: self.runner,
-            writer: self.writer.fail_on_skipped_with(filter),
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
-    }
-}
-
-impl<W, I, P, R, Wr, F> Cucumber<W, P, I, R, writer::Summarized<Wr, F>>
-where
-    W: World,
-    P: Parser<I>,
-    R: Runner<W>,
-    Wr: for<'val> ArbitraryWriter<'val, W, String>,
-    F: Fn(
-        &gherkin::Feature,
-        Option<&gherkin::Rule>,
-        &gherkin::Scenario,
-    ) -> bool,
+    Wr: for<'val> ArbitraryWriter<'val, W, String> + FallibleWriter<W>,
 {
     /// Runs [`Cucumber`].
     ///
@@ -500,10 +493,10 @@ where
             ) -> bool
             + 'static,
     {
-        let summary = self.filter_run(input, filter).await;
-        if summary.is_failed() {
-            let failed_steps = summary.steps.failed;
-            let parsing_errors = summary.parsing_errors;
+        let writer = self.filter_run(input, filter).await;
+        if writer.is_failed() {
+            let failed_steps = writer.failed_steps();
+            let parsing_errors = writer.parsing_errors();
             panic!(
                 "{} step{} failed, {} parsing error{}",
                 failed_steps,

@@ -408,7 +408,7 @@ impl<W: World> Executor<W> {
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let err = |e: fn(Arc<gherkin::Step>, W, Info) -> event::Scenario<W>| {
+        let err = |e: fn(Arc<gherkin::Step>, _, Info) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, world, info| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
@@ -518,7 +518,11 @@ impl<W: World> Executor<W> {
         started: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
         passed: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
         skipped: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
-        failed: impl FnOnce(Arc<gherkin::Step>, W, Info) -> event::Cucumber<W>,
+        failed: impl FnOnce(
+            Arc<gherkin::Step>,
+            Option<W>,
+            Info,
+        ) -> event::Cucumber<W>,
     ) -> Result<W, ()> {
         self.send(started(step.clone()));
 
@@ -543,7 +547,7 @@ impl<W: World> Executor<W> {
                 Err(())
             }
             Err(err) => {
-                self.send(failed(step, world.unwrap(), err));
+                self.send(failed(step, world, err));
                 Err(())
             }
         };

@@ -169,7 +169,7 @@ pub enum Step<World> {
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(World, Info),
+    Failed(Option<World>, Info),
 }
 
 /// Event specific to a particular [Scenario].
@@ -253,7 +253,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
-        world: World,
+        world: Option<World>,
         info: Info,
     ) -> Self {
         Self::Step(step, Step::Failed(world, info))
@@ -266,7 +266,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
-        world: World,
+        world: Option<World>,
         info: Info,
     ) -> Self {
         Self::Background(step, Step::Failed(world, info))

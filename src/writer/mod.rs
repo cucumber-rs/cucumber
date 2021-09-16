@@ -13,8 +13,10 @@
 //! [`Cucumber`]: crate::event::Cucumber
 
 pub mod basic;
+pub mod fail_on_skipped;
 pub mod normalized;
 pub mod summarized;
+pub mod term;
 
 use async_trait::async_trait;
 use sealed::sealed;
@@ -22,7 +24,10 @@ use sealed::sealed;
 use crate::{event, parser, World};
 
 #[doc(inline)]
-pub use self::{basic::Basic, normalized::Normalized, summarized::Summarized};
+pub use self::{
+    basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
+    summarized::Summarized,
+};
 
 /// Writer of [`Cucumber`] events to some output.
 ///
@@ -56,6 +61,30 @@ pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
         'val: 'async_trait;
 }
 
+/// [`Writer`] that tracks number of [`Failed`] [`Step`]s and parsing
+/// [`Error`]s.
+///
+/// [`Error`]: parser::Error
+/// [`Failed`]: event::Step::Failed
+/// [`Step`]: gherkin::Step
+pub trait Fallible<World>: Writer<World> {
+    /// Indicates whether there were errors during execution
+    fn is_failed(&self) -> bool {
+        self.failed_steps() > 0 || self.parsing_errors() > 0
+    }
+
+    /// Returns number of [`Failed`] [`Step`]s.
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Step`]: gherkin::Step
+    fn failed_steps(&self) -> usize;
+
+    /// Returns number of parsing [`Error`]s.
+    ///
+    /// [`Error`]: parser::Error
+    fn parsing_errors(&self) -> usize;
+}
+
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext<W: World>: Writer<W> + Sized {
@@ -68,6 +97,32 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     ///
     /// See [`Summarized`] for more information.
     fn summarized(self) -> Summarized<Self>;
+
+    /// Wraps this [`Writer`] to fail on the [`Skipped`] [`Step`]s if
+    /// [`Scenario`] isn't tagged with `@allow_skipped`.
+    ///
+    /// See [`FailOnSkipped`] for more information.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    fn fail_on_skipped(self) -> FailOnSkipped<Self>;
+
+    /// Wraps this [`Writer`] to fail on the [`Skipped`] [`Step`]s if `with`
+    /// returns `true`.
+    ///
+    /// See [`FailOnSkipped`] for more information.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    fn fail_on_skipped_with<F>(self, with: F) -> FailOnSkipped<Self, F>
+    where
+        F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> bool;
 }
 
 #[sealed]
@@ -82,5 +137,20 @@ where
 
     fn summarized(self) -> Summarized<Self> {
         Summarized::from(self)
+    }
+
+    fn fail_on_skipped(self) -> FailOnSkipped<Self> {
+        FailOnSkipped::from(self)
+    }
+
+    fn fail_on_skipped_with<F>(self, f: F) -> FailOnSkipped<Self, F>
+    where
+        F: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> bool,
+    {
+        FailOnSkipped::with(self, f)
     }
 }

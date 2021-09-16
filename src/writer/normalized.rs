@@ -17,7 +17,7 @@ use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
-use crate::{event, parser, ArbitraryWriter, World, Writer};
+use crate::{event, parser, ArbitraryWriter, FallibleWriter, World, Writer};
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
 /// to _order guarantees_ from the [`Runner`] in a normalized readable order.
@@ -110,6 +110,20 @@ where
         'val: 'async_trait,
     {
         self.writer.write(val).await;
+    }
+}
+
+impl<W, Wr> FallibleWriter<W> for Normalized<W, Wr>
+where
+    Wr: FallibleWriter<W>,
+    Self: Writer<W>,
+{
+    fn failed_steps(&self) -> usize {
+        self.writer.failed_steps()
+    }
+
+    fn parsing_errors(&self) -> usize {
+        self.writer.parsing_errors()
     }
 }
 

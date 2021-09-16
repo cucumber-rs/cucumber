@@ -64,7 +64,10 @@ pub use self::{
     parser::Parser,
     runner::{Runner, ScenarioType},
     step::Step,
-    writer::{Arbitrary as ArbitraryWriter, Ext as WriterExt, Writer},
+    writer::{
+        Arbitrary as ArbitraryWriter, Ext as WriterExt,
+        Fallible as FallibleWriter, Writer,
+    },
 };
 
 /// Represents a shared user-defined state for a [Cucumber] run.

@@ -13,12 +13,14 @@
 use std::{fmt::Debug, ops::Deref};
 
 use async_trait::async_trait;
-use console::{Style, Term};
+use console::Term;
 use itertools::Itertools as _;
 
 use crate::{
     event::{self, Info},
-    parser, ArbitraryWriter, World, Writer,
+    parser,
+    writer::term::Styles,
+    ArbitraryWriter, World, Writer,
 };
 
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
@@ -26,22 +28,13 @@ use crate::{
 ///
 /// Pretty-prints with colors if terminal was successfully detected, otherwise
 /// has simple output. Useful for running tests with CI tools.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Basic {
     /// Terminal to write the output into.
     terminal: Term,
 
-    /// [`Style`] for rendering successful events.
-    ok: Style,
-
-    /// [`Style`] for rendering skipped events.
-    skipped: Style,
-
-    /// [`Style`] for rendering errors and failed events.
-    err: Style,
-
-    /// Indicates whether the terminal was detected.
-    is_terminal_present: bool,
+    /// [`Styles`] for terminal output.
+    styles: Styles,
 }
 
 #[async_trait(?Send)]
@@ -92,10 +85,7 @@ impl Default for Basic {
     fn default() -> Self {
         Self {
             terminal: Term::stdout(),
-            ok: Style::new().green(),
-            skipped: Style::new().cyan(),
-            err: Style::new().red(),
-            is_terminal_present: atty::is(atty::Stream::Stdout),
+            styles: Styles::new(),
         }
     }
 }
@@ -115,39 +105,9 @@ impl Basic {
         Self::default()
     }
 
-    /// If terminal is present colors `input` with [`Self::ok`] color or leaves
-    /// as is otherwise.
-    fn ok(&self, input: String) -> String {
-        if self.is_terminal_present {
-            self.ok.apply_to(input).to_string()
-        } else {
-            input
-        }
-    }
-
-    /// If terminal is present colors `input` with [`Self::skipped`] color or
-    /// leaves as is otherwise.
-    fn skipped(&self, input: String) -> String {
-        if self.is_terminal_present {
-            self.skipped.apply_to(input).to_string()
-        } else {
-            input
-        }
-    }
-
-    /// If terminal is present colors `input` with [`Self::err`] color or leaves
-    /// as is otherwise.
-    fn err(&self, input: String) -> String {
-        if self.is_terminal_present {
-            self.err.apply_to(input).to_string()
-        } else {
-            input
-        }
-    }
-
     /// Clears last `n` lines if terminal is present.
     fn clear_last_lines_if_term_present(&self, n: usize) {
-        if self.is_terminal_present {
+        if self.styles.is_present {
             self.clear_last_lines(n).unwrap();
         }
     }
@@ -157,7 +117,7 @@ impl Basic {
     /// [error]: event::Cucumber::ParsingError
     /// [`Feature`]: gherkin::Feature
     fn parsing_failed(&self, err: &parser::Error) {
-        self.write_line(&self.err(format!("Failed to parse: {}", err)))
+        self.write_line(&self.styles.err(format!("Failed to parse: {}", err)))
             .unwrap();
     }
 
@@ -166,7 +126,7 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&self, feature: &gherkin::Feature) {
-        self.write_line(&self.ok(format!("Feature: {}", feature.name)))
+        self.write_line(&self.styles.ok(format!("Feature: {}", feature.name)))
             .unwrap();
     }
 
@@ -175,7 +135,7 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&self, rule: &gherkin::Rule) {
-        self.write_line(&self.ok(format!("  Rule: {}", rule.name)))
+        self.write_line(&self.styles.ok(format!("  Rule: {}", rule.name)))
             .unwrap();
     }
 
@@ -213,7 +173,7 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&self, scenario: &gherkin::Scenario, ident: usize) {
-        self.write_line(&self.ok(format!(
+        self.write_line(&self.styles.ok(format!(
             "{}Scenario: {}",
             " ".repeat(ident),
             scenario.name,
@@ -249,7 +209,7 @@ impl Basic {
                 self.step_skipped(step, offset);
             }
             Step::Failed(world, info) => {
-                self.step_failed(feat, step, world, info, offset);
+                self.step_failed(feat, step, world.as_ref(), info, offset);
             }
         }
     }
@@ -265,7 +225,7 @@ impl Basic {
     /// [started]: event::Step::Started
     /// [`Step`]: [`gherkin::Step`]
     fn step_started(&self, step: &gherkin::Step, ident: usize) {
-        if self.is_terminal_present {
+        if self.styles.is_present {
             self.write_line(&format!(
                 "{}{} {}",
                 " ".repeat(ident),
@@ -282,7 +242,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn step_passed(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.ok(format!(
+        self.write_line(&self.styles.ok(format!(
             //  ✔
             "{}\u{2714}  {} {}",
             " ".repeat(ident - 3),
@@ -298,7 +258,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn step_skipped(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.skipped(format!(
+        self.write_line(&self.styles.skipped(format!(
             "{}?  {} {} (skipped)",
             " ".repeat(ident - 3),
             step.keyword,
@@ -315,22 +275,16 @@ impl Basic {
         &self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        world: &W,
+        world: Option<&W>,
         info: &Info,
         ident: usize,
     ) {
-        let world = format!("{:#?}", world)
-            .lines()
-            .map(|line| format!("{}{}\n", " ".repeat(ident), line))
-            .join("");
-        let world = world.trim_end_matches('\n');
-
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.err(format!(
+        self.write_line(&self.styles.err(format!(
             //       ✘
             "{ident}\u{2718}  {} {}\n\
              {ident}   Step failed: {}:{}:{}\n\
-             {ident}   Captured output: {}\n\
+             {ident}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
@@ -341,7 +295,7 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            world,
+            format_world(world, ident),
             ident = " ".repeat(ident - 3),
         )))
         .unwrap();
@@ -377,7 +331,7 @@ impl Basic {
                 self.bg_step_skipped(bg, offset);
             }
             Step::Failed(world, info) => {
-                self.bg_step_failed(feat, bg, world, info, offset);
+                self.bg_step_failed(feat, bg, world.as_ref(), info, offset);
             }
         }
     }
@@ -394,7 +348,7 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_started(&self, step: &gherkin::Step, ident: usize) {
-        if self.is_terminal_present {
+        if self.styles.is_present {
             self.write_line(&format!(
                 "{}{}{} {}",
                 " ".repeat(ident - 2),
@@ -413,7 +367,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_passed(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.ok(format!(
+        self.write_line(&self.styles.ok(format!(
             //  ✔
             "{}\u{2714}> {} {}",
             " ".repeat(ident - 3),
@@ -430,7 +384,7 @@ impl Basic {
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_skipped(&self, step: &gherkin::Step, ident: usize) {
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.skipped(format!(
+        self.write_line(&self.styles.skipped(format!(
             "{}?> {} {} (skipped)",
             " ".repeat(ident - 3),
             step.keyword,
@@ -448,21 +402,16 @@ impl Basic {
         &self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        world: &W,
+        world: Option<&W>,
         info: &Info,
         ident: usize,
     ) {
-        let world = format!("{:#?}", world)
-            .lines()
-            .map(|line| format!("{}{}\n", " ".repeat(ident), line))
-            .join("");
-
         self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.err(format!(
+        self.write_line(&self.styles.err(format!(
             //       ✘
             "{ident}\u{2718}> {} {}\n\
              {ident}   Background step failed: {}:{}:{}\n\
-             {ident}   Captured output: {}\n\
+             {ident}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
@@ -473,7 +422,7 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            world,
+            format_world(world, ident),
             ident = " ".repeat(ident - 3),
         )))
         .unwrap();
@@ -492,4 +441,18 @@ fn coerce_error(err: &Info) -> String {
     } else {
         "(Could not resolve panic payload)".to_owned()
     }
+}
+
+/// Formats [`World`] using [`Debug`], then adding `ident` spaces to each line
+/// to prettify the output.
+fn format_world<W: Debug>(world: Option<&W>, ident: usize) -> String {
+    let world = world
+        .map(|world| format!("{:#?}", world))
+        .unwrap_or_default()
+        .lines()
+        .map(|line| format!("{}{}", " ".repeat(ident), line))
+        .join("\n");
+    (!world.is_empty())
+        .then(|| format!("\n{}", world))
+        .unwrap_or_default()
 }
