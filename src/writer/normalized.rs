@@ -17,7 +17,7 @@ use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
-use crate::{event, parser, ArbitraryWriter, FallibleWriter, World, Writer};
+use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
 /// to _order guarantees_ from the [`Runner`] in a normalized readable order.
@@ -113,9 +113,9 @@ where
     }
 }
 
-impl<W, Wr> FallibleWriter<W> for Normalized<W, Wr>
+impl<W, Wr> FailureWriter<W> for Normalized<W, Wr>
 where
-    Wr: FallibleWriter<W>,
+    Wr: FailureWriter<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {

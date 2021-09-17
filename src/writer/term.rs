@@ -57,8 +57,8 @@ impl Styles {
         Self::default()
     }
 
-    /// If terminal is present colors `input` with [`Self::ok`] color or leaves
-    /// as is otherwise.
+    /// If terminal is present colors `input` with [`Styles::ok`] color or
+    /// leaves "as is" otherwise.
     #[must_use]
     pub fn ok(&self, input: impl Into<Cow<'static, str>>) -> Cow<'static, str> {
         if self.is_present {
@@ -68,8 +68,8 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` with [`Self::skipped`] color or
-    /// leaves as is otherwise.
+    /// If terminal is present colors `input` with [`Styles::skipped`] color or
+    /// leaves "as is" otherwise.
     #[must_use]
     pub fn skipped(
         &self,
@@ -82,8 +82,8 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` with [`Self::err`] color or leaves
-    /// as is otherwise.
+    /// If terminal is present colors `input` with [`Styles::err`] color or
+    /// leaves "as is" otherwise.
     #[must_use]
     pub fn err(
         &self,
@@ -96,8 +96,8 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` with [`Self::header`] color or
-    /// leaves as is otherwise.
+    /// If terminal is present colors `input` with [`Styles::header`] color or
+    /// leaves "as is" otherwise.
     #[must_use]
     pub fn header(
         &self,
@@ -110,8 +110,8 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` __bold__ or leaves
-    /// as is otherwise.
+    /// If terminal is present makes `input` __bold__ or leaves "as is"
+    /// otherwise.
     #[must_use]
     pub fn bold(
         &self,

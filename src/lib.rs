@@ -66,7 +66,7 @@ pub use self::{
     step::Step,
     writer::{
         Arbitrary as ArbitraryWriter, Ext as WriterExt,
-        Fallible as FallibleWriter, Writer,
+        Failure as FailureWriter, Writer,
     },
 };
 

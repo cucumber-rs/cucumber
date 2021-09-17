@@ -61,15 +61,15 @@ pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
         'val: 'async_trait;
 }
 
-/// [`Writer`] that tracks number of [`Failed`] [`Step`]s and parsing
-/// [`Error`]s.
+/// [`Writer`] tracking a number of [`Failed`] [`Step`]s and parsing [`Error`]s.
 ///
 /// [`Error`]: parser::Error
 /// [`Failed`]: event::Step::Failed
 /// [`Step`]: gherkin::Step
-pub trait Fallible<World>: Writer<World> {
-    /// Indicates whether there were errors during execution
-    fn is_failed(&self) -> bool {
+pub trait Failure<World>: Writer<World> {
+    /// Indicates whether there were failures/errors during execution.
+    #[must_use]
+    fn execution_has_failed(&self) -> bool {
         self.failed_steps() > 0 || self.parsing_errors() > 0
     }
 
@@ -77,11 +77,13 @@ pub trait Fallible<World>: Writer<World> {
     ///
     /// [`Failed`]: event::Step::Failed
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn failed_steps(&self) -> usize;
 
     /// Returns number of parsing [`Error`]s.
     ///
     /// [`Error`]: parser::Error
+    #[must_use]
     fn parsing_errors(&self) -> usize;
 }
 
@@ -93,13 +95,13 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// See [`Normalized`] for more information.
     fn normalized(self) -> Normalized<W, Self>;
 
-    /// Wraps this [`Writer`] to prints a summary at the end of an output.
+    /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
     /// See [`Summarized`] for more information.
     fn summarized(self) -> Summarized<Self>;
 
-    /// Wraps this [`Writer`] to fail on the [`Skipped`] [`Step`]s if
-    /// [`Scenario`] isn't tagged with `@allow_skipped`.
+    /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
+    /// [`Scenario`] isn't marked with `@allow_skipped` tag.
     ///
     /// See [`FailOnSkipped`] for more information.
     ///
@@ -108,8 +110,8 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Step`]: gherkin::Step
     fn fail_on_skipped(self) -> FailOnSkipped<Self>;
 
-    /// Wraps this [`Writer`] to fail on the [`Skipped`] [`Step`]s if `with`
-    /// returns `true`.
+    /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if the given
+    /// `with` predicate returns `true`.
     ///
     /// See [`FailOnSkipped`] for more information.
     ///

@@ -14,13 +14,12 @@
 //! [`Skipped`]: event::Step::Skipped
 //! [`Step`]: gherkin::Step
 
-use async_trait::async_trait;
-
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{event, parser, ArbitraryWriter, FallibleWriter, World, Writer};
+use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
@@ -29,7 +28,7 @@ use crate::{event, parser, ArbitraryWriter, FallibleWriter, World, Writer};
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
 pub struct FailOnSkipped<W, F = SkipFn> {
-    /// Original [`Writer`] to pass transformed event.
+    /// Original [`Writer`] to pass transformed event into.
     #[deref]
     pub writer: W,
 
@@ -41,8 +40,8 @@ pub struct FailOnSkipped<W, F = SkipFn> {
     should_fail: F,
 }
 
-/// Alias for [`fn`] used to determine should [`Skipped`] test considered as
-/// [`Failed`] or not.
+/// Alias for a [`fn`] used to determine whether [`Skipped`] test should be
+/// considered as [`Failed`] or not.
 ///
 /// [`Failed`]: event::Step::Failed
 /// [`Skipped`]: event::Step::Skipped
@@ -109,9 +108,9 @@ where
     }
 }
 
-impl<W, Wr, F> FallibleWriter<W> for FailOnSkipped<Wr, F>
+impl<W, Wr, F> FailureWriter<W> for FailOnSkipped<Wr, F>
 where
-    Wr: FallibleWriter<W>,
+    Wr: FailureWriter<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -135,22 +134,23 @@ impl<Writer> From<Writer> for FailOnSkipped<Writer> {
 }
 
 impl<Writer> FailOnSkipped<Writer> {
-    /// Creates a new [`FailOnSkipped`] [`Writer`].
+    /// Wraps the given [`Writer`] in a new [`FailOnSkipped`] one.
     #[must_use]
-    pub fn new(writer: Writer) -> FailOnSkipped<Writer> {
-        FailOnSkipped::from(writer)
+    pub fn new(writer: Writer) -> Self {
+        Self::from(writer)
     }
 
-    /// Creates a new [`FailOnSkipped`] [`Writer`]. If `with` predicate returns
-    /// `true` [`Skipped`] [`Step`] will be considered [`Failed`].
+    /// Wraps the given [`Writer`] in a new [`FailOnSkipped`] one with the given
+    /// `predicate` indicating when a [`Skipped`] [`Step`] is considered
+    /// [`Failed`].
     ///
     /// [`Failed`]: event::Step::Failed
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn with<With>(writer: Writer, with: With) -> FailOnSkipped<Writer, With>
+    pub fn with<P>(writer: Writer, predicate: P) -> FailOnSkipped<Writer, P>
     where
-        With: Fn(
+        P: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
@@ -158,7 +158,7 @@ impl<Writer> FailOnSkipped<Writer> {
     {
         FailOnSkipped {
             writer,
-            should_fail: with,
+            should_fail: predicate,
         }
     }
 }

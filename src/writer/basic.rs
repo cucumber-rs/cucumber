@@ -443,7 +443,7 @@ fn coerce_error(err: &Info) -> String {
     }
 }
 
-/// Formats [`World`] using [`Debug`], then adding `ident` spaces to each line
+/// Formats the given [`World`] using [`Debug`], then adds `ident`s to each line
 /// to prettify the output.
 fn format_world<W: Debug>(world: Option<&W>, ident: usize) -> String {
     let world = world

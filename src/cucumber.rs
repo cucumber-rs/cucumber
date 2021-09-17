@@ -24,7 +24,7 @@ use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    parser, runner, step, writer, ArbitraryWriter, FallibleWriter, Parser,
+    parser, runner, step, writer, ArbitraryWriter, FailureWriter, Parser,
     Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
@@ -133,8 +133,10 @@ where
     W: World,
     Wr: Writer<W>,
 {
-    /// Consider [`Skipped`] step as [`Failed`] if [`Scenario`] isn't marked
-    /// with `@allow_skipped` tag.
+    /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
+    /// marked with `@allow_skipped` tag.
+    ///
+    /// It's useful option for ensuring that all the steps were covered.
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -152,8 +154,8 @@ where
         }
     }
 
-    /// Consider [`Skipped`] step as [`Failed`] if `filter` predicate returns
-    /// `true`.
+    /// Consider [`Skipped`] steps as [`Failed`] if the given `filter` predicate
+    /// returns `true`.
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -451,7 +453,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: for<'val> ArbitraryWriter<'val, W, String> + FallibleWriter<W>,
+    Wr: for<'val> ArbitraryWriter<'val, W, String> + FailureWriter<W>,
 {
     /// Runs [`Cucumber`].
     ///
@@ -494,15 +496,15 @@ where
             + 'static,
     {
         let writer = self.filter_run(input, filter).await;
-        if writer.is_failed() {
+        if writer.execution_has_failed() {
             let failed_steps = writer.failed_steps();
             let parsing_errors = writer.parsing_errors();
             panic!(
                 "{} step{} failed, {} parsing error{}",
                 failed_steps,
-                if failed_steps == 1 { "" } else { "s" },
+                (failed_steps != 1).then(|| "s").unwrap_or_default(),
                 parsing_errors,
-                if parsing_errors == 1 { "" } else { "s" },
+                (parsing_errors != 1).then(|| "s").unwrap_or_default(),
             );
         }
     }

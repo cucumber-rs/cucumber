@@ -17,37 +17,42 @@ use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
-    event, parser, writer::term::Styles, ArbitraryWriter, FallibleWriter,
-    World, Writer,
+    event, parser, writer::term::Styles, ArbitraryWriter, FailureWriter, World,
+    Writer,
 };
 
-/// [`Step`]s statistics.
+/// Execution statistics.
 ///
 /// [`Step`]: gherkin::Step
 #[derive(Clone, Copy, Debug)]
 pub struct Stats {
-    /// Number of passed [`Step`]s.
+    /// Number of passed [`Step`]s (or [`Scenario`]s).
     ///
+    /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     pub passed: usize,
 
-    /// Number of skipped [`Step`]s.
+    /// Number of skipped [`Step`]s (or [`Scenario`]s).
     ///
+    /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     pub skipped: usize,
 
-    /// Number of failed [`Step`]s.
+    /// Number of failed [`Step`]s (or [`Scenario`]s).
     ///
+    /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     pub failed: usize,
 }
 
 impl Stats {
-    /// Returns number of [`Step`]s, [`Stats`] has been collected for.
+    /// Returns total number of [`Step`]s (or [`Scenario`]s), these [`Stats`]
+    /// have been collected for.
     ///
+    /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn count(&self) -> usize {
+    pub fn total(&self) -> usize {
         self.passed + self.skipped + self.failed
     }
 }
@@ -156,7 +161,7 @@ where
     }
 }
 
-impl<W, Wr> FallibleWriter<W> for Summarized<Wr>
+impl<W, Wr> FailureWriter<W> for Summarized<Wr>
 where
     W: World,
     Self: Writer<W>,
@@ -244,15 +249,15 @@ impl<Writer> Summarized<Writer> {
 }
 
 impl<Writer> Summarized<Writer> {
-    /// Creates a new [`Summarized`] [`Writer`].
+    /// Wraps the given [`Writer`] into a new [`Summarized`] one.
     #[must_use]
-    pub fn new(writer: Writer) -> Summarized<Writer> {
-        Summarized::from(writer)
+    pub fn new(writer: Writer) -> Self {
+        Self::from(writer)
     }
 }
 
 impl Styles {
-    /// Generates formatted summary [`String`].
+    /// Generates a formatted summary [`String`].
     #[must_use]
     pub fn summary<W>(&self, summary: &Summarized<W>) -> String {
         let features = self.maybe_plural("feature", summary.features);
@@ -262,10 +267,10 @@ impl Styles {
             .unwrap_or_default();
 
         let scenarios =
-            self.maybe_plural("scenario", summary.scenarios.count());
+            self.maybe_plural("scenario", summary.scenarios.total());
         let scenarios_stats = self.format_stats(summary.scenarios);
 
-        let steps = self.maybe_plural("step", summary.steps.count());
+        let steps = self.maybe_plural("step", summary.steps.total());
         let steps_stats = self.format_stats(summary.steps);
 
         let parsing_errors = (summary.parsing_errors > 0)
@@ -291,7 +296,7 @@ impl Styles {
         .to_string()
     }
 
-    /// Formats [`Stats`] for terminal output.
+    /// Formats [`Stats`] for a terminal output.
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
         let formatted = array::IntoIter::new([
@@ -326,8 +331,7 @@ impl Styles {
             .unwrap_or_default()
     }
 
-    /// Adds `s` to `singular`, if `num != 1`
-    #[must_use]
+    /// Adds `s` to `singular` if the given `num` is not `1`.
     fn maybe_plural(
         &self,
         singular: impl Into<Cow<'static, str>>,
@@ -337,7 +341,7 @@ impl Styles {
             "{} {}{}",
             num,
             singular.into(),
-            (num != 1).then(|| "s").unwrap_or_default()
+            (num != 1).then(|| "s").unwrap_or_default(),
         ))
     }
 }
