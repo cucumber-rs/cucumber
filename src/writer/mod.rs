@@ -61,9 +61,8 @@ pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
         'val: 'async_trait;
 }
 
-/// [`Writer`] tracking a number of [`Failed`] [`Step`]s and parsing [`Error`]s.
+/// [`Writer`] tracking a number of [`Failed`] [`Step`]s and parsing errors.
 ///
-/// [`Error`]: parser::Error
 /// [`Failed`]: event::Step::Failed
 /// [`Step`]: gherkin::Step
 pub trait Failure<World>: Writer<World> {
@@ -80,9 +79,7 @@ pub trait Failure<World>: Writer<World> {
     #[must_use]
     fn failed_steps(&self) -> usize;
 
-    /// Returns number of parsing [`Error`]s.
-    ///
-    /// [`Error`]: parser::Error
+    /// Returns number of parsing errors.
     #[must_use]
     fn parsing_errors(&self) -> usize;
 }
