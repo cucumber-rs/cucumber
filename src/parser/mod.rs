@@ -14,9 +14,6 @@
 
 pub mod basic;
 
-use std::{io, path::PathBuf};
-
-use derive_more::{Display, Error, From};
 use futures::Stream;
 
 #[doc(inline)]
@@ -40,34 +37,4 @@ pub trait Parser<I> {
 /// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
-pub type Result<T> = std::result::Result<T, Error>;
-
-/// Error while parsing [Gherkin] file.
-///
-/// [Gherkin]: https://cucumber.io/docs/gherkin/reference
-#[derive(Debug, Display, Error, From)]
-pub enum Error {
-    /// Unsupported language.
-    #[display(fmt = "Language error: {}", _0)]
-    Language(gherkin::EnvError),
-
-    /// Parsing file error.
-    #[display(fmt = "Parsing error: {}, file: {}", source, "path.display()")]
-    Parse {
-        /// Original error of parsing.
-        source: gherkin::ParseError,
-
-        /// Path of the file.
-        path: PathBuf,
-    },
-
-    /// Reading file error.
-    #[display(fmt = "Reading error: {}, file: {}", source, "path.display()")]
-    Read {
-        /// Original reading error.
-        source: io::Error,
-
-        /// Path of the file.
-        path: PathBuf,
-    },
-}
+pub type Result<T> = std::result::Result<T, gherkin::ParseFileError>;

@@ -12,7 +12,6 @@
 
 use std::{
     borrow::Cow,
-    fs,
     path::{Path, PathBuf},
     vec,
 };
@@ -22,7 +21,7 @@ use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
 
-use super::{Error as ParseError, Parser, Result as ParseResult};
+use super::{Parser, Result as ParseResult};
 
 /// Default [`Parser`].
 ///
@@ -52,45 +51,21 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 buf.as_path().canonicalize()
             }) {
                 Ok(p) => p,
-                Err(source) => {
-                    return vec![Err(ParseError::Read {
+                Err(err) => {
+                    return vec![Err(gherkin::ParseFileError::Reading {
                         path: path.to_path_buf(),
-                        source,
+                        source: err,
                     })];
                 }
             };
 
-            let parse_feature = |path: &Path| {
-                fs::read_to_string(path)
-                    .map_err(|source| ParseError::Read {
-                        path: path.to_path_buf(),
-                        source,
-                    })
-                    .and_then(|f| {
-                        self.language
-                            .as_ref()
-                            .map_or_else(
-                                || Ok(GherkinEnv::default()),
-                                |l| GherkinEnv::new(l.as_ref()),
-                            )
-                            .map(|l| (l, f))
-                            .map_err(Into::into)
-                    })
-                    .and_then(|(l, file)| {
-                        gherkin::Feature::parse(file, l)
-                            .map(|mut f| {
-                                f.path = Some(path.to_path_buf());
-                                f
-                            })
-                            .map_err(|source| ParseError::Parse {
-                                source,
-                                path: path.to_path_buf(),
-                            })
-                    })
-            };
-
             if path.is_file() {
-                vec![parse_feature(&path)]
+                let env = self
+                    .language
+                    .as_ref()
+                    .and_then(|l| GherkinEnv::new(l).ok())
+                    .unwrap_or_default();
+                vec![gherkin::Feature::parse_path(path, env)]
             } else {
                 let walker = GlobWalkerBuilder::new(path, "*.feature")
                     .case_insensitive(true)
@@ -98,8 +73,15 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                     .unwrap();
                 walker
                     .filter_map(Result::ok)
-                    .map(|entry| parse_feature(entry.path()))
-                    .collect()
+                    .map(|entry| {
+                        let env = self
+                            .language
+                            .as_ref()
+                            .and_then(|l| GherkinEnv::new(l).ok())
+                            .unwrap_or_default();
+                        gherkin::Feature::parse_path(entry.path(), env)
+                    })
+                    .collect::<Vec<_>>()
             }
         };
 
