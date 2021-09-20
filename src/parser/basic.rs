@@ -21,8 +21,6 @@ use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
-use once_cell::sync::Lazy;
-use regex::Regex;
 
 use super::{Error as ParseError, Parser, Result as ParseResult};
 
@@ -69,7 +67,12 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                         source,
                     })
                     .and_then(|f| {
-                        self.get_language(&f)
+                        self.language
+                            .as_ref()
+                            .map_or_else(
+                                || Ok(GherkinEnv::default()),
+                                |l| GherkinEnv::new(l.as_ref()),
+                            )
                             .map(|l| (l, f))
                             .map_err(Into::into)
                     })
@@ -127,31 +130,6 @@ impl Basic {
         }
         self.language = Some(name);
         Ok(self)
-    }
-
-    /// Returns a language to parse the given `file`'s content.
-    ///
-    /// 1. If `# language: ` comment present, use it;
-    /// 2. If default language was set with [`Basic::language()`], use it;
-    /// 3. If none of the above, assume the default one (English).
-    fn get_language(
-        &self,
-        file: impl AsRef<str>,
-    ) -> Result<GherkinEnv, gherkin::EnvError> {
-        static RE: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"# language: ([\w-]+)").unwrap());
-
-        let lang = || Some(RE.captures(file.as_ref())?.get(1)?.as_str());
-        lang().map_or_else(
-            || {
-                Ok(self
-                    .language
-                    .as_ref()
-                    .and_then(|l| GherkinEnv::new(l).ok())
-                    .unwrap_or_default())
-            },
-            GherkinEnv::new,
-        )
     }
 }
 
