@@ -1,6 +1,13 @@
 [book]
-authors = ["alvskar"]
+authors = ["alvskar", "ilslv"]
 language = "en"
 multilingual = false
 src = "src"
 title = "Cucumber"
+
+[build]
+build-dir = "_rendered"
+create-missing = false
+
+[output.html]
+git_repository_url = "https://github.com/bbqsrc/cucumber-rust"

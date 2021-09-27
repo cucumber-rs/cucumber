@@ -1,0 +1,21 @@
+[package]
+name = "cucumber_rust_book_tests"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+authors = [
+    "Brendan Molloy <brendan@bbqsrc.net>",
+    "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
+    "Kai Ren <tyranron@gmail.com>",
+]
+publish = false
+
+[dependencies]
+async-trait = "0.1"
+cucumber_rust = { path = "../.." }
+futures = "0.3"
+skeptic = "0.13"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
+[build-dependencies]
+skeptic = "0.13"

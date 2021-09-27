@@ -11,11 +11,14 @@
 //! `#[derive(WorldInit)]` macro implementation.
 
 use inflections::case::to_pascal_case;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
-pub(crate) fn world_init(input: TokenStream, steps: &[&str]) -> syn::Result<TokenStream> {
+pub(crate) fn world_init(
+    input: TokenStream,
+    steps: &[&str],
+) -> syn::Result<TokenStream> {
     let input = syn::parse2::<syn::DeriveInput>(input)?;
 
     let step_types = step_types(steps);
@@ -24,7 +27,7 @@ pub(crate) fn world_init(input: TokenStream, steps: &[&str]) -> syn::Result<Toke
     let world = &input.ident;
 
     Ok(quote! {
-        impl ::cucumber_rust::private::WorldInventory<
+        impl ::cucumber_rust::codegen::WorldInventory<
             #( #step_types, )*
         > for #world {}
 
@@ -36,75 +39,53 @@ pub(crate) fn world_init(input: TokenStream, steps: &[&str]) -> syn::Result<Toke
 fn step_types(steps: &[&str]) -> Vec<syn::Ident> {
     steps
         .iter()
-        .flat_map(|step| {
+        .map(|step| {
             let step = to_pascal_case(step);
-            vec![
-                format_ident!("Cucumber{}", step),
-                format_ident!("Cucumber{}Regex", step),
-                format_ident!("Cucumber{}Async", step),
-                format_ident!("Cucumber{}RegexAsync", step),
-            ]
+            format_ident!("Cucumber{}", step)
         })
         .collect()
 }
 
 /// Generates structs and their implementations of private traits.
-fn generate_step_structs(steps: &[&str], world: &syn::DeriveInput) -> Vec<TokenStream> {
+fn generate_step_structs(
+    steps: &[&str],
+    world: &syn::DeriveInput,
+) -> Vec<TokenStream> {
     let (world, world_vis) = (&world.ident, &world.vis);
-
-    let idents = [
-        (
-            syn::Ident::new("Step", Span::call_site()),
-            syn::Ident::new("CucumberFn", Span::call_site()),
-        ),
-        (
-            syn::Ident::new("StepRegex", Span::call_site()),
-            syn::Ident::new("CucumberRegexFn", Span::call_site()),
-        ),
-        (
-            syn::Ident::new("StepAsync", Span::call_site()),
-            syn::Ident::new("CucumberAsyncFn", Span::call_site()),
-        ),
-        (
-            syn::Ident::new("StepRegexAsync", Span::call_site()),
-            syn::Ident::new("CucumberAsyncRegexFn", Span::call_site()),
-        ),
-    ];
 
     step_types(steps)
         .iter()
-        .zip(idents.iter().cycle())
-        .map(|(ty, (trait_ty, func))| {
+        .map(|ty| {
             quote! {
                 #[automatically_derived]
                 #[doc(hidden)]
                 #world_vis struct #ty {
                     #[doc(hidden)]
-                    pub name: &'static str,
+                    pub regex: ::cucumber_rust::codegen::Regex,
 
                     #[doc(hidden)]
-                    pub func: ::cucumber_rust::private::#func<#world>,
+                    pub func: ::cucumber_rust::Step<#world>,
                 }
 
                 #[automatically_derived]
-                impl ::cucumber_rust::private::#trait_ty<#world> for #ty {
+                impl ::cucumber_rust::codegen::StepConstructor<#world> for #ty {
                     fn new (
-                        name: &'static str,
-                        func: ::cucumber_rust::private::#func<#world>,
+                        regex: ::cucumber_rust::codegen::Regex,
+                        func: ::cucumber_rust::Step<#world>,
                     ) -> Self {
-                        Self { name, func }
+                        Self { regex, func }
                     }
 
                     fn inner(&self) -> (
-                        &'static str,
-                        ::cucumber_rust::private::#func<#world>,
+                        ::cucumber_rust::codegen::Regex,
+                        ::cucumber_rust::Step<#world>,
                     ) {
-                        (self.name, self.func.clone())
+                        (self.regex.clone(), self.func.clone())
                     }
                 }
 
                 #[automatically_derived]
-                ::cucumber_rust::private::collect!(#ty);
+                ::cucumber_rust::codegen::collect!(#ty);
             }
         })
         .collect()

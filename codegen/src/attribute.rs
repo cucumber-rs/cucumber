@@ -14,12 +14,14 @@ use std::mem;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use regex::{self, Regex};
 use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
 };
 
-/// Generates code of `#[given]`, `#[when]` and `#[then]` attribute macros expansion.
+/// Generates code of `#[given]`, `#[when]` and `#[then]` attribute macros
+/// expansion.
 pub(crate) fn step(
     attr_name: &'static str,
     args: TokenStream,
@@ -28,7 +30,8 @@ pub(crate) fn step(
     Step::parse(attr_name, args, input).and_then(Step::expand)
 }
 
-/// Parsed state (ready for code generation) of the attribute and the function it's applied to.
+/// Parsed state (ready for code generation) of the attribute and the function
+/// it's applied to.
 #[derive(Clone, Debug)]
 struct Step {
     /// Name of the attribute (`given`, `when` or `then`).
@@ -40,27 +43,34 @@ struct Step {
     /// Function the attribute is applied to.
     func: syn::ItemFn,
 
-    /// Name of the function argument representing a [`cucumber::StepContext`][1] reference.
+    /// Name of the function argument representing a [`gherkin::Step`]
+    /// reference.
     ///
-    /// [1]: cucumber_rust::StepContext
-    ctx_arg_name: Option<syn::Ident>,
+    /// [`gherkin::Step`]: https://bit.ly/3j42hcd
+    step_arg_name: Option<syn::Ident>,
 }
 
 impl Step {
     /// Parses [`Step`] definition from the attribute macro input.
-    fn parse(attr_name: &'static str, attr: TokenStream, body: TokenStream) -> syn::Result<Self> {
+    fn parse(
+        attr_name: &'static str,
+        attr: TokenStream,
+        body: TokenStream,
+    ) -> syn::Result<Self> {
         let attr_arg = syn::parse2::<AttributeArgument>(attr)?;
         let mut func = syn::parse2::<syn::ItemFn>(body)?;
 
-        let ctx_arg_name = {
-            let (arg_marked_as_step, _) = remove_all_attrs((attr_name, "context"), &mut func);
+        let step_arg_name = {
+            let (arg_marked_as_step, _) =
+                remove_all_attrs_if_needed("step", &mut func);
 
             match arg_marked_as_step.len() {
                 0 => Ok(None),
                 1 => {
                     // Unwrapping is OK here, because
                     // `arg_marked_as_step.len() == 1`.
-                    let (ident, _) = parse_fn_arg(arg_marked_as_step.first().unwrap())?;
+                    let (ident, _) =
+                        parse_fn_arg(arg_marked_as_step.first().unwrap())?;
                     Ok(Some(ident.clone()))
                 }
                 _ => Err(syn::Error::new(
@@ -83,10 +93,10 @@ impl Step {
         });
 
         Ok(Self {
-            attr_arg,
             attr_name,
+            attr_arg,
             func,
-            ctx_arg_name,
+            step_arg_name,
         })
     }
 
@@ -97,12 +107,9 @@ impl Step {
         let func = &self.func;
         let func_name = &func.sig.ident;
 
-        let mut func_args = TokenStream::default();
-        let mut addon_parsing = None;
-        let mut is_ctx_arg_considered = false;
-        if is_regex {
-            if let Some(elem_ty) = parse_slice_from_second_arg(&func.sig) {
-                addon_parsing = Some(quote! {
+        let (func_args, addon_parsing) = if is_regex {
+            if let Some(elem_ty) = find_first_slice(&func.sig) {
+                let addon_parsing = Some(quote! {
                     let __cucumber_matches = __cucumber_ctx
                         .matches
                         .iter()
@@ -110,72 +117,80 @@ impl Step {
                         .enumerate()
                         .map(|(i, s)| {
                             s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
-                                "Failed to parse {} element '{}': {}", i, s, e,
+                                "Failed to parse element at {} '{}': {}",
+                                i, s, e,
                             ))
                         })
                         .collect::<Vec<_>>();
                 });
-                func_args = quote! {
-                    __cucumber_matches.as_slice(),
-                }
+                let func_args = func
+                    .sig
+                    .inputs
+                    .iter()
+                    .skip(1)
+                    .map(|arg| self.borrow_step_or_slice(arg))
+                    .collect::<Result<TokenStream, _>>()?;
+
+                (func_args, addon_parsing)
             } else {
                 #[allow(clippy::redundant_closure_for_method_calls)]
-                let (idents, parsings): (Vec<_>, Vec<_>) = itertools::process_results(
-                    func.sig
-                        .inputs
-                        .iter()
-                        .skip(1)
-                        .map(|arg| self.arg_ident_and_parse_code(arg)),
-                    |i| i.unzip(),
-                )?;
-                is_ctx_arg_considered = true;
+                let (idents, parsings): (Vec<_>, Vec<_>) =
+                    itertools::process_results(
+                        func.sig
+                            .inputs
+                            .iter()
+                            .skip(1)
+                            .map(|arg| self.arg_ident_and_parse_code(arg)),
+                        |i| i.unzip(),
+                    )?;
 
-                addon_parsing = Some(quote! {
-                    let mut __cucumber_iter = __cucumber_ctx.matches.iter().skip(1);
+                let addon_parsing = Some(quote! {
+                    let mut __cucumber_iter = __cucumber_ctx
+                        .matches.iter()
+                        .skip(1);
                     #( #parsings )*
                 });
-                func_args = quote! {
+                let func_args = quote! {
                     #( #idents, )*
-                }
+                };
+
+                (func_args, addon_parsing)
             }
-        }
-        if self.ctx_arg_name.is_some() && !is_ctx_arg_considered {
-            func_args = quote! {
-                #func_args
-                ::std::borrow::Borrow::borrow(&__cucumber_ctx),
-            };
-        }
+        } else if self.step_arg_name.is_some() {
+            (
+                quote! { ::std::borrow::Borrow::borrow(&__cucumber_ctx.step), },
+                None,
+            )
+        } else {
+            (TokenStream::default(), None)
+        };
 
         let world = parse_world_from_args(&self.func.sig)?;
         let constructor_method = self.constructor_method();
 
-        let step_matcher = self.attr_arg.literal().value();
-        let step_caller = if func.sig.asyncness.is_none() {
-            let caller_name = format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
-            quote! {
-                {
-                    #[automatically_derived]
-                    fn #caller_name(
-                        mut __cucumber_world: #world,
-                        __cucumber_ctx: ::cucumber_rust::StepContext,
-                    ) -> #world {
-                        #addon_parsing
-                        #func_name(&mut __cucumber_world, #func_args);
-                        __cucumber_world
-                    }
-
-                    #caller_name
-                }
-            }
+        let step_matcher = self.attr_arg.regex_literal().value();
+        let caller_name =
+            format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
+        let awaiting = if func.sig.asyncness.is_some() {
+            quote! { .await }
         } else {
-            quote! {
-                ::cucumber_rust::t!(
-                    |mut __cucumber_world, __cucumber_ctx| {
+            quote! {}
+        };
+        let step_caller = quote! {
+            {
+                #[automatically_derived]
+                fn #caller_name<'w>(
+                    __cucumber_world: &'w mut #world,
+                    __cucumber_ctx: ::cucumber_rust::step::Context,
+                ) -> ::cucumber_rust::codegen::LocalBoxFuture<'w, ()> {
+                    let f = async move {
                         #addon_parsing
-                        #func_name(&mut __cucumber_world, #func_args).await;
-                        __cucumber_world
-                    }
-                )
+                        #func_name(__cucumber_world, #func_args)#awaiting;
+                    };
+                    ::std::boxed::Box::pin(f)
+                }
+
+                #caller_name
             }
         };
 
@@ -183,11 +198,15 @@ impl Step {
             #func
 
             #[automatically_derived]
-            ::cucumber_rust::private::submit!(
-                #![crate = ::cucumber_rust::private] {
-                    <#world as ::cucumber_rust::private::WorldInventory<
-                        _, _, _, _, _, _, _, _, _, _, _, _,
-                    >>::#constructor_method(#step_matcher, #step_caller)
+            ::cucumber_rust::codegen::submit!(
+                #![crate = ::cucumber_rust::codegen] {
+                    <#world as ::cucumber_rust::codegen::WorldInventory<
+                        _, _, _,
+                    >>::#constructor_method(
+                        ::cucumber_rust::codegen::Regex::new(#step_matcher)
+                            .unwrap(),
+                        #step_caller,
+                    )
                 }
             );
         })
@@ -196,21 +215,7 @@ impl Step {
     /// Composes name of the [`WorldInventory`] method to wire this [`Step`]
     /// with.
     fn constructor_method(&self) -> syn::Ident {
-        let regex = match &self.attr_arg {
-            AttributeArgument::Regex(_) => "_regex",
-            AttributeArgument::Literal(_) => "",
-        };
-        format_ident!(
-            "new_{}{}{}",
-            self.attr_name,
-            regex,
-            self.func
-                .sig
-                .asyncness
-                .as_ref()
-                .map(|_| "_async")
-                .unwrap_or_default(),
-        )
+        format_ident!("new_{}", self.attr_name)
     }
 
     /// Returns [`syn::Ident`] and parsing code of the given function's
@@ -225,16 +230,23 @@ impl Step {
     ) -> syn::Result<(&'a syn::Ident, TokenStream)> {
         let (ident, ty) = parse_fn_arg(arg)?;
 
-        let is_ctx_arg = self.ctx_arg_name.as_ref().map(|i| *i == *ident) == Some(true);
+        let is_ctx_arg =
+            self.step_arg_name.as_ref().map(|i| *i == *ident) == Some(true);
 
         let decl = if is_ctx_arg {
             quote! {
-                let #ident = ::std::borrow::Borrow::borrow(&__cucumber_ctx);
+                let #ident =
+                    ::std::borrow::Borrow::borrow(&__cucumber_ctx.step);
             }
         } else {
             let ty = match ty {
                 syn::Type::Path(p) => p,
-                _ => return Err(syn::Error::new(ty.span(), "Type path expected")),
+                _ => {
+                    return Err(syn::Error::new(
+                        ty.span(),
+                        "Type path expected",
+                    ))
+                }
             };
 
             let not_found_err = format!("{} not found", ident);
@@ -255,6 +267,28 @@ impl Step {
 
         Ok((ident, decl))
     }
+
+    /// Generates code that borrows [`gherkin::Step`] from context if the given
+    /// `arg` matches `step_arg_name`, or else borrows parsed slice.
+    ///
+    /// [`gherkin::Step`]: https://bit.ly/3j42hcd
+    fn borrow_step_or_slice(
+        &self,
+        arg: &syn::FnArg,
+    ) -> syn::Result<TokenStream> {
+        if let Some(name) = &self.step_arg_name {
+            let (ident, _) = parse_fn_arg(arg)?;
+            if name == ident {
+                return Ok(quote! {
+                    ::std::borrow::Borrow::borrow(&__cucumber_ctx.step),
+                });
+            }
+        }
+
+        Ok(quote! {
+            __cucumber_matches.as_slice(),
+        })
+    }
 }
 
 /// Argument of the attribute macro.
@@ -268,10 +302,14 @@ enum AttributeArgument {
 }
 
 impl AttributeArgument {
-    /// Returns the underlying [`syn::LitStr`].
-    fn literal(&self) -> &syn::LitStr {
+    /// Returns [`syn::LitStr`] to construct a [`Regex`] with.
+    fn regex_literal(&self) -> syn::LitStr {
         match self {
-            Self::Regex(l) | Self::Literal(l) => l,
+            Self::Regex(l) => l.clone(),
+            Self::Literal(l) => syn::LitStr::new(
+                &format!("^{}$", regex::escape(&l.value())),
+                l.span(),
+            ),
         }
     }
 }
@@ -284,9 +322,14 @@ impl Parse for AttributeArgument {
                 if arg.path.is_ident("regex") {
                     let str_lit = to_string_literal(arg.lit)?;
 
-                    let _ = regex::Regex::new(str_lit.value().as_str()).map_err(|e| {
-                        syn::Error::new(str_lit.span(), format!("Invalid regex: {}", e.to_string()))
-                    })?;
+                    drop(Regex::new(str_lit.value().as_str()).map_err(
+                        |e| {
+                            syn::Error::new(
+                                str_lit.span(),
+                                format!("Invalid regex: {}", e.to_string()),
+                            )
+                        },
+                    )?);
 
                     Ok(AttributeArgument::Regex(str_lit))
                 } else {
@@ -294,7 +337,9 @@ impl Parse for AttributeArgument {
                 }
             }
 
-            syn::NestedMeta::Lit(l) => Ok(AttributeArgument::Literal(to_string_literal(l)?)),
+            syn::NestedMeta::Lit(l) => {
+                Ok(AttributeArgument::Literal(to_string_literal(l)?))
+            }
 
             syn::NestedMeta::Meta(_) => Err(syn::Error::new(
                 arg.span(),
@@ -304,18 +349,34 @@ impl Parse for AttributeArgument {
     }
 }
 
-/// Removes all `#[attr_path(attr_arg)]` attributes from the given function
-/// signature and returns these attributes along with the corresponding
-/// function's arguments.
-fn remove_all_attrs<'a>(
-    (attr_path, attr_arg): (&str, &str),
+/// Removes all `#[attr_arg]` attributes from the given function signature and
+/// returns these attributes along with the corresponding function's arguments
+/// in case there are no more `#[given]`, `#[when]` or `#[then]` attributes.
+fn remove_all_attrs_if_needed<'a>(
+    attr_arg: &str,
     func: &'a mut syn::ItemFn,
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
+    let has_other_step_arguments = func.attrs.iter().any(|attr| {
+        attr.path
+            .segments
+            .last()
+            .map(|segment| {
+                ["given", "when", "then"]
+                    .iter()
+                    .any(|step| segment.ident == step)
+            })
+            .unwrap_or_default()
+    });
+
     func.sig
         .inputs
         .iter_mut()
         .filter_map(|arg| {
-            if let Some(attr) = remove_attr((attr_path, attr_arg), arg) {
+            if has_other_step_arguments {
+                if let Some(attr) = find_attr(attr_arg, arg) {
+                    return Some((&*arg, attr));
+                }
+            } else if let Some(attr) = remove_attr(attr_arg, arg) {
                 return Some((&*arg, attr));
             }
             None
@@ -323,56 +384,57 @@ fn remove_all_attrs<'a>(
         .unzip()
 }
 
-/// Removes attribute `#[attr_path(attr_arg)]` from function's argument, if any.
-fn remove_attr(
-    (attr_path, attr_arg): (&str, &str),
-    arg: &mut syn::FnArg,
-) -> Option<syn::Attribute> {
+/// Finds attribute `#[attr_arg]` from function's argument, if any.
+fn find_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
+    if let syn::FnArg::Typed(typed_arg) = arg {
+        typed_arg
+            .attrs
+            .iter()
+            .find(|attr| {
+                attr.path
+                    .get_ident()
+                    .map(|ident| ident == attr_arg)
+                    .unwrap_or_default()
+            })
+            .cloned()
+    } else {
+        None
+    }
+}
+
+/// Removes attribute `#[attr_arg]` from function's argument, if any.
+fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
     use itertools::{Either, Itertools as _};
 
     if let syn::FnArg::Typed(typed_arg) = arg {
         let attrs = mem::take(&mut typed_arg.attrs);
 
-        let (mut other, mut removed): (Vec<_>, Vec<_>) = attrs.into_iter().partition_map(|attr| {
-            if eq_path_and_arg((attr_path, attr_arg), &attr) {
-                Either::Right(attr)
-            } else {
+        let (mut other, mut removed): (Vec<_>, Vec<_>) =
+            attrs.into_iter().partition_map(|attr| {
+                if let Some(ident) = attr.path.get_ident() {
+                    if ident == attr_arg {
+                        return Either::Right(attr);
+                    }
+                }
                 Either::Left(attr)
-            }
-        });
+            });
 
         if removed.len() == 1 {
             typed_arg.attrs = other;
             // Unwrapping is OK here, because `step_idents.len() == 1`.
             return Some(removed.pop().unwrap());
-        } else {
-            other.append(&mut removed);
-            typed_arg.attrs = other;
         }
+        other.append(&mut removed);
+        typed_arg.attrs = other;
     }
     None
-}
-
-/// Compares attribute's path and argument.
-fn eq_path_and_arg((attr_path, attr_arg): (&str, &str), attr: &syn::Attribute) -> bool {
-    if let Ok(meta) = attr.parse_meta() {
-        if let syn::Meta::List(meta_list) = meta {
-            if meta_list.path.is_ident(attr_path) && meta_list.nested.len() == 1 {
-                // Unwrapping is OK here, because `meta_list.nested.len() == 1`.
-                if let syn::NestedMeta::Meta(m) = meta_list.nested.first().unwrap() {
-                    return m.path().is_ident(attr_arg);
-                }
-            }
-        }
-    }
-    false
 }
 
 /// Parses [`syn::Ident`] and [`syn::Type`] from the given [`syn::FnArg`].
 fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
     let arg = match arg {
         syn::FnArg::Typed(t) => t,
-        _ => {
+        syn::FnArg::Receiver(_) => {
             return Err(syn::Error::new(
                 arg.span(),
                 "Expected regular argument, found `self`",
@@ -388,28 +450,30 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
     Ok((ident, arg.ty.as_ref()))
 }
 
-/// Parses type of a slice element from a second argument of the given function
-/// signature.
-fn parse_slice_from_second_arg(sig: &syn::Signature) -> Option<&syn::TypePath> {
-    sig.inputs
-        .iter()
-        .nth(1)
-        .and_then(|second_arg| match second_arg {
+/// Parses type of a first slice element of the given function signature.
+fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
+    sig.inputs.iter().find_map(|arg| {
+        match arg {
             syn::FnArg::Typed(typed_arg) => Some(typed_arg),
-            _ => None,
+            syn::FnArg::Receiver(_) => None,
+        }
+        .and_then(|typed_arg| {
+            match typed_arg.ty.as_ref() {
+                syn::Type::Reference(r) => Some(r),
+                _ => None,
+            }
+            .and_then(|ty_ref| {
+                match ty_ref.elem.as_ref() {
+                    syn::Type::Slice(s) => Some(s),
+                    _ => None,
+                }
+                .and_then(|slice| match slice.elem.as_ref() {
+                    syn::Type::Path(ty) => Some(ty),
+                    _ => None,
+                })
+            })
         })
-        .and_then(|typed_arg| match typed_arg.ty.as_ref() {
-            syn::Type::Reference(r) => Some(r),
-            _ => None,
-        })
-        .and_then(|ty_ref| match ty_ref.elem.as_ref() {
-            syn::Type::Slice(s) => Some(s),
-            _ => None,
-        })
-        .and_then(|slice| match slice.elem.as_ref() {
-            syn::Type::Path(ty) => Some(ty),
-            _ => None,
-        })
+    })
 }
 
 /// Parses [`cucumber::World`] from arguments of the function signature.
@@ -421,7 +485,7 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
         .ok_or_else(|| sig.ident.span())
         .and_then(|first_arg| match first_arg {
             syn::FnArg::Typed(a) => Ok(a),
-            _ => Err(first_arg.span()),
+            syn::FnArg::Receiver(_) => Err(first_arg.span()),
         })
         .and_then(|typed_arg| match typed_arg.ty.as_ref() {
             syn::Type::Reference(r) => Ok(r),
@@ -436,7 +500,10 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
             _ => Err(world_mut_ref.span()),
         })
         .map_err(|span| {
-            syn::Error::new(span, "First function argument expected to be `&mut World`")
+            syn::Error::new(
+                span,
+                "First function argument expected to be `&mut World`",
+            )
         })
 }
 

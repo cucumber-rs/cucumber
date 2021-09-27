@@ -1,139 +1,274 @@
-// Copyright (c) 2018-2020  Brendan Molloy <brendan@bbqsrc.net>
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-//! Key occurrences in the lifecycle of a Cucumber execution.
+
+//! Key occurrences in a lifecycle of [Cucumber] execution.
 //!
-//! The top-level enum here is `CucumberEvent`.
+//! The top-level enum here is [`Cucumber`].
 //!
-//! Each event enum contains variants indicating
-//! what stage of execution Cucumber is at and,
-//! variants with detailed content about the precise
-//! sub-event
+//! Each event enum contains variants indicating what stage of execution
+//! [`Runner`] is at, and variants with detailed content about the precise
+//! sub-event.
+//!
+//! [`Runner`]: crate::Runner
+//! [Cucumber]: https://cucumber.io
 
-pub use super::ExampleValues;
-use std::{fmt::Display, rc::Rc};
+use std::{any::Any, sync::Arc};
 
-/// The stringified content of stdout and stderr
-/// captured during Step execution.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CapturedOutput {
-    pub out: String,
-    pub err: String,
-}
+/// Alias for a [`catch_unwind()`] error.
+///
+/// [`catch_unwind()`]: std::panic::catch_unwind()
+pub type Info = Box<dyn Any + Send + 'static>;
 
-/// Panic source location information
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Location {
-    pub file: String,
-    pub line: u32,
-    pub column: u32,
-}
+/// Top-level [Cucumber] run event.
+///
+/// [Cucumber]: https://cucumber.io
+#[derive(Debug)]
+pub enum Cucumber<World> {
+    /// [`Cucumber`] execution being started.
+    Started,
 
-impl Location {
-    pub fn unknown() -> Self {
-        Location {
-            file: "<unknown>".into(),
-            line: 0,
-            column: 0,
-        }
-    }
-}
+    /// [`Feature`] event.
+    Feature(Arc<gherkin::Feature>, Feature<World>),
 
-impl Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\u{00a0}{}:{}:{}\u{00a0}",
-            &self.file, self.line, self.column
-        )
-    }
-}
-
-/// Panic content captured when a Step failed.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PanicInfo {
-    pub location: Location,
-    pub payload: String,
-}
-
-impl PanicInfo {
-    pub fn unknown() -> Self {
-        PanicInfo {
-            location: Location::unknown(),
-            payload: "(No panic info was found?)".into(),
-        }
-    }
-}
-
-/// Outcome of step execution, carrying along the relevant
-/// `World` state.
-pub(crate) enum TestEvent<W> {
-    Unimplemented,
-    Skipped,
-    Success(W, CapturedOutput),
-    Failure(StepFailureKind),
-}
-
-/// Event specific to a particular [Step](https://cucumber.io/docs/gherkin/reference/#step)
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum StepEvent {
-    Starting,
-    Unimplemented,
-    Skipped,
-    Passed(CapturedOutput),
-    Failed(StepFailureKind),
-}
-
-/// Event specific to a particular [Scenario](https://cucumber.io/docs/gherkin/reference/#example)
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScenarioEvent {
-    Starting(ExampleValues),
-    Background(Rc<gherkin::Step>, StepEvent),
-    Step(Rc<gherkin::Step>, StepEvent),
-    Skipped,
-    Passed,
-    Failed(FailureKind),
-}
-
-/// Event specific to a particular [Rule](https://cucumber.io/docs/gherkin/reference/#rule)
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RuleEvent {
-    Starting,
-    Scenario(Rc<gherkin::Scenario>, ScenarioEvent),
-    Skipped,
-    Passed,
-    Failed(FailureKind),
-}
-
-/// Event specific to a particular [Feature](https://cucumber.io/docs/gherkin/reference/#feature)
-#[derive(Debug, Clone)]
-pub enum FeatureEvent {
-    Starting,
-    Scenario(Rc<gherkin::Scenario>, ScenarioEvent),
-    Rule(Rc<gherkin::Rule>, RuleEvent),
+    /// [`Cucumber`] execution being finished.
     Finished,
 }
 
-/// Top-level cucumber run event.
-#[derive(Debug, Clone)]
-pub enum CucumberEvent {
-    Starting,
-    Feature(Rc<gherkin::Feature>, FeatureEvent),
-    Finished(crate::runner::RunResult),
+impl<World> Cucumber<World> {
+    /// Constructs an event of a [`Feature`] being started.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    #[must_use]
+    pub fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
+        Self::Feature(feat, Feature::Started)
+    }
+
+    /// Constructs an event of a [`Rule`] being started.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    #[must_use]
+    pub fn rule_started(
+        feat: Arc<gherkin::Feature>,
+        rule: Arc<gherkin::Rule>,
+    ) -> Self {
+        Self::Feature(feat, Feature::Rule(rule, Rule::Started))
+    }
+
+    /// Constructs an event of a [`Feature`] being finished.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    #[must_use]
+    pub fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
+        Self::Feature(feat, Feature::Finished)
+    }
+
+    /// Constructs an event of a [`Rule`] being finished.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    #[must_use]
+    pub fn rule_finished(
+        feat: Arc<gherkin::Feature>,
+        rule: Arc<gherkin::Rule>,
+    ) -> Self {
+        Self::Feature(feat, Feature::Rule(rule, Rule::Finished))
+    }
+
+    /// Constructs a [`Cucumber`] event from the given [`Scenario`] event.
+    #[must_use]
+    pub fn scenario(
+        feat: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
+        event: Scenario<World>,
+    ) -> Self {
+        #[allow(clippy::option_if_let_else)] // use of moved value: `event`
+        if let Some(r) = rule {
+            Self::Feature(
+                feat,
+                Feature::Rule(r, Rule::Scenario(scenario, event)),
+            )
+        } else {
+            Self::Feature(feat, Feature::Scenario(scenario, event))
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FailureKind {
-    TimedOut,
-    Panic,
+/// Event specific to a particular [Feature].
+///
+/// [Feature]: https://cucumber.io/docs/gherkin/reference/#feature
+#[derive(Debug)]
+pub enum Feature<World> {
+    /// [`Feature`] execution being started.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    Started,
+
+    /// [`Rule`] event.
+    Rule(Arc<gherkin::Rule>, Rule<World>),
+
+    /// [`Scenario`] event.
+    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+
+    /// [`Feature`] execution being finished.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    Finished,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum StepFailureKind {
-    TimedOut,
-    Panic(CapturedOutput, PanicInfo),
+/// Event specific to a particular [Rule].
+///
+/// [Rule]: https://cucumber.io/docs/gherkin/reference/#rule
+#[derive(Debug)]
+pub enum Rule<World> {
+    /// [`Rule`] execution being started.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    Started,
+
+    /// [`Scenario`] event.
+    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+
+    /// [`Rule`] execution being finished.
+    ///
+    /// [`Rule`]: gherkin::Rule
+    Finished,
+}
+
+/// Event specific to a particular [Step].
+///
+/// [Step]: https://cucumber.io/docs/gherkin/reference/#step
+#[derive(Debug)]
+pub enum Step<World> {
+    /// [`Step`] execution being started.
+    ///
+    /// [`Step`]: gherkin::Step
+    Started,
+
+    /// [`Step`] being skipped.
+    ///
+    /// That means there is no [`Regex`] matching [`Step`] in a
+    /// [`step::Collection`].
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    /// [`step::Collection`]: crate::step::Collection
+    Skipped,
+
+    /// [`Step`] passed.
+    ///
+    /// [`Step`]: gherkin::Step
+    Passed,
+
+    /// [`Step`] failed.
+    ///
+    /// [`Step`]: gherkin::Step
+    Failed(Option<World>, Info),
+}
+
+/// Event specific to a particular [Scenario].
+///
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+#[derive(Debug)]
+pub enum Scenario<World> {
+    /// [`Scenario`] execution being started.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    Started,
+
+    /// [`Background`] [`Step`] event.
+    ///
+    /// [`Background`]: gherkin::Background
+    Background(Arc<gherkin::Step>, Step<World>),
+
+    /// [`Step`] event.
+    Step(Arc<gherkin::Step>, Step<World>),
+
+    /// [`Scenario`] execution being finished.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    Finished,
+}
+
+impl<World> Scenario<World> {
+    /// Constructs an event of a [`Step`] being started.
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn step_started(step: Arc<gherkin::Step>) -> Self {
+        Self::Step(step, Step::Started)
+    }
+
+    /// Constructs an event of a [`Background`] [`Step`] being started.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn background_step_started(step: Arc<gherkin::Step>) -> Self {
+        Self::Background(step, Step::Started)
+    }
+
+    /// Constructs an event of a passed [`Step`].
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn step_passed(step: Arc<gherkin::Step>) -> Self {
+        Self::Step(step, Step::Passed)
+    }
+
+    /// Constructs an event of a passed [`Background`] [`Step`].
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn background_step_passed(step: Arc<gherkin::Step>) -> Self {
+        Self::Background(step, Step::Passed)
+    }
+
+    /// Constructs an event of a skipped [`Step`].
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn step_skipped(step: Arc<gherkin::Step>) -> Self {
+        Self::Step(step, Step::Skipped)
+    }
+    /// Constructs an event of a skipped [`Background`] [`Step`].
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
+        Self::Background(step, Step::Skipped)
+    }
+
+    /// Constructs an event of a failed [`Step`].
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn step_failed(
+        step: Arc<gherkin::Step>,
+        world: Option<World>,
+        info: Info,
+    ) -> Self {
+        Self::Step(step, Step::Failed(world, info))
+    }
+
+    /// Constructs an event of a failed [`Background`] [`Step`].
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn background_step_failed(
+        step: Arc<gherkin::Step>,
+        world: Option<World>,
+        info: Info,
+    ) -> Self {
+        Self::Background(step, Step::Failed(world, info))
+    }
 }
