@@ -9,9 +9,9 @@ authors = [
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
     "Kai Ren <tyranron@gmail.com>",
 ]
-repository = "https://github.com/bbqsrc/cucumber-rust"
+repository = "https://github.com/cucumber-rs/cucumber"
 documentation = "https://docs.rs/cucumber_rust_codegen"
-homepage = "https://github.com/bbqsrc/cucumber-rust"
+homepage = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "codegen", "macros"]

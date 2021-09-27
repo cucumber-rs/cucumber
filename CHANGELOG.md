@@ -47,15 +47,15 @@
 ### [0.8.0] — 2021-01-18
 [0.8.0]: /../../tree/v0.8.0
 
-- Fixed filtering of tests by tag ([#67](https://github.com/bbqsrc/cucumber-rust/issues/67))
-- Implemented failure reporting ([#91](https://github.com/bbqsrc/cucumber-rust/issues/91))
+- Fixed filtering of tests by tag ([#67](https://github.com/cucumber-rs/cucumber/issues/67))
+- Implemented failure reporting ([#91](https://github.com/cucumber-rs/cucumber/issues/91))
 - Removed unnecessary dependent traits from `World` trait
 - Added proc-macro variant (thanks Ilya Solovyiov and Kai Ren)
 
 ### [0.7.3] — 2020-09-20
 [0.7.3]: /../../tree/v0.7.3
 
-- Fix missing mut in t! macro for regexes ([#68](https://github.com/bbqsrc/cucumber-rust/issues/68)) — thanks [@stefanpieck](https://github.com/stefanpieck)!
+- Fix missing mut in t! macro for regexes ([#68](https://github.com/cucumber-rs/cucumber/issues/68)) — thanks [@stefanpieck](https://github.com/stefanpieck)!
 
 ### [0.7.2] — 2020-09-14
 [0.7.2]: /../../tree/v0.7.2

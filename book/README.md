@@ -1,4 +1,4 @@
-# cucumber-rust book
+# cucumber book
 
 Book containing the [`cucumber_rust`](https://crates.io/crates/cucumber_rust) documentation.
 

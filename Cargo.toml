@@ -14,8 +14,8 @@ authors = [
     "Kai Ren <tyranron@gmail.com>",
 ]
 documentation = "https://docs.rs/cucumber_rust"
-homepage = "https://github.com/bbqsrc/cucumber-rust"
-repository = "https://github.com/bbqsrc/cucumber-rust"
+homepage = "https://github.com/cucumber-rs/cucumber"
+repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]

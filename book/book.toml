@@ -10,4 +10,4 @@ build-dir = "_rendered"
 create-missing = false
 
 [output.html]
-git_repository_url = "https://github.com/bbqsrc/cucumber-rust"
+git_repository_url = "https://github.com/cucumber-rs/cucumber"

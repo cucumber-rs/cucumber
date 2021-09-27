@@ -1,13 +1,13 @@
-# cucumber-rust
+# cucumber
 
 [![Documentation](https://docs.rs/cucumber_rust/badge.svg)](https://docs.rs/cucumber_rust)
-[![Actions Status](https://github.com/bbqsrc/cucumber-rust/workflows/CI/badge.svg)](https://github.com/bbqsrc/cucumber-rust/actions)
+[![Actions Status](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg)](https://github.com/cucumber-rs/cucumber/actions)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
 An implementation of the [Cucumber] testing framework for Rust. Fully native, no external test runners or dependencies.
 
 - Book ([current][1] | [edge][2])
-- [Changelog](https://github.com/bbqsrc/cucumber-rust/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/CHANGELOG.md)
 
 
 
@@ -105,8 +105,8 @@ The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin-
 
 This project is licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
- * MIT license ([LICENSE-MIT](https://github.com/bbqsrc/cucumber-rust/blob/main/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+ * Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/cucumber-rs/cucumber/blob/main/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+ * MIT license ([LICENSE-MIT](https://github.com/cucumber-rs/cucumber/blob/main/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
@@ -116,5 +116,5 @@ at your option.
 [Cucumber]: https://cucumber.io
 [Gherkin]: https://cucumber.io/docs/gherkin/reference 
 
-[1]: https://bbqsrc.github.io/cucumber-rust/current
-[2]: https://bbqsrc.github.io/cucumber-rust/main
+[1]: https://cucumber-rs.github.io/cucumber/current
+[2]: https://cucumber-rs.github.io/cucumber/main
