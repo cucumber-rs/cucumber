@@ -1,4 +1,6 @@
-# Rule
+# Features
+
+## Rule
 
 The purpose of the `Rule` keyword is to represent one business rule that should be implemented. It provides additional information for a feature. A `Rule` is used to group together several scenarios that belong to this business rule. A `Rule` should contain one or more scenarios that illustrate the particular rule.
 
@@ -24,7 +26,7 @@ Feature: Animal feature
 
 <script id="asciicast-E9QvyDjEYBc5MKJpADxyiD7Ax" src="https://asciinema.org/a/E9QvyDjEYBc5MKJpADxyiD7Ax.js" async data-autoplay="true" data-rows="18"></script>
 
-# Background
+## Background
 
 Occasionally you’ll find yourself repeating the same `Given` steps in all the scenarios in a Feature.
 
@@ -58,7 +60,7 @@ Feature: Animal feature
 
 In case `Background` is declared outside any `Rule`, it will be run firstly on any `Scenario`. Otherwise, if `Background` is declared inside `Rule`, it will be run only for `Scenario`s inside this `Rule` and only after top-level `Background` statements, if any.
 
-## Tips for using Background
+### Tips for using Background
 
  - Don’t use `Background` to set up complicated states, unless that state is actually something the client needs to know.
  - Keep your `Background` section short.
@@ -67,7 +69,7 @@ In case `Background` is declared outside any `Rule`, it will be run firstly on a
 
 Clearly, example provided above doesn't need `Background` and done for demonstration purposes only.
 
-# Scenario Outline
+## Scenario Outline
 
 The `Scenario Outline` keyword can be used to run the same `Scenario` multiple times, with different combinations of values:
 
@@ -154,6 +156,8 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 ```
 
 <script id="asciicast-15ZcRGFBUXubvcle34ZOLiLtO" src="https://asciinema.org/a/15ZcRGFBUXubvcle34ZOLiLtO.js" async data-autoplay="true" data-rows="18"></script>
+
+### Combining Regex and FromStr
 
 At parsing stage, `<templates>` are replaced by value from cells. That means you can parse table calls into any type, that implements [`FromStr`](https://doc.rust-lang.org/stable/std/str/trait.FromStr.html)
 
@@ -257,7 +261,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 <script id="asciicast-joMErjGUVegtXPJgL8fc5x6pt" src="https://asciinema.org/a/joMErjGUVegtXPJgL8fc5x6pt.js" async data-autoplay="true" data-rows="18"></script>
 
-# Spoken Languages
+## Spoken Languages
 
 The language you choose for `Gherkin` should be the same language your users and domain experts use when they talk about the domain. Translating between two languages should be avoided.
 
