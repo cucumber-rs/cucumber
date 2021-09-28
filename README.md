@@ -88,7 +88,7 @@ name = "readme"
 harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-[![asciicast](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo.svg)](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo)
+<script id="asciicast-YP24WIM1PGr2I9znFYKfmbkyo" src="https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo.js" async data-autoplay="true" data-rows="18"></script>
 
 For more examples check out the Book ([current][1] | [edge][2]).
 

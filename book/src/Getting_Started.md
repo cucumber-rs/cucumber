@@ -100,52 +100,7 @@ There are 3 types of steps:
 
 These various `Step` functions are executed to transform the `World`. As such, mutable reference to the world must always be passed in. The `Step` itself is also made available.
 
-The steps matchers take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself. 
-
-We also support regexes:
-```rust
-# use std::convert::Infallible;
-# 
-# use async_trait::async_trait;
-# use cucumber::{given, World, WorldInit};
-#
-# #[derive(Debug)]
-# struct Cat {
-#     pub hungry: bool,
-# }
-# 
-# impl Cat {
-#     fn feed(&mut self) {
-#         self.hungry = false;
-#     }
-# }
-#
-# #[derive(Debug, WorldInit)]
-# pub struct AnimalWorld {
-#     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
-# }
-# 
-#[given(regex = r"^a hungry (\S+)$")]
-fn hungry_someone(world: &mut AnimalWorld, who: String) {
-    assert_eq!(who, "cat");
-    world.cat.hungry = true;
-}
-#
-# fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
-# }
-```
+The steps matchers take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself.
 
 We can add a `when` step after our `given` step:
 ```rust
