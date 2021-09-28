@@ -149,7 +149,7 @@
 <p>Add this to your <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber_rust = &quot;0.10&quot;
+cucumber = &quot;0.10&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -170,7 +170,7 @@ harness = false  # allows Cucumber to print output instead of libtest
 <pre><pre class="playground"><code class="language-rust">use std::convert::Infallible;
 
 use async_trait::async_trait;
-use cucumber_rust::{given, World, WorldInit};
+use cucumber::{given, World, WorldInit};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
@@ -235,7 +235,7 @@ fn main() {
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, World, WorldInit};
+</span><span class="boring">use cucumber::{given, World, WorldInit};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -278,7 +278,7 @@ fn hungry_someone(world: &amp;mut AnimalWorld, who: String) {
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, when, World, WorldInit};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -312,7 +312,7 @@ fn hungry_someone(world: &amp;mut AnimalWorld, who: String) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
-</span>// Don't forget to additionally `use cucumber_rust::when`.
+</span>// Don't forget to additionally `use cucumber::when;`.
 
 #[when(&quot;I feed the cat&quot;)]
 fn feed_cat(world: &amp;mut AnimalWorld) {
@@ -329,7 +329,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -368,7 +368,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span>// Don't forget to additionally `use cucumber_rust::then`.
+</span>// Don't forget to additionally `use cucumber::then;`.
 
 #[then(&quot;the cat is not hungry&quot;)]
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
@@ -385,7 +385,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <pre><pre class="playground"><code class="language-rust should_panic"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -453,7 +453,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -515,7 +515,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <pre><pre class="playground"><code class="language-rust">use std::convert::Infallible;
 
 use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit};
+use cucumber::{given, then, when, World, WorldInit};
 
 #[derive(Debug)]
 struct Cat {
@@ -573,7 +573,7 @@ fn main() {
 <p>For that switch <code>futures</code> for <code>tokio</code> in dependencies:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber_rust = &quot;0.10&quot;
+cucumber = &quot;0.10&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -584,7 +584,7 @@ harness = false   # allows Cucumber to print output instead of libtest
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::{convert::Infallible, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber_rust::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
