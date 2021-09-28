@@ -61,8 +61,8 @@ jobs:
       fail-fast: false
       matrix:
         crate:
-          - cucumber_rust_codegen
-          - cucumber_rust
+          - cucumber-codegen
+          - cucumber
         os:
           - ubuntu
           - macOS
@@ -136,11 +136,11 @@ jobs:
         id: release
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
 
-      - name: Verify release version matches `cucumber_rust_codegen` Cargo manifest
+      - name: Verify release version matches `cucumber-codegen` Cargo manifest
         run: >-
           test "${{ steps.release.outputs.VERSION }}" \
             == "$(grep -m1 'version = "' codegen/Cargo.toml | cut -d '"' -f2)"
-      - name: Verify release version matches `cucumber_rust` Cargo manifest
+      - name: Verify release version matches `cucumber` Cargo manifest
         run: >-
           test "${{ steps.release.outputs.VERSION }}" \
             == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
@@ -156,7 +156,7 @@ jobs:
         with:
           name: ${{ steps.release.outputs.VERSION }}
           body: |
-            [API docs](https://docs.rs/cucumber_rust/${{ steps.release.outputs.VERSION }})
+            [API docs](https://docs.rs/cucumber/${{ steps.release.outputs.VERSION }})
             [Changelog](${{ steps.changelog.outputs.LINK }})
           prerelease: ${{ contains(steps.release.outputs.VERSION, '-') }}
 
@@ -172,14 +172,14 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - name: Publish `cucumber_rust_codegen` crate
+      - name: Publish `cucumber-codegen` crate
         run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
         working-directory: ./codegen
 
       - name: Wait crates.io index is updated
         run: sleep 120
 
-      - name: Publish `cucumber_rust` crate
+      - name: Publish `cucumber` crate
         run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
         working-directory: ./
 

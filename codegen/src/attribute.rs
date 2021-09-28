@@ -181,8 +181,8 @@ impl Step {
                 #[automatically_derived]
                 fn #caller_name<'w>(
                     __cucumber_world: &'w mut #world,
-                    __cucumber_ctx: ::cucumber_rust::step::Context,
-                ) -> ::cucumber_rust::codegen::LocalBoxFuture<'w, ()> {
+                    __cucumber_ctx: ::cucumber::step::Context,
+                ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
                         #func_name(__cucumber_world, #func_args)#awaiting;
@@ -198,12 +198,12 @@ impl Step {
             #func
 
             #[automatically_derived]
-            ::cucumber_rust::codegen::submit!(
-                #![crate = ::cucumber_rust::codegen] {
-                    <#world as ::cucumber_rust::codegen::WorldInventory<
+            ::cucumber::codegen::submit!(
+                #![crate = ::cucumber::codegen] {
+                    <#world as ::cucumber::codegen::WorldInventory<
                         _, _, _,
                     >>::#constructor_method(
-                        ::cucumber_rust::codegen::Regex::new(#step_matcher)
+                        ::cucumber::codegen::Regex::new(#step_matcher)
                             .unwrap(),
                         #step_caller,
                     )
@@ -477,8 +477,6 @@ fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
 }
 
 /// Parses [`cucumber::World`] from arguments of the function signature.
-///
-/// [`cucumber::World`]: cucumber_rust::World
 fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
     sig.inputs
         .first()

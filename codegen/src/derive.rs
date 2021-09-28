@@ -27,7 +27,7 @@ pub(crate) fn world_init(
     let world = &input.ident;
 
     Ok(quote! {
-        impl ::cucumber_rust::codegen::WorldInventory<
+        impl ::cucumber::codegen::WorldInventory<
             #( #step_types, )*
         > for #world {}
 
@@ -61,31 +61,31 @@ fn generate_step_structs(
                 #[doc(hidden)]
                 #world_vis struct #ty {
                     #[doc(hidden)]
-                    pub regex: ::cucumber_rust::codegen::Regex,
+                    pub regex: ::cucumber::codegen::Regex,
 
                     #[doc(hidden)]
-                    pub func: ::cucumber_rust::Step<#world>,
+                    pub func: ::cucumber::Step<#world>,
                 }
 
                 #[automatically_derived]
-                impl ::cucumber_rust::codegen::StepConstructor<#world> for #ty {
+                impl ::cucumber::codegen::StepConstructor<#world> for #ty {
                     fn new (
-                        regex: ::cucumber_rust::codegen::Regex,
-                        func: ::cucumber_rust::Step<#world>,
+                        regex: ::cucumber::codegen::Regex,
+                        func: ::cucumber::Step<#world>,
                     ) -> Self {
                         Self { regex, func }
                     }
 
                     fn inner(&self) -> (
-                        ::cucumber_rust::codegen::Regex,
-                        ::cucumber_rust::Step<#world>,
+                        ::cucumber::codegen::Regex,
+                        ::cucumber::Step<#world>,
                     ) {
                         (self.regex.clone(), self.func.clone())
                     }
                 }
 
                 #[automatically_derived]
-                ::cucumber_rust::codegen::collect!(#ty);
+                ::cucumber::codegen::collect!(#ty);
             }
         })
         .collect()

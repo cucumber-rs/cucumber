@@ -1,6 +1,7 @@
-# cucumber
+Cucumber testing framework for Rust
+===================================
 
-[![Documentation](https://docs.rs/cucumber_rust/badge.svg)](https://docs.rs/cucumber_rust)
+[![Documentation](https://docs.rs/cucumber/badge.svg)](https://docs.rs/cucumber)
 [![Actions Status](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg)](https://github.com/cucumber-rs/cucumber/actions)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
@@ -33,7 +34,7 @@ Implement `World` trait and describe steps:
 use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{self as cucumber, given, then, when, WorldInit};
+use cucumber::{given, then, when, WorldInit};
 use tokio::time::sleep;
 
 #[derive(Debug, WorldInit)]
@@ -97,6 +98,13 @@ For more examples check out the Book ([current][1] | [edge][2]).
 ## Supporting crates
 
 The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin-rust`](https://github.com/bbqsrc/gherkin-rust) crate. Most features of the [Gherkin] language are parsed already and accessible via the relevant structs.
+
+
+
+
+## Known issues
+
+- `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19)).
 
 
 

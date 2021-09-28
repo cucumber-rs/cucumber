@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber_rust = "0.10"
+cucumber = "0.10"
 futures = "0.3"
 
 [[test]]
@@ -35,7 +35,7 @@ To enable testing of our `animal.feature`, add this code to `example.rs`:
 use std::convert::Infallible;
 
 use async_trait::async_trait;
-use cucumber_rust::{given, World, WorldInit};
+use cucumber::{given, World, WorldInit};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
@@ -107,7 +107,7 @@ We also support regexes:
 # use std::convert::Infallible;
 # 
 # use async_trait::async_trait;
-# use cucumber_rust::{given, World, WorldInit};
+# use cucumber::{given, World, WorldInit};
 #
 # #[derive(Debug)]
 # struct Cat {
@@ -152,7 +152,7 @@ We can add a `when` step after our `given` step:
 # use std::convert::Infallible;
 # 
 # use async_trait::async_trait;
-# use cucumber_rust::{given, when, World, WorldInit};
+# use cucumber::{given, when, World, WorldInit};
 #
 # #[derive(Debug)]
 # struct Cat {
@@ -186,7 +186,7 @@ We can add a `when` step after our `given` step:
 #     world.cat.hungry = true;
 # }
 # 
-// Don't forget to additionally `use cucumber_rust::when`.
+// Don't forget to additionally `use cucumber::when;`.
 
 #[when("I feed the cat")]
 fn feed_cat(world: &mut AnimalWorld) {
@@ -207,7 +207,7 @@ Finally: how do we validate our result? We expect that this will cause some chan
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
-# use cucumber_rust::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit};
 #
 # #[derive(Debug)]
 # struct Cat {
@@ -246,7 +246,7 @@ Finally: how do we validate our result? We expect that this will cause some chan
 #     world.cat.feed();
 # }
 #
-// Don't forget to additionally `use cucumber_rust::then`.
+// Don't forget to additionally `use cucumber::then;`.
 
 #[then("the cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) {
@@ -267,7 +267,7 @@ If you want to be assured that your validation is indeed happening, you can chan
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
-# use cucumber_rust::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit};
 #
 # #[derive(Debug)]
 # struct Cat {
@@ -341,7 +341,7 @@ The only thing that is different is the `Given` step. But we don't have to write
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
-# use cucumber_rust::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit};
 #
 # #[derive(Debug)]
 # struct Cat {
@@ -410,7 +410,7 @@ A contrived example, but this demonstrates that steps can be reused as long as t
 use std::convert::Infallible;
 
 use async_trait::async_trait;
-use cucumber_rust::{given, then, when, World, WorldInit};
+use cucumber::{given, then, when, World, WorldInit};
 
 #[derive(Debug)]
 struct Cat {
@@ -476,7 +476,7 @@ For that switch `futures` for `tokio` in dependencies:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber_rust = "0.10"
+cucumber = "0.10"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
@@ -489,7 +489,7 @@ And simply `sleep` on each step to test the `async` support. In the real world y
 # use std::{convert::Infallible, time::Duration};
 # 
 # use async_trait::async_trait;
-# use cucumber_rust::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
 # 
 # #[derive(Debug)]

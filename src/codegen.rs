@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Helper type-level glue for [`cucumber_rust_codegen`] crate.
+//! Helper type-level glue for [`cucumber_codegen`] crate.
 
 use std::{fmt::Debug, path::Path};
 

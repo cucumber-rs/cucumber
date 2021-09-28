@@ -1,6 +1,6 @@
 [package]
-name = "cucumber_rust_book_tests"
-version = "0.1.0"
+name = "cucumber_book_tests"
+version = "0.0.0"
 edition = "2018"
 resolver = "2"
 authors = [
@@ -12,7 +12,7 @@ publish = false
 
 [dependencies]
 async-trait = "0.1"
-cucumber_rust = { path = "../.." }
+cucumber = { path = "../.." }
 futures = "0.3"
 skeptic = "0.13"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

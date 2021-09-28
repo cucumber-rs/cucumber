@@ -56,7 +56,7 @@ pub use self::codegen::WorldInit;
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 #[doc(inline)]
-pub use cucumber_rust_codegen::{given, then, when, WorldInit};
+pub use cucumber_codegen::{given, then, when, WorldInit};
 
 #[doc(inline)]
 pub use self::{

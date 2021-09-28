@@ -1,75 +1,184 @@
-### Current
+`cucumber` changelog
+====================
 
-#### Known issues:
+All user visible changes to `cucumber` crate will be documented in this file. This project uses [Semantic Versioning 2.0.0].
 
-- `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
-### [0.10.0] — ???
+
+
+## [0.10.0] · 2021-??-??
 [0.10.0]: /../../tree/v0.10.0
 
-- **Breaking change** Complete redesign:
-  - Introduce new abstractions: `Parser`, `Runner`, `Writer`.
-  - Provide reference implementations for those abstractions.
-  - Add ability to run `Scenario`s concurrently.
-  - Update book to reflect redesign.
+[Diff](/../../compare/v0.9.0...v0.10.0)
 
-### [0.9.0] — 2021-07-19
+### BC Breaks
+
+- Renamed crate to `cucumber`.
+- Complete redesign: ([#128])
+    - Introduce new abstractions: `Parser`, `Runner`, `Writer`;
+    - Provide reference implementations for those abstractions.
+- Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
+
+### Added
+
+- Ability to run `Scenario`s concurrently. ([#128])
+
+[#128]: /../../pull/128
+
+
+
+
+## [0.9.0] · 2021-07-19
 [0.9.0]: /../../tree/v0.9.0
 
-- **Breaking change:** the second parameter in the test callbacks is now a `StepContext` object, which contains the `Step` as a `step` field.
-- Feature: Add `before` and `after` lifecycle functions to the Cucumber builder
-  - This function takes a selector for determining when to run 'before' or 'after', and a callback
-- Fix: literal paths to .feature files will now work in the Cucumber builder
-- Fix: remove unnecessary internal `Rc<T>` usage.
+[Diff](/../../compare/v0.8.4...v0.9.0)
 
-### [0.8.4] — 2021-02-18
+### BC Breaks
+
+- The second parameter in the test callbacks is now a `StepContext` object, which contains the `Step` as a `step` field.
+
+### Added
+
+- Add `before` and `after` lifecycle functions to the `Cucumber` builder. These functions take a selector for determining when to run `before` or `after`, and a callback.
+
+### Fixed
+
+- Literal paths to `.feature` files will now work in the `Cucumber` builder.
+- Removed unnecessary internal `Rc<T>` usage.
+
+
+
+
+## [0.8.4] · 2021-02-18
 [0.8.4]: /../../tree/v0.8.4
 
-- Feature: add `language` argument to Cucumber builder to set default language for all feature files
-- Feature: add `--debug` flag to always print stdout and stderr per step
+[Diff](/../../compare/v0.8.3...v0.8.4)
 
-### [0.8.3] — 2021-02-09
+### Added
+
+- `language` argument to `Cucumber` builder to set default language for all `.feature` files.
+- `--debug` flag to always print STDOUT and STDERR per step.
+
+
+
+
+## [0.8.3] · 2021-02-09
 [0.8.3]: /../../tree/v0.8.3
 
-- Update `t!` macro to support specifying type of world argument in closure
+[Diff](/../../compare/v0.8.2...v0.8.3)
 
-### [0.8.2] — 2021-01-30
+### Changed
+
+- Update `t!` macro to support specifying type of `World` argument in closure.
+
+
+
+
+## [0.8.2] · 2021-01-30
 [0.8.2]: /../../tree/v0.8.2
 
-- Re-export `async_trait::async_trait` and `futures` crate for convenience
-- Update examples to use `tokio`
+[Diff](/../../compare/v0.8.1...v0.8.2)
 
-### [0.8.1] — 2021-01-30
+### Added
+
+- Re-export `async_trait::async_trait` and `futures` crate for convenience.
+- Update examples to use `tokio`.
+
+
+
+
+## [0.8.1] · 2021-01-30
 [0.8.1]: /../../tree/v0.8.1
 
-- Added proper i18n support via gherkin 0.9
+[Diff](/../../compare/v0.8.0...v0.8.1)
 
-### [0.8.0] — 2021-01-18
+### Added
+
+- Proper i18n support via [`gherkin_rust`] `0.9`.
+
+
+
+
+## [0.8.0] · 2021-01-18
 [0.8.0]: /../../tree/v0.8.0
 
-- Fixed filtering of tests by tag ([#67](https://github.com/cucumber-rs/cucumber/issues/67))
-- Implemented failure reporting ([#91](https://github.com/cucumber-rs/cucumber/issues/91))
-- Removed unnecessary dependent traits from `World` trait
-- Added proc-macro variant (thanks Ilya Solovyiov and Kai Ren)
+[Diff](/../../compare/v0.7.3...v0.8.0)
 
-### [0.7.3] — 2020-09-20
+### Added
+
+- Failure reporting. ([#91])
+- `macros` feature providing attributes: ([#81])
+    - [`given`](https://docs.rs/cucumber_rust/0.8.0/cucumber_rust/attr.given.html);
+    - [`when`](https://docs.rs/cucumber_rust/0.8.0/cucumber_rust/attr.when.html);
+    - [`then`](https://docs.rs/cucumber_rust/0.8.0/cucumber_rust/attr.then.html).
+
+### Fixed
+
+- Filtering of tests by tag. ([#67])
+- Removed unnecessary dependent traits from `World` trait.
+
+[#67]: /../../issues/67
+[#81]: /../../pull/81
+[#91]: /../../issues/91
+
+
+
+
+## [0.7.3] · 2020-09-20
 [0.7.3]: /../../tree/v0.7.3
 
-- Fix missing mut in t! macro for regexes ([#68](https://github.com/cucumber-rs/cucumber/issues/68)) — thanks [@stefanpieck](https://github.com/stefanpieck)!
+[Diff](/../../compare/v0.7.2...v0.7.3)
 
-### [0.7.2] — 2020-09-14
+### Fixed
+
+- Fix missing `mut` in `t!` macro for regexes — thanks [@stefanpieck](https://github.com/stefanpieck)! ([#68])
+
+[#68]: /../../issues/68
+
+
+
+
+## [0.7.2] · 2020-09-14
 [0.7.2]: /../../tree/v0.7.2
 
-- Enforce `UnwindSafe` on async test types
+[Diff](/../../compare/v0.7.1...v0.7.2)
 
-### [0.7.1] — 2020-09-09
+### Added
+
+- Enforce `UnwindSafe` on async test types.
+
+
+
+
+## [0.7.1] · 2020-09-09
 [0.7.1]: /../../tree/v0.7.1
 
-- Fix issue with `t!` macro for unbraced blocks
+[Diff](/../../compare/v0.7.0...v0.7.1)
 
-### [0.7.0] — 2020-09-07
+### Fixed
+
+- Issue with `t!` macro for unbraced blocks.
+
+
+
+
+## [0.7.0] · 2020-09-07
 [0.7.0]: /../../tree/v0.7.0
 
-- **Breaking changes**: the macro approach provided in 0.6.x and lower has been entirely removed. It was hard to maintain and limited maintenance of the tests themselves.
+[Diff](/../../compare/v0.6.8...v0.7.0)
+
+### BC Breaks
+
+- The macro approach provided in `0.6.x` and lower has been entirely removed. It was hard to maintain and limited maintenance of the tests themselves.
+
+### Added
+
 - A new builder approach has been implemented.
 - Support for asynchronous tests has been implemented — this is runtime agnostic.
+
+
+
+
+[`gherkin_rust`]: https://docs.rs/gherkin_rust
+
+[Semantic Versioning 2.0.0]: https://semver.org

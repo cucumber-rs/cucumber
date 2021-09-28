@@ -1,14 +1,15 @@
-# cucumber-rust-codegen
+`cucumber-codegen` crate
+========================
 
-[![Documentation](https://docs.rs/cucumber_rust_codegen/badge.svg)](https://docs.rs/cucumber_rust_codegen)
+[![Documentation](https://docs.rs/cucumber-codegen/badge.svg)](https://docs.rs/cucumber-codegen)
 [![Actions Status](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg)](https://github.com/cucumber-rs/cucumber/actions)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 - [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/codegen/CHANGELOG.md)
 
-Code generation for [`cucumber_rust`] tests auto-wiring.
+Code generation for [`cucumber`] tests auto-wiring.
 
-DO NOT use it directly, use [`cucumber_rust`] crate instead.
+DO NOT use it directly, use [`cucumber`] crate instead.
 
 
 
@@ -25,4 +26,4 @@ at your option.
 
 
 
-[`cucumber_rust`]: https://docs.rs/cucumber_rust
+[`cucumber`]: https://docs.rs/cucumber

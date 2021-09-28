@@ -1,17 +1,37 @@
-### Current
+`cucumber-codegen` changelog
+============================
 
-#### Known issues:
+All user visible changes to `cucumber-codegen` crate will be documented in this file. This project uses [Semantic Versioning 2.0.0].
 
-- `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19))
 
-### [0.10.0] — ???
-[0.10.0]: /../../tree/v0.10.0
 
-- Update attributes according to the redesign done in `0.10` of `cucumber_rust` crate.
-- Replace `#[given(step)]`, `#[when(step)]` and `#[then(step)]` with single `#[step]` attribute.
 
-### 0.1.0 — 2021-01-18
+## [0.10.0] · 2021-??-??
+[0.10.0]: /../../tree/v0.10.0/codegen
 
-- Initial implementation for [`given`](https://docs.rs/cucumber_rust_codegen/0.9.0/cucumber_rust_codegen/attr.given.html), 
-  [`when`](https://docs.rs/cucumber_rust_codegen/0.9.0/cucumber_rust_codegen/attr.when.html), 
-  [`then`](https://docs.rs/cucumber_rust_codegen/0.9.0/cucumber_rust_codegen/attr.then.html) attribute macros.
+### BC Breaks
+
+- Renamed crate to `cucumber-codegen`.
+- Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
+
+[#128]: /../../pull/128
+
+
+
+
+## [0.1.0] · 2021-01-18
+[0.1.0]: /../../tree/v0.8.0/codegen
+
+### Added
+
+- Attribute macros: ([#81])
+    - [`given`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.given.html); 
+    - [`when`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.when.html);
+    - [`then`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.then.html).
+
+[#81]: /../../pull/81
+
+
+
+
+[Semantic Versioning 2.0.0]: https://semver.org

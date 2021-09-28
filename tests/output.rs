@@ -1,9 +1,7 @@
 use std::{borrow::Cow, convert::Infallible, fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
-use cucumber_rust::{
-    self as cucumber, event, given, parser, then, when, WorldInit, Writer,
-};
+use cucumber::{event, given, parser, then, when, WorldInit, Writer};
 use regex::Regex;
 
 #[derive(Debug, Default, WorldInit)]
@@ -58,7 +56,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
 mod spec {
     use std::fs;
 
-    use cucumber_rust::{WorldInit as _, WriterExt as _};
+    use cucumber::{WorldInit as _, WriterExt as _};
     use globwalk::GlobWalkerBuilder;
 
     use super::{DebugWriter, World};

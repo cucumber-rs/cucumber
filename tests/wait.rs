@@ -1,7 +1,7 @@
 use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber_rust::{self as cucumber, given, then, when, WorldInit};
+use cucumber::{given, then, when, WorldInit};
 use futures::FutureExt as _;
 use tokio::time;
 

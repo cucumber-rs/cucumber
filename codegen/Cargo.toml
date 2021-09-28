@@ -1,17 +1,17 @@
 [package]
-name = "cucumber_rust_codegen"
+name = "cucumber-codegen"
 version = "0.10.0" # should be the same as main crate version
 edition = "2018"
 resolver = "2"
-description = "Code generation for `cucumber_rust` crate."
+description = "Code generation for `cucumber` crate."
 license = "MIT OR Apache-2.0"
 authors = [
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
     "Kai Ren <tyranron@gmail.com>",
 ]
+documentation = "https://docs.rs/cucumber-codegen"
+homepage = "https://github.com/cucumber-rs/cucumber/tree/main/codegen"
 repository = "https://github.com/cucumber-rs/cucumber"
-documentation = "https://docs.rs/cucumber_rust_codegen"
-homepage = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "codegen", "macros"]
@@ -29,8 +29,8 @@ syn = { version = "1.0", features = ["derive", "extra-traits", "full"] }
 
 [dev-dependencies]
 async-trait = "0.1"
+cucumber = { path = "..", features = ["macros"] }
 futures = "0.3"
-cucumber_rust = { path = "..", features = ["macros"] }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]

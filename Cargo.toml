@@ -1,5 +1,5 @@
 [package]
-name = "cucumber_rust"
+name = "cucumber"
 version = "0.10.0"
 edition = "2018"
 resolver = "2"
@@ -13,7 +13,7 @@ authors = [
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
     "Kai Ren <tyranron@gmail.com>",
 ]
-documentation = "https://docs.rs/cucumber_rust"
+documentation = "https://docs.rs/cucumber"
 homepage = "https://github.com/cucumber-rs/cucumber"
 repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
@@ -26,7 +26,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["macros"]
-macros = ["cucumber_rust_codegen", "inventory"]
+macros = ["cucumber-codegen", "inventory"]
 
 [dependencies]
 async-trait = "0.1.40"
@@ -43,7 +43,7 @@ regex = "1.5"
 sealed = "0.3"
 
 # "macros" feature dependencies
-cucumber_rust_codegen = { version = "0.10", path = "./codegen", optional = true }
+cucumber-codegen = { version = "0.10", path = "./codegen", optional = true }
 inventory = { version = "0.1.10", optional = true }
 
 [dev-dependencies]

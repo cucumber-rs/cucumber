@@ -50,7 +50,7 @@ macro_rules! step_attribute {
         /// # use std::{convert::Infallible};
         /// #
         /// # use async_trait::async_trait;
-        /// use cucumber_rust::{given, World, WorldInit};
+        /// use cucumber::{given, World, WorldInit};
         ///
         /// #[derive(Debug, WorldInit)]
         /// struct MyWorld;
@@ -89,7 +89,7 @@ macro_rules! step_attribute {
         /// # use std::convert::Infallible;
         /// #
         /// # use async_trait::async_trait;
-        /// # use cucumber_rust::{gherkin::Step, given, World, WorldInit};
+        /// # use cucumber::{gherkin::Step, given, World, WorldInit};
         /// #
         /// # #[derive(Debug, WorldInit)]
         /// # struct MyWorld;
