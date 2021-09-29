@@ -127,13 +127,15 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// Wraps this [`Writer`] to re-output [`Skipped`] [`Step`]s at the end.
     ///
     /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
     fn repeat_skipped(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
     /// errors at the end.
     ///
+    /// [`Failed`]: event::Step::Failed
     /// [`Parser`]: crate::Parser
-    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
     fn repeat_failed(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output events at the end, on which `filter`

@@ -22,8 +22,8 @@ use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
 ///
 /// Useful for re-outputting [skipped] or [failed] [`Step`]s.
 ///
-/// [failed]: crate::WriterExt::append_failed
-/// [skipped]: crate::WriterExt::append_skipped
+/// [failed]: crate::WriterExt::repeat_failed
+/// [skipped]: crate::WriterExt::repeat_skipped
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
 pub struct Repeat<W, Wr, F = FilterEvent<W>> {
