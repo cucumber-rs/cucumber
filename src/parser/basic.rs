@@ -13,15 +13,16 @@
 use std::{
     borrow::Cow,
     path::{Path, PathBuf},
+    sync::Arc,
     vec,
 };
 
 use derive_more::{Display, Error};
-use futures::stream;
+use futures::{stream, TryStreamExt};
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
 
-use super::{Parser, Result as ParseResult};
+use super::Parser;
 
 /// Default [`Parser`].
 ///
@@ -36,7 +37,7 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type Output = stream::Iter<vec::IntoIter<ParseResult<gherkin::Feature>>>;
+    type Output = OutputStream;
 
     fn parse(self, path: I) -> Self::Output {
         let features = || {
@@ -85,9 +86,17 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             }
         };
 
-        stream::iter(features().into_iter())
+        stream::iter(features().into_iter()).map_err(Arc::new)
     }
 }
+
+/// Alias for [`Parser::Output`] of [`Basic`].
+pub type OutputStream = stream::MapErr<
+    stream::Iter<
+        vec::IntoIter<Result<gherkin::Feature, gherkin::ParseFileError>>,
+    >,
+    fn(gherkin::ParseFileError) -> Arc<gherkin::ParseFileError>,
+>;
 
 impl Basic {
     /// Creates a new [`Basic`] [`Parser`].

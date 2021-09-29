@@ -520,7 +520,7 @@ impl<W: World> Executor<W> {
         skipped: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
         failed: impl FnOnce(
             Arc<gherkin::Step>,
-            Option<W>,
+            Option<Arc<W>>,
             Info,
         ) -> event::Cucumber<W>,
     ) -> Result<W, ()> {
@@ -547,7 +547,7 @@ impl<W: World> Executor<W> {
                 Err(())
             }
             Err(err) => {
-                self.send(failed(step, world, err));
+                self.send(failed(step, world.map(Arc::new), Arc::from(err)));
                 Err(())
             }
         };

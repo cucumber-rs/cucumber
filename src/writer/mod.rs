@@ -15,6 +15,7 @@
 pub mod basic;
 pub mod fail_on_skipped;
 pub mod normalized;
+pub mod repeat;
 pub mod summarized;
 pub mod term;
 
@@ -26,7 +27,7 @@ use crate::{event, parser, World};
 #[doc(inline)]
 pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    summarized::Summarized,
+    repeat::Repeat, summarized::Summarized,
 };
 
 /// Writer of [`Cucumber`] events to some output.
@@ -122,6 +123,24 @@ pub trait Ext<W: World>: Writer<W> + Sized {
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> bool;
+
+    /// Wraps this [`Writer`] to re-output [`Skipped`] [`Step`]s at the end.
+    ///
+    /// [`Skipped`]: event::Step::Skipped
+    fn repeat_skipped(self) -> Repeat<W, Self>;
+
+    /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
+    /// errors at the end.
+    ///
+    /// [`Parser`]: crate::Parser
+    /// [`Skipped`]: event::Step::Skipped
+    fn repeat_failed(self) -> Repeat<W, Self>;
+
+    /// Wraps this [`Writer`] to re-output events at the end, on which `filter`
+    /// returned `true`.
+    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    where
+        F: Fn(parser::Result<event::Cucumber<W>>) -> bool;
 }
 
 #[sealed]
@@ -151,5 +170,20 @@ where
         ) -> bool,
     {
         FailOnSkipped::with(self, f)
+    }
+
+    fn repeat_skipped(self) -> Repeat<W, Self> {
+        Repeat::skipped(self)
+    }
+
+    fn repeat_failed(self) -> Repeat<W, Self> {
+        Repeat::failed(self)
+    }
+
+    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    where
+        F: Fn(parser::Result<event::Cucumber<W>>) -> bool,
+    {
+        Repeat::new(self, filter)
     }
 }

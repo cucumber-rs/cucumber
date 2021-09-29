@@ -14,6 +14,8 @@
 
 pub mod basic;
 
+use std::sync::Arc;
+
 use futures::Stream;
 
 #[doc(inline)]
@@ -37,4 +39,4 @@ pub trait Parser<I> {
 /// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
-pub type Result<T> = std::result::Result<T, gherkin::ParseFileError>;
+pub type Result<T> = std::result::Result<T, Arc<gherkin::ParseFileError>>;

@@ -24,7 +24,7 @@ use std::{any::Any, sync::Arc};
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
-pub type Info = Box<dyn Any + Send + 'static>;
+pub type Info = Arc<dyn Any + Send + 'static>;
 
 /// Top-level [Cucumber] run event.
 ///
@@ -39,6 +39,18 @@ pub enum Cucumber<World> {
 
     /// [`Cucumber`] execution being finished.
     Finished,
+}
+
+impl<World> Clone for Cucumber<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Cucumber::Started => Cucumber::Started,
+            Cucumber::Feature(f, ev) => {
+                Cucumber::Feature(f.clone(), ev.clone())
+            }
+            Cucumber::Finished => Cucumber::Finished,
+        }
+    }
 }
 
 impl<World> Cucumber<World> {
@@ -122,6 +134,19 @@ pub enum Feature<World> {
     Finished,
 }
 
+impl<World> Clone for Feature<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Feature::Started => Feature::Started,
+            Feature::Rule(r, ev) => Feature::Rule(r.clone(), ev.clone()),
+            Feature::Scenario(sc, ev) => {
+                Feature::Scenario(sc.clone(), ev.clone())
+            }
+            Feature::Finished => Feature::Finished,
+        }
+    }
+}
+
 /// Event specific to a particular [Rule].
 ///
 /// [Rule]: https://cucumber.io/docs/gherkin/reference/#rule
@@ -139,6 +164,16 @@ pub enum Rule<World> {
     ///
     /// [`Rule`]: gherkin::Rule
     Finished,
+}
+
+impl<World> Clone for Rule<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Rule::Started => Rule::Started,
+            Rule::Scenario(sc, ev) => Rule::Scenario(sc.clone(), ev.clone()),
+            Rule::Finished => Rule::Finished,
+        }
+    }
 }
 
 /// Event specific to a particular [Step].
@@ -169,7 +204,18 @@ pub enum Step<World> {
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<World>, Info),
+    Failed(Option<Arc<World>>, Info),
+}
+
+impl<World> Clone for Step<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Step::Started => Step::Started,
+            Step::Skipped => Step::Skipped,
+            Step::Passed => Step::Passed,
+            Step::Failed(w, info) => Step::Failed(w.clone(), info.clone()),
+        }
+    }
 }
 
 /// Event specific to a particular [Scenario].
@@ -194,6 +240,19 @@ pub enum Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     Finished,
+}
+
+impl<World> Clone for Scenario<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Scenario::Started => Scenario::Started,
+            Scenario::Background(bg, ev) => {
+                Scenario::Background(bg.clone(), ev.clone())
+            }
+            Scenario::Step(st, ev) => Scenario::Step(st.clone(), ev.clone()),
+            Scenario::Finished => Scenario::Finished,
+        }
+    }
 }
 
 impl<World> Scenario<World> {
@@ -253,7 +312,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
-        world: Option<World>,
+        world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
         Self::Step(step, Step::Failed(world, info))
@@ -266,7 +325,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
-        world: Option<World>,
+        world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
         Self::Background(step, Step::Failed(world, info))

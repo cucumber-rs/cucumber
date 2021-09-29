@@ -35,31 +35,27 @@ pub struct Basic {
 
     /// [`Styles`] for terminal output.
     styles: Styles,
+
+    /// Current indentation with which events are outputted.
+    indent: usize,
+
+    /// Indicates whether last lines should be cleared.
+    needs_clear: bool,
 }
 
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
     #[allow(clippy::unused_async)]
     async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
-        use event::{Cucumber, Feature, Rule};
+        use event::{Cucumber, Feature};
 
         match ev {
             Err(err) => self.parsing_failed(&err),
             Ok(Cucumber::Started | Cucumber::Finished) => {}
             Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.feature_started(&f),
-                Feature::Scenario(sc, ev) => {
-                    self.scenario(&f, &sc, &ev, 0);
-                }
-                Feature::Rule(r, ev) => match ev {
-                    Rule::Started => {
-                        self.rule_started(&r);
-                    }
-                    Rule::Scenario(sc, ev) => {
-                        self.scenario(&f, &sc, &ev, 2);
-                    }
-                    Rule::Finished => {}
-                },
+                Feature::Scenario(sc, ev) => self.scenario(&f, &sc, &ev),
+                Feature::Rule(r, ev) => self.rule(&f, &r, ev),
                 Feature::Finished => {}
             },
         }
@@ -86,6 +82,8 @@ impl Default for Basic {
         Self {
             terminal: Term::stdout(),
             styles: Styles::new(),
+            indent: 0,
+            needs_clear: false,
         }
     }
 }
@@ -106,9 +104,10 @@ impl Basic {
     }
 
     /// Clears last `n` lines if terminal is present.
-    fn clear_last_lines_if_term_present(&self, n: usize) {
-        if self.styles.is_present {
+    fn clear_last_lines_if_term_present(&mut self, n: usize) {
+        if self.styles.is_present && self.needs_clear {
             self.clear_last_lines(n).unwrap();
+            self.needs_clear = false;
         }
     }
 
@@ -125,7 +124,8 @@ impl Basic {
     ///
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
-    fn feature_started(&self, feature: &gherkin::Feature) {
+    fn feature_started(&mut self, feature: &gherkin::Feature) {
+        self.needs_clear = true;
         self.write_line(
             &self
                 .styles
@@ -134,14 +134,45 @@ impl Basic {
         .unwrap();
     }
 
+    /// Outputs [`Rule`] [started]/[scenario]/[finished] event to STDOUT.
+    ///
+    /// [finished]: event::Rule::Finished
+    /// [scenario]: event::Rule::Scenario
+    /// [started]: event::Rule::Started
+    fn rule<W: Debug>(
+        &mut self,
+        feat: &gherkin::Feature,
+        rule: &gherkin::Rule,
+        ev: event::Rule<W>,
+    ) {
+        use event::Rule;
+
+        match ev {
+            Rule::Started => {
+                self.rule_started(rule);
+            }
+            Rule::Scenario(sc, ev) => {
+                self.scenario(feat, &sc, &ev);
+            }
+            Rule::Finished => {
+                self.indent = self.indent.saturating_sub(2);
+            }
+        }
+    }
+
     /// Outputs [started] [`Rule`] to STDOUT.
     ///
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
-    fn rule_started(&self, rule: &gherkin::Rule) {
-        self.write_line(
-            &self.styles.ok(format!("  {}: {}", rule.keyword, rule.name)),
-        )
+    fn rule_started(&mut self, rule: &gherkin::Rule) {
+        self.needs_clear = true;
+        self.indent += 2;
+        self.write_line(&self.styles.ok(format!(
+            "{indent}{}: {}",
+            rule.keyword,
+            rule.name,
+            indent = " ".repeat(self.indent)
+        )))
         .unwrap();
     }
 
@@ -151,26 +182,24 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [step]: event::Step
     fn scenario<W: Debug>(
-        &self,
+        &mut self,
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
         ev: &event::Scenario<W>,
-        ident: usize,
     ) {
         use event::Scenario;
 
-        let offset = ident + 2;
         match ev {
             Scenario::Started => {
-                self.scenario_started(scenario, offset);
+                self.scenario_started(scenario);
             }
             Scenario::Background(bg, ev) => {
-                self.background(feat, bg, ev, offset);
+                self.background(feat, bg, ev);
             }
             Scenario::Step(st, ev) => {
-                self.step(feat, st, ev, offset);
+                self.step(feat, st, ev);
             }
-            Scenario::Finished => {}
+            Scenario::Finished => self.indent = self.indent.saturating_sub(2),
         }
     }
 
@@ -178,10 +207,12 @@ impl Basic {
     ///
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
-    fn scenario_started(&self, scenario: &gherkin::Scenario, ident: usize) {
+    fn scenario_started(&mut self, scenario: &gherkin::Scenario) {
+        self.needs_clear = true;
+        self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{}{}: {}",
-            " ".repeat(ident),
+            " ".repeat(self.indent),
             scenario.keyword,
             scenario.name,
         )))
@@ -196,27 +227,28 @@ impl Basic {
     /// [started]: event::Step::Started
     /// [`Step`]: [`gherkin::Step`]
     fn step<W: Debug>(
-        &self,
+        &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         ev: &event::Step<W>,
-        ident: usize,
     ) {
         use event::Step;
 
-        let offset = ident + 4;
         match ev {
             Step::Started => {
-                self.step_started(step, offset);
+                self.step_started(step);
             }
             Step::Passed => {
-                self.step_passed(step, offset);
+                self.step_passed(step);
+                self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
-                self.step_skipped(step, offset);
+                self.step_skipped(feat, step);
+                self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(world, info) => {
-                self.step_failed(feat, step, world.as_ref(), info, offset);
+                self.step_failed(feat, step, world.as_ref(), info);
+                self.indent = self.indent.saturating_sub(4);
             }
         }
     }
@@ -231,11 +263,13 @@ impl Basic {
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
     /// [`Step`]: [`gherkin::Step`]
-    fn step_started(&self, step: &gherkin::Step, ident: usize) {
+    fn step_started(&mut self, step: &gherkin::Step) {
+        self.needs_clear = true;
+        self.indent += 4;
         if self.styles.is_present {
             self.write_line(&format!(
                 "{}{} {}",
-                " ".repeat(ident),
+                " ".repeat(self.indent),
                 step.keyword,
                 step.value,
             ))
@@ -247,12 +281,12 @@ impl Basic {
     ///
     /// [passed]: event::Step::Passed
     /// [`Step`]: [`gherkin::Step`]
-    fn step_passed(&self, step: &gherkin::Step, ident: usize) {
+    fn step_passed(&mut self, step: &gherkin::Step) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.ok(format!(
             //  ✔
             "{}\u{2714}  {} {}",
-            " ".repeat(ident - 3),
+            " ".repeat(self.indent.saturating_sub(3)),
             step.keyword,
             step.value,
         )))
@@ -263,13 +297,20 @@ impl Basic {
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: [`gherkin::Step`]
-    fn step_skipped(&self, step: &gherkin::Step, ident: usize) {
+    fn step_skipped(&mut self, feat: &gherkin::Feature, step: &gherkin::Step) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.skipped(format!(
-            "{}?  {} {} (skipped)",
-            " ".repeat(ident - 3),
+            "{indent}?  {} {}\n\
+             {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
     }
@@ -279,19 +320,18 @@ impl Basic {
     /// [failed]: event::Step::Failed
     /// [`Step`]: [`gherkin::Step`]
     fn step_failed<W: Debug>(
-        &self,
+        &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         world: Option<&W>,
         info: &Info,
-        ident: usize,
     ) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.err(format!(
             //       ✘
-            "{ident}\u{2718}  {} {}\n\
-             {ident}   Step failed: {}:{}:{}\n\
-             {ident}   Captured output: {}\
+            "{indent}\u{2718}  {} {}\n\
+             {indent}   Step failed: {}:{}:{}\n\
+             {indent}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
@@ -302,8 +342,8 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            format_world(world, ident),
-            ident = " ".repeat(ident - 3),
+            format_world(world, self.indent.saturating_sub(3) + 3),
+            indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
     }
@@ -318,27 +358,28 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn background<W: Debug>(
-        &self,
+        &mut self,
         feat: &gherkin::Feature,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
-        ident: usize,
     ) {
         use event::Step;
 
-        let offset = ident + 4;
         match ev {
             Step::Started => {
-                self.bg_step_started(bg, offset);
+                self.bg_step_started(bg);
             }
             Step::Passed => {
-                self.bg_step_passed(bg, offset);
+                self.bg_step_passed(bg);
+                self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
-                self.bg_step_skipped(bg, offset);
+                self.bg_step_skipped(feat, bg);
+                self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(world, info) => {
-                self.bg_step_failed(feat, bg, world.as_ref(), info, offset);
+                self.bg_step_failed(feat, bg, world.as_ref(), info);
+                self.indent = self.indent.saturating_sub(4);
             }
         }
     }
@@ -354,11 +395,13 @@ impl Basic {
     /// [started]: event::Step::Started
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
-    fn bg_step_started(&self, step: &gherkin::Step, ident: usize) {
+    fn bg_step_started(&mut self, step: &gherkin::Step) {
+        self.needs_clear = true;
+        self.indent += 4;
         if self.styles.is_present {
             self.write_line(&format!(
                 "{}{}{} {}",
-                " ".repeat(ident - 2),
+                " ".repeat(self.indent.saturating_sub(2)),
                 "> ",
                 step.keyword,
                 step.value,
@@ -372,12 +415,12 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
-    fn bg_step_passed(&self, step: &gherkin::Step, ident: usize) {
+    fn bg_step_passed(&mut self, step: &gherkin::Step) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.ok(format!(
             //  ✔
             "{}\u{2714}> {} {}",
-            " ".repeat(ident - 3),
+            " ".repeat(self.indent.saturating_sub(3)),
             step.keyword,
             step.value,
         )))
@@ -389,13 +432,24 @@ impl Basic {
     /// [skipped]: event::Step::Skipped
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
-    fn bg_step_skipped(&self, step: &gherkin::Step, ident: usize) {
+    fn bg_step_skipped(
+        &mut self,
+        feat: &gherkin::Feature,
+        step: &gherkin::Step,
+    ) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.skipped(format!(
-            "{}?> {} {} (skipped)",
-            " ".repeat(ident - 3),
+            "{indent}?> {} {}\n\
+             {indent}   Background step failed: {}:{}:{}",
             step.keyword,
             step.value,
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
     }
@@ -406,19 +460,18 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_failed<W: Debug>(
-        &self,
+        &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         world: Option<&W>,
         info: &Info,
-        ident: usize,
     ) {
         self.clear_last_lines_if_term_present(1);
         self.write_line(&self.styles.err(format!(
             //       ✘
-            "{ident}\u{2718}> {} {}\n\
-             {ident}   Background step failed: {}:{}:{}\n\
-             {ident}   Captured output: {}\
+            "{indent}\u{2718}> {} {}\n\
+             {indent}   Background step failed: {}:{}:{}\n\
+             {indent}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
@@ -429,8 +482,8 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            format_world(world, ident),
-            ident = " ".repeat(ident - 3),
+            format_world(world, self.indent.saturating_sub(3) + 3),
+            indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
     }
@@ -450,14 +503,14 @@ fn coerce_error(err: &Info) -> String {
     }
 }
 
-/// Formats the given [`World`] using [`Debug`], then adds `ident`s to each line
-/// to prettify the output.
-fn format_world<W: Debug>(world: Option<&W>, ident: usize) -> String {
+/// Formats the given [`World`] using [`Debug`], then adds `indent`s to each
+/// line to prettify the output.
+fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
     let world = world
         .map(|world| format!("{:#?}", world))
         .unwrap_or_default()
         .lines()
-        .map(|line| format!("{}{}", " ".repeat(ident), line))
+        .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");
     (!world.is_empty())
         .then(|| format!("\n{}", world))
