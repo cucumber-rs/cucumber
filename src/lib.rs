@@ -73,14 +73,14 @@ pub use self::{
 /// Represents a shared user-defined state for a [Cucumber] run.
 /// It lives on per-[scenario][0] basis.
 ///
-/// This crate does not provide out-of-box solution for managing state shared
+/// This crate doesn't provide out-of-box solution for managing state shared
 /// across [scenarios][0], because we want some friction there to avoid tests
 /// being dependent on each other. If your workflow needs a way to share state
 /// between [scenarios][0] (ex. database connection pool), we recommend using
-/// [`once_cell`][1] crate with some [shared-state][2].
+/// [`once_cell`][1] crate or organize it other way via [shared state][2].
 ///
 /// [0]: https://cucumber.io/docs/gherkin/reference/#descriptions
-/// [1]: http://docs.rs/once_cell
+/// [1]: https://docs.rs/once_cell
 /// [2]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
 /// [Cucumber]: https://cucumber.io
 #[async_trait(?Send)]

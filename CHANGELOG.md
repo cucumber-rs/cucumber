@@ -16,10 +16,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Renamed crate to `cucumber`.
 - Complete redesign: ([#128])
     - Introduce new abstractions: `Parser`, `Runner`, `Writer`;
-    - Provide reference implementations for those abstractions.
+    - Provide reference implementations for those abstractions;
+    - Enable `macros` feature by default.
 - Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
-- Test callbacks arguments are now consistent with proc macros: `&mut World` instead of `World` as a first parameter and `Step` instead of `StepContext` as a second one.
-- CLI and [hooks](https://cucumber.io/docs/cucumber/api/#hooks) were removed, but are planned to be re-implemented with some changes in `0.11` release.
+- Made test callbacks arguments consistent with proc macros: ([#128])
+    - `&mut World` instead of `World` as a first parameter;
+    - `Step` instead of `StepContext` as a second one. 
+- CLI and [hooks](https://cucumber.io/docs/cucumber/api/#hooks) were removed, but are planned to be re-implemented with some changes in `0.11` release. ([#128])
 
 ### Added
 
