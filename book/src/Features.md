@@ -9,14 +9,14 @@ You don't need additional work on the implementation side to support `Rule`s. Le
 ```gherkin
 Feature: Animal feature
     
-  Rule: hungry cat  
+  Rule: Hungry cat becomes satiated
       
     Scenario: If we feed a hungry cat it will no longer be hungry
       Given a hungry cat
       When I feed the cat
       Then the cat is not hungry
     
-  Rule: satiated cat
+  Rule: Satiated cat remains the same
       
     Scenario: If we feed a satiated cat it will not become hungry
       Given a satiated cat
@@ -24,7 +24,7 @@ Feature: Animal feature
       Then the cat is not hungry
 ```
 
-<script id="asciicast-E9QvyDjEYBc5MKJpADxyiD7Ax" src="https://asciinema.org/a/E9QvyDjEYBc5MKJpADxyiD7Ax.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-9wOF9rEgGUgWN9e49TWiS5Nh3" src="https://asciinema.org/a/9wOF9rEgGUgWN9e49TWiS5Nh3.js" async data-autoplay="true" data-rows="18"></script>
 
 ## Background
 
@@ -38,13 +38,13 @@ Feature: Animal feature
   Background: 
     Given a hungry cat
     
-  Rule: hungry cat  
+  Rule: Hungry cat becomes satiated
       
     Scenario: If we feed a hungry cat it will no longer be hungry
       When I feed the cat
       Then the cat is not hungry
     
-  Rule: satiated cat
+  Rule: Satiated cat remains the same
       
     Background:
       When I feed the cat
@@ -54,7 +54,7 @@ Feature: Animal feature
       Then the cat is not hungry
 ```
 
-<script id="asciicast-PQ5bfRNBqBehFpIddM4Y0qCAd" src="https://asciinema.org/a/PQ5bfRNBqBehFpIddM4Y0qCAd.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-Q8OmAVWU116ZzxYg6VjBDxjlt" src="https://asciinema.org/a/Q8OmAVWU116ZzxYg6VjBDxjlt.js" async data-autoplay="true" data-rows="18"></script>
 
 `Background` `Step`s indicated by `>` by default.
 
@@ -88,7 +88,7 @@ Feature: Animal feature
     | 🦀     |
 ```
 
-And leverage regex support to match `Step`s:
+And leverage `regex` support to match `Step`s:
 
 ```rust
 # use std::{convert::Infallible, time::Duration};
@@ -159,7 +159,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 ### Combining Regex and FromStr
 
-At parsing stage, `<templates>` are replaced by value from cells. That means you can parse table calls into any type, that implements [`FromStr`](https://doc.rust-lang.org/stable/std/str/trait.FromStr.html)
+At parsing stage, `<templates>` are replaced by value from cells. That means you can parse table cells into any type, that implements [`FromStr`](https://doc.rust-lang.org/stable/std/str/trait.FromStr.html)
 
 ```gherkin
 Feature: Animal feature
@@ -237,7 +237,7 @@ async fn hungry_cat(world: &mut AnimalWorld, state: State) {
     }
 }
 
-#[when(regex = r"^I feed the (?:\S+)(?: (\d+) times?)?$")]
+#[when(regex = r"^I feed the (?:\S+) (\d+) times?$")]
 async fn feed_cat(world: &mut AnimalWorld, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
