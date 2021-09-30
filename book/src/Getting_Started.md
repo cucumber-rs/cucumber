@@ -1,4 +1,5 @@
-# Getting Started
+Getting Started
+===============
 
 Adding [Cucumber] to your project requires some groundwork. [Cucumber] tests are run along with other tests via `cargo test`, but rely on `.feature` files corresponding to the given test, as well as a set of step matchers described in code corresponding to the steps in those `.feature` files.
 
