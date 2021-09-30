@@ -1,51 +1,58 @@
-use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
+use std::convert::Infallible;
 
 use async_trait::async_trait;
-use cucumber::{given, then, when, writer, WorldInit, WriterExt};
-use futures::FutureExt as _;
-use tokio::time;
+use cucumber::{given, then, when, World, WorldInit};
 
-#[tokio::main]
-async fn main() {
-    let res = World::cucumber()
-        .with_writer(
-            writer::Basic::new()
-                .repeat_skipped()
-                .repeat_failed()
-                .summarized()
-                .normalized(),
-        )
-        .run_and_exit("tests/features/wait");
-
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
-    let err = err.downcast_ref::<String>().unwrap();
-
-    assert_eq!(err, "2 steps failed, 1 parsing error");
+#[derive(Debug)]
+struct Cat {
+    pub hungry: bool,
 }
 
-#[given(regex = r"(\d+) secs?")]
-#[when(regex = r"(\d+) secs?")]
-#[then(regex = r"(\d+) secs?")]
-async fn step(world: &mut World, secs: u64) {
-    time::sleep(Duration::from_secs(secs)).await;
-
-    world.0 += 1;
-    if world.0 > 3 {
-        panic!("Too much!");
+impl Cat {
+    fn feed(&mut self) {
+        self.hungry = false;
     }
 }
 
-#[derive(Clone, Copy, Debug, WorldInit)]
-struct World(usize);
+#[derive(Debug, WorldInit)]
+pub struct AnimalWorld {
+    cat: Cat,
+}
 
 #[async_trait(?Send)]
-impl cucumber::World for World {
+impl World for AnimalWorld {
     type Error = Infallible;
 
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(World(0))
+    async fn new() -> Result<Self, Infallible> {
+        Ok(Self {
+            cat: Cat { hungry: false },
+        })
     }
+}
+
+#[given(regex = r"^a (hungry|satiated) cat$")]
+fn hungry_cat(world: &mut AnimalWorld, state: String) {
+    match state.as_str() {
+        "hungry" => world.cat.hungry = true,
+        "satiated" => world.cat.hungry = false,
+        _ => unreachable!(),
+    }
+}
+
+#[when("I feed the cat")]
+fn feed_cat(world: &mut AnimalWorld) {
+    world.cat.feed();
+}
+
+#[then("the cat is not hungry")]
+fn cat_is_fed(world: &mut AnimalWorld) {
+    assert!(!world.cat.hungry);
+}
+
+fn main() {
+    futures::executor::block_on(
+        AnimalWorld::cucumber().fail_on_skipped().run_and_exit(
+            "/tests/features/book/getting_started/concurrent.feature",
+        ),
+    );
 }

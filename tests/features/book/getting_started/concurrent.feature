@@ -5,7 +5,7 @@ Feature: Animal feature
     When I feed the cat
     Then the cat is not hungry
 
-  Scenario: If we feed a satiated cat it will not become hungry
-    Given a satiated cat
-    When I feed the cat
-    Then the cat is not hungry
+  Scenario: If we feed a satiated dog it will not become hungry
+    Given a satiated dog
+    When I feed the dog
+    Then the dog is not hungry

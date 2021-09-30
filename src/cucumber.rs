@@ -142,8 +142,8 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
-    ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
+    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
+    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
     ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
@@ -222,8 +222,8 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
-    ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
+    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
+    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
     ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
