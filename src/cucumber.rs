@@ -149,15 +149,16 @@ where
     /// </script>
     ///
     /// ```rust
-    /// # use std::convert::Infallible;
+    /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
     /// #
     /// # use async_trait::async_trait;
     /// # use cucumber::WorldInit;
+    /// # use futures::FutureExt as _;
     /// #
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
     /// #
-    /// # #[async_trait]
+    /// # #[async_trait(?Send)]
     /// # impl cucumber::World for MyWorld {
     /// #     type Error = Infallible;
     /// #
@@ -166,14 +167,14 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let result = {
+    /// # let fut = async {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped()
-    ///     .run_and_exit("tests/features")
+    ///     .run_and_exit("tests/features/readme")
     ///     .await
     /// # };
     /// #
-    /// # futures::executor::block_on(result);
+    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
     /// ```
     ///
     /// <script
@@ -229,15 +230,16 @@ where
     /// </script>
     ///
     /// ```rust
-    /// # use std::convert::Infallible;
+    /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
     /// #
     /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
     /// #
-    /// # #[async_trait]
+    /// # #[async_trait(?Send)]
     /// # impl cucumber::World for MyWorld {
     /// #     type Error = Infallible;
     /// #
@@ -246,14 +248,14 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let result = {
+    /// # let fut = async {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped_with(|_, _, sc| sc.tags.iter().any(|t| t == "dog"))
-    ///     .run_and_exit("tests/features")
+    ///     .run_and_exit("tests/features/readme")
     ///     .await
     /// # };
     /// #
-    /// # futures::executor::block_on(result);
+    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
     /// ```
     ///
     /// <script
@@ -365,7 +367,7 @@ where
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
     /// #
-    /// # #[async_trait]
+    /// # #[async_trait(?Send)]
     /// # impl cucumber::World for MyWorld {
     /// #     type Error = Infallible;
     /// #
@@ -374,15 +376,15 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let result = {
+    /// # let fut = async {
     /// let _writer = MyWorld::cucumber()
-    ///     .filter_run("tests/features", |_, _, sc| {
+    ///     .filter_run("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
     ///     .await;
     /// # };
     /// #
-    /// # futures::executor::block_on(result);
+    /// # futures::executor::block_on(fut);
     /// ```
     ///
     /// <script
@@ -684,7 +686,7 @@ where
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
     /// #
-    /// # #[async_trait]
+    /// # #[async_trait(?Send)]
     /// # impl cucumber::World for MyWorld {
     /// #     type Error = Infallible;
     /// #
@@ -693,15 +695,15 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let result = {
+    /// # let fut = async {
     /// MyWorld::cucumber()
-    ///     .filter_run_and_exit("tests/features", |_, _, sc| {
+    ///     .filter_run_and_exit("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
     ///     .await
     /// # };
     /// #
-    /// # futures::executor::block_on(result);
+    /// # futures::executor::block_on(fut);
     /// ```
     ///
     /// <script
