@@ -138,6 +138,67 @@ where
     ///
     /// It's useful option for ensuring that all the steps were covered.
     ///
+    /// # Example
+    ///
+    /// Output with [`Cucumber::run()`]:
+    ///
+    /// <script
+    ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
+    ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let result = {
+    /// MyWorld::cucumber()
+    ///     .fail_on_skipped()
+    ///     .run_and_exit("tests/features")
+    ///     .await
+    /// # };
+    /// #
+    /// # futures::executor::block_on(result);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
+    ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
+    ///
+    /// To avoid failing, add `@allow_skipped` tag.
+    ///
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @allow_skipped
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
+    ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: crate::event::Step::Skipped
@@ -156,6 +217,67 @@ where
 
     /// Consider [`Skipped`] steps as [`Failed`] if the given `filter` predicate
     /// returns `true`.
+    ///
+    /// # Example
+    ///
+    /// Output with [`Cucumber::run()`]:
+    ///
+    /// <script
+    ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
+    ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let result = {
+    /// MyWorld::cucumber()
+    ///     .fail_on_skipped_with(|_, _, sc| sc.tags.iter().any(|t| t == "dog"))
+    ///     .run_and_exit("tests/features")
+    ///     .await
+    /// # };
+    /// #
+    /// # futures::executor::block_on(result);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
+    ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
+    ///
+    /// To avoid failing, add `@dog` tag.
+    ///
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -215,6 +337,59 @@ where
     ///
     /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
     /// events handled by [`Writer`].
+    ///
+    /// # Example
+    ///
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let result = {
+    /// let _writer = MyWorld::cucumber()
+    ///     .filter_run("tests/features", |_, _, sc| {
+    ///         sc.tags.iter().any(|t| t == "cat")
+    ///     })
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(result);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
+    ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
@@ -481,6 +656,59 @@ where
     ///
     /// If encountered errors while parsing [`Feature`]s or at least one
     /// [`Step`] [`Failed`].
+    ///
+    /// # Example
+    ///
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let result = {
+    /// MyWorld::cucumber()
+    ///     .filter_run_and_exit("tests/features", |_, _, sc| {
+    ///         sc.tags.iter().any(|t| t == "cat")
+    ///     })
+    ///     .await
+    /// # };
+    /// #
+    /// # futures::executor::block_on(result);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
+    ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
+    ///     async data-autoplay="true" data-rows="18">
+    /// </script>
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
