@@ -737,16 +737,14 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
-        let f = feature.expand_examples();
-
-        let local = f
+        let local = feature
             .scenarios
             .iter()
-            .map(|s| (&f, None, s))
-            .chain(f.rules.iter().flat_map(|r| {
+            .map(|s| (&feature, None, s))
+            .chain(feature.rules.iter().flat_map(|r| {
                 r.scenarios
                     .iter()
-                    .map(|s| (&f, Some(r), s))
+                    .map(|s| (&feature, Some(r), s))
                     .collect::<Vec<_>>()
             }))
             .map(|(f, r, s)| {

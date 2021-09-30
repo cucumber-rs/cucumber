@@ -10,7 +10,10 @@
 
 //! Default [`Writer`] implementation.
 
-use std::{fmt::Debug, ops::Deref};
+use std::{
+    fmt::{Debug, Display},
+    ops::Deref,
+};
 
 use async_trait::async_trait;
 use console::Term;
@@ -115,7 +118,7 @@ impl Basic {
     ///
     /// [error]: event::Cucumber::ParsingError
     /// [`Feature`]: gherkin::Feature
-    fn parsing_failed(&self, err: &gherkin::ParseFileError) {
+    fn parsing_failed(&self, err: impl Display) {
         self.write_line(&self.styles.err(format!("Failed to parse: {}", err)))
             .unwrap();
     }

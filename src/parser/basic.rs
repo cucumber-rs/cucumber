@@ -18,11 +18,13 @@ use std::{
 };
 
 use derive_more::{Display, Error};
-use futures::{stream, TryStreamExt};
+use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
 
-use super::Parser;
+use crate::feature::Ext as _;
+
+use super::{Error as ParseError, Parser};
 
 /// Default [`Parser`].
 ///
@@ -37,7 +39,8 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type Output = OutputStream;
+    type Output =
+        stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
     fn parse(self, path: I) -> Self::Output {
         let features = || {
@@ -53,14 +56,17 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             }) {
                 Ok(p) => p,
                 Err(err) => {
-                    return vec![Err(gherkin::ParseFileError::Reading {
-                        path: path.to_path_buf(),
-                        source: err,
-                    })];
+                    return vec![
+                        (Err(Arc::new(gherkin::ParseFileError::Reading {
+                            path: path.to_path_buf(),
+                            source: err,
+                        })
+                        .into())),
+                    ];
                 }
             };
 
-            if path.is_file() {
+            let features = if path.is_file() {
                 let env = self
                     .language
                     .as_ref()
@@ -83,20 +89,20 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                         gherkin::Feature::parse_path(entry.path(), env)
                     })
                     .collect::<Vec<_>>()
-            }
+            };
+
+            features
+                .into_iter()
+                .map(|f| match f {
+                    Ok(f) => f.expand_examples().map_err(ParseError::from),
+                    Err(err) => Err(Arc::new(err).into()),
+                })
+                .collect()
         };
 
-        stream::iter(features().into_iter()).map_err(Arc::new)
+        stream::iter(features().into_iter())
     }
 }
-
-/// Alias for [`Parser::Output`] of [`Basic`].
-pub type OutputStream = stream::MapErr<
-    stream::Iter<
-        vec::IntoIter<Result<gherkin::Feature, gherkin::ParseFileError>>,
-    >,
-    fn(gherkin::ParseFileError) -> Arc<gherkin::ParseFileError>,
->;
 
 impl Basic {
     /// Creates a new [`Basic`] [`Parser`].

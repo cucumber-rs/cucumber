@@ -10,8 +10,11 @@
 
 //! [`gherkin::Feature`] extension.
 
-use std::{iter, mem};
+use std::{mem, path::PathBuf};
 
+use derive_more::{Display, Error};
+use once_cell::sync::Lazy;
+use regex::{Captures, Regex};
 use sealed::sealed;
 
 /// Helper methods to operate on [`gherkin::Feature`]s.
@@ -53,8 +56,7 @@ pub trait Ext: Sized {
     ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
-    #[must_use]
-    fn expand_examples(self) -> Self;
+    fn expand_examples(self) -> Result<Self, ExpandExamplesError>;
 
     /// Counts all the [`Feature`]'s [`Scenario`]s, including [`Rule`]s inside.
     ///
@@ -67,54 +69,112 @@ pub trait Ext: Sized {
 
 #[sealed]
 impl Ext for gherkin::Feature {
-    fn expand_examples(mut self) -> Self {
-        let expand = |scenarios: Vec<gherkin::Scenario>| {
+    fn expand_examples(mut self) -> Result<Self, ExpandExamplesError> {
+        let path = self.path.clone();
+        let expand = |scenarios: Vec<gherkin::Scenario>| -> Result<_, _> {
             scenarios
                 .into_iter()
-                .flat_map(|scenario| {
-                    let ((header, vals), examples) =
-                        match scenario.examples.as_ref().and_then(|ex| {
-                            ex.table.rows.split_first().map(|t| (t, ex))
-                        }) {
-                            Some(s) => s,
-                            None => return vec![scenario],
-                        };
-
-                    vals.iter()
-                        .zip(iter::repeat_with(|| header))
-                        .enumerate()
-                        .map(|(id, (vals, keys))| {
-                            let mut modified = scenario.clone();
-
-                            // This is done to differentiate `Hash`es of
-                            // scenario outlines with the same examples.
-                            modified.position = examples.position;
-                            modified.position.line += id + 1;
-
-                            for step in &mut modified.steps {
-                                for (key, val) in keys.iter().zip(vals) {
-                                    step.value = step
-                                        .value
-                                        .replace(&format!("<{}>", key), val);
-                                }
-                            }
-                            modified
-                        })
-                        .collect()
-                })
+                .flat_map(|scenario| expand_scenario(scenario, path.as_ref()))
                 .collect()
         };
 
         for rule in &mut self.rules {
-            rule.scenarios = expand(mem::take(&mut rule.scenarios));
+            rule.scenarios = expand(mem::take(&mut rule.scenarios))?;
         }
-        self.scenarios = expand(mem::take(&mut self.scenarios));
+        self.scenarios = expand(mem::take(&mut self.scenarios))?;
 
-        self
+        Ok(self)
     }
 
     fn count_scenarios(&self) -> usize {
         self.scenarios.len()
             + self.rules.iter().map(|r| r.scenarios.len()).sum::<usize>()
     }
+}
+
+/// Expands [`Scenario`] [`Examples`], if any.
+///
+/// [`Examples`]: gherkin::Example
+/// [`Scenario`]: gherkin::Scenario
+fn expand_scenario(
+    scenario: gherkin::Scenario,
+    path: Option<&PathBuf>,
+) -> Vec<Result<gherkin::Scenario, ExpandExamplesError>> {
+    static TEMPLATE_REGEX: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r"<(\S+)>").unwrap());
+
+    let (header, vals) = match scenario
+        .examples
+        .as_ref()
+        .and_then(|ex| ex.table.rows.split_first())
+    {
+        Some(s) => s,
+        None => return vec![Ok(scenario)],
+    };
+
+    let table = vals.iter().map(|v| header.iter().zip(v));
+
+    table
+        .enumerate()
+        .map(|(id, row)| {
+            let mut modified = scenario.clone();
+
+            // This is done to differentiate `Hash`es of
+            // scenario outlines with the same examples.
+            modified.position = scenario
+                .examples
+                .as_ref()
+                .map_or_else(|| scenario.position, |ex| ex.position);
+            modified.position.line += id + 1;
+
+            let mut err = None;
+
+            for step in &mut modified.steps {
+                step.value = TEMPLATE_REGEX
+                    .replace_all(&step.value, |c: &Captures<'_>| {
+                        let name = c.get(1).unwrap().as_str();
+
+                        row.clone()
+                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
+                            .unwrap_or_else(|| {
+                                err = Some(ExpandExamplesError {
+                                    pos: step.position,
+                                    name: name.to_owned(),
+                                    path: path.cloned(),
+                                });
+                                ""
+                            })
+                    })
+                    .into_owned();
+
+                if let Some(err) = err {
+                    return Err(err);
+                }
+            }
+
+            Ok(modified)
+        })
+        .collect()
+}
+
+/// Error encountered during [`Scenario Outline`][0] expansion.
+///
+/// [0]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
+#[derive(Clone, Debug, Display, Error)]
+#[display(
+    fmt = "Failed to resolve <{}> at {}:{}:{}",
+    name,
+    "path.as_ref().and_then(|p| p.to_str()).unwrap_or_default()",
+    "pos.line",
+    "pos.col"
+)]
+pub struct ExpandExamplesError {
+    /// Position of unknown template.
+    pub pos: gherkin::LineCol,
+
+    /// Unknown template
+    pub name: String,
+
+    /// Path, if present.
+    pub path: Option<PathBuf>,
 }
