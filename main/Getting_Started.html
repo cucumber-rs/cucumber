@@ -82,7 +82,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Getting_Started.html" class="active"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="Running_Against_A_Process.html"><strong aria-hidden="true">3.</strong> Running Against a Process (WIP)</a></li><li class="chapter-item expanded "><a href="Test_Modules_Organization.html"><strong aria-hidden="true">4.</strong> Test Modules Organization (WIP)</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Getting_Started.html" class="active"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="Features.html"><strong aria-hidden="true">3.</strong> Features</a></li><li class="chapter-item expanded "><a href="Test_Modules_Organization.html"><strong aria-hidden="true">4.</strong> Test Modules Organization</a></li><li class="chapter-item expanded "><a href="Running_Against_A_Process.html"><strong aria-hidden="true">5.</strong> Running Against a Process (WIP)</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -230,50 +230,7 @@ fn main() {
 <li><code>then</code>: to validate that the <code>World</code> has changed the way we would expect.</li>
 </ul>
 <p>These various <code>Step</code> functions are executed to transform the <code>World</code>. As such, mutable reference to the world must always be passed in. The <code>Step</code> itself is also made available.</p>
-<p>The steps matchers take a string, which is the name of the given <code>Step</code> (i.e., the literal string, such as <code>A hungry cat</code>), and then a function closure that takes a <code>World</code> and then the <code>Step</code> itself. </p>
-<p>We also support regexes:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
-</span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, World, WorldInit};
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Cat {
-</span><span class="boring">    pub hungry: bool,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Cat {
-</span><span class="boring">    fn feed(&amp;mut self) {
-</span><span class="boring">        self.hungry = false;
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
-</span><span class="boring">pub struct AnimalWorld {
-</span><span class="boring">    cat: Cat,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Cat { hungry: false },
-</span><span class="boring">        })
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span>#[given(regex = r&quot;^a hungry (\S+)$&quot;)]
-fn hungry_someone(world: &amp;mut AnimalWorld, who: String) {
-    assert_eq!(who, &quot;cat&quot;);
-    world.cat.hungry = true;
-}
-<span class="boring">
-</span><span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;/tests/features/book&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+<p>The steps matchers take a string, which is the name of the given <code>Step</code> (i.e., the literal string, such as <code>A hungry cat</code>), and then a function closure that takes a <code>World</code> and then the <code>Step</code> itself.</p>
 <p>We can add a <code>when</code> step after our <code>given</code> step:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
@@ -672,7 +629,7 @@ async fn main() {
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
-                                                    <a rel="next" href="Running_Against_A_Process.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                                    <a rel="next" href="Features.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -686,7 +643,7 @@ async fn main() {
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
-                                    <a rel="next" href="Running_Against_A_Process.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                    <a rel="next" href="Features.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                             </nav>
