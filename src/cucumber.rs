@@ -140,14 +140,14 @@ where
     ///
     /// # Example
     ///
-    /// Output with [`Cucumber::run()`]:
-    ///
+    /// Output with a regular [`Cucumber::run()`]:
     /// <script
     ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
     ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
+    /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
     /// ```rust
     /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
     /// #
@@ -171,20 +171,19 @@ where
     /// MyWorld::cucumber()
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
-    ///     .await
+    ///     .await;
     /// # };
     /// #
     /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
     /// ```
-    ///
     /// <script
     ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
     ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// To avoid failing, add `@allow_skipped` tag.
-    ///
+    /// To intentionally suppress some [`Skipped`] steps failing, use the
+    /// `@allow_skipped` tag:
     /// ```gherkin
     /// Feature: Animal feature
     ///
@@ -221,14 +220,15 @@ where
     ///
     /// # Example
     ///
-    /// Output with [`Cucumber::run()`]:
-    ///
+    /// Output with a regular [`Cucumber::run()`]:
     /// <script
     ///     id="asciicast-Ar8XAtrZWKMNfe7mffBXbQAFb"
     ///     src="https://asciinema.org/a/Ar8XAtrZWKMNfe7mffBXbQAFb.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
+    /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
+    /// marked with `@dog` tag:
     /// ```rust
     /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
     /// #
@@ -252,20 +252,31 @@ where
     /// MyWorld::cucumber()
     ///     .fail_on_skipped_with(|_, _, sc| sc.tags.iter().any(|t| t == "dog"))
     ///     .run_and_exit("tests/features/readme")
-    ///     .await
+    ///     .await;
     /// # };
     /// #
     /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
     /// ```
+    /// ```gherkin
+    /// Feature: Animal feature
     ///
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
     /// <script
     ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
     ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// To avoid failing, add `@dog` tag.
-    ///
+    /// And to avoid failing, use the `@dog` tag:
     /// ```gherkin
     /// Feature: Animal feature
     ///
@@ -315,8 +326,8 @@ where
 {
     /// Runs [`Cucumber`].
     ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
     ///
     /// [`Feature`]: gherkin::Feature
     pub async fn run(self, input: I) -> Wr {
@@ -337,27 +348,12 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
     ///
     /// # Example
     ///
-    /// ```gherkin
-    /// Feature: Animal feature
-    ///
-    ///   @cat
-    ///   Scenario: If we feed a hungry cat it will no longer be hungry
-    ///     Given a hungry cat
-    ///     When I feed the cat
-    ///     Then the cat is not hungry
-    ///
-    ///   @dog
-    ///   Scenario: If we feed a satiated dog it will not become hungry
-    ///     Given a satiated dog
-    ///     When I feed the dog
-    ///     Then the dog is not hungry
-    /// ```
-    ///
+    /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
     /// # use std::convert::Infallible;
     /// #
@@ -377,7 +373,7 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let _writer = MyWorld::cucumber()
+    /// MyWorld::cucumber()
     ///     .filter_run("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
@@ -386,11 +382,25 @@ where
     /// #
     /// # futures::executor::block_on(fut);
     /// ```
+    /// ```gherkin
+    /// Feature: Animal feature
     ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
     /// <script
     ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
     ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///
     /// [`Feature`]: gherkin::Feature
@@ -634,8 +644,8 @@ where
 {
     /// Runs [`Cucumber`].
     ///
-    /// [`Feature`]s sourced by [`Parser`] are fed to [`Runner`], which produces
-    /// events handled by [`Writer`].
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
     ///
     /// # Panics
     ///
@@ -651,8 +661,8 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
-    /// [`Feature`]s sourced by [`Parser`] are filtered, then fed to [`Runner`],
-    /// which produces events handled by [`Writer`].
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
     ///
     /// # Panics
     ///
@@ -661,22 +671,7 @@ where
     ///
     /// # Example
     ///
-    /// ```gherkin
-    /// Feature: Animal feature
-    ///
-    ///   @cat
-    ///   Scenario: If we feed a hungry cat it will no longer be hungry
-    ///     Given a hungry cat
-    ///     When I feed the cat
-    ///     Then the cat is not hungry
-    ///
-    ///   @dog
-    ///   Scenario: If we feed a satiated dog it will not become hungry
-    ///     Given a satiated dog
-    ///     When I feed the dog
-    ///     Then the dog is not hungry
-    /// ```
-    ///
+    /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
     /// # use std::convert::Infallible;
     /// #
@@ -700,16 +695,30 @@ where
     ///     .filter_run_and_exit("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
-    ///     .await
+    ///     .await;
     /// # };
     /// #
     /// # futures::executor::block_on(fut);
     /// ```
+    /// ```gherkin
+    /// Feature: Animal feature
     ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
     /// <script
     ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
     ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
-    ///     async data-autoplay="true" data-rows="18">
+    ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///
     /// [`Failed`]: crate::event::Step::Failed
