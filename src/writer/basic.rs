@@ -126,8 +126,12 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&self, feature: &gherkin::Feature) {
-        self.write_line(&self.styles.ok(format!("Feature: {}", feature.name)))
-            .unwrap();
+        self.write_line(
+            &self
+                .styles
+                .ok(format!("{}: {}", feature.keyword, feature.name)),
+        )
+        .unwrap();
     }
 
     /// Outputs [started] [`Rule`] to STDOUT.
@@ -135,8 +139,10 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&self, rule: &gherkin::Rule) {
-        self.write_line(&self.styles.ok(format!("  Rule: {}", rule.name)))
-            .unwrap();
+        self.write_line(
+            &self.styles.ok(format!("  {}: {}", rule.keyword, rule.name)),
+        )
+        .unwrap();
     }
 
     /// Outputs [`Scenario`] [started]/[background]/[step] event to STDOUT.
@@ -174,8 +180,9 @@ impl Basic {
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&self, scenario: &gherkin::Scenario, ident: usize) {
         self.write_line(&self.styles.ok(format!(
-            "{}Scenario: {}",
+            "{}{}: {}",
             " ".repeat(ident),
+            scenario.keyword,
             scenario.name,
         )))
         .unwrap();
