@@ -31,7 +31,7 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub mod cucumber;
+mod cucumber;
 pub mod event;
 pub mod feature;
 pub mod parser;
