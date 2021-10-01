@@ -55,6 +55,10 @@ name = "wait"
 harness = false
 
 [[test]]
+name = "cucumber"
+harness = false
+
+[[test]]
 name = "output"
 
 [workspace]

@@ -88,7 +88,7 @@ name = "readme"
 harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-[![asciicast](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo.svg)](https://asciinema.org/a/YP24WIM1PGr2I9znFYKfmbkyo)
+[![asciicast](https://asciinema.org/a/6wN3uv8p98SgVznPUh9h50bFo.svg)](https://asciinema.org/a/6wN3uv8p98SgVznPUh9h50bFo)
 
 For more examples check out the Book ([current][1] | [edge][2]).
 
