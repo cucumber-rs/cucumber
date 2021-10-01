@@ -10,11 +10,14 @@
 
 //! [`gherkin::Feature`] extension.
 
-use std::{mem, path::PathBuf};
+use std::{
+    mem,
+    path::{Path, PathBuf},
+};
 
 use derive_more::{Display, Error};
 use once_cell::sync::Lazy;
-use regex::{Captures, Regex};
+use regex::Regex;
 use sealed::sealed;
 
 /// Helper methods to operate on [`gherkin::Feature`]s.
@@ -54,6 +57,11 @@ pub trait Ext: Sized {
     ///       |    20 |   5 |   15 |
     /// ```
     ///
+    /// # Errors
+    ///
+    /// Errors if the [`Examples`][2] cannot be expanded.
+    /// See [`ExpandExamplesError`] for details.
+    ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
     fn expand_examples(self) -> Result<Self, ExpandExamplesError>;
@@ -74,12 +82,12 @@ impl Ext for gherkin::Feature {
         let expand = |scenarios: Vec<gherkin::Scenario>| -> Result<_, _> {
             scenarios
                 .into_iter()
-                .flat_map(|scenario| expand_scenario(scenario, path.as_ref()))
+                .flat_map(|s| expand_scenario(s, path.as_ref()))
                 .collect()
         };
 
-        for rule in &mut self.rules {
-            rule.scenarios = expand(mem::take(&mut rule.scenarios))?;
+        for r in &mut self.rules {
+            r.scenarios = expand(mem::take(&mut r.scenarios))?;
         }
         self.scenarios = expand(mem::take(&mut self.scenarios))?;
 
@@ -93,6 +101,10 @@ impl Ext for gherkin::Feature {
 }
 
 /// Expands [`Scenario`] [`Examples`], if any.
+///
+/// # Errors
+///
+/// See [`ExpandExamplesError`] for details.
 ///
 /// [`Examples`]: gherkin::Example
 /// [`Scenario`]: gherkin::Scenario
@@ -113,7 +125,6 @@ fn expand_scenario(
     };
 
     let table = vals.iter().map(|v| header.iter().zip(v));
-
     table
         .enumerate()
         .map(|(id, row)| {
@@ -129,16 +140,16 @@ fn expand_scenario(
 
             let mut err = None;
 
-            for step in &mut modified.steps {
-                step.value = TEMPLATE_REGEX
-                    .replace_all(&step.value, |c: &Captures<'_>| {
+            for s in &mut modified.steps {
+                s.value = TEMPLATE_REGEX
+                    .replace_all(&s.value, |c: &regex::Captures<'_>| {
                         let name = c.get(1).unwrap().as_str();
 
                         row.clone()
                             .find_map(|(k, v)| (name == k).then(|| v.as_str()))
                             .unwrap_or_else(|| {
                                 err = Some(ExpandExamplesError {
-                                    pos: step.position,
+                                    pos: s.position,
                                     name: name.to_owned(),
                                     path: path.cloned(),
                                 });
@@ -147,8 +158,8 @@ fn expand_scenario(
                     })
                     .into_owned();
 
-                if let Some(err) = err {
-                    return Err(err);
+                if let Some(e) = err {
+                    return Err(e);
                 }
             }
 
@@ -157,24 +168,24 @@ fn expand_scenario(
         .collect()
 }
 
-/// Error encountered during [`Scenario Outline`][0] expansion.
+/// Error of [`Scenario Outline`][1] expansion encountering an unknown template.
 ///
-/// [0]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
+/// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
     fmt = "Failed to resolve <{}> at {}:{}:{}",
     name,
-    "path.as_ref().and_then(|p| p.to_str()).unwrap_or_default()",
+    "path.as_deref().and_then(Path::to_str).unwrap_or_default()",
     "pos.line",
     "pos.col"
 )]
 pub struct ExpandExamplesError {
-    /// Position of unknown template.
+    /// Position of the unknown template.
     pub pos: gherkin::LineCol,
 
-    /// Unknown template
+    /// Name of the unknown template.
     pub name: String,
 
-    /// Path, if present.
+    /// [`Path`] to the `.feature` file, if present.
     pub path: Option<PathBuf>,
 }

@@ -47,10 +47,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// [`Parser`] error.
 #[derive(Clone, Debug, Display, Error, From)]
 pub enum Error {
-    /// Failed to parse [`Feature`].
+    /// Failed to parse a [`Feature`].
     ///
     /// [`Feature`]: gherkin::Feature
-    #[display(fmt = "Failed to parse: {}", _0)]
+    #[display(fmt = "Failed to parse feature: {}", _0)]
     Parsing(Arc<gherkin::ParseFileError>),
 
     /// Failed to expand [`Examples`]
