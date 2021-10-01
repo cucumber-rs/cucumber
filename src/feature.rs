@@ -10,7 +10,7 @@
 
 //! [`gherkin::Feature`] extension.
 
-use std::{mem, path::PathBuf};
+use std::{iter, mem, path::PathBuf};
 
 use derive_more::{Display, Error};
 use once_cell::sync::Lazy;
@@ -130,22 +130,33 @@ fn expand_scenario(
             let mut err = None;
 
             for step in &mut modified.steps {
-                step.value = TEMPLATE_REGEX
-                    .replace_all(&step.value, |c: &Captures<'_>| {
-                        let name = c.get(1).unwrap().as_str();
+                let pos = step.position;
+                let to_replace = iter::once(&mut step.value).chain(
+                    step.table.iter_mut().flat_map(|t| {
+                        t.rows.iter_mut().flat_map(|row| row.iter_mut())
+                    }),
+                );
 
-                        row.clone()
-                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
-                            .unwrap_or_else(|| {
-                                err = Some(ExpandExamplesError {
-                                    pos: step.position,
-                                    name: name.to_owned(),
-                                    path: path.cloned(),
-                                });
-                                ""
-                            })
-                    })
-                    .into_owned();
+                for value in to_replace {
+                    *value = TEMPLATE_REGEX
+                        .replace_all(value, |c: &Captures<'_>| {
+                            let name = c.get(1).unwrap().as_str();
+
+                            row.clone()
+                                .find_map(|(k, v)| {
+                                    (name == k).then(|| v.as_str())
+                                })
+                                .unwrap_or_else(|| {
+                                    err = Some(ExpandExamplesError {
+                                        pos,
+                                        name: name.to_owned(),
+                                        path: path.cloned(),
+                                    });
+                                    ""
+                                })
+                        })
+                        .into_owned();
+                }
 
                 if let Some(err) = err {
                     return Err(err);
