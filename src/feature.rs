@@ -28,12 +28,13 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are <start> cucumbers
     ///     When I eat <eat> cucumbers
+    ///      | <eat> |
     ///     Then I should have <left> cucumbers
     ///
     ///     Examples:
     ///       | start | eat | left |
     ///       |    12 |   5 |    7 |
-    ///       |    20 |   5 |   15 |
+    ///       |    20 |   4 |   16 |
     /// ```
     ///
     /// Will be expanded as:
@@ -42,16 +43,18 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are 12 cucumbers
     ///     When I eat 5 cucumbers
+    ///      | 5 |
     ///     Then I should have 7 cucumbers
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
-    ///     When I eat 5 cucumbers
-    ///     Then I should have 15 cucumbers
+    ///     When I eat 4 cucumbers
+    ///      | 4 |
+    ///     Then I should have 16 cucumbers
     ///
     ///     Examples:
     ///       | start | eat | left |
     ///       |    12 |   5 |    7 |
-    ///       |    20 |   5 |   15 |
+    ///       |    20 |   4 |   16 |
     /// ```
     ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
