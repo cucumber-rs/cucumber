@@ -19,9 +19,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
     - Provide reference implementations for those abstractions;
     - Enable `macros` feature by default.
 - Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
-- Made test callbacks arguments consistent with proc macros: ([#128])
-    - `&mut World` instead of `World` as a first parameter;
-    - `Step` instead of `StepContext` as a second one. 
+- Made test callbacks first argument `&mut World` instead of `World` ([#128])
 - CLI and [hooks](https://cucumber.io/docs/cucumber/api/#hooks) were removed, but are planned to be re-implemented with some changes in `0.11` release. ([#128])
 
 ### Added
