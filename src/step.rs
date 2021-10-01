@@ -17,12 +17,13 @@ use std::{
     collections::HashMap,
     fmt,
     hash::{Hash, Hasher},
+    iter,
     ops::Deref,
 };
 
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
-use regex::Regex;
+use regex::{CaptureLocations, Regex};
 
 /// Alias for a [`gherkin::Step`] function that returns a [`LocalBoxFuture`].
 pub type Step<World> =
@@ -120,25 +121,32 @@ impl<World> Collection<World> {
     pub fn find(
         &self,
         step: &gherkin::Step,
-    ) -> Option<(&Step<World>, Context)> {
+    ) -> Option<(&Step<World>, CaptureLocations, Context)> {
         let collection = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
             StepType::Then => &self.then,
         };
 
-        let (captures, step_fn) =
+        let (whole_match, locations, step_fn) =
             collection.iter().find_map(|(re, step_fn)| {
-                re.captures(&step.value).map(|c| (c, step_fn))
+                let mut locations = re.capture_locations();
+                re.captures_read(&mut locations, &step.value)
+                    .map(|m| (m, locations, step_fn))
             })?;
 
-        let matches = captures
-            .iter()
-            .map(|c| c.map(|c| c.as_str().to_owned()).unwrap_or_default())
+        let matches = iter::once(whole_match.as_str().to_owned())
+            .chain((1..locations.len()).map(|group_id| {
+                locations
+                    .get(group_id)
+                    .map_or("", |(s, e)| &step.value[s..e])
+                    .to_owned()
+            }))
             .collect();
 
         Some((
             step_fn,
+            locations,
             Context {
                 step: step.clone(),
                 matches,

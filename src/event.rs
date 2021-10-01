@@ -21,6 +21,8 @@
 
 use std::{any::Any, sync::Arc};
 
+use regex::CaptureLocations;
+
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
@@ -199,12 +201,12 @@ pub enum Step<World> {
     /// [`Step`] passed.
     ///
     /// [`Step`]: gherkin::Step
-    Passed,
+    Passed(CaptureLocations),
 
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<Arc<World>>, Info),
+    Failed(Option<CaptureLocations>, Option<Arc<World>>, Info),
 }
 
 impl<World> Clone for Step<World> {
@@ -212,8 +214,10 @@ impl<World> Clone for Step<World> {
         match self {
             Step::Started => Step::Started,
             Step::Skipped => Step::Skipped,
-            Step::Passed => Step::Passed,
-            Step::Failed(w, info) => Step::Failed(w.clone(), info.clone()),
+            Step::Passed(cap) => Step::Passed(cap.clone()),
+            Step::Failed(cap, w, info) => {
+                Step::Failed(cap.clone(), w.clone(), info.clone())
+            }
         }
     }
 }
@@ -277,8 +281,11 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_passed(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Passed)
+    pub fn step_passed(
+        step: Arc<gherkin::Step>,
+        capture: CaptureLocations,
+    ) -> Self {
+        Self::Step(step, Step::Passed(capture))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -286,8 +293,11 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_passed(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Passed)
+    pub fn background_step_passed(
+        step: Arc<gherkin::Step>,
+        capture: CaptureLocations,
+    ) -> Self {
+        Self::Background(step, Step::Passed(capture))
     }
 
     /// Constructs an event of a skipped [`Step`].
@@ -312,10 +322,11 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
+        capture: Option<CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Step(step, Step::Failed(world, info))
+        Self::Step(step, Step::Failed(capture, world, info))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -325,9 +336,10 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
+        capture: Option<CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Background(step, Step::Failed(world, info))
+        Self::Background(step, Step::Failed(capture, world, info))
     }
 }
