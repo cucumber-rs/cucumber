@@ -295,8 +295,8 @@ async fn execute<W: World>(
     //    down the line to the Writer, which will print it at a right time.
     // 3. We return original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
-    // let hook = panic::take_hook();
-    // panic::set_hook(Box::new(|_| {}));
+    let hook = panic::take_hook();
+    panic::set_hook(Box::new(|_| {}));
 
     let mut executor = Executor::new(collection, sender);
 
@@ -327,7 +327,7 @@ async fn execute<W: World>(
 
     executor.send(event::Cucumber::Finished);
 
-    // panic::set_hook(hook);
+    panic::set_hook(hook);
 }
 
 /// Stores currently ran [`Feature`]s and notifies about their state of
