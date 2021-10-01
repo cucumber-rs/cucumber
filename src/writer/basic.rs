@@ -43,8 +43,8 @@ pub struct Basic {
     /// Current indentation with which events are outputted.
     indent: usize,
 
-    /// Indicates whether last lines should be cleared.
-    needs_clear: Option<usize>,
+    /// Number of lines to clear, if any.
+    lines_to_clear: Option<usize>,
 }
 
 #[async_trait(?Send)]
@@ -87,7 +87,7 @@ impl Default for Basic {
             terminal: Term::stdout(),
             styles: Styles::new(),
             indent: 0,
-            needs_clear: None,
+            lines_to_clear: None,
         }
     }
 }
@@ -109,11 +109,14 @@ impl Basic {
 
     /// Clears last `n` lines if terminal is present.
     fn clear_last_lines_if_term_present(&mut self) {
-        if let Some(lines) =
-            self.styles.is_present.then(|| self.needs_clear).flatten()
+        if let Some(lines) = self
+            .styles
+            .is_present
+            .then(|| self.lines_to_clear)
+            .flatten()
         {
             self.clear_last_lines(lines).unwrap();
-            self.needs_clear = None;
+            self.lines_to_clear = None;
         }
     }
 
@@ -131,7 +134,7 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&mut self, feature: &gherkin::Feature) {
-        self.needs_clear = Some(1);
+        self.lines_to_clear = Some(1);
         self.write_line(
             &self
                 .styles
@@ -171,7 +174,7 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&mut self, rule: &gherkin::Rule) {
-        self.needs_clear = Some(1);
+        self.lines_to_clear = Some(1);
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{indent}{}: {}",
@@ -214,7 +217,7 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&mut self, scenario: &gherkin::Scenario) {
-        self.needs_clear = Some(1);
+        self.lines_to_clear = Some(1);
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{}{}: {}",
@@ -279,7 +282,7 @@ impl Basic {
                 format_table(step.table.as_ref(), self.indent),
                 indent = " ".repeat(self.indent),
             );
-            self.needs_clear = Some(output.lines().count());
+            self.lines_to_clear = Some(output.lines().count());
             self.write_line(&output).unwrap();
         }
     }
@@ -417,7 +420,7 @@ impl Basic {
                 format_table(step.table.as_ref(), self.indent),
                 indent = " ".repeat(self.indent.saturating_sub(2)),
             );
-            self.needs_clear = Some(output.lines().count());
+            self.lines_to_clear = Some(output.lines().count());
             self.write_line(&output).unwrap();
         }
     }
