@@ -2,8 +2,6 @@ Feature: Example feature
 
   Scenario: An example scenario
     Given foo is 0
-      | sample       | table |
-      | longer value |       |
     When foo is 0
 
   Scenario: An example sync scenario
