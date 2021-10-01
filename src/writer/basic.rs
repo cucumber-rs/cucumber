@@ -682,6 +682,11 @@ where
         .fold(
             (String::with_capacity(value.len()), 0),
             |(mut str, old), (start, end)| {
+                // Ignore nested groups.
+                if old > start {
+                    return (str, old);
+                }
+
                 str.push_str(&default(&value[old..start]));
                 str.push_str(&accent(&value[start..end]));
                 (str, end)
