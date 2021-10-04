@@ -14,7 +14,12 @@
 
 pub mod basic;
 
+use std::sync::Arc;
+
+use derive_more::{Display, Error, From};
 use futures::Stream;
+
+use crate::feature::ExpandExamplesError;
 
 #[doc(inline)]
 pub use self::basic::Basic;
@@ -37,4 +42,20 @@ pub trait Parser<I> {
 /// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
-pub type Result<T> = std::result::Result<T, gherkin::ParseFileError>;
+pub type Result<T> = std::result::Result<T, Error>;
+
+/// [`Parser`] error.
+#[derive(Clone, Debug, Display, Error, From)]
+pub enum Error {
+    /// Failed to parse a [`Feature`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    #[display(fmt = "Failed to parse feature: {}", _0)]
+    Parsing(Arc<gherkin::ParseFileError>),
+
+    /// Failed to expand [`Examples`]
+    ///
+    /// [`Examples`]: gherkin::Examples
+    #[display(fmt = "Failed to expand examples: {}", _0)]
+    ExampleExpansion(ExpandExamplesError),
+}

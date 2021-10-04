@@ -88,7 +88,7 @@ fn main() {
 
 If you run this, you should see an output like:
 
-<script id="asciicast-t8ezu3cajA0fBkssIy04LM9pa" src="https://asciinema.org/a/t8ezu3cajA0fBkssIy04LM9pa.js" async data-autoplay="true" data-rows="24"></script>
+<script id="asciicast-loqmDmLvKdp4CG7URpVsLJgkB" src="https://asciinema.org/a/loqmDmLvKdp4CG7URpVsLJgkB.js" async data-autoplay="true" data-rows="23"></script>
 
 You will see a checkmark next to `Given A hungry cat`, which means that test step has been matched and executed.
 
@@ -156,7 +156,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 
 If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:
 
-<script id="asciicast-aWGpouW2F8lQRQ1O2eUQTRSlE" src="https://asciinema.org/a/aWGpouW2F8lQRQ1O2eUQTRSlE.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-iyhXabbOv7jdKvbcsyhzqPMfo" src="https://asciinema.org/a/iyhXabbOv7jdKvbcsyhzqPMfo.js" async data-autoplay="true" data-rows="15"></script>
 
 Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
 ```rust

@@ -15,6 +15,7 @@
 pub mod basic;
 pub mod fail_on_skipped;
 pub mod normalized;
+pub mod repeat;
 pub mod summarized;
 pub mod term;
 
@@ -26,7 +27,7 @@ use crate::{event, parser, World};
 #[doc(inline)]
 pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    summarized::Summarized,
+    repeat::Repeat, summarized::Summarized,
 };
 
 /// Writer of [`Cucumber`] events to some output.
@@ -90,11 +91,13 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// Wraps this [`Writer`] into a [`Normalized`] version.
     ///
     /// See [`Normalized`] for more information.
+    #[must_use]
     fn normalized(self) -> Normalized<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
     /// See [`Summarized`] for more information.
+    #[must_use]
     fn summarized(self) -> Summarized<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
@@ -105,6 +108,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn fail_on_skipped(self) -> FailOnSkipped<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if the given
@@ -115,6 +119,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn fail_on_skipped_with<F>(self, with: F) -> FailOnSkipped<Self, F>
     where
         F: Fn(
@@ -122,6 +127,30 @@ pub trait Ext<W: World>: Writer<W> + Sized {
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> bool;
+
+    /// Wraps this [`Writer`] to re-output [`Skipped`] [`Step`]s at the end of
+    /// an output.
+    ///
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn repeat_skipped(self) -> Repeat<W, Self>;
+
+    /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
+    /// errors at the end of an output.
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Parser`]: crate::Parser
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn repeat_failed(self) -> Repeat<W, Self>;
+
+    /// Wraps this [`Writer`] to re-output `filter`ed events at the end of an
+    /// output.
+    #[must_use]
+    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    where
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool;
 }
 
 #[sealed]
@@ -151,5 +180,20 @@ where
         ) -> bool,
     {
         FailOnSkipped::with(self, f)
+    }
+
+    fn repeat_skipped(self) -> Repeat<W, Self> {
+        Repeat::skipped(self)
+    }
+
+    fn repeat_failed(self) -> Repeat<W, Self> {
+        Repeat::failed(self)
+    }
+
+    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    where
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    {
+        Repeat::new(self, filter)
     }
 }

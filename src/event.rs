@@ -24,7 +24,7 @@ use std::{any::Any, sync::Arc};
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
-pub type Info = Box<dyn Any + Send + 'static>;
+pub type Info = Arc<dyn Any + Send + 'static>;
 
 /// Top-level [Cucumber] run event.
 ///
@@ -39,6 +39,18 @@ pub enum Cucumber<World> {
 
     /// [`Cucumber`] execution being finished.
     Finished,
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Cucumber<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Feature(f, ev) => Self::Feature(f.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
+        }
+    }
 }
 
 impl<World> Cucumber<World> {
@@ -122,6 +134,19 @@ pub enum Feature<World> {
     Finished,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Feature<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Rule(r, ev) => Self::Rule(r.clone(), ev.clone()),
+            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
+        }
+    }
+}
+
 /// Event specific to a particular [Rule].
 ///
 /// [Rule]: https://cucumber.io/docs/gherkin/reference/#rule
@@ -139,6 +164,18 @@ pub enum Rule<World> {
     ///
     /// [`Rule`]: gherkin::Rule
     Finished,
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Rule<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
+        }
+    }
 }
 
 /// Event specific to a particular [Step].
@@ -169,7 +206,20 @@ pub enum Step<World> {
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<World>, Info),
+    Failed(Option<Arc<World>>, Info),
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Step<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Skipped => Self::Skipped,
+            Self::Passed => Self::Passed,
+            Self::Failed(w, info) => Self::Failed(w.clone(), info.clone()),
+        }
+    }
 }
 
 /// Event specific to a particular [Scenario].
@@ -194,6 +244,21 @@ pub enum Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     Finished,
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Scenario<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Background(bg, ev) => {
+                Self::Background(bg.clone(), ev.clone())
+            }
+            Self::Step(st, ev) => Self::Step(st.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
+        }
+    }
 }
 
 impl<World> Scenario<World> {
@@ -253,7 +318,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
-        world: Option<World>,
+        world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
         Self::Step(step, Step::Failed(world, info))
@@ -266,7 +331,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
-        world: Option<World>,
+        world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
         Self::Background(step, Step::Failed(world, info))
