@@ -10,11 +10,14 @@
 
 //! [`gherkin::Feature`] extension.
 
-use std::{iter, mem, path::PathBuf};
+use std::{
+    mem,
+    path::{Path, PathBuf},
+};
 
 use derive_more::{Display, Error};
 use once_cell::sync::Lazy;
-use regex::{Captures, Regex};
+use regex::Regex;
 use sealed::sealed;
 
 /// Helper methods to operate on [`gherkin::Feature`]s.
@@ -57,6 +60,11 @@ pub trait Ext: Sized {
     ///       |    20 |   4 |   16 |
     /// ```
     ///
+    /// # Errors
+    ///
+    /// Errors if the [`Examples`][2] cannot be expanded.
+    /// See [`ExpandExamplesError`] for details.
+    ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
     fn expand_examples(self) -> Result<Self, ExpandExamplesError>;
@@ -77,12 +85,12 @@ impl Ext for gherkin::Feature {
         let expand = |scenarios: Vec<gherkin::Scenario>| -> Result<_, _> {
             scenarios
                 .into_iter()
-                .flat_map(|scenario| expand_scenario(scenario, path.as_ref()))
+                .flat_map(|s| expand_scenario(s, path.as_ref()))
                 .collect()
         };
 
-        for rule in &mut self.rules {
-            rule.scenarios = expand(mem::take(&mut rule.scenarios))?;
+        for r in &mut self.rules {
+            r.scenarios = expand(mem::take(&mut r.scenarios))?;
         }
         self.scenarios = expand(mem::take(&mut self.scenarios))?;
 
@@ -96,6 +104,10 @@ impl Ext for gherkin::Feature {
 }
 
 /// Expands [`Scenario`] [`Examples`], if any.
+///
+/// # Errors
+///
+/// See [`ExpandExamplesError`] for details.
 ///
 /// [`Examples`]: gherkin::Example
 /// [`Scenario`]: gherkin::Scenario
@@ -116,7 +128,6 @@ fn expand_scenario(
     };
 
     let table = vals.iter().map(|v| header.iter().zip(v));
-
     table
         .enumerate()
         .map(|(id, row)| {
@@ -171,24 +182,24 @@ fn expand_scenario(
         .collect()
 }
 
-/// Error encountered during [`Scenario Outline`][0] expansion.
+/// Error of [`Scenario Outline`][1] expansion encountering an unknown template.
 ///
-/// [0]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
+/// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
     fmt = "Failed to resolve <{}> at {}:{}:{}",
     name,
-    "path.as_ref().and_then(|p| p.to_str()).unwrap_or_default()",
+    "path.as_deref().and_then(Path::to_str).unwrap_or_default()",
     "pos.line",
     "pos.col"
 )]
 pub struct ExpandExamplesError {
-    /// Position of unknown template.
+    /// Position of the unknown template.
     pub pos: gherkin::LineCol,
 
-    /// Unknown template
+    /// Name of the unknown template.
     pub name: String,
 
-    /// Path, if present.
+    /// [`Path`] to the `.feature` file, if present.
     pub path: Option<PathBuf>,
 }
