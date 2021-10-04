@@ -156,9 +156,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 
 If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:
 
-TODO: continue updating asciinema from here
-
-<script id="asciicast-iyhXabbOv7jdKvbcsyhzqPMfo" src="https://asciinema.org/a/iyhXabbOv7jdKvbcsyhzqPMfo.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-EFpKRmnfuUX9Jav94PVGLTqdU" src="https://asciinema.org/a/EFpKRmnfuUX9Jav94PVGLTqdU.js" async data-autoplay="true" data-rows="16"></script>
 
 Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
 ```rust
@@ -218,7 +216,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 
 If you run the test now, you'll see that all steps are accounted for and the test succeeds:
 
-<script id="asciicast-HaEZXiqUn0U1T8c5TaiMGX50i" src="https://asciinema.org/a/HaEZXiqUn0U1T8c5TaiMGX50i.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-fHuIXkWrIk1AOFFqF0MYmY0m0" src="https://asciinema.org/a/fHuIXkWrIk1AOFFqF0MYmY0m0.js" async data-autoplay="true" data-rows="16"></script>
 
 If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from `true` to `false` temporarily:
 ```rust,should_panic
@@ -276,7 +274,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 
 And you should see the test failing:
 
-<script id="asciicast-KFNrNihA5ib9G7O22jwTSw0Lg" src="https://asciinema.org/a/KFNrNihA5ib9G7O22jwTSw0Lg.js" async data-autoplay="true" data-rows="24"></script>
+<script id="asciicast-XTikmqirO7mAFZ97MNfKvnD5p" src="https://asciinema.org/a/XTikmqirO7mAFZ97MNfKvnD5p.js" async data-autoplay="true" data-rows="24"></script>
 
 What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:
 ```gherkin
@@ -356,7 +354,9 @@ We surround regex with `^..$` to ensure the __exact__ match. This is much more u
 
 [Cucumber] will reuse these steps:
 
-<script id="asciicast-RAteqk9p0zkvWrslK6kiOU5lc" src="https://asciinema.org/a/RAteqk9p0zkvWrslK6kiOU5lc.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-ao6LdWsrtdsgg8tOi9cQgPfyz" src="https://asciinema.org/a/ao6LdWsrtdsgg8tOi9cQgPfyz.js" async data-autoplay="true" data-rows="18"></script>
+
+Captured groups are __bold__ to indicate which part of step could be dynamically changed.  
 
 A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` step was `The cat is no longer hungry`, it'd imply something about the expected initial state, when that is not the purpose of a `Then` step, but rather of the `Given` step.
 
@@ -508,7 +508,7 @@ async fn main() {
 }
 ```
 
-<script id="asciicast-vufDjDlrdm5TtH20WVpIGpEz6" src="https://asciinema.org/a/vufDjDlrdm5TtH20WVpIGpEz6.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-tz9ApYZgsET9k8jjIa9HpnQ8p" src="https://asciinema.org/a/tz9ApYZgsET9k8jjIa9HpnQ8p.js" async data-autoplay="true" data-rows="18"></script>
 
 Hm, it looks like the executor waited only for the first `Feature` 🤔, what's going on?
 
@@ -532,7 +532,7 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-<script id="asciicast-KztYots1Jm6WijCmxZM1GZT1K" src="https://asciinema.org/a/KztYots1Jm6WijCmxZM1GZT1K.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-MDXpZf8vcOTssmlU4rgSSfR0E" src="https://asciinema.org/a/MDXpZf8vcOTssmlU4rgSSfR0E.js" async data-autoplay="true" data-rows="18"></script>
 
 
 

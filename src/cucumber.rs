@@ -143,13 +143,13 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
-    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     id="asciicast-0d92qlT8Mbc4WXyvRbHJmjsqN"
+    ///     src="https://asciinema.org/a/0d92qlT8Mbc4WXyvRbHJmjsqN.js"
     ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
     /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
-    /// ```rust
+    /// ```rust,should_panic
     /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
     /// #
     /// # use async_trait::async_trait;
@@ -175,11 +175,11 @@ where
     ///     .await;
     /// # };
     /// #
-    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
+    /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
-    ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
+    ///     id="asciicast-IHLxMEgku9BtBVkR4k2DtOjMd"
+    ///     src="https://asciinema.org/a/IHLxMEgku9BtBVkR4k2DtOjMd.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
@@ -223,18 +223,17 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
-    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     id="asciicast-0d92qlT8Mbc4WXyvRbHJmjsqN"
+    ///     src="https://asciinema.org/a/0d92qlT8Mbc4WXyvRbHJmjsqN.js"
     ///     async data-autoplay="true" data-rows="16">
     /// </script>
     ///
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
     /// marked with `@dog` tag:
-    /// ```rust
-    /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
-    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -251,12 +250,12 @@ where
     /// #
     /// # let fut = async {
     /// MyWorld::cucumber()
-    ///     .fail_on_skipped_with(|_, _, sc| sc.tags.iter().any(|t| t == "dog"))
+    ///     .fail_on_skipped_with(|_, _, s| !s.tags.iter().any(|t| t == "dog"))
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
     /// # };
     /// #
-    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
+    /// # futures::executor::block_on(fut);
     /// ```
     /// ```gherkin
     /// Feature: Animal feature
@@ -272,8 +271,8 @@ where
     ///     Then the dog is not hungry
     /// ```
     /// <script
-    ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
-    ///     src="https://asciinema.org/a/UsaG9kMnn40nW8y4vcmXOE2tT.js"
+    ///     id="asciicast-IHLxMEgku9BtBVkR4k2DtOjMd"
+    ///     src="https://asciinema.org/a/IHLxMEgku9BtBVkR4k2DtOjMd.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
@@ -387,8 +386,8 @@ where
     ///     Then the dog is not hungry
     /// ```
     /// <script
-    ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
-    ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
+    ///     id="asciicast-0KvTxnfaMRjsvsIKsalS611Ta"
+    ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
     ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///
@@ -714,8 +713,8 @@ where
     ///     Then the dog is not hungry
     /// ```
     /// <script
-    ///     id="asciicast-WbP3PIQR5M7Iznd7uLnjg2ytr"
-    ///     src="https://asciinema.org/a/WbP3PIQR5M7Iznd7uLnjg2ytr.js"
+    ///     id="asciicast-0KvTxnfaMRjsvsIKsalS611Ta"
+    ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
     ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///

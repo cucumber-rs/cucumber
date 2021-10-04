@@ -1,10 +1,9 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, time::Duration};
 
 use async_trait::async_trait;
-use cucumber::{given, World, WorldInit};
+use cucumber::{given, then, when, World, WorldInit};
+use tokio::time::sleep;
 
-// These `Cat` definitions would normally be inside your project's code,
-// not test code, but we create them here for the show case.
 #[derive(Debug)]
 struct Cat {
     pub hungry: bool,
@@ -16,17 +15,13 @@ impl Cat {
     }
 }
 
-// `World` is your shared, likely mutable state.
 #[derive(Debug, WorldInit)]
 pub struct AnimalWorld {
     cat: Cat,
 }
 
-// `World` needs to be implemented, so Cucumber knows how to construct it on
-// each `Scenario`.
 #[async_trait(?Send)]
 impl World for AnimalWorld {
-    // We require some error type.
     type Error = Infallible;
 
     async fn new() -> Result<Self, Infallible> {
@@ -36,18 +31,35 @@ impl World for AnimalWorld {
     }
 }
 
-// Steps are defined with `given`, `when` and `then` macros.
-#[given("a hungry cat")]
-fn hungry_cat(world: &mut AnimalWorld) {
-    world.cat.hungry = true;
+#[given(regex = r"^a (hungry|satiated) cat$")]
+async fn hungry_cat(world: &mut AnimalWorld, state: String) {
+    sleep(Duration::from_secs(2)).await;
+
+    match state.as_str() {
+        "hungry" => world.cat.hungry = true,
+        "satiated" => world.cat.hungry = false,
+        _ => unreachable!(),
+    }
 }
 
-// This runs before everything else, so you can setup things here.
-fn main() {
-    // You may choose any executor you like (`tokio`, `async-std`, etc.).
-    // You may even have an `async` main, it doesn't matter. The point is that
-    // Cucumber is composable. :)
-    futures::executor::block_on(AnimalWorld::run(
-        "/tests/features/asciinema.feature",
-    ));
+#[when("I feed the cat")]
+async fn feed_cat(world: &mut AnimalWorld) {
+    sleep(Duration::from_secs(2)).await;
+
+    world.cat.feed();
+}
+
+#[then("the cat is not hungry")]
+async fn cat_is_fed(world: &mut AnimalWorld) {
+    sleep(Duration::from_secs(2)).await;
+
+    assert!(!world.cat.hungry);
+}
+
+#[tokio::main]
+async fn main() {
+    AnimalWorld::cucumber()
+        .fail_on_skipped_with(|_, _, sc| !sc.tags.iter().any(|t| t == "dog"))
+        .run_and_exit("tests/features/asciinema.feature")
+        .await;
 }
