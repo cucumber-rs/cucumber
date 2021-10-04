@@ -66,10 +66,10 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
     ) {
         use event::{Cucumber, Feature, Rule};
 
-        // Once Cucumber::Finished is emitted, we just pass events through,
-        // without normalization.
-        // This is done to avoid panic if this Writer happends to be inside
-        // writer::Repeat.
+        // Once `Cucumber::Finished` is emitted, we just pass events through,
+        // without any normalization.
+        // This is done to avoid panic if this `Writer` happens to be wrapped
+        // inside `writer::Repeat` or similar.
         if self.queue.finished {
             self.writer.handle_event(ev).await;
             return;

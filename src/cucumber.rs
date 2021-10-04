@@ -316,7 +316,7 @@ where
         }
     }
 
-    /// Re-output [`Skipped`] steps for ease of navigation.
+    /// Re-outputs [`Skipped`] steps for easier navigation.
     ///
     /// # Example
     ///
@@ -327,7 +327,7 @@ where
     ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Skipped`] steps:
+    /// Adjust [`Cucumber`] to re-output all [`Skipped`] steps at the end:
     /// ```rust
     /// # use std::convert::Infallible;
     /// #
@@ -375,10 +375,11 @@ where
         }
     }
 
-    /// Re-output [`Failed`] steps for ease of navigation.
+    /// Re-outputs [`Failed`] steps for easier navigation.
     ///
     /// # Example
     ///
+    /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
@@ -407,14 +408,13 @@ where
     /// #
     /// # futures::executor::block_on(fut);
     /// ```
-    ///
     /// <script
     ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
     ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps:
+    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps at the end:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
@@ -450,11 +450,11 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > __NOTE__: [`Cucumber::repeat_failed()`] should be called before
-    ///             [`Cucumber::fail_on_skipped()`], as events pass from outer
-    ///             [`Writer`]s to inner ones. So we need to transform
-    ///             [`Skipped`] to [`Failed`] first, and only then [`Repeat`]
-    ///             them.
+    /// > ⚠️ __WARNING__: [`Cucumber::repeat_failed()`] should be called before
+    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
+    ///                   outer [`Writer`]s to inner ones. So we need to
+    ///                   transform [`Skipped`] to [`Failed`] first, and only
+    ///                   then [`Repeat`] them.
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Repeat`]: writer::Repeat
@@ -471,10 +471,11 @@ where
         }
     }
 
-    /// Re-output steps, if `filter` returns `true`.
+    /// Re-output steps by the given `filter` predicate.
     ///
     /// # Example
     ///
+    /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
@@ -503,14 +504,14 @@ where
     /// #
     /// # futures::executor::block_on(fut);
     /// ```
-    ///
     /// <script
     ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
     ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps:
+    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps ta the end by
+    /// providing a custom `filter` predicate:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
@@ -567,11 +568,11 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > __NOTE__: [`Cucumber::repeat_if()`] should be called before
-    ///             [`Cucumber::fail_on_skipped()`], as events pass from outer
-    ///             [`Writer`]s to inner ones. So we need to transform
-    ///             [`Skipped`] to [`Failed`] first, and only then [`Repeat`]
-    ///             them.
+    /// > ⚠️ __WARNING__: [`Cucumber::repeat_if()`] should be called before
+    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
+    ///                   outer [`Writer`]s to inner ones. So we need to
+    ///                   transform [`Skipped`] to [`Failed`] first, and only
+    ///                   then [`Repeat`] them.
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Repeat`]: writer::Repeat
