@@ -22,9 +22,10 @@ use std::{
 
 use futures::StreamExt as _;
 use regex::Regex;
+use structopt::StructOpt as _;
 
 use crate::{
-    parser, runner, step, writer, ArbitraryWriter, FailureWriter, Parser,
+    cli, parser, runner, step, writer, ArbitraryWriter, FailureWriter, Parser,
     Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
@@ -331,19 +332,7 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     pub async fn run(self, input: I) -> Wr {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-        writer
+        self.filter_run(input, |_, _, _| true).await
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -414,6 +403,15 @@ where
             ) -> bool
             + 'static,
     {
+        let opt: cli::Opt = cli::Opt::from_args();
+        let filter = move |f: &gherkin::Feature,
+                           r: Option<&gherkin::Rule>,
+                           s: &gherkin::Scenario| {
+            opt.filter
+                .as_ref()
+                .map_or_else(|| filter(f, r, s), |f| f.is_match(&s.name))
+        };
+
         let Cucumber {
             parser,
             runner,
