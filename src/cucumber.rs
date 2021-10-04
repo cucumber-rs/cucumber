@@ -144,7 +144,7 @@ where
     /// <script
     ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
     ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
-    ///     async data-autoplay="true" data-rows="16">
+    ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
     /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
@@ -224,7 +224,7 @@ where
     /// <script
     ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
     ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
-    ///     async data-autoplay="true" data-rows="16">
+    ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones

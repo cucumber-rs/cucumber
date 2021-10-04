@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`Writer`]-wrapper for re-outputting events at the end.
+//! [`Writer`]-wrapper for re-outputting events at the end of an output.
 
 use std::mem;
 
@@ -17,8 +17,8 @@ use derive_more::Deref;
 
 use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
 
-/// Wrapper for a [`Writer`] implementation for re-outputting events at the end,
-/// based on some filter.
+/// Wrapper for a [`Writer`] implementation for re-outputting events at the end
+/// of an output, based on a filter predicated.
 ///
 /// Useful for re-outputting [skipped] or [failed] [`Step`]s.
 ///
@@ -31,15 +31,15 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     #[deref]
     pub writer: Wr,
 
-    /// Predicate to decide, whether event should be re-outputted or not.
+    /// Predicate to decide whether an event should be re-outputted or not.
     filter: F,
 
-    /// Buffer of events to re-output at the end.
+    /// Buffer of collected events for re-outputting.
     events: Vec<parser::Result<event::Cucumber<W>>>,
 }
 
-/// Alias for a [`fn`] used to determine whether event should be re-outputted or
-/// not.
+/// Alias for a [`fn`] predicate deciding whether an event should be
+/// re-outputted or not.
 pub type FilterEvent<W> = fn(&parser::Result<event::Cucumber<W>>) -> bool;
 
 #[async_trait(?Send)]
@@ -97,10 +97,9 @@ where
 }
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
-    /// Creates [`Writer`] for re-outputting events at the end in case `filter`
-    /// returns `true`.
-    ///
-    /// [`Skipped`]: event::Step::Skipped
+    /// Creates a new [`Writer`] for re-outputting events at the end of an
+    /// output in case the given `filter` predicated returns `true`.
+    #[must_use]
     pub fn new(writer: Wr, filter: F) -> Self {
         Self {
             writer,
@@ -111,9 +110,11 @@ impl<W, Wr, F> Repeat<W, Wr, F> {
 }
 
 impl<W, Wr> Repeat<W, Wr> {
-    /// Creates [`Writer`] for re-outputting [`Skipped`] events at the end.
+    /// Creates [`Writer`] for re-outputting [`Skipped`] events at the end of
+    /// an output.
     ///
     /// [`Skipped`]: event::Step::Skipped
+    #[must_use]
     pub fn skipped(writer: Wr) -> Self {
         use event::{Cucumber, Feature, Rule, Scenario, Step};
 
@@ -138,11 +139,12 @@ impl<W, Wr> Repeat<W, Wr> {
         }
     }
 
-    /// Creates [`Writer`] for re-outputting [`Failed`] events and [`Parser`]
-    /// errors at the end.
+    /// Creates a [`Writer`] for re-outputting [`Failed`] events and [`Parser`]
+    /// errors at the end of an output.
     ///
     /// [`Failed`]: event::Step::Failed
     /// [`Parser`]: crate::Parser
+    #[must_use]
     pub fn failed(writer: Wr) -> Self {
         use event::{Cucumber, Feature, Rule, Scenario, Step};
 

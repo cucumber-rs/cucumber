@@ -39,7 +39,7 @@ pub struct Basic {
     /// [`Styles`] for terminal output.
     styles: Styles,
 
-    /// Current indentation with which events are outputted.
+    /// Current indentation that events are outputted with.
     indent: usize,
 
     /// Indicates whether last lines should be cleared.
