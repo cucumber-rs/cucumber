@@ -220,7 +220,7 @@ fn main() {
 }
 </code></pre></pre>
 <p>If you run this, you should see an output like:</p>
-<script id="asciicast-t8ezu3cajA0fBkssIy04LM9pa" src="https://asciinema.org/a/t8ezu3cajA0fBkssIy04LM9pa.js" async data-autoplay="true" data-rows="24"></script>
+<script id="asciicast-loqmDmLvKdp4CG7URpVsLJgkB" src="https://asciinema.org/a/loqmDmLvKdp4CG7URpVsLJgkB.js" async data-autoplay="true" data-rows="23"></script>
 <p>You will see a checkmark next to <code>Given A hungry cat</code>, which means that test step has been matched and executed.</p>
 <p>But then for the next step <code>I feed the cat</code> there is a <code>? ... (skipped)</code>. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked and run at all.</p>
 <p>There are 3 types of steps:</p>
@@ -281,7 +281,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">}
 </span></code></pre></pre>
 <p>If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:</p>
-<script id="asciicast-aWGpouW2F8lQRQ1O2eUQTRSlE" src="https://asciinema.org/a/aWGpouW2F8lQRQ1O2eUQTRSlE.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-iyhXabbOv7jdKvbcsyhzqPMfo" src="https://asciinema.org/a/iyhXabbOv7jdKvbcsyhzqPMfo.js" async data-autoplay="true" data-rows="15"></script>
 <p>Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then()</code> step follows to assert this, as our feature says:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">

@@ -248,7 +248,7 @@ fn main() {
 }
 </code></pre></pre>
 <p>If you run this, you should see an output like:</p>
-<script id="asciicast-t8ezu3cajA0fBkssIy04LM9pa" src="https://asciinema.org/a/t8ezu3cajA0fBkssIy04LM9pa.js" async data-autoplay="true" data-rows="24"></script>
+<script id="asciicast-loqmDmLvKdp4CG7URpVsLJgkB" src="https://asciinema.org/a/loqmDmLvKdp4CG7URpVsLJgkB.js" async data-autoplay="true" data-rows="23"></script>
 <p>You will see a checkmark next to <code>Given A hungry cat</code>, which means that test step has been matched and executed.</p>
 <p>But then for the next step <code>I feed the cat</code> there is a <code>? ... (skipped)</code>. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked and run at all.</p>
 <p>There are 3 types of steps:</p>
@@ -309,7 +309,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">}
 </span></code></pre></pre>
 <p>If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:</p>
-<script id="asciicast-aWGpouW2F8lQRQ1O2eUQTRSlE" src="https://asciinema.org/a/aWGpouW2F8lQRQ1O2eUQTRSlE.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-iyhXabbOv7jdKvbcsyhzqPMfo" src="https://asciinema.org/a/iyhXabbOv7jdKvbcsyhzqPMfo.js" async data-autoplay="true" data-rows="15"></script>
 <p>Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then()</code> step follows to assert this, as our feature says:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
@@ -906,7 +906,8 @@ Egenskap: Animal feature
 <p>Avoid writing similar step definitions, as they can lead to clutter. While documenting your steps helps, making use of <a href="Features.html#combining-regex-and-fromstr"><code>regex</code> and <code>FromStr</code></a> can do wonders.</p>
 <h2 id="managing-growth"><a class="header" href="#managing-growth">Managing growth</a></h2>
 <p>As your test suit grows, it may become harder to notice how minimal changes to <code>regex</code>es can lead to mismatched <code>Step</code>s. To avoid this, we recommend using <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped"><code>Cucumber::fail_on_skipped()</code></a> combining with <code>@allow_skipped</code> tag. This will allow you to mark out <code>Scenario</code>s which <code>Step</code>s are allowed to skip.</p>
-<p>And, as time goes on, total run time of all tests can become overwhelming when you only want to test small subset of <code>Scenario</code>s. At least until you discover <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run_and_exit"><code>Cucumber::filter_run_and_exit()</code></a>, which will allow you run only <code>Scenario</code>s marked with custom <a href="https://cucumber.io/docs/cucumber/api/#tags">tags</a>.</p>
+<p>And, as time goes on, total run time of all tests can become overwhelming when you only want to test small subset of <code>Scenario</code>s. At least until you discover <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run_and_exit"><code>Cucumber::filter_run_and_exit()</code></a>, which will allow you run only <code>Scenario</code>s marked with custom <a href="https://cucumber.io/docs/cucumber/api/#tags">tags</a>. </p>
+<p>We also suggest using <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed"><code>Cucumber::repeat_failed()</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped"><code>Cucumber::repeat_skipped()</code></a> to re-output failed or skipped steps for easier navigation.</p>
 <div style="break-before: page; page-break-before: always;"></div><p>WIP</p>
 
                     </main>
