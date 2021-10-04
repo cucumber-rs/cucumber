@@ -21,8 +21,6 @@
 
 use std::{any::Any, sync::Arc};
 
-use regex::CaptureLocations;
-
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
@@ -43,14 +41,14 @@ pub enum Cucumber<World> {
     Finished,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Cucumber<World> {
     fn clone(&self) -> Self {
         match self {
-            Cucumber::Started => Cucumber::Started,
-            Cucumber::Feature(f, ev) => {
-                Cucumber::Feature(f.clone(), ev.clone())
-            }
-            Cucumber::Finished => Cucumber::Finished,
+            Self::Started => Self::Started,
+            Self::Feature(f, ev) => Self::Feature(f.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
         }
     }
 }
@@ -136,15 +134,15 @@ pub enum Feature<World> {
     Finished,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Feature<World> {
     fn clone(&self) -> Self {
         match self {
-            Feature::Started => Feature::Started,
-            Feature::Rule(r, ev) => Feature::Rule(r.clone(), ev.clone()),
-            Feature::Scenario(sc, ev) => {
-                Feature::Scenario(sc.clone(), ev.clone())
-            }
-            Feature::Finished => Feature::Finished,
+            Self::Started => Self::Started,
+            Self::Rule(r, ev) => Self::Rule(r.clone(), ev.clone()),
+            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
         }
     }
 }
@@ -168,12 +166,14 @@ pub enum Rule<World> {
     Finished,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Rule<World> {
     fn clone(&self) -> Self {
         match self {
-            Rule::Started => Rule::Started,
-            Rule::Scenario(sc, ev) => Rule::Scenario(sc.clone(), ev.clone()),
-            Rule::Finished => Rule::Finished,
+            Self::Started => Self::Started,
+            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
         }
     }
 }
@@ -201,22 +201,24 @@ pub enum Step<World> {
     /// [`Step`] passed.
     ///
     /// [`Step`]: gherkin::Step
-    Passed(CaptureLocations),
+    Passed(regex::CaptureLocations),
 
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<CaptureLocations>, Option<Arc<World>>, Info),
+    Failed(Option<regex::CaptureLocations>, Option<Arc<World>>, Info),
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Step<World> {
     fn clone(&self) -> Self {
         match self {
-            Step::Started => Step::Started,
-            Step::Skipped => Step::Skipped,
-            Step::Passed(cap) => Step::Passed(cap.clone()),
-            Step::Failed(cap, w, info) => {
-                Step::Failed(cap.clone(), w.clone(), info.clone())
+            Self::Started => Self::Started,
+            Self::Skipped => Self::Skipped,
+            Self::Passed(loc) => Self::Passed(loc.clone()),
+            Self::Failed(loc, w, info) => {
+                Self::Failed(loc.clone(), w.clone(), info.clone())
             }
         }
     }
@@ -246,15 +248,17 @@ pub enum Scenario<World> {
     Finished,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Scenario<World> {
     fn clone(&self) -> Self {
         match self {
-            Scenario::Started => Scenario::Started,
-            Scenario::Background(bg, ev) => {
-                Scenario::Background(bg.clone(), ev.clone())
+            Self::Started => Self::Started,
+            Self::Background(bg, ev) => {
+                Self::Background(bg.clone(), ev.clone())
             }
-            Scenario::Step(st, ev) => Scenario::Step(st.clone(), ev.clone()),
-            Scenario::Finished => Scenario::Finished,
+            Self::Step(st, ev) => Self::Step(st.clone(), ev.clone()),
+            Self::Finished => Self::Finished,
         }
     }
 }
@@ -283,7 +287,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_passed(
         step: Arc<gherkin::Step>,
-        capture: CaptureLocations,
+        capture: regex::CaptureLocations,
     ) -> Self {
         Self::Step(step, Step::Passed(capture))
     }
@@ -295,7 +299,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_passed(
         step: Arc<gherkin::Step>,
-        capture: CaptureLocations,
+        capture: regex::CaptureLocations,
     ) -> Self {
         Self::Background(step, Step::Passed(capture))
     }
@@ -322,7 +326,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
-        capture: Option<CaptureLocations>,
+        capture: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
@@ -336,7 +340,7 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
-        capture: Option<CaptureLocations>,
+        capture: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {

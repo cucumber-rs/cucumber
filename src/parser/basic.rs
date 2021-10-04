@@ -95,7 +95,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .into_iter()
                 .map(|f| match f {
                     Ok(f) => f.expand_examples().map_err(ParseError::from),
-                    Err(err) => Err(Arc::new(err).into()),
+                    Err(e) => Err(Arc::new(e).into()),
                 })
                 .collect()
         };
