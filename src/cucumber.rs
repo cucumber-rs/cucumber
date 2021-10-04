@@ -24,8 +24,8 @@ use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    parser, runner, step, writer, ArbitraryWriter, FailureWriter, Parser,
-    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
+    event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
+    Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -148,8 +148,8 @@ where
     /// </script>
     ///
     /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
-    /// ```rust
-    /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
     /// # use cucumber::WorldInit;
@@ -174,7 +174,7 @@ where
     ///     .await;
     /// # };
     /// #
-    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
+    /// # futures::executor::block_on(fut);
     /// ```
     /// <script
     ///     id="asciicast-UsaG9kMnn40nW8y4vcmXOE2tT"
@@ -229,8 +229,8 @@ where
     ///
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
     /// marked with `@dog` tag:
-    /// ```rust
-    /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
     /// # use futures::FutureExt as _;
@@ -250,12 +250,12 @@ where
     /// #
     /// # let fut = async {
     /// MyWorld::cucumber()
-    ///     .fail_on_skipped_with(|_, _, sc| sc.tags.iter().any(|t| t == "dog"))
+    ///     .fail_on_skipped_with(|_, _, s| !s.tags.iter().any(|t| t == "dog"))
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
     /// # };
     /// #
-    /// # futures::executor::block_on(AssertUnwindSafe(fut).catch_unwind());
+    /// # futures::executor::block_on(fut);
     /// ```
     /// ```gherkin
     /// Feature: Animal feature
@@ -311,6 +311,284 @@ where
             parser: self.parser,
             runner: self.runner,
             writer: self.writer.fail_on_skipped_with(filter),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Re-output [`Skipped`] steps for ease of navigation.
+    ///
+    /// # Example
+    ///
+    /// Output with a regular [`Cucumber::run()`]:
+    /// <script
+    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
+    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     async data-autoplay="true" data-rows="17">
+    /// </script>
+    ///
+    /// Adjust [`Cucumber`] to re-output all [`Skipped`] steps:
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// MyWorld::cucumber()
+    ///     .repeat_skipped()
+    ///     .run_and_exit("tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    /// <script
+    ///     id="asciicast-BD1mPjYGELD6oWNKW8lTlyvDR"
+    ///     src="https://asciinema.org/a/BD1mPjYGELD6oWNKW8lTlyvDR.js"
+    ///     async data-autoplay="true" data-rows="19">
+    /// </script>
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn repeat_skipped(self) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>> {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.repeat_skipped(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Re-output [`Failed`] steps for ease of navigation.
+    ///
+    /// # Example
+    ///
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// MyWorld::cucumber()
+    ///     .fail_on_skipped()
+    ///     .run_and_exit("tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
+    ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
+    ///     async data-autoplay="true" data-rows="21">
+    /// </script>
+    ///
+    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps:
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// MyWorld::cucumber()
+    ///     .repeat_failed()
+    ///     .fail_on_skipped()
+    ///     .run_and_exit("tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    /// <script
+    ///     id="asciicast-qKp8Hevrb6732mMUT7VduvxJc"
+    ///     src="https://asciinema.org/a/qKp8Hevrb6732mMUT7VduvxJc.js"
+    ///     async data-autoplay="true" data-rows="24">
+    /// </script>
+    ///
+    /// > __NOTE__: [`Cucumber::repeat_failed()`] should be called before
+    ///             [`Cucumber::fail_on_skipped()`], as events pass from outer
+    ///             [`Writer`]s to inner ones. So we need to transform
+    ///             [`Skipped`] to [`Failed`] first, and only then [`Repeat`]
+    ///             them.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Repeat`]: writer::Repeat
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn repeat_failed(self) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>> {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.repeat_failed(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Re-output steps, if `filter` returns `true`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// MyWorld::cucumber()
+    ///     .fail_on_skipped()
+    ///     .run_and_exit("tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    ///
+    /// <script
+    ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
+    ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
+    ///     async data-autoplay="true" data-rows="21">
+    /// </script>
+    ///
+    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps:
+    /// ```rust,should_panic
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use futures::FutureExt as _;
+    /// # use cucumber::WorldInit;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// MyWorld::cucumber()
+    ///     .repeat_if(|ev| {
+    ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
+    ///
+    ///         matches!(
+    ///             ev,
+    ///             Ok(Cucumber::Feature(
+    ///                 _,
+    ///                 Feature::Rule(
+    ///                     _,
+    ///                     Rule::Scenario(
+    ///                         _,
+    ///                         Scenario::Step(_, Step::Failed(..))
+    ///                             | Scenario::Background(_, Step::Failed(..))
+    ///                     )
+    ///                 ) | Feature::Scenario(
+    ///                     _,
+    ///                     Scenario::Step(_, Step::Failed(..))
+    ///                         | Scenario::Background(_, Step::Failed(..))
+    ///                 )
+    ///             )) | Err(_)
+    ///         )
+    ///     })
+    ///     .fail_on_skipped()
+    ///     .run_and_exit("tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    /// <script
+    ///     id="asciicast-qKp8Hevrb6732mMUT7VduvxJc"
+    ///     src="https://asciinema.org/a/qKp8Hevrb6732mMUT7VduvxJc.js"
+    ///     async data-autoplay="true" data-rows="24">
+    /// </script>
+    ///
+    /// > __NOTE__: [`Cucumber::repeat_if()`] should be called before
+    ///             [`Cucumber::fail_on_skipped()`], as events pass from outer
+    ///             [`Writer`]s to inner ones. So we need to transform
+    ///             [`Skipped`] to [`Failed`] first, and only then [`Repeat`]
+    ///             them.
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Repeat`]: writer::Repeat
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: crate::event::Step::Skipped
+    #[must_use]
+    pub fn repeat_if<F>(
+        self,
+        filter: F,
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>>
+    where
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    {
+        Cucumber {
+            parser: self.parser,
+            runner: self.runner,
+            writer: self.writer.repeat_if(filter),
             _world: PhantomData,
             _parser_input: PhantomData,
         }

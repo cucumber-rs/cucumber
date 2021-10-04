@@ -150,7 +150,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     #[must_use]
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(parser::Result<event::Cucumber<W>>) -> bool;
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool;
 }
 
 #[sealed]
@@ -192,7 +192,7 @@ where
 
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(parser::Result<event::Cucumber<W>>) -> bool,
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
     {
         Repeat::new(self, filter)
     }

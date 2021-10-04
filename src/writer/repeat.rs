@@ -127,10 +127,15 @@ impl<W, Wr> Repeat<W, Wr> {
                         _,
                         Feature::Rule(
                             _,
-                            Rule::Scenario(_, Scenario::Step(_, Step::Skipped))
+                            Rule::Scenario(
+                                _,
+                                Scenario::Step(_, Step::Skipped)
+                                    | Scenario::Background(_, Step::Skipped)
+                            )
                         ) | Feature::Scenario(
                             _,
                             Scenario::Step(_, Step::Skipped)
+                                | Scenario::Background(_, Step::Skipped)
                         )
                     ))
                 )
@@ -160,10 +165,12 @@ impl<W, Wr> Repeat<W, Wr> {
                             Rule::Scenario(
                                 _,
                                 Scenario::Step(_, Step::Failed(..))
+                                    | Scenario::Background(_, Step::Failed(..))
                             )
                         ) | Feature::Scenario(
                             _,
                             Scenario::Step(_, Step::Failed(..))
+                                | Scenario::Background(_, Step::Failed(..))
                         )
                     )) | Err(_)
                 )
