@@ -11,7 +11,7 @@
 //! [`gherkin::Feature`] extension.
 
 use std::{
-    mem,
+    iter, mem,
     path::{Path, PathBuf},
 };
 
@@ -143,17 +143,17 @@ fn expand_scenario(
 
             let mut err = None;
 
-            for step in &mut modified.steps {
-                let pos = step.position;
-                let to_replace = iter::once(&mut step.value).chain(
-                    step.table.iter_mut().flat_map(|t| {
+            for s in &mut modified.steps {
+                let pos = s.position;
+                let to_replace = iter::once(&mut s.value).chain(
+                    s.table.iter_mut().flat_map(|t| {
                         t.rows.iter_mut().flat_map(|row| row.iter_mut())
                     }),
                 );
 
                 for value in to_replace {
                     *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &Captures<'_>| {
+                        .replace_all(value, |c: &regex::Captures<'_>| {
                             let name = c.get(1).unwrap().as_str();
 
                             row.clone()
@@ -172,8 +172,8 @@ fn expand_scenario(
                         .into_owned();
                 }
 
-                if let Some(err) = err {
-                    return Err(err);
+                if let Some(e) = err {
+                    return Err(e);
                 }
             }
 
