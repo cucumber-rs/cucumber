@@ -535,8 +535,8 @@ fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
         .unwrap_or_default()
 }
 
-/// Formats [`gherkin::Table`], then adds `indent`s to each
-/// line to prettify the output.
+/// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
+/// prettify the output.
 fn format_table(table: Option<&gherkin::Table>, indent: usize) -> String {
     let table = if let Some(table) = table {
         table

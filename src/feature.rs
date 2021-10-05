@@ -31,8 +31,9 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are <start> cucumbers
     ///     When I eat <eat> cucumbers
-    ///      | <eat> |
     ///     Then I should have <left> cucumbers
+    ///     And substitution in tables works too
+    ///      | <eat> |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -46,13 +47,15 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are 12 cucumbers
     ///     When I eat 5 cucumbers
-    ///      | 5 |
     ///     Then I should have 7 cucumbers
+    ///     And substitution in tables works too
+    ///      | 5 |
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
     ///     When I eat 4 cucumbers
-    ///      | 4 |
     ///     Then I should have 16 cucumbers
+    ///     And substitution in tables works too
+    ///      | 4 |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -147,7 +150,7 @@ fn expand_scenario(
                 let pos = s.position;
                 let to_replace = iter::once(&mut s.value).chain(
                     s.table.iter_mut().flat_map(|t| {
-                        t.rows.iter_mut().flat_map(|row| row.iter_mut())
+                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
                     }),
                 );
 
