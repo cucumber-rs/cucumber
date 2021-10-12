@@ -91,11 +91,13 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// Wraps this [`Writer`] into a [`Normalized`] version.
     ///
     /// See [`Normalized`] for more information.
+    #[must_use]
     fn normalized(self) -> Normalized<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
     /// See [`Summarized`] for more information.
+    #[must_use]
     fn summarized(self) -> Summarized<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
@@ -106,6 +108,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn fail_on_skipped(self) -> FailOnSkipped<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if the given
@@ -116,6 +119,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn fail_on_skipped_with<F>(self, with: F) -> FailOnSkipped<Self, F>
     where
         F: Fn(
@@ -124,25 +128,29 @@ pub trait Ext<W: World>: Writer<W> + Sized {
             &gherkin::Scenario,
         ) -> bool;
 
-    /// Wraps this [`Writer`] to re-output [`Skipped`] [`Step`]s at the end.
+    /// Wraps this [`Writer`] to re-output [`Skipped`] [`Step`]s at the end of
+    /// an output.
     ///
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn repeat_skipped(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
-    /// errors at the end.
+    /// errors at the end of an output.
     ///
     /// [`Failed`]: event::Step::Failed
     /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
+    #[must_use]
     fn repeat_failed(self) -> Repeat<W, Self>;
 
-    /// Wraps this [`Writer`] to re-output events at the end, on which `filter`
-    /// returned `true`.
+    /// Wraps this [`Writer`] to re-output `filter`ed events at the end of an
+    /// output.
+    #[must_use]
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(parser::Result<event::Cucumber<W>>) -> bool;
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool;
 }
 
 #[sealed]
@@ -184,7 +192,7 @@ where
 
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(parser::Result<event::Cucumber<W>>) -> bool,
+        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
     {
         Repeat::new(self, filter)
     }

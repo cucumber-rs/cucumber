@@ -10,11 +10,14 @@
 
 //! [`gherkin::Feature`] extension.
 
-use std::{iter, mem, path::PathBuf};
+use std::{
+    iter, mem,
+    path::{Path, PathBuf},
+};
 
 use derive_more::{Display, Error};
 use once_cell::sync::Lazy;
-use regex::{Captures, Regex};
+use regex::Regex;
 use sealed::sealed;
 
 /// Helper methods to operate on [`gherkin::Feature`]s.
@@ -28,8 +31,10 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are <start> cucumbers
     ///     When I eat <eat> cucumbers
-    ///      | <eat> |
     ///     Then I should have <left> cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | <left>         |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -43,19 +48,28 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are 12 cucumbers
     ///     When I eat 5 cucumbers
-    ///      | 5 |
     ///     Then I should have 7 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
     ///     When I eat 4 cucumbers
-    ///      | 4 |
     ///     Then I should have 16 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///
     ///     Examples:
     ///       | start | eat | left |
     ///       |    12 |   5 |    7 |
     ///       |    20 |   4 |   16 |
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Errors if the [`Examples`][2] cannot be expanded.
+    /// See [`ExpandExamplesError`] for details.
     ///
     /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
     /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
@@ -77,12 +91,12 @@ impl Ext for gherkin::Feature {
         let expand = |scenarios: Vec<gherkin::Scenario>| -> Result<_, _> {
             scenarios
                 .into_iter()
-                .flat_map(|scenario| expand_scenario(scenario, path.as_ref()))
+                .flat_map(|s| expand_scenario(s, path.as_ref()))
                 .collect()
         };
 
-        for rule in &mut self.rules {
-            rule.scenarios = expand(mem::take(&mut rule.scenarios))?;
+        for r in &mut self.rules {
+            r.scenarios = expand(mem::take(&mut r.scenarios))?;
         }
         self.scenarios = expand(mem::take(&mut self.scenarios))?;
 
@@ -96,6 +110,10 @@ impl Ext for gherkin::Feature {
 }
 
 /// Expands [`Scenario`] [`Examples`], if any.
+///
+/// # Errors
+///
+/// See [`ExpandExamplesError`] for details.
 ///
 /// [`Examples`]: gherkin::Example
 /// [`Scenario`]: gherkin::Scenario
@@ -116,7 +134,6 @@ fn expand_scenario(
     };
 
     let table = vals.iter().map(|v| header.iter().zip(v));
-
     table
         .enumerate()
         .map(|(id, row)| {
@@ -132,17 +149,17 @@ fn expand_scenario(
 
             let mut err = None;
 
-            for step in &mut modified.steps {
-                let pos = step.position;
-                let to_replace = iter::once(&mut step.value).chain(
-                    step.table.iter_mut().flat_map(|t| {
-                        t.rows.iter_mut().flat_map(|row| row.iter_mut())
+            for s in &mut modified.steps {
+                let pos = s.position;
+                let to_replace = iter::once(&mut s.value).chain(
+                    s.table.iter_mut().flat_map(|t| {
+                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
                     }),
                 );
 
                 for value in to_replace {
                     *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &Captures<'_>| {
+                        .replace_all(value, |c: &regex::Captures<'_>| {
                             let name = c.get(1).unwrap().as_str();
 
                             row.clone()
@@ -161,8 +178,8 @@ fn expand_scenario(
                         .into_owned();
                 }
 
-                if let Some(err) = err {
-                    return Err(err);
+                if let Some(e) = err {
+                    return Err(e);
                 }
             }
 
@@ -171,24 +188,24 @@ fn expand_scenario(
         .collect()
 }
 
-/// Error encountered during [`Scenario Outline`][0] expansion.
+/// Error of [`Scenario Outline`][1] expansion encountering an unknown template.
 ///
-/// [0]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
+/// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
     fmt = "Failed to resolve <{}> at {}:{}:{}",
     name,
-    "path.as_ref().and_then(|p| p.to_str()).unwrap_or_default()",
+    "path.as_deref().and_then(Path::to_str).unwrap_or_default()",
     "pos.line",
     "pos.col"
 )]
 pub struct ExpandExamplesError {
-    /// Position of unknown template.
+    /// Position of the unknown template.
     pub pos: gherkin::LineCol,
 
-    /// Unknown template
+    /// Name of the unknown template.
     pub name: String,
 
-    /// Path, if present.
+    /// [`Path`] to the `.feature` file, if present.
     pub path: Option<PathBuf>,
 }
