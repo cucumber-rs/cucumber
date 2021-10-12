@@ -33,7 +33,8 @@ pub trait Ext: Sized {
     ///     When I eat <eat> cucumbers
     ///     Then I should have <left> cucumbers
     ///     And substitution in tables works too
-    ///      | <eat> |
+    ///      | cucumbers left |
+    ///      | <left>         |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -49,13 +50,15 @@ pub trait Ext: Sized {
     ///     When I eat 5 cucumbers
     ///     Then I should have 7 cucumbers
     ///     And substitution in tables works too
-    ///      | 5 |
+    ///      | cucumbers left |
+    ///      | 7              |
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
     ///     When I eat 4 cucumbers
     ///     Then I should have 16 cucumbers
     ///     And substitution in tables works too
-    ///      | 4 |
+    ///      | cucumbers left |
+    ///      | 7              |
     ///
     ///     Examples:
     ///       | start | eat | left |

@@ -43,8 +43,8 @@ pub struct Basic {
     /// Current indentation that events are outputted with.
     indent: usize,
 
-    /// Number of lines to clear, if any.
-    lines_to_clear: Option<usize>,
+    /// Number of lines to clear.
+    lines_to_clear: usize,
 }
 
 #[async_trait(?Send)]
@@ -87,7 +87,7 @@ impl Default for Basic {
             terminal: Term::stdout(),
             styles: Styles::new(),
             indent: 0,
-            lines_to_clear: None,
+            lines_to_clear: 0,
         }
     }
 }
@@ -109,14 +109,9 @@ impl Basic {
 
     /// Clears last `n` lines if terminal is present.
     fn clear_last_lines_if_term_present(&mut self) {
-        if let Some(lines) = self
-            .styles
-            .is_present
-            .then(|| self.lines_to_clear)
-            .flatten()
-        {
-            self.clear_last_lines(lines).unwrap();
-            self.lines_to_clear = None;
+        if self.styles.is_present && self.lines_to_clear > 0 {
+            self.clear_last_lines(self.lines_to_clear).unwrap();
+            self.lines_to_clear = 0;
         }
     }
 
@@ -134,7 +129,7 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&mut self, feature: &gherkin::Feature) {
-        self.lines_to_clear = Some(1);
+        self.lines_to_clear = 1;
         self.write_line(
             &self
                 .styles
@@ -174,7 +169,7 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&mut self, rule: &gherkin::Rule) {
-        self.lines_to_clear = Some(1);
+        self.lines_to_clear = 1;
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{indent}{}: {}",
@@ -217,7 +212,7 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&mut self, scenario: &gherkin::Scenario) {
-        self.lines_to_clear = Some(1);
+        self.lines_to_clear = 1;
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{}{}: {}",
@@ -279,10 +274,13 @@ impl Basic {
                 "{indent}{} {}{}",
                 step.keyword,
                 step.value,
-                format_table(step.table.as_ref(), self.indent),
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
                 indent = " ".repeat(self.indent),
             );
-            self.lines_to_clear = Some(output.lines().count());
+            self.lines_to_clear = output.lines().count();
             self.write_line(&output).unwrap();
         }
     }
@@ -299,7 +297,10 @@ impl Basic {
                 "{indent}\u{2714}  {} {}{}",
                 step.keyword,
                 step.value,
-                format_table(step.table.as_ref(), self.indent),
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
                 indent = " ".repeat(self.indent.saturating_sub(3)),
             )
         }))
@@ -317,7 +318,10 @@ impl Basic {
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,
-            format_table(step.table.as_ref(), self.indent),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -349,7 +353,10 @@ impl Basic {
              {}",
             step.keyword,
             step.value,
-            format_table(step.table.as_ref(), self.indent),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -417,10 +424,13 @@ impl Basic {
                 "{indent}> {} {}{}",
                 step.keyword,
                 step.value,
-                format_table(step.table.as_ref(), self.indent),
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
                 indent = " ".repeat(self.indent.saturating_sub(2)),
             );
-            self.lines_to_clear = Some(output.lines().count());
+            self.lines_to_clear = output.lines().count();
             self.write_line(&output).unwrap();
         }
     }
@@ -437,7 +447,10 @@ impl Basic {
             "{indent}\u{2714}> {} {}{}",
             step.keyword,
             step.value,
-            format_table(step.table.as_ref(), self.indent),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
@@ -459,7 +472,10 @@ impl Basic {
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,
             step.value,
-            format_table(step.table.as_ref(), self.indent),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -492,7 +508,10 @@ impl Basic {
              {}",
             step.keyword,
             step.value,
-            format_table(step.table.as_ref(), self.indent),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -537,13 +556,7 @@ fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
 
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
 /// prettify the output.
-fn format_table(table: Option<&gherkin::Table>, indent: usize) -> String {
-    let table = if let Some(table) = table {
-        table
-    } else {
-        return String::new();
-    };
-
+fn format_table(table: &gherkin::Table, indent: usize) -> String {
     let max_row_len = table
         .rows
         .iter()
