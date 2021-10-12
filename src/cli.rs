@@ -15,27 +15,25 @@ use regex::Regex;
 
 /// Run the tests, pet a dog!.
 ///
-/// __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In `v0.11`
+/// __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In `0.11`
 ///                 it will be completely reworked:
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
 #[derive(Clap, Debug)]
-#[clap(author = "Brendan Molloy <brendan@bbqsrc.net>,\n\
-                 Ilya Solovyiov <ilya.solovyiov@gmail.com>,\n\
-                 Kai Ren <tyranron@gmail.com>")]
-pub struct Opt {
+pub struct Opts {
     /// Regex to select scenarios from.
     #[clap(short = 'e', long = "expression", name = "regex")]
     pub filter: Option<Regex>,
 
-    /// __WARNING__ ⚠️: This option is deprecated and will be removed it later
-    ///                 releases. For now it does nothing.
+    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
+    ///                 for removal in the next major release.
+    ///                 Any output of step functions is not captured by default.
     #[clap(long)]
     pub nocapture: bool,
 
-    /// __WARNING__ ⚠️: This option is deprecated and will be removed it later
-    ///                 releases. For now it does nothing.
+    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
+    ///                 for removal in the next major release.
     #[clap(long)]
     pub debug: bool,
 }

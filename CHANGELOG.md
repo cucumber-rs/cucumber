@@ -21,7 +21,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
 - Made test callbacks first argument `&mut World` instead of `World`. ([#128])
 - Made `#[step]` argument of step functions `Step` instead of `StepContext` again, while test callbacks still receive `StepContext` as a second parameter. ([#128])
-- `nocapture` and `debug` CLI options were deprecated and in `0.11` release it will be completely redesigned. ([#137])
+- Deprecated `--nocapture` and `--debug` CLI options to be completely redesigned in `0.11` release. ([#137])
 - [Hooks](https://cucumber.io/docs/cucumber/api/#hooks) were removed, but are planned to be re-implemented with some changes in `0.11` release. ([#128])
 
 ### Added
