@@ -20,7 +20,7 @@ use regex::Regex;
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(Debug, Clap)]
+#[derive(Clap, Debug)]
 #[clap(author = "Brendan Molloy <brendan@bbqsrc.net>,\n\
                  Ilya Solovyiov <ilya.solovyiov@gmail.com>,\n\
                  Kai Ren <tyranron@gmail.com>")]
