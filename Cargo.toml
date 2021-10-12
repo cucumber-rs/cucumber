@@ -31,6 +31,7 @@ macros = ["cucumber-codegen", "inventory"]
 [dependencies]
 async-trait = "0.1.40"
 atty = "0.2.14"
+clap = "3.0.0-beta.4"
 console = "0.14.1"
 derive_more = { version = "0.99.16", features = ["deref", "display", "error", "from"], default_features = false }
 either = "1.6"

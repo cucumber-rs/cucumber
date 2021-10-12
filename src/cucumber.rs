@@ -20,11 +20,12 @@ use std::{
     path::Path,
 };
 
+use clap::Clap as _;
 use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
-    event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
+    cli, event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
     Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
@@ -610,19 +611,7 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     pub async fn run(self, input: I) -> Wr {
-        let Cucumber {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
-
-        let events_stream = runner.run(parser.parse(input));
-        futures::pin_mut!(events_stream);
-        while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
-        }
-        writer
+        self.filter_run(input, |_, _, _| true).await
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -684,6 +673,7 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::non_ascii_literal)]
     pub async fn filter_run<F>(self, input: I, filter: F) -> Wr
     where
         F: Fn(
@@ -693,6 +683,29 @@ where
             ) -> bool
             + 'static,
     {
+        let opts = cli::Opts::parse();
+        if opts.nocapture {
+            eprintln!(
+                "WARNING ⚠️: This option does nothing at the moment and is \
+                             deprecated for removal in the next major release. \
+                             Any output of step functions is not captured by \
+                             default.",
+            );
+        }
+        if opts.debug {
+            eprintln!(
+                "WARNING ⚠️: This option does nothing at the moment and is \
+                             deprecated for removal in the next major release.",
+            );
+        }
+        let filter = move |f: &gherkin::Feature,
+                           r: Option<&gherkin::Rule>,
+                           s: &gherkin::Scenario| {
+            opts.filter
+                .as_ref()
+                .map_or_else(|| filter(f, r, s), |f| f.is_match(&s.name))
+        };
+
         let Cucumber {
             parser,
             runner,
