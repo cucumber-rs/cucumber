@@ -17,7 +17,7 @@ use std::{
 
 use derive_more::{Display, Error};
 use once_cell::sync::Lazy;
-use regex::{Captures, Regex};
+use regex::Regex;
 use sealed::sealed;
 
 /// Helper methods to operate on [`gherkin::Feature`]s.
@@ -31,8 +31,10 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are <start> cucumbers
     ///     When I eat <eat> cucumbers
-    ///      | <eat> |
     ///     Then I should have <left> cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | <left>         |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -46,13 +48,17 @@ pub trait Ext: Sized {
     ///   Scenario Outline: eating
     ///     Given there are 12 cucumbers
     ///     When I eat 5 cucumbers
-    ///      | 5 |
     ///     Then I should have 7 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
     ///     When I eat 4 cucumbers
-    ///      | 4 |
     ///     Then I should have 16 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///
     ///     Examples:
     ///       | start | eat | left |
@@ -143,17 +149,17 @@ fn expand_scenario(
 
             let mut err = None;
 
-            for step in &mut modified.steps {
-                let pos = step.position;
-                let to_replace = iter::once(&mut step.value).chain(
-                    step.table.iter_mut().flat_map(|t| {
-                        t.rows.iter_mut().flat_map(|row| row.iter_mut())
+            for s in &mut modified.steps {
+                let pos = s.position;
+                let to_replace = iter::once(&mut s.value).chain(
+                    s.table.iter_mut().flat_map(|t| {
+                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
                     }),
                 );
 
                 for value in to_replace {
                     *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &Captures<'_>| {
+                        .replace_all(value, |c: &regex::Captures<'_>| {
                             let name = c.get(1).unwrap().as_str();
 
                             row.clone()
