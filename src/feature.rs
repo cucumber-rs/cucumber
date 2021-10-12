@@ -11,7 +11,7 @@
 //! [`gherkin::Feature`] extension.
 
 use std::{
-    mem,
+    iter, mem,
     path::{Path, PathBuf},
 };
 
@@ -32,11 +32,14 @@ pub trait Ext: Sized {
     ///     Given there are <start> cucumbers
     ///     When I eat <eat> cucumbers
     ///     Then I should have <left> cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | <left>         |
     ///
     ///     Examples:
     ///       | start | eat | left |
     ///       |    12 |   5 |    7 |
-    ///       |    20 |   5 |   15 |
+    ///       |    20 |   4 |   16 |
     /// ```
     ///
     /// Will be expanded as:
@@ -46,15 +49,21 @@ pub trait Ext: Sized {
     ///     Given there are 12 cucumbers
     ///     When I eat 5 cucumbers
     ///     Then I should have 7 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///   Scenario Outline: eating
     ///     Given there are 20 cucumbers
-    ///     When I eat 5 cucumbers
-    ///     Then I should have 15 cucumbers
+    ///     When I eat 4 cucumbers
+    ///     Then I should have 16 cucumbers
+    ///     And substitution in tables works too
+    ///      | cucumbers left |
+    ///      | 7              |
     ///
     ///     Examples:
     ///       | start | eat | left |
     ///       |    12 |   5 |    7 |
-    ///       |    20 |   5 |   15 |
+    ///       |    20 |   4 |   16 |
     /// ```
     ///
     /// # Errors
@@ -141,22 +150,33 @@ fn expand_scenario(
             let mut err = None;
 
             for s in &mut modified.steps {
-                s.value = TEMPLATE_REGEX
-                    .replace_all(&s.value, |c: &regex::Captures<'_>| {
-                        let name = c.get(1).unwrap().as_str();
+                let pos = s.position;
+                let to_replace = iter::once(&mut s.value).chain(
+                    s.table.iter_mut().flat_map(|t| {
+                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
+                    }),
+                );
 
-                        row.clone()
-                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
-                            .unwrap_or_else(|| {
-                                err = Some(ExpandExamplesError {
-                                    pos: s.position,
-                                    name: name.to_owned(),
-                                    path: path.cloned(),
-                                });
-                                ""
-                            })
-                    })
-                    .into_owned();
+                for value in to_replace {
+                    *value = TEMPLATE_REGEX
+                        .replace_all(value, |c: &regex::Captures<'_>| {
+                            let name = c.get(1).unwrap().as_str();
+
+                            row.clone()
+                                .find_map(|(k, v)| {
+                                    (name == k).then(|| v.as_str())
+                                })
+                                .unwrap_or_else(|| {
+                                    err = Some(ExpandExamplesError {
+                                        pos,
+                                        name: name.to_owned(),
+                                        path: path.cloned(),
+                                    });
+                                    ""
+                                })
+                        })
+                        .into_owned();
+                }
 
                 if let Some(e) = err {
                     return Err(e);

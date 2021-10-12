@@ -11,6 +11,7 @@
 //! Default [`Writer`] implementation.
 
 use std::{
+    cmp,
     fmt::{Debug, Display},
     ops::Deref,
 };
@@ -42,8 +43,8 @@ pub struct Basic {
     /// Current indentation that events are outputted with.
     indent: usize,
 
-    /// Indicates whether last lines should be cleared.
-    needs_clear: bool,
+    /// Number of lines to clear.
+    lines_to_clear: usize,
 }
 
 #[async_trait(?Send)]
@@ -86,7 +87,7 @@ impl Default for Basic {
             terminal: Term::stdout(),
             styles: Styles::new(),
             indent: 0,
-            needs_clear: false,
+            lines_to_clear: 0,
         }
     }
 }
@@ -107,10 +108,10 @@ impl Basic {
     }
 
     /// Clears last `n` lines if terminal is present.
-    fn clear_last_lines_if_term_present(&mut self, n: usize) {
-        if self.styles.is_present && self.needs_clear {
-            self.clear_last_lines(n).unwrap();
-            self.needs_clear = false;
+    fn clear_last_lines_if_term_present(&mut self) {
+        if self.styles.is_present && self.lines_to_clear > 0 {
+            self.clear_last_lines(self.lines_to_clear).unwrap();
+            self.lines_to_clear = 0;
         }
     }
 
@@ -128,7 +129,7 @@ impl Basic {
     /// [started]: event::Feature::Started
     /// [`Feature`]: [`gherkin::Feature`]
     fn feature_started(&mut self, feature: &gherkin::Feature) {
-        self.needs_clear = true;
+        self.lines_to_clear = 1;
         self.write_line(
             &self
                 .styles
@@ -168,7 +169,7 @@ impl Basic {
     /// [started]: event::Rule::Started
     /// [`Rule`]: [`gherkin::Rule`]
     fn rule_started(&mut self, rule: &gherkin::Rule) {
-        self.needs_clear = true;
+        self.lines_to_clear = 1;
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{indent}{}: {}",
@@ -211,7 +212,7 @@ impl Basic {
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: [`gherkin::Scenario`]
     fn scenario_started(&mut self, scenario: &gherkin::Scenario) {
-        self.needs_clear = true;
+        self.lines_to_clear = 1;
         self.indent += 2;
         self.write_line(&self.styles.ok(format!(
             "{}{}: {}",
@@ -267,16 +268,20 @@ impl Basic {
     /// [started]: event::Step::Started
     /// [`Step`]: [`gherkin::Step`]
     fn step_started(&mut self, step: &gherkin::Step) {
-        self.needs_clear = true;
         self.indent += 4;
         if self.styles.is_present {
-            self.write_line(&format!(
-                "{}{} {}",
-                " ".repeat(self.indent),
+            let output = format!(
+                "{indent}{} {}{}",
                 step.keyword,
                 step.value,
-            ))
-            .unwrap();
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
+                indent = " ".repeat(self.indent),
+            );
+            self.lines_to_clear = output.lines().count();
+            self.write_line(&output).unwrap();
         }
     }
 
@@ -285,14 +290,20 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [`Step`]: [`gherkin::Step`]
     fn step_passed(&mut self, step: &gherkin::Step) {
-        self.clear_last_lines_if_term_present(1);
-        self.write_line(&self.styles.ok(format!(
-            //  ✔
-            "{}\u{2714}  {} {}",
-            " ".repeat(self.indent.saturating_sub(3)),
-            step.keyword,
-            step.value,
-        )))
+        self.clear_last_lines_if_term_present();
+        self.write_line(&self.styles.ok({
+            format!(
+                //       ✔
+                "{indent}\u{2714}  {} {}{}",
+                step.keyword,
+                step.value,
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
+                indent = " ".repeat(self.indent.saturating_sub(3)),
+            )
+        }))
         .unwrap();
     }
 
@@ -301,12 +312,16 @@ impl Basic {
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: [`gherkin::Step`]
     fn step_skipped(&mut self, feat: &gherkin::Feature, step: &gherkin::Step) {
-        self.clear_last_lines_if_term_present(1);
+        self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
-            "{indent}?  {} {}\n\
+            "{indent}?  {} {}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -329,15 +344,19 @@ impl Basic {
         world: Option<&W>,
         info: &Info,
     ) {
-        self.clear_last_lines_if_term_present(1);
+        self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.err(format!(
             //       ✘
-            "{indent}\u{2718}  {} {}\n\
+            "{indent}\u{2718}  {} {}{}\n\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -399,17 +418,20 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_started(&mut self, step: &gherkin::Step) {
-        self.needs_clear = true;
         self.indent += 4;
         if self.styles.is_present {
-            self.write_line(&format!(
-                "{}{}{} {}",
-                " ".repeat(self.indent.saturating_sub(2)),
-                "> ",
+            let output = format!(
+                "{indent}> {} {}{}",
                 step.keyword,
                 step.value,
-            ))
-            .unwrap();
+                step.table
+                    .as_ref()
+                    .map(|t| format_table(t, self.indent))
+                    .unwrap_or_default(),
+                indent = " ".repeat(self.indent.saturating_sub(2)),
+            );
+            self.lines_to_clear = output.lines().count();
+            self.write_line(&output).unwrap();
         }
     }
 
@@ -419,13 +441,17 @@ impl Basic {
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_passed(&mut self, step: &gherkin::Step) {
-        self.clear_last_lines_if_term_present(1);
+        self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.ok(format!(
             //  ✔
-            "{}\u{2714}> {} {}",
-            " ".repeat(self.indent.saturating_sub(3)),
+            "{indent}\u{2714}> {} {}{}",
             step.keyword,
             step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+            indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
     }
@@ -440,12 +466,16 @@ impl Basic {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
     ) {
-        self.clear_last_lines_if_term_present(1);
+        self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
-            "{indent}?> {} {}\n\
+            "{indent}?> {} {}{}\n\
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,
             step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -469,15 +499,19 @@ impl Basic {
         world: Option<&W>,
         info: &Info,
     ) {
-        self.clear_last_lines_if_term_present(1);
+        self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.err(format!(
             //       ✘
-            "{indent}\u{2718}> {} {}\n\
+            "{indent}\u{2718}> {} {}{}\n\
              {indent}   Background step failed: {}:{}:{}\n\
              {indent}   Captured output: {}\
              {}",
             step.keyword,
             step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -518,4 +552,43 @@ fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
     (!world.is_empty())
         .then(|| format!("\n{}", world))
         .unwrap_or_default()
+}
+
+/// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
+/// prettify the output.
+fn format_table(table: &gherkin::Table, indent: usize) -> String {
+    let max_row_len = table
+        .rows
+        .iter()
+        .fold(None, |mut acc: Option<Vec<_>>, row| {
+            if let Some(acc) = acc.as_mut() {
+                for (cell, max_len) in row.iter().zip(acc) {
+                    *max_len = cmp::max(*max_len, cell.len());
+                }
+            } else {
+                acc = Some(row.iter().map(String::len).collect::<Vec<_>>());
+            }
+
+            acc
+        })
+        .unwrap_or_default();
+
+    let mut table = table
+        .rows
+        .iter()
+        .map(|row| {
+            row.iter()
+                .zip(&max_row_len)
+                .map(|(cell, len)| format!("| {:1$} ", cell, len))
+                .collect::<String>()
+        })
+        .map(|row| format!("{}{}", " ".repeat(indent + 1), row))
+        .join("|\n");
+
+    if !table.is_empty() {
+        table.insert(0, '\n');
+        table.push('|');
+    }
+
+    table
 }
