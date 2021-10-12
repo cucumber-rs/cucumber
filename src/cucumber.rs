@@ -682,7 +682,7 @@ where
             ) -> bool
             + 'static,
     {
-        let opt: cli::Opt = cli::Opt::from_args();
+        let opt = cli::Opt::from_args();
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
                            s: &gherkin::Scenario| {

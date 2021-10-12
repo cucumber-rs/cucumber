@@ -15,9 +15,9 @@ use structopt::StructOpt;
 
 /// CLI options.
 ///
-/// > __WARNING__: This CLI exists only for backwards compatibility. In `v0.11`
-/// >              it will be completely reworked:
-///                [cucumber-rs/cucumber#134][1].
+/// > __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In
+/// >                 `v0.11` it will be completely reworked:
+/// >                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
 #[derive(Debug, StructOpt)]
