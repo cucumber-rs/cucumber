@@ -10,8 +10,8 @@
 
 //! CLI options.
 
+use clap::Clap;
 use regex::Regex;
-use structopt::StructOpt;
 
 /// Run the tests, pet a dog!.
 ///
@@ -20,12 +20,22 @@ use structopt::StructOpt;
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(Debug, StructOpt)]
-#[structopt(author = "Brendan Molloy <brendan@bbqsrc.net>,\n\
-                      Ilya Solovyiov <ilya.solovyiov@gmail.com>,\n\
-                      Kai Ren <tyranron@gmail.com>")]
-pub(crate) struct Opt {
+#[derive(Debug, Clap)]
+#[clap(author = "Brendan Molloy <brendan@bbqsrc.net>,\n\
+                 Ilya Solovyiov <ilya.solovyiov@gmail.com>,\n\
+                 Kai Ren <tyranron@gmail.com>")]
+pub struct Opt {
     /// Regex to select scenarios from.
-    #[structopt(short = "e", long = "expression", name = "regex")]
-    pub(crate) filter: Option<Regex>,
+    #[clap(short = 'e', long = "expression", name = "regex")]
+    pub filter: Option<Regex>,
+
+    /// __WARNING__ ⚠️: This option is deprecated and will be removed it later
+    ///                 releases. For now it does nothing.
+    #[clap(long)]
+    pub nocapture: bool,
+
+    /// __WARNING__ ⚠️: This option is deprecated and will be removed it later
+    ///                 releases. For now it does nothing.
+    #[clap(long)]
+    pub debug: bool,
 }

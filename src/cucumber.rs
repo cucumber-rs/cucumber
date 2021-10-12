@@ -20,9 +20,9 @@ use std::{
     path::Path,
 };
 
+use clap::Clap as _;
 use futures::StreamExt as _;
 use regex::Regex;
-use structopt::StructOpt as _;
 
 use crate::{
     cli, event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
@@ -682,7 +682,7 @@ where
             ) -> bool
             + 'static,
     {
-        let opt = cli::Opt::from_args();
+        let opt = cli::Opt::parse();
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
                            s: &gherkin::Scenario| {

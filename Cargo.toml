@@ -31,6 +31,7 @@ macros = ["cucumber-codegen", "inventory"]
 [dependencies]
 async-trait = "0.1.40"
 atty = "0.2.14"
+clap = "3.0.0-beta.4"
 console = "0.14.1"
 derive_more = { version = "0.99.16", features = ["deref", "display", "error", "from"], default_features = false }
 either = "1.6"
@@ -42,7 +43,6 @@ linked-hash-map = "0.5"
 once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5"
 sealed = "0.3"
-structopt = "0.3"
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.10", path = "./codegen", optional = true }
