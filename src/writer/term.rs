@@ -60,7 +60,7 @@ impl Styles {
     /// If terminal is present colors `input` with [`Styles::ok`] color or
     /// leaves "as is" otherwise.
     #[must_use]
-    pub fn ok(&self, input: impl Into<Cow<'static, str>>) -> Cow<'static, str> {
+    pub fn ok<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.ok.apply_to(input.into()).to_string().into()
         } else {
@@ -71,10 +71,7 @@ impl Styles {
     /// If terminal is present colors `input` with [`Styles::skipped`] color or
     /// leaves "as is" otherwise.
     #[must_use]
-    pub fn skipped(
-        &self,
-        input: impl Into<Cow<'static, str>>,
-    ) -> Cow<'static, str> {
+    pub fn skipped<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.skipped.apply_to(input.into()).to_string().into()
         } else {
@@ -85,10 +82,7 @@ impl Styles {
     /// If terminal is present colors `input` with [`Styles::err`] color or
     /// leaves "as is" otherwise.
     #[must_use]
-    pub fn err(
-        &self,
-        input: impl Into<Cow<'static, str>>,
-    ) -> Cow<'static, str> {
+    pub fn err<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.err.apply_to(input.into()).to_string().into()
         } else {
@@ -99,10 +93,7 @@ impl Styles {
     /// If terminal is present colors `input` with [`Styles::header`] color or
     /// leaves "as is" otherwise.
     #[must_use]
-    pub fn header(
-        &self,
-        input: impl Into<Cow<'static, str>>,
-    ) -> Cow<'static, str> {
+    pub fn header<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.header.apply_to(input.into()).to_string().into()
         } else {
@@ -113,10 +104,7 @@ impl Styles {
     /// If terminal is present makes `input` __bold__ or leaves "as is"
     /// otherwise.
     #[must_use]
-    pub fn bold(
-        &self,
-        input: impl Into<Cow<'static, str>>,
-    ) -> Cow<'static, str> {
+    pub fn bold<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.bold.apply_to(input.into()).to_string().into()
         } else {

@@ -65,7 +65,7 @@ where
         let map_failed =
             |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: Arc<_>| {
                 let event = if (self.should_fail)(&f, r.as_deref(), &sc) {
-                    Step::Failed(None, Arc::new("not allowed to skip"))
+                    Step::Failed(None, None, Arc::new("not allowed to skip"))
                 } else {
                     Step::Skipped
                 };

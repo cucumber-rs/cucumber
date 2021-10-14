@@ -30,7 +30,7 @@ Feature: Animal feature
       Then the cat is not hungry
 ```
 
-<script id="asciicast-9wOF9rEgGUgWN9e49TWiS5Nh3" src="https://asciinema.org/a/9wOF9rEgGUgWN9e49TWiS5Nh3.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-c8XFsr52VB8tuIJfIaofWAfyh" src="https://asciinema.org/a/c8XFsr52VB8tuIJfIaofWAfyh.js" async data-autoplay="true" data-rows="18"></script>
 
 
 
@@ -63,7 +63,7 @@ Feature: Animal feature
       Then the cat is not hungry
 ```
 
-<script id="asciicast-Q8OmAVWU116ZzxYg6VjBDxjlt" src="https://asciinema.org/a/Q8OmAVWU116ZzxYg6VjBDxjlt.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-ZQyfL8gVHD932rskDDESqlsD9" src="https://asciinema.org/a/ZQyfL8gVHD932rskDDESqlsD9.js" async data-autoplay="true" data-rows="18"></script>
 
 `Background` `Step`s indicated by `>` sign in the output by default.
 
@@ -168,7 +168,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 # }
 ```
 
-<script id="asciicast-15ZcRGFBUXubvcle34ZOLiLtO" src="https://asciinema.org/a/15ZcRGFBUXubvcle34ZOLiLtO.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-o1s4mSMYkkVBy4WAsG8lhYtT8" src="https://asciinema.org/a/o1s4mSMYkkVBy4WAsG8lhYtT8.js" async data-autoplay="true" data-rows="18"></script>
 
 
 ### Combining `regex` and `FromStr`
@@ -273,7 +273,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 # }
 ```
 
-<script id="asciicast-joMErjGUVegtXPJgL8fc5x6pt" src="https://asciinema.org/a/joMErjGUVegtXPJgL8fc5x6pt.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-GeKTIuSZ61Q9Nzv5X4TyrNVVp" src="https://asciinema.org/a/GeKTIuSZ61Q9Nzv5X4TyrNVVp.js" async data-autoplay="true" data-rows="18"></script>
 
 
 
@@ -297,7 +297,7 @@ Egenskap: Animal feature
     Så the cat is not hungry
 ```
 
-<script id="asciicast-sDt8aoo9ZVPZRgiTuy8pSNro2" src="https://asciinema.org/a/sDt8aoo9ZVPZRgiTuy8pSNro2.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-DFtCqnpcnXpKbGxtxfedkW0Ga" src="https://asciinema.org/a/DFtCqnpcnXpKbGxtxfedkW0Ga.js" async data-autoplay="true" data-rows="18"></script>
 
 In case most of your `.feature` files aren't written in English and you want to avoid endless `# language:` comments, use [`Cucumber::language()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.language) method to override the default language.
 

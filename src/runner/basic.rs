@@ -32,7 +32,7 @@ use futures::{
     TryStreamExt as _,
 };
 use itertools::Itertools as _;
-use regex::Regex;
+use regex::{CaptureLocations, Regex};
 
 use crate::{
     event::{self, Info},
@@ -394,13 +394,6 @@ impl<W: World> Executor<W> {
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
     ) {
-        self.send(event::Cucumber::scenario(
-            feature.clone(),
-            rule.clone(),
-            scenario.clone(),
-            event::Scenario::Started,
-        ));
-
         let ok = |e: fn(Arc<gherkin::Step>) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
@@ -408,13 +401,43 @@ impl<W: World> Executor<W> {
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let err = |e: fn(Arc<gherkin::Step>, _, Info) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
-            move |step, world, info| {
+            move |step, captures| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                event::Cucumber::scenario(f, r, s, e(step, world, info))
+                event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
+        let err = |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
+            let (f, r, s) = (&feature, &rule, &scenario);
+            move |step, captures, w, info| {
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
+            }
+        };
+
+        let compose = |started, passed, skipped, failed| {
+            (ok(started), ok_capt(passed), ok(skipped), err(failed))
+        };
+        let into_bg_step_ev = compose(
+            event::Scenario::background_step_started,
+            event::Scenario::background_step_passed,
+            event::Scenario::background_step_skipped,
+            event::Scenario::background_step_failed,
+        );
+        let into_step_ev = compose(
+            event::Scenario::step_started,
+            event::Scenario::step_passed,
+            event::Scenario::step_skipped,
+            event::Scenario::step_failed,
+        );
+
+        self.send(event::Cucumber::scenario(
+            feature.clone(),
+            rule.clone(),
+            scenario.clone(),
+            event::Scenario::Started,
+        ));
 
         let res = async {
             let feature_background = feature
@@ -427,15 +450,7 @@ impl<W: World> Executor<W> {
             let feature_background = stream::iter(feature_background)
                 .map(Ok)
                 .try_fold(None, |world, bg_step| {
-                    self.run_step(
-                        world,
-                        bg_step,
-                        ok(event::Scenario::background_step_started),
-                        ok(event::Scenario::background_step_passed),
-                        ok(event::Scenario::background_step_skipped),
-                        err(event::Scenario::background_step_failed),
-                    )
-                    .map_ok(Some)
+                    self.run_step(world, bg_step, into_bg_step_ev).map_ok(Some)
                 })
                 .await?;
 
@@ -454,30 +469,14 @@ impl<W: World> Executor<W> {
             let rule_background = stream::iter(rule_background)
                 .map(Ok)
                 .try_fold(feature_background, |world, bg_step| {
-                    self.run_step(
-                        world,
-                        bg_step,
-                        ok(event::Scenario::background_step_started),
-                        ok(event::Scenario::background_step_passed),
-                        ok(event::Scenario::background_step_skipped),
-                        err(event::Scenario::background_step_failed),
-                    )
-                    .map_ok(Some)
+                    self.run_step(world, bg_step, into_bg_step_ev).map_ok(Some)
                 })
                 .await?;
 
             stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
                 .map(Ok)
                 .try_fold(rule_background, |world, step| {
-                    self.run_step(
-                        world,
-                        step,
-                        ok(event::Scenario::step_started),
-                        ok(event::Scenario::step_passed),
-                        ok(event::Scenario::step_skipped),
-                        err(event::Scenario::step_failed),
-                    )
-                    .map_ok(Some)
+                    self.run_step(world, step, into_step_ev).map_ok(Some)
                 })
                 .await
         };
@@ -511,48 +510,69 @@ impl<W: World> Executor<W> {
     /// - Emits all [`Step`] events.
     ///
     /// [`Step`]: gherkin::Step
-    async fn run_step(
+    async fn run_step<St, Ps, Sk, F>(
         &self,
         mut world: Option<W>,
         step: Arc<gherkin::Step>,
-        started: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
-        passed: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
-        skipped: impl FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
-        failed: impl FnOnce(
+        (started, passed, skipped, failed): (St, Ps, Sk, F),
+    ) -> Result<W, ()>
+    where
+        St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        Ps: FnOnce(Arc<gherkin::Step>, CaptureLocations) -> event::Cucumber<W>,
+        Sk: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        F: FnOnce(
             Arc<gherkin::Step>,
+            Option<CaptureLocations>,
             Option<Arc<W>>,
             Info,
         ) -> event::Cucumber<W>,
-    ) -> Result<W, ()> {
+    {
         self.send(started(step.clone()));
 
         let run = async {
             if world.is_none() {
-                world =
-                    Some(W::new().await.expect("failed to initialize World"));
+                let w_fut = async {
+                    W::new().await.expect("failed to initialize World")
+                };
+                world = match AssertUnwindSafe(w_fut).catch_unwind().await {
+                    Ok(w) => Some(w),
+                    Err(e) => return Err((e, None)),
+                };
             }
 
-            let (step_fn, ctx) = self.collection.find(&step)?;
-            step_fn(world.as_mut().unwrap(), ctx).await;
-            Some(())
+            let (step_fn, captures, ctx) = match self.collection.find(&step) {
+                Some(step_fn) => step_fn,
+                None => return Ok(None),
+            };
+
+            match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
+                .catch_unwind()
+                .await
+            {
+                Ok(()) => Ok(Some(captures)),
+                Err(e) => Err((e, Some(captures))),
+            }
         };
 
-        let res = match AssertUnwindSafe(run).catch_unwind().await {
-            Ok(Some(())) => {
-                self.send(passed(step));
+        match run.await {
+            Ok(Some(captures)) => {
+                self.send(passed(step, captures));
                 Ok(world.unwrap())
             }
             Ok(None) => {
                 self.send(skipped(step));
                 Err(())
             }
-            Err(err) => {
-                self.send(failed(step, world.map(Arc::new), Arc::from(err)));
+            Err((err, captures)) => {
+                self.send(failed(
+                    step,
+                    captures,
+                    world.map(Arc::new),
+                    Arc::from(err),
+                ));
                 Err(())
             }
-        };
-
-        res
+        }
     }
 
     /// Marks [`Rule`]'s [`Scenario`] as finished and returns [`Rule::Finished`]

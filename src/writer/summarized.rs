@@ -210,7 +210,7 @@ impl<Writer> Summarized<Writer> {
 
         match ev {
             Step::Started => {}
-            Step::Passed => self.steps.passed += 1,
+            Step::Passed(_) => self.steps.passed += 1,
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;

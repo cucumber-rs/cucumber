@@ -201,12 +201,12 @@ pub enum Step<World> {
     /// [`Step`] passed.
     ///
     /// [`Step`]: gherkin::Step
-    Passed,
+    Passed(regex::CaptureLocations),
 
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<Arc<World>>, Info),
+    Failed(Option<regex::CaptureLocations>, Option<Arc<World>>, Info),
 }
 
 // Manual implementation is required to omit the redundant `World: Clone` trait
@@ -216,8 +216,10 @@ impl<World> Clone for Step<World> {
         match self {
             Self::Started => Self::Started,
             Self::Skipped => Self::Skipped,
-            Self::Passed => Self::Passed,
-            Self::Failed(w, info) => Self::Failed(w.clone(), info.clone()),
+            Self::Passed(captures) => Self::Passed(captures.clone()),
+            Self::Failed(captures, w, info) => {
+                Self::Failed(captures.clone(), w.clone(), info.clone())
+            }
         }
     }
 }
@@ -283,8 +285,11 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_passed(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Passed)
+    pub fn step_passed(
+        step: Arc<gherkin::Step>,
+        captures: regex::CaptureLocations,
+    ) -> Self {
+        Self::Step(step, Step::Passed(captures))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -292,8 +297,11 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_passed(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Passed)
+    pub fn background_step_passed(
+        step: Arc<gherkin::Step>,
+        captures: regex::CaptureLocations,
+    ) -> Self {
+        Self::Background(step, Step::Passed(captures))
     }
 
     /// Constructs an event of a skipped [`Step`].
@@ -318,10 +326,11 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
+        captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Step(step, Step::Failed(world, info))
+        Self::Step(step, Step::Failed(captures, world, info))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -331,9 +340,10 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
+        captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Background(step, Step::Failed(world, info))
+        Self::Background(step, Step::Failed(captures, world, info))
     }
 }
