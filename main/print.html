@@ -356,7 +356,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">}
 </span></code></pre></pre>
 <p>If you run the test now, you'll see that all steps are accounted for and the test succeeds:</p>
-<script id="asciicast-HaEZXiqUn0U1T8c5TaiMGX50i" src="https://asciinema.org/a/HaEZXiqUn0U1T8c5TaiMGX50i.js" async data-autoplay="true" data-rows="16"></script>
+<script id="asciicast-fHuIXkWrIk1AOFFqF0MYmY0m0" src="https://asciinema.org/a/fHuIXkWrIk1AOFFqF0MYmY0m0.js" async data-autoplay="true" data-rows="16"></script>
 <p>If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from <code>true</code> to <code>false</code> temporarily:</p>
 <pre><pre class="playground"><code class="language-rust should_panic"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
@@ -410,7 +410,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">}
 </span></code></pre></pre>
 <p>And you should see the test failing:</p>
-<script id="asciicast-KFNrNihA5ib9G7O22jwTSw0Lg" src="https://asciinema.org/a/KFNrNihA5ib9G7O22jwTSw0Lg.js" async data-autoplay="true" data-rows="24"></script>
+<script id="asciicast-XTikmqirO7mAFZ97MNfKvnD5p" src="https://asciinema.org/a/XTikmqirO7mAFZ97MNfKvnD5p.js" async data-autoplay="true" data-rows="24"></script>
 <p>What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
 
@@ -483,7 +483,8 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span></code></pre></pre>
 <p>We surround regex with <code>^..$</code> to ensure the <strong>exact</strong> match. This is much more useful as you add more and more steps, so they wouldn't interfere with each other.</p>
 <p><a href="https://cucumber.io">Cucumber</a> will reuse these steps:</p>
-<script id="asciicast-RAteqk9p0zkvWrslK6kiOU5lc" src="https://asciinema.org/a/RAteqk9p0zkvWrslK6kiOU5lc.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-ao6LdWsrtdsgg8tOi9cQgPfyz" src="https://asciinema.org/a/ao6LdWsrtdsgg8tOi9cQgPfyz.js" async data-autoplay="true" data-rows="18"></script>
+<p>Captured groups are <strong>bold</strong> to indicate which part of step could be dynamically changed.</p>
 <p>A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> step was <code>The cat is no longer hungry</code>, it'd imply something about the expected initial state, when that is not the purpose of a <code>Then</code> step, but rather of the <code>Given</code> step.</p>
 <details>
 <summary>Full example so far:</summary>
@@ -620,7 +621,7 @@ async fn main() {
     AnimalWorld::run(&quot;/tests/features/book&quot;).await;
 }
 </code></pre></pre>
-<script id="asciicast-vufDjDlrdm5TtH20WVpIGpEz6" src="https://asciinema.org/a/vufDjDlrdm5TtH20WVpIGpEz6.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-tz9ApYZgsET9k8jjIa9HpnQ8p" src="https://asciinema.org/a/tz9ApYZgsET9k8jjIa9HpnQ8p.js" async data-autoplay="true" data-rows="18"></script>
 <p>Hm, it looks like the executor waited only for the first <code>Feature</code> 🤔, what's going on?</p>
 <p>By default <code>Cucumber</code> executes <code>Scenarios</code> <a href="https://en.wikipedia.org/wiki/Concurrent_computing">concurrently</a>! That means executor actually did wait for all the steps, but overlapped! This allows you to execute tests much faster!</p>
 <p>If for some reason you don't want to run your <code>Scenarios</code> concurrently, use <code>@serial</code> tag on them:</p>
@@ -638,7 +639,7 @@ async fn main() {
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
-<script id="asciicast-KztYots1Jm6WijCmxZM1GZT1K" src="https://asciinema.org/a/KztYots1Jm6WijCmxZM1GZT1K.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-MDXpZf8vcOTssmlU4rgSSfR0E" src="https://asciinema.org/a/MDXpZf8vcOTssmlU4rgSSfR0E.js" async data-autoplay="true" data-rows="18"></script>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="features"><a class="header" href="#features">Features</a></h1>
 <p>This chapter contains overview and examples of some <a href="https://cucumber.io">Cucumber</a> and <a href="https://cucumber.io/docs/gherkin">Gherkin</a> features.</p>
 <h2 id="rule-keyword"><a class="header" href="#rule-keyword"><code>Rule</code> keyword</a></h2>
@@ -660,7 +661,7 @@ async fn main() {
       When I feed the cat
       Then the cat is not hungry
 </code></pre>
-<script id="asciicast-9wOF9rEgGUgWN9e49TWiS5Nh3" src="https://asciinema.org/a/9wOF9rEgGUgWN9e49TWiS5Nh3.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-c8XFsr52VB8tuIJfIaofWAfyh" src="https://asciinema.org/a/c8XFsr52VB8tuIJfIaofWAfyh.js" async data-autoplay="true" data-rows="18"></script>
 <h2 id="background-keyword"><a class="header" href="#background-keyword"><code>Background</code> keyword</a></h2>
 <p>Occasionally you’ll find yourself repeating the same <code>Given</code> steps in all the scenarios of a <code>Feature</code>.</p>
 <p>Since it's repeated in every scenario, this is an indication that those steps are not essential to describe the scenarios, so they are <em>incidental details</em>. You can literally move such <code>Given</code> steps to background, by grouping them under a <code>Background</code> section.</p>
@@ -684,7 +685,7 @@ async fn main() {
       When I feed the cat
       Then the cat is not hungry
 </code></pre>
-<script id="asciicast-Q8OmAVWU116ZzxYg6VjBDxjlt" src="https://asciinema.org/a/Q8OmAVWU116ZzxYg6VjBDxjlt.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-ZQyfL8gVHD932rskDDESqlsD9" src="https://asciinema.org/a/ZQyfL8gVHD932rskDDESqlsD9.js" async data-autoplay="true" data-rows="18"></script>
 <p><code>Background</code> <code>Step</code>s indicated by <code>&gt;</code> sign in the output by default.</p>
 <p>In case <code>Background</code> is declared outside any <code>Rule</code>, it will be run on any <code>Scenario</code>. Otherwise, if <code>Background</code> is declared inside <code>Rule</code>, it will be run only for <code>Scenario</code>s inside this <code>Rule</code> and only after top-level <code>Background</code> statements, if any.</p>
 <h3 id="tips-for-using-background"><a class="header" href="#tips-for-using-background">Tips for using <code>Background</code></a></h3>
@@ -774,7 +775,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/features/scenario_outline.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
-<script id="asciicast-15ZcRGFBUXubvcle34ZOLiLtO" src="https://asciinema.org/a/15ZcRGFBUXubvcle34ZOLiLtO.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-o1s4mSMYkkVBy4WAsG8lhYtT8" src="https://asciinema.org/a/o1s4mSMYkkVBy4WAsG8lhYtT8.js" async data-autoplay="true" data-rows="18"></script>
 <h3 id="combining-regex-and-fromstr"><a class="header" href="#combining-regex-and-fromstr">Combining <code>regex</code> and <code>FromStr</code></a></h3>
 <p>At parsing stage, <code>&lt;templates&gt;</code> are replaced by value from cells. That means you can parse table cells into any type, that implements <a href="https://doc.rust-lang.org/stable/std/str/trait.FromStr.html"><code>FromStr</code></a>.</p>
 <pre><code class="language-gherkin">Feature: Animal feature
@@ -871,7 +872,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/features/scenario_outline_fromstr.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
-<script id="asciicast-joMErjGUVegtXPJgL8fc5x6pt" src="https://asciinema.org/a/joMErjGUVegtXPJgL8fc5x6pt.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-GeKTIuSZ61Q9Nzv5X4TyrNVVp" src="https://asciinema.org/a/GeKTIuSZ61Q9Nzv5X4TyrNVVp.js" async data-autoplay="true" data-rows="18"></script>
 <h2 id="spoken-languages"><a class="header" href="#spoken-languages">Spoken languages</a></h2>
 <p>The language you choose for <a href="https://cucumber.io/docs/gherkin">Gherkin</a> should be the same language your users and domain experts use when they talk about the domain. Translating between two languages should be avoided.</p>
 <p>This is why <a href="https://cucumber.io/docs/gherkin">Gherkin</a> has been translated to over <a href="https://cucumber.io/docs/gherkin/languages">70 languages</a>.</p>
@@ -885,7 +886,7 @@ Egenskap: Animal feature
     Når I feed the cat
     Så the cat is not hungry
 </code></pre>
-<script id="asciicast-sDt8aoo9ZVPZRgiTuy8pSNro2" src="https://asciinema.org/a/sDt8aoo9ZVPZRgiTuy8pSNro2.js" async data-autoplay="true" data-rows="18"></script>
+<script id="asciicast-DFtCqnpcnXpKbGxtxfedkW0Ga" src="https://asciinema.org/a/DFtCqnpcnXpKbGxtxfedkW0Ga.js" async data-autoplay="true" data-rows="18"></script>
 <p>In case most of your <code>.feature</code> files aren't written in English and you want to avoid endless <code># language:</code> comments, use <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.language"><code>Cucumber::language()</code></a> method to override the default language.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test-modules-organization"><a class="header" href="#test-modules-organization">Test Modules Organization</a></h1>
 <p>You can have all of your step definitions in one file, or in multiple files. When you start with your project, all your step definitions will probably be in one file. As your project grows, you should split your step definitions into meaningful groups in different files. This will make your project more logically organized and easier to maintain.</p>
