@@ -21,7 +21,7 @@ use std::{
 };
 
 use clap::Clap as _;
-use futures::StreamExt as _;
+use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
 
 use crate::{
@@ -774,22 +774,9 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        let which: runner::basic::WhichScenarioFn = |_, _, scenario| {
-            scenario
-                .tags
-                .iter()
-                .any(|tag| tag == "serial")
-                .then(|| ScenarioType::Serial)
-                .unwrap_or(ScenarioType::Concurrent)
-        };
-
         Cucumber::custom()
             .with_parser(parser::Basic::new())
-            .with_runner(
-                runner::Basic::custom()
-                    .which_scenario(which)
-                    .max_concurrent_scenarios(64),
-            )
+            .with_runner(runner::Basic::default())
             .with_writer(writer::Basic::new().normalized().summarized())
     }
 }
@@ -840,7 +827,7 @@ impl<W, I, R, Wr> Cucumber<W, parser::Basic, I, R, Wr> {
     }
 }
 
-impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
+impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     /// If `max` is [`Some`] number of concurrently executed [`Scenario`]s will
     /// be limited.
     ///
@@ -864,7 +851,7 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which>, Wr>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -882,6 +869,64 @@ impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
         Cucumber {
             parser,
             runner: runner.which_scenario(func),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// TODO
+    #[must_use]
+    pub fn before<Before>(
+        self,
+        func: Before,
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr>
+    where
+        Before: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.before(func),
+            writer,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// TODO
+    #[must_use]
+    pub fn after<After>(
+        self,
+        func: After,
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr>
+    where
+        After: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            parser,
+            runner,
+            writer,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.after(func),
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
