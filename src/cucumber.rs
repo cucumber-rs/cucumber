@@ -143,8 +143,8 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
-    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     id="asciicast-0d92qlT8Mbc4WXyvRbHJmjsqN"
+    ///     src="https://asciinema.org/a/0d92qlT8Mbc4WXyvRbHJmjsqN.js"
     ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
@@ -223,8 +223,8 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
-    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     id="asciicast-0d92qlT8Mbc4WXyvRbHJmjsqN"
+    ///     src="https://asciinema.org/a/0d92qlT8Mbc4WXyvRbHJmjsqN.js"
     ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
@@ -322,8 +322,8 @@ where
     ///
     /// Output with a regular [`Cucumber::run()`]:
     /// <script
-    ///     id="asciicast-hMyH3IYbHRFXT1yf84tXDNl2r"
-    ///     src="https://asciinema.org/a/hMyH3IYbHRFXT1yf84tXDNl2r.js"
+    ///     id="asciicast-0d92qlT8Mbc4WXyvRbHJmjsqN"
+    ///     src="https://asciinema.org/a/0d92qlT8Mbc4WXyvRbHJmjsqN.js"
     ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
@@ -357,8 +357,8 @@ where
     /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-BD1mPjYGELD6oWNKW8lTlyvDR"
-    ///     src="https://asciinema.org/a/BD1mPjYGELD6oWNKW8lTlyvDR.js"
+    ///     id="asciicast-ox14HynkBIw8atpfhyfvKrsO3"
+    ///     src="https://asciinema.org/a/ox14HynkBIw8atpfhyfvKrsO3.js"
     ///     async data-autoplay="true" data-rows="19">
     /// </script>
     ///
@@ -409,8 +409,8 @@ where
     /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
-    ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
+    ///     id="asciicast-UcipuopO6IFEsIDty6vaJlCH9"
+    ///     src="https://asciinema.org/a/UcipuopO6IFEsIDty6vaJlCH9.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
@@ -445,8 +445,8 @@ where
     /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-qKp8Hevrb6732mMUT7VduvxJc"
-    ///     src="https://asciinema.org/a/qKp8Hevrb6732mMUT7VduvxJc.js"
+    ///     id="asciicast-ofOljvyEMb41OTLhE081QKv68"
+    ///     src="https://asciinema.org/a/ofOljvyEMb41OTLhE081QKv68.js"
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
@@ -505,8 +505,8 @@ where
     /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-mDDqxWHzUaK19P0L2R2g4XRp2"
-    ///     src="https://asciinema.org/a/mDDqxWHzUaK19P0L2R2g4XRp2.js"
+    ///     id="asciicast-UcipuopO6IFEsIDty6vaJlCH9"
+    ///     src="https://asciinema.org/a/UcipuopO6IFEsIDty6vaJlCH9.js"
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
@@ -563,8 +563,8 @@ where
     /// # futures::executor::block_on(fut);
     /// ```
     /// <script
-    ///     id="asciicast-qKp8Hevrb6732mMUT7VduvxJc"
-    ///     src="https://asciinema.org/a/qKp8Hevrb6732mMUT7VduvxJc.js"
+    ///     id="asciicast-ofOljvyEMb41OTLhE081QKv68"
+    ///     src="https://asciinema.org/a/ofOljvyEMb41OTLhE081QKv68.js"
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///

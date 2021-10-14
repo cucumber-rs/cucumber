@@ -23,7 +23,7 @@ use std::{
 };
 
 use futures::{
-    channel::{mpsc, oneshot},
+    channel::mpsc,
     future::{self, Either},
     lock::Mutex,
     pin_mut,
@@ -530,22 +530,34 @@ impl<W: World> Executor<W> {
     {
         self.send(started(step.clone()));
 
-        let (sender, receiver) = oneshot::channel();
         let run = async {
             if world.is_none() {
-                world =
-                    Some(W::new().await.expect("failed to initialize World"));
+                let w_fut = async {
+                    W::new().await.expect("failed to initialize World")
+                };
+
+                world = match AssertUnwindSafe(w_fut).catch_unwind().await {
+                    Ok(w) => Some(w),
+                    Err(e) => return Err((e, None)),
+                };
             }
 
-            let (step_fn, locations, ctx) = self.collection.find(&step)?;
-            sender.send(locations).unwrap();
-            step_fn(world.as_mut().unwrap(), ctx).await;
-            Some(())
+            let (step_fn, locations, ctx) = match self.collection.find(&step) {
+                Some(step_fn) => step_fn,
+                None => return Ok(None),
+            };
+
+            match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
+                .catch_unwind()
+                .await
+            {
+                Ok(()) => Ok(Some(locations)),
+                Err(e) => Err((e, Some(locations))),
+            }
         };
 
-        let res = match AssertUnwindSafe(run).catch_unwind().await {
-            Ok(Some(())) => {
-                let locations = receiver.await.unwrap();
+        let res = match run.await {
+            Ok(Some(locations)) => {
                 self.send(passed(step, locations));
                 Ok(world.unwrap())
             }
@@ -553,11 +565,10 @@ impl<W: World> Executor<W> {
                 self.send(skipped(step));
                 Err(())
             }
-            Err(err) => {
-                let locations = receiver.await.unwrap();
+            Err((err, locations)) => {
                 self.send(failed(
                     step,
-                    Some(locations),
+                    locations,
                     world.map(Arc::new),
                     Arc::from(err),
                 ));

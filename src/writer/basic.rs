@@ -244,22 +244,16 @@ impl Basic {
             Step::Started => {
                 self.step_started(step);
             }
-            Step::Passed(location) => {
-                self.step_passed(step, location);
+            Step::Passed(l) => {
+                self.step_passed(step, l);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
                 self.step_skipped(feat, step);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(locations, world, info) => {
-                self.step_failed(
-                    feat,
-                    step,
-                    locations.as_ref(),
-                    world.as_ref(),
-                    info,
-                );
+            Step::Failed(l, world, info) => {
+                self.step_failed(feat, step, l.as_ref(), world.as_ref(), info);
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -432,22 +426,16 @@ impl Basic {
             Step::Started => {
                 self.bg_step_started(bg);
             }
-            Step::Passed(locations) => {
-                self.bg_step_passed(bg, locations);
+            Step::Passed(l) => {
+                self.bg_step_passed(bg, l);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
                 self.bg_step_skipped(feat, bg);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(locations, world, info) => {
-                self.bg_step_failed(
-                    feat,
-                    bg,
-                    locations.as_ref(),
-                    world.as_ref(),
-                    info,
-                );
+            Step::Failed(l, world, info) => {
+                self.bg_step_failed(feat, bg, l.as_ref(), world.as_ref(), info);
                 self.indent = self.indent.saturating_sub(4);
             }
         }

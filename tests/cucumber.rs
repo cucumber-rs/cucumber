@@ -59,7 +59,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 #[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .fail_on_skipped_with(|_, _, sc| !sc.tags.iter().any(|t| t == "dog"))
+        .repeat_skipped()
         .run_and_exit("tests/features/asciinema.feature")
         .await;
 }
