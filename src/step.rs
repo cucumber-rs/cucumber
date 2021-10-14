@@ -23,7 +23,7 @@ use std::{
 
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
-use regex::{CaptureLocations, Regex};
+use regex::Regex;
 
 /// Alias for a [`gherkin::Step`] function that returns a [`LocalBoxFuture`].
 pub type Step<World> =
@@ -121,23 +121,23 @@ impl<World> Collection<World> {
     pub fn find(
         &self,
         step: &gherkin::Step,
-    ) -> Option<(&Step<World>, CaptureLocations, Context)> {
+    ) -> Option<(&Step<World>, regex::CaptureLocations, Context)> {
         let collection = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
             StepType::Then => &self.then,
         };
 
-        let (whole_match, locations, step_fn) =
+        let (whole_match, captures, step_fn) =
             collection.iter().find_map(|(re, step_fn)| {
-                let mut locations = re.capture_locations();
-                re.captures_read(&mut locations, &step.value)
-                    .map(|m| (m, locations, step_fn))
+                let mut captures = re.capture_locations();
+                re.captures_read(&mut captures, &step.value)
+                    .map(|m| (m, captures, step_fn))
             })?;
 
         let matches = iter::once(whole_match.as_str().to_owned())
-            .chain((1..locations.len()).map(|group_id| {
-                locations
+            .chain((1..captures.len()).map(|group_id| {
+                captures
                     .get(group_id)
                     .map_or("", |(s, e)| &step.value[s..e])
                     .to_owned()
@@ -146,7 +146,7 @@ impl<World> Collection<World> {
 
         Some((
             step_fn,
-            locations,
+            captures,
             Context {
                 step: step.clone(),
                 matches,

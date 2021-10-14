@@ -244,16 +244,16 @@ impl Basic {
             Step::Started => {
                 self.step_started(step);
             }
-            Step::Passed(l) => {
-                self.step_passed(step, l);
+            Step::Passed(captures) => {
+                self.step_passed(step, captures);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
                 self.step_skipped(feat, step);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(l, world, info) => {
-                self.step_failed(feat, step, l.as_ref(), world.as_ref(), info);
+            Step::Failed(capts, w, info) => {
+                self.step_failed(feat, step, capts.as_ref(), w.as_ref(), info);
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -294,15 +294,15 @@ impl Basic {
     fn step_passed(
         &mut self,
         step: &gherkin::Step,
-        locations: &CaptureLocations,
+        captures: &CaptureLocations,
     ) {
         self.clear_last_lines_if_term_present();
 
         let step_keyword =
             self.styles.ok(format!("\u{2714}  {}", step.keyword));
-        let step_value = format_locations(
+        let step_value = format_captures(
             &step.value,
-            locations,
+            captures,
             |v| self.styles.ok(v),
             |v| self.styles.ok(self.styles.bold(v)),
         );
@@ -356,7 +356,7 @@ impl Basic {
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        locations: Option<&CaptureLocations>,
+        captures: Option<&CaptureLocations>,
         world: Option<&W>,
         info: &Info,
     ) {
@@ -367,18 +367,19 @@ impl Basic {
             step.keyword,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         ));
-        let step_value = locations.map_or_else(
+        let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
-            |locations| {
-                format_locations(
+            |captures| {
+                format_captures(
                     &step.value,
-                    locations,
+                    captures,
                     |v| self.styles.err(v),
                     |v| self.styles.err(self.styles.bold(v)),
                 )
                 .into()
             },
         );
+
         let diagnostics = self.styles.err(format!(
             "{}\n\
              {indent}   Step failed: {}:{}:{}\n\
@@ -426,16 +427,16 @@ impl Basic {
             Step::Started => {
                 self.bg_step_started(bg);
             }
-            Step::Passed(l) => {
-                self.bg_step_passed(bg, l);
+            Step::Passed(captures) => {
+                self.bg_step_passed(bg, captures);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
                 self.bg_step_skipped(feat, bg);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(l, world, info) => {
-                self.bg_step_failed(feat, bg, l.as_ref(), world.as_ref(), info);
+            Step::Failed(capts, w, info) => {
+                self.bg_step_failed(feat, bg, capts.as_ref(), w.as_ref(), info);
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -478,15 +479,15 @@ impl Basic {
     fn bg_step_passed(
         &mut self,
         step: &gherkin::Step,
-        locations: &CaptureLocations,
+        captures: &CaptureLocations,
     ) {
         self.clear_last_lines_if_term_present();
 
         let step_keyword =
             self.styles.ok(format!("\u{2714}> {}", step.keyword));
-        let step_value = format_locations(
+        let step_value = format_captures(
             &step.value,
-            locations,
+            captures,
             |v| self.styles.ok(v),
             |v| self.styles.ok(self.styles.bold(v)),
         );
@@ -546,7 +547,7 @@ impl Basic {
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        locations: Option<&CaptureLocations>,
+        captures: Option<&CaptureLocations>,
         world: Option<&W>,
         info: &Info,
     ) {
@@ -557,18 +558,19 @@ impl Basic {
             step.keyword,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         ));
-        let step_value = locations.map_or_else(
+        let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
-            |locations| {
-                format_locations(
+            |captures| {
+                format_captures(
                     &step.value,
-                    locations,
+                    captures,
                     |v| self.styles.err(v),
                     |v| self.styles.err(self.styles.bold(v)),
                 )
                 .into()
             },
         );
+
         let diagnostics = self.styles.err(format!(
             "{}\n\
              {indent}   Step failed: {}:{}:{}\n\
@@ -663,10 +665,11 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
     table
 }
 
-/// Formats `value`s `locations` with `accent` and with `default` the rest.
-fn format_locations<D, A>(
+/// Formats `value`s in the given `captures` with the provided `accent` style
+/// and with the `default` style anything else.
+fn format_captures<D, A>(
     value: impl AsRef<str>,
-    locations: &CaptureLocations,
+    captures: &CaptureLocations,
     default: D,
     accent: A,
 ) -> String
@@ -676,8 +679,8 @@ where
 {
     let value = value.as_ref();
 
-    let (mut formatted, end) = (1..locations.len())
-        .filter_map(|group| locations.get(group))
+    let (mut formatted, end) = (1..captures.len())
+        .filter_map(|group| captures.get(group))
         .fold(
             (String::with_capacity(value.len()), 0),
             |(mut str, old), (start, end)| {

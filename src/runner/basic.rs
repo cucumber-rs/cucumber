@@ -401,32 +401,31 @@ impl<W: World> Executor<W> {
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let ok_loc = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
-            move |step, location| {
+            move |step, captures| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                event::Cucumber::scenario(f, r, s, e(step, location))
+                event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
-        let err =
-            |e: fn(Arc<gherkin::Step>, _, _, Info) -> event::Scenario<W>| {
-                let (f, r, s) = (&feature, &rule, &scenario);
-                move |step, l, world, info| {
-                    let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                    event::Cucumber::scenario(f, r, s, e(step, l, world, info))
-                }
-            };
-        let carry = |started, passed, skipped, failed| {
-            (ok(started), ok_loc(passed), ok(skipped), err(failed))
+        let err = |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
+            let (f, r, s) = (&feature, &rule, &scenario);
+            move |step, captures, w, info| {
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
+            }
         };
 
-        let into_bg_step_ev = carry(
+        let compose = |started, passed, skipped, failed| {
+            (ok(started), ok_capt(passed), ok(skipped), err(failed))
+        };
+        let into_bg_step_ev = compose(
             event::Scenario::background_step_started,
             event::Scenario::background_step_passed,
             event::Scenario::background_step_skipped,
             event::Scenario::background_step_failed,
         );
-        let into_step_ev = carry(
+        let into_step_ev = compose(
             event::Scenario::step_started,
             event::Scenario::step_passed,
             event::Scenario::step_skipped,
@@ -535,14 +534,13 @@ impl<W: World> Executor<W> {
                 let w_fut = async {
                     W::new().await.expect("failed to initialize World")
                 };
-
                 world = match AssertUnwindSafe(w_fut).catch_unwind().await {
                     Ok(w) => Some(w),
                     Err(e) => return Err((e, None)),
                 };
             }
 
-            let (step_fn, locations, ctx) = match self.collection.find(&step) {
+            let (step_fn, captures, ctx) = match self.collection.find(&step) {
                 Some(step_fn) => step_fn,
                 None => return Ok(None),
             };
@@ -551,32 +549,30 @@ impl<W: World> Executor<W> {
                 .catch_unwind()
                 .await
             {
-                Ok(()) => Ok(Some(locations)),
-                Err(e) => Err((e, Some(locations))),
+                Ok(()) => Ok(Some(captures)),
+                Err(e) => Err((e, Some(captures))),
             }
         };
 
-        let res = match run.await {
-            Ok(Some(locations)) => {
-                self.send(passed(step, locations));
+        match run.await {
+            Ok(Some(captures)) => {
+                self.send(passed(step, captures));
                 Ok(world.unwrap())
             }
             Ok(None) => {
                 self.send(skipped(step));
                 Err(())
             }
-            Err((err, locations)) => {
+            Err((err, captures)) => {
                 self.send(failed(
                     step,
-                    locations,
+                    captures,
                     world.map(Arc::new),
                     Arc::from(err),
                 ));
                 Err(())
             }
-        };
-
-        res
+        }
     }
 
     /// Marks [`Rule`]'s [`Scenario`] as finished and returns [`Rule::Finished`]

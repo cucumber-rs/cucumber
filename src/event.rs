@@ -216,9 +216,9 @@ impl<World> Clone for Step<World> {
         match self {
             Self::Started => Self::Started,
             Self::Skipped => Self::Skipped,
-            Self::Passed(loc) => Self::Passed(loc.clone()),
-            Self::Failed(loc, w, info) => {
-                Self::Failed(loc.clone(), w.clone(), info.clone())
+            Self::Passed(captures) => Self::Passed(captures.clone()),
+            Self::Failed(captures, w, info) => {
+                Self::Failed(captures.clone(), w.clone(), info.clone())
             }
         }
     }
@@ -287,9 +287,9 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_passed(
         step: Arc<gherkin::Step>,
-        capture: regex::CaptureLocations,
+        captures: regex::CaptureLocations,
     ) -> Self {
-        Self::Step(step, Step::Passed(capture))
+        Self::Step(step, Step::Passed(captures))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -299,9 +299,9 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_passed(
         step: Arc<gherkin::Step>,
-        capture: regex::CaptureLocations,
+        captures: regex::CaptureLocations,
     ) -> Self {
-        Self::Background(step, Step::Passed(capture))
+        Self::Background(step, Step::Passed(captures))
     }
 
     /// Constructs an event of a skipped [`Step`].
@@ -326,11 +326,11 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_failed(
         step: Arc<gherkin::Step>,
-        capture: Option<regex::CaptureLocations>,
+        captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Step(step, Step::Failed(capture, world, info))
+        Self::Step(step, Step::Failed(captures, world, info))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -340,10 +340,10 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn background_step_failed(
         step: Arc<gherkin::Step>,
-        capture: Option<regex::CaptureLocations>,
+        captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
-        Self::Background(step, Step::Failed(capture, world, info))
+        Self::Background(step, Step::Failed(captures, world, info))
     }
 }
