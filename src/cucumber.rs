@@ -20,9 +20,9 @@ use std::{
     path::Path,
 };
 
+use clap::Clap as _;
 use futures::StreamExt as _;
 use regex::Regex;
-use structopt::StructOpt as _;
 
 use crate::{
     cli, event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
@@ -672,6 +672,7 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::non_ascii_literal)]
     pub async fn filter_run<F>(self, input: I, filter: F) -> Wr
     where
         F: Fn(
@@ -681,11 +682,25 @@ where
             ) -> bool
             + 'static,
     {
-        let opt = cli::Opt::from_args();
+        let opts = cli::Opts::parse();
+        if opts.nocapture {
+            eprintln!(
+                "WARNING ⚠️: This option does nothing at the moment and is \
+                             deprecated for removal in the next major release. \
+                             Any output of step functions is not captured by \
+                             default.",
+            );
+        }
+        if opts.debug {
+            eprintln!(
+                "WARNING ⚠️: This option does nothing at the moment and is \
+                             deprecated for removal in the next major release.",
+            );
+        }
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
                            s: &gherkin::Scenario| {
-            opt.filter
+            opts.filter
                 .as_ref()
                 .map_or_else(|| filter(f, r, s), |f| f.is_match(&s.name))
         };

@@ -10,22 +10,30 @@
 
 //! CLI options.
 
+use clap::Clap;
 use regex::Regex;
-use structopt::StructOpt;
 
 /// Run the tests, pet a dog!.
 ///
-/// __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In `v0.11`
+/// __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In `0.11`
 ///                 it will be completely reworked:
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(Debug, StructOpt)]
-#[structopt(author = "Brendan Molloy <brendan@bbqsrc.net>,\n\
-                      Ilya Solovyiov <ilya.solovyiov@gmail.com>,\n\
-                      Kai Ren <tyranron@gmail.com>")]
-pub(crate) struct Opt {
+#[derive(Clap, Debug)]
+pub struct Opts {
     /// Regex to select scenarios from.
-    #[structopt(short = "e", long = "expression", name = "regex")]
-    pub(crate) filter: Option<Regex>,
+    #[clap(short = 'e', long = "expression", name = "regex")]
+    pub filter: Option<Regex>,
+
+    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
+    ///                 for removal in the next major release.
+    ///                 Any output of step functions is not captured by default.
+    #[clap(long)]
+    pub nocapture: bool,
+
+    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
+    ///                 for removal in the next major release.
+    #[clap(long)]
+    pub debug: bool,
 }
