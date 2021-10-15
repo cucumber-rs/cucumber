@@ -96,7 +96,9 @@ pub struct Summarized<Writer> {
     /// [`Parser`]: crate::Parser
     pub parsing_errors: usize,
 
-    /// Number of failed hooks.
+    /// Number of failed [`Scenario`] hooks.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     pub failed_hooks: usize,
 
     /// Handled [`Scenario`]s to collect [`Stats`].

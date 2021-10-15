@@ -325,19 +325,25 @@ impl<World> Clone for Scenario<World> {
 }
 
 impl<World> Scenario<World> {
-    /// Constructs an event of a hook being started.
+    /// Constructs an event of a [`Scenario`] hook being started.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn hook_started(which: HookTy) -> Self {
         Self::Hook(which, Hook::Started)
     }
 
-    /// Constructs an event of a passed hook.
+    /// Constructs an event of a passed [`Scenario`] hook.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn hook_passed(which: HookTy) -> Self {
         Self::Hook(which, Hook::Passed)
     }
 
-    /// Constructs an event of a failed hook.
+    /// Constructs an event of a failed [`Scenario`] hook.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn hook_failed(
         which: HookTy,

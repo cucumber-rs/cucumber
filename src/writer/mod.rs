@@ -84,7 +84,9 @@ pub trait Failure<World>: Writer<World> {
     #[must_use]
     fn parsing_errors(&self) -> usize;
 
-    /// Returns number of failed hooks.
+    /// Returns number of failed [`Scenario`] hooks.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     fn hook_errors(&self) -> usize;
 }

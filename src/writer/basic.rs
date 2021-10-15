@@ -230,7 +230,7 @@ impl Basic {
         self.clear_last_lines_if_term_present();
 
         self.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  {} hook failed {}:{}:{}\n\
+            "{indent}\u{2718}  {} Scenario hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             which,
             feat.path

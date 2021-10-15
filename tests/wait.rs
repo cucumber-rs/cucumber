@@ -16,10 +16,7 @@ async fn main() {
             .boxed_local()
         })
         .after(|_, _, _, _| {
-            async move {
-                time::sleep(Duration::from_millis(10)).await;
-            }
-            .boxed_local()
+            time::sleep(Duration::from_millis(10)).boxed_local()
         })
         .run_and_exit("tests/features/wait");
 

@@ -909,7 +909,8 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         }
     }
 
-    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s.
+    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s even after
+    /// [`Skipped`] of [`Failed`] [`Step`]s.
     ///
     /// Last `World` argument is supplied to the function, in case it
     /// was initialized before by [`before`] hook or any non-failed [`Step`].
@@ -920,7 +921,9 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     ///
     /// [`before`]: Self::before()
+    /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn after<After>(

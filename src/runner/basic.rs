@@ -264,7 +264,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         }
     }
 
-    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s.
+    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s even after
+    /// [`Skipped`] of [`Failed`] [`Step`]s.
     ///
     /// Last `World` argument is supplied to the function, in case it
     /// was initialized before by [`before`] hook or any non-failed [`Step`].
@@ -275,7 +276,9 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     ///
     /// [`before`]: Self::before()
+    /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
