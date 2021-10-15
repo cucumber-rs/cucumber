@@ -15,9 +15,8 @@ async fn main() {
             }
             .boxed_local()
         })
-        .after(|_, _, _, w| {
+        .after(|_, _, _, _| {
             async move {
-                w.0 = 0;
                 sleep(Duration::from_millis(10)).await;
             }
             .boxed_local()
@@ -30,7 +29,7 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error");
+    assert_eq!(err, "2 steps failed, 1 parsing error, 0 hook errors");
 }
 
 #[given(regex = r"(\d+) secs?")]

@@ -193,11 +193,21 @@ impl Basic {
         scenario: &gherkin::Scenario,
         ev: &event::Scenario<W>,
     ) {
-        use event::Scenario;
+        use event::{Hook, Scenario};
 
         match ev {
             Scenario::Started => {
                 self.scenario_started(scenario);
+            }
+            Scenario::Hook(_, Hook::Started) => {
+                self.indent += 4;
+            }
+            Scenario::Hook(which, Hook::Failed(world, info)) => {
+                self.hook_failed(feat, scenario, *which, world.as_ref(), info);
+                self.indent = self.indent.saturating_sub(4);
+            }
+            Scenario::Hook(_, Hook::Passed) => {
+                self.indent = self.indent.saturating_sub(4);
             }
             Scenario::Background(bg, ev) => {
                 self.background(feat, bg, ev);
@@ -207,6 +217,33 @@ impl Basic {
             }
             Scenario::Finished => self.indent = self.indent.saturating_sub(2),
         }
+    }
+
+    fn hook_failed<W: Debug>(
+        &mut self,
+        feat: &gherkin::Feature,
+        sc: &gherkin::Scenario,
+        which: event::HookTy,
+        world: Option<&W>,
+        info: &Info,
+    ) {
+        self.clear_last_lines_if_term_present();
+
+        self.write_line(&self.styles.err(format!(
+            "{indent}\u{2718}  {} hook failed {}:{}:{}\n\
+             {indent}   Captured output: {}{}",
+            which,
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            sc.position.line,
+            sc.position.col,
+            coerce_error(info),
+            format_world(world, self.indent.saturating_sub(3) + 3),
+            indent = " ".repeat(self.indent.saturating_sub(3)),
+        )))
+        .unwrap();
     }
 
     /// Outputs [started] [`Scenario`] to STDOUT.

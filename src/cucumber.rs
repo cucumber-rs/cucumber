@@ -875,7 +875,12 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         }
     }
 
-    /// TODO
+    /// Sets hook, executed on every [`Scenario`] before any [`Step`]s,
+    /// including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn before<Before>(
         self,
@@ -904,7 +909,19 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         }
     }
 
-    /// TODO
+    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s.
+    ///
+    /// Last `World` argument is supplied to the function, in case it
+    /// was initialized before by [`before`] hook or any non-failed [`Step`].
+    /// In case last [`Scenario`]'s [`Step`] failed,  we want to return event
+    /// with exact `World` state. Also we don't want to impose additional
+    /// [`Clone`] bounds on `World`, so the only option left is to pass [`None`]
+    /// to the function.
+    ///
+    ///
+    /// [`before`]: Self::before()
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn after<After>(
         self,
@@ -915,7 +932,7 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
-            &'a mut W,
+            Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>,
     {
         let Self {
@@ -1074,12 +1091,15 @@ where
         if writer.execution_has_failed() {
             let failed_steps = writer.failed_steps();
             let parsing_errors = writer.parsing_errors();
+            let hook_errors = writer.hook_errors();
             panic!(
-                "{} step{} failed, {} parsing error{}",
+                "{} step{} failed, {} parsing error{}, {} hook error{}",
                 failed_steps,
                 (failed_steps != 1).then(|| "s").unwrap_or_default(),
                 parsing_errors,
                 (parsing_errors != 1).then(|| "s").unwrap_or_default(),
+                hook_errors,
+                (hook_errors != 1).then(|| "s").unwrap_or_default(),
             );
         }
     }

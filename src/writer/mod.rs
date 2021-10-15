@@ -83,6 +83,10 @@ pub trait Failure<World>: Writer<World> {
     /// Returns number of parsing errors.
     #[must_use]
     fn parsing_errors(&self) -> usize;
+
+    /// Returns number of failed hooks.
+    #[must_use]
+    fn hook_errors(&self) -> usize;
 }
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
