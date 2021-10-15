@@ -41,6 +41,8 @@ Occasionally you’ll find yourself repeating the same `Given` steps in all the 
 
 Since it's repeated in every scenario, this is an indication that those steps are not essential to describe the scenarios, so they are _incidental details_. You can literally move such `Given` steps to background, by grouping them under a `Background` section.
 
+A `Background` allows you to add some context to the scenarios that follow it. It can contain one or more steps, which are run before each scenario, but after any [`Before` hooks](#before-hook).
+
 ```gherkin
 Feature: Animal feature
     
@@ -300,6 +302,80 @@ Egenskap: Animal feature
 <script id="asciicast-DFtCqnpcnXpKbGxtxfedkW0Ga" src="https://asciinema.org/a/DFtCqnpcnXpKbGxtxfedkW0Ga.js" async data-autoplay="true" data-rows="18"></script>
 
 In case most of your `.feature` files aren't written in English and you want to avoid endless `# language:` comments, use [`Cucumber::language()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.language) method to override the default language.
+
+
+
+
+## Scenario hooks
+
+### Before hook
+
+`Before` hooks run before the first step of each scenario, even [Background](#background-keyword) ones.
+
+```rust
+# use std::{convert::Infallible, time::Duration};
+# 
+# use async_trait::async_trait;
+# use cucumber::WorldInit;
+# use futures::FutureExt as _;
+# use tokio::time::sleep;
+# 
+# #[derive(Debug, WorldInit)]
+# struct World;
+# 
+# #[async_trait(?Send)]
+# impl cucumber::World for World {
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Self::Error> {
+#         Ok(World)
+#     }
+# }
+# 
+# fn main() {
+World::cucumber()
+    .before(|_feature, _rule, _scenario, _world| {
+        sleep(Duration::from_millis(10)).boxed_local()
+    })
+    .run_and_exit("tests/features/book");
+# }
+```
+
+> #### Think twice before you use `Before`
+> Whatever happens in a `Before` hook is invisible to people who only read the features. You should consider using a [Background](#background-keyword) as a more explicit alternative, especially if the setup should be readable by non-technical people. Only use a `Before` hook for low-level logic such as starting a browser or deleting data from a database.
+
+### After hook
+
+`After` hooks run after the last step of each scenario, even when the step result is `failed` or `skipped`.
+
+```rust
+# use std::{convert::Infallible, time::Duration};
+# 
+# use async_trait::async_trait;
+# use cucumber::WorldInit;
+# use futures::FutureExt as _;
+# use tokio::time::sleep;
+# 
+# #[derive(Debug, WorldInit)]
+# struct World;
+# 
+# #[async_trait(?Send)]
+# impl cucumber::World for World {
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Self::Error> {
+#         Ok(World)
+#     }
+# }
+# 
+# fn main() {
+World::cucumber()
+    .after(|_feature, _rule, _scenario, _world| {
+        sleep(Duration::from_millis(10)).boxed_local()
+    })
+    .run_and_exit("tests/features/book");
+# }
+```
 
 
 

@@ -3,7 +3,7 @@ use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 use async_trait::async_trait;
 use cucumber::{given, then, when, WorldInit};
 use futures::FutureExt as _;
-use tokio::{time, time::sleep};
+use tokio::time;
 
 #[tokio::main]
 async fn main() {
@@ -11,13 +11,13 @@ async fn main() {
         .before(|_, _, _, w| {
             async move {
                 w.0 = 0;
-                sleep(Duration::from_millis(10)).await;
+                time::sleep(Duration::from_millis(10)).await;
             }
             .boxed_local()
         })
         .after(|_, _, _, _| {
             async move {
-                sleep(Duration::from_millis(10)).await;
+                time::sleep(Duration::from_millis(10)).await;
             }
             .boxed_local()
         })
