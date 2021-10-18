@@ -2,6 +2,7 @@ use std::{borrow::Cow, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
 use cucumber::{event, given, parser, then, when, WorldInit, Writer};
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 #[derive(Debug, Default, WorldInit)]
@@ -30,6 +31,15 @@ impl cucumber::World for World {
 #[derive(Default)]
 struct DebugWriter(String);
 
+// This regex exists to make tests work on Windows, Linux and macOS.
+static SPAN_AND_PATH_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+        | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
+    )
+    .unwrap()
+});
+
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     async fn handle_event(
@@ -41,9 +51,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
             Ok(ev) => format!("{:?}", ev).into(),
         };
 
-        let re =
-            Regex::new(r#"( span: Span \{ start: (\d+), end: (\d+) },| path: (None|(Some\()?"[^"]*")\)?,?)"#).unwrap();
-        let without_span = re.replace_all(ev.as_ref(), "");
+        let without_span = SPAN_AND_PATH_RE.replace_all(ev.as_ref(), "");
 
         self.0.push_str(without_span.as_ref());
     }
