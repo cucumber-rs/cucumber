@@ -25,6 +25,7 @@ use regex::CaptureLocations;
 use crate::{
     event::{self, Info},
     parser,
+    step::AmbiguousMatchError,
     writer::term::Styles,
     ArbitraryWriter, World, Writer,
 };
@@ -281,6 +282,10 @@ impl Basic {
             Step::Started => {
                 self.step_started(step);
             }
+            Step::AmbiguousMatch(e) => {
+                self.step_ambiguous_match(feat, step, e);
+                self.indent = self.indent.saturating_sub(4);
+            }
             Step::Passed(captures) => {
                 self.step_passed(step, captures);
                 self.indent = self.indent.saturating_sub(4);
@@ -443,6 +448,40 @@ impl Basic {
         .unwrap();
     }
 
+    /// TODO
+    fn step_ambiguous_match(
+        &mut self,
+        feat: &gherkin::Feature,
+        step: &gherkin::Step,
+        err: &AmbiguousMatchError,
+    ) {
+        self.clear_last_lines_if_term_present();
+
+        self.write_line(&self.styles.err(format!(
+            "{indent}\u{2718}  {} {}{}\n\
+             {indent}   Step match is ambiguous: {}:{}:{}\n\
+             {indent}   Possible matches: {:?}",
+            step.keyword,
+            step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            err.possible_matches
+                .iter()
+                .map(|(re, loc)| (re.as_str(), loc))
+                .collect::<Vec<_>>(),
+            indent = " ".repeat(self.indent.saturating_sub(3))
+        )))
+        .unwrap();
+    }
+
     /// Outputs [`Background`] [`Step`] [started]/[passed]/[skipped]/[failed]
     /// event to STDOUT.
     ///
@@ -463,6 +502,9 @@ impl Basic {
         match ev {
             Step::Started => {
                 self.bg_step_started(bg);
+            }
+            Step::AmbiguousMatch(_e) => {
+                // TODO
             }
             Step::Passed(captures) => {
                 self.bg_step_passed(bg, captures);

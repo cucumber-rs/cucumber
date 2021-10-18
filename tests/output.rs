@@ -15,6 +15,9 @@ fn step(w: &mut World, num: usize) {
     w.0 += 1;
 }
 
+#[given(regex = r"foo is (\d+) ambiguous")]
+fn ambiguous(_w: &mut World) {}
+
 #[async_trait(?Send)]
 impl cucumber::World for World {
     type Error = Infallible;

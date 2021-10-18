@@ -250,7 +250,7 @@ impl<Writer> Summarized<Writer> {
                 let _ =
                     self.handled_scenarios.insert(scenario.clone(), Skipped);
             }
-            Step::Failed(..) => {
+            Step::Failed(..) | Step::AmbiguousMatch(..) => {
                 self.steps.failed += 1;
                 self.scenarios.failed += 1;
                 let _ = self.handled_scenarios.insert(scenario.clone(), Failed);

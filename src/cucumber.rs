@@ -20,7 +20,7 @@ use std::{
     path::Path,
 };
 
-use clap::Clap as _;
+use clap::Parser as _;
 use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
 
@@ -967,8 +967,13 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn given(mut self, regex: Regex, step: Step<W>) -> Self {
-        self.runner = self.runner.given(regex, step);
+    pub fn given(
+        mut self,
+        regex: Regex,
+        step: Step<W>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.runner = self.runner.given(regex, step, loc);
         self
     }
 
@@ -976,8 +981,13 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#When
     #[must_use]
-    pub fn when(mut self, regex: Regex, step: Step<W>) -> Self {
-        self.runner = self.runner.when(regex, step);
+    pub fn when(
+        mut self,
+        regex: Regex,
+        step: Step<W>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.runner = self.runner.when(regex, step, loc);
         self
     }
 
@@ -985,8 +995,13 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
-    pub fn then(mut self, regex: Regex, step: Step<W>) -> Self {
-        self.runner = self.runner.then(regex, step);
+    pub fn then(
+        mut self,
+        regex: Regex,
+        step: Step<W>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.runner = self.runner.then(regex, step, loc);
         self
     }
 }

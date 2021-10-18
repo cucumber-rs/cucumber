@@ -21,6 +21,8 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
+use crate::step;
+
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
@@ -188,6 +190,9 @@ pub enum Step<World> {
     /// [`Step`]: gherkin::Step
     Started,
 
+    /// TODO
+    AmbiguousMatch(step::AmbiguousMatchError),
+
     /// [`Step`] being skipped.
     ///
     /// That means there is no [`Regex`] matching [`Step`] in a
@@ -215,6 +220,7 @@ impl<World> Clone for Step<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
+            Self::AmbiguousMatch(e) => Self::AmbiguousMatch(e.clone()),
             Self::Skipped => Self::Skipped,
             Self::Passed(captures) => Self::Passed(captures.clone()),
             Self::Failed(captures, w, info) => {
@@ -359,6 +365,33 @@ impl<World> Scenario<World> {
     #[must_use]
     pub fn step_started(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Started)
+    }
+
+    /// Constructs an event of a [`Step`] being matched to more than 1
+    /// [`Regex`].
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn ambiguous_step(
+        step: Arc<gherkin::Step>,
+        err: step::AmbiguousMatchError,
+    ) -> Self {
+        Self::Step(step, Step::AmbiguousMatch(err))
+    }
+
+    /// Constructs an event of a [`Background`] [`Step`] being matched to more
+    /// than 1 [`Regex`].
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn background_ambiguous_step(
+        step: Arc<gherkin::Step>,
+        err: step::AmbiguousMatchError,
+    ) -> Self {
+        Self::Background(step, Step::AmbiguousMatch(err))
     }
 
     /// Constructs an event of a [`Background`] [`Step`] being started.

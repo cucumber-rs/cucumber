@@ -319,8 +319,13 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).given(regex, step);
+    pub fn given(
+        mut self,
+        regex: Regex,
+        step: Step<World>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.steps = mem::take(&mut self.steps).given(regex, step, loc);
         self
     }
 
@@ -328,8 +333,13 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).when(regex, step);
+    pub fn when(
+        mut self,
+        regex: Regex,
+        step: Step<World>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.steps = mem::take(&mut self.steps).when(regex, step, loc);
         self
     }
 
@@ -337,8 +347,13 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
-    pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).then(regex, step);
+    pub fn then(
+        mut self,
+        regex: Regex,
+        step: Step<World>,
+        loc: Option<step::Location>,
+    ) -> Self {
+        self.steps = mem::take(&mut self.steps).then(regex, step, loc);
         self
     }
 }
@@ -631,28 +646,43 @@ where
                 Cucumber::scenario(f.clone(), r.clone(), s.clone(), e(st, cap))
             }
         };
-        let err = |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
+        let panic_err =
+            |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
+                let (f, r, s) = (&f, &r, &s);
+                move |step, captures, w, info| {
+                    let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                    Cucumber::scenario(f, r, s, e(step, captures, w, info))
+                }
+            };
+        let amb_err = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
             let (f, r, s) = (&f, &r, &s);
-            move |step, captures, w, info| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                Cucumber::scenario(f, r, s, e(step, captures, w, info))
+            move |st, err| {
+                Cucumber::scenario(f.clone(), r.clone(), s.clone(), e(st, err))
             }
         };
 
-        let compose = |started, passed, skipped, failed| {
-            (ok(started), ok_capt(passed), ok(skipped), err(failed))
+        let compose = |started, passed, skipped, failed, amb| {
+            (
+                ok(started),
+                ok_capt(passed),
+                ok(skipped),
+                panic_err(failed),
+                amb_err(amb),
+            )
         };
         let into_bg_step_ev = compose(
             event::Scenario::background_step_started,
             event::Scenario::background_step_passed,
             event::Scenario::background_step_skipped,
             event::Scenario::background_step_failed,
+            event::Scenario::background_ambiguous_step,
         );
         let into_step_ev = compose(
             event::Scenario::step_started,
             event::Scenario::step_passed,
             event::Scenario::step_skipped,
             event::Scenario::step_failed,
+            event::Scenario::ambiguous_step,
         );
 
         self.send(Cucumber::scenario(f.clone(), r.clone(), s.clone(), Started));
@@ -860,11 +890,11 @@ where
     /// - Emits all [`Step`] events.
     ///
     /// [`Step`]: gherkin::Step
-    async fn run_step<St, Ps, Sk, F>(
+    async fn run_step<St, Ps, Sk, F, A>(
         &self,
         mut world: Option<W>,
         step: Arc<gherkin::Step>,
-        (started, passed, skipped, failed): (St, Ps, Sk, F),
+        (started, passed, skipped, failed, ambiguous): (St, Ps, Sk, F, A),
     ) -> Result<W, Option<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
@@ -876,6 +906,10 @@ where
             Option<Arc<W>>,
             Info,
         ) -> event::Cucumber<W>,
+        A: FnOnce(
+            Arc<gherkin::Step>,
+            step::AmbiguousMatchError,
+        ) -> event::Cucumber<W>,
     {
         self.send(started(step.clone()));
 
@@ -886,13 +920,17 @@ where
                 };
                 world = match AssertUnwindSafe(w_fut).catch_unwind().await {
                     Ok(w) => Some(w),
-                    Err(e) => return Err((e, None)),
+                    Err(e) => return Err(Some((e, None))),
                 };
             }
 
             let (step_fn, captures, ctx) = match self.collection.find(&step) {
-                Some(step_fn) => step_fn,
-                None => return Ok(None),
+                Ok(Some(step_fn)) => step_fn,
+                Ok(None) => return Ok(None),
+                Err(e) => {
+                    self.send(ambiguous(step.clone(), e));
+                    return Err(None);
+                }
             };
 
             match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
@@ -900,7 +938,7 @@ where
                 .await
             {
                 Ok(()) => Ok(Some(captures)),
-                Err(e) => Err((e, Some(captures))),
+                Err(e) => Err(Some((e, Some(captures)))),
             }
         };
 
@@ -913,7 +951,7 @@ where
                 self.send(skipped(step));
                 Err(world)
             }
-            Err((err, captures)) => {
+            Err(Some((err, captures))) => {
                 self.send(failed(
                     step,
                     captures,
@@ -922,6 +960,7 @@ where
                 ));
                 Err(None)
             }
+            Err(None) => Err(None),
         }
     }
 

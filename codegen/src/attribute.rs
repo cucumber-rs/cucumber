@@ -101,6 +101,7 @@ impl Step {
     }
 
     /// Expands generated code of this [`Step`] definition.
+    #[allow(clippy::too_many_lines)]
     fn expand(self) -> syn::Result<TokenStream> {
         let is_regex = matches!(self.attr_arg, AttributeArgument::Regex(_));
 
@@ -206,6 +207,11 @@ impl Step {
                         ::cucumber::codegen::Regex::new(#step_matcher)
                             .unwrap(),
                         #step_caller,
+                        Some(::cucumber::step::Location {
+                            path: ::std::convert::From::from(::std::file!()),
+                            line: ::std::line!(),
+                            column: ::std::column!(),
+                        }),
                     )
                 }
             );
