@@ -739,14 +739,12 @@ fn coerce_error(err: &Info) -> String {
 
 /// Formats the given [`Debug`] implementor, then adds `indent`s to each line to
 /// prettify the output.
-fn format_debug_with_indent<'w, O, W: 'w + Debug>(
-    world: O,
-    indent: usize,
-) -> String
+fn format_debug_with_indent<'d, D, I>(debug: I, indent: usize) -> String
 where
-    O: Into<Option<&'w W>>,
+    D: Debug + 'd,
+    I: Into<Option<&'d D>>,
 {
-    let world = world
+    let world = debug
         .into()
         .map(|world| format!("{:#?}", world))
         .unwrap_or_default()

@@ -186,7 +186,7 @@ impl<World> Collection<World> {
                 return Err(AmbiguousMatchError {
                     possible_matches: matches
                         .into_iter()
-                        .map(|(re, pos, ..)| (re.clone(), pos.clone()))
+                        .map(|(re, loc, ..)| (re.clone(), loc.clone()))
                         .collect(),
                 })
             }
