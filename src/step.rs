@@ -37,9 +37,8 @@ pub type FindValue<'me, World> =
 
 /// Collection of [`Step`]s.
 ///
-/// Every [`Step`] should be matched by exactly 1 [`Regex`]. Otherwise there are
-/// no guarantees that [`Step`]s will be matched deterministically from run to
-/// run.
+/// Every [`Step`] must be matched by exactly 1 [`Regex`]. Otherwise
+/// [`AmbiguousMatchError`] will be returned.
 pub struct Collection<World> {
     given: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
     when: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
