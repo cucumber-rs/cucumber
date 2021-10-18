@@ -337,13 +337,11 @@ impl Styles {
                 )
             })
             .unwrap_or_default();
-
         let hook_errors = (summary.failed_hooks > 0)
             .then(|| {
                 self.err(self.maybe_plural("hook error", summary.failed_hooks))
             })
             .unwrap_or_default();
-
         let comma = (!parsing_errors.is_empty() && !hook_errors.is_empty())
             .then(|| self.err(","))
             .unwrap_or_default();

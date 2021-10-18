@@ -61,34 +61,34 @@ fn generate_step_structs(
                 #[doc(hidden)]
                 #world_vis struct #ty {
                     #[doc(hidden)]
+                    pub loc: ::std::option::Option<::cucumber::step::Location>,
+
+                    #[doc(hidden)]
                     pub regex: ::cucumber::codegen::Regex,
 
                     #[doc(hidden)]
                     pub func: ::cucumber::Step<#world>,
-
-                    #[doc(hidden)]
-                    pub loc: ::std::option::Option<::cucumber::step::Location>,
                 }
 
                 #[automatically_derived]
                 impl ::cucumber::codegen::StepConstructor<#world> for #ty {
                     fn new (
+                        loc: ::std::option::Option<::cucumber::step::Location>,
                         regex: ::cucumber::codegen::Regex,
                         func: ::cucumber::Step<#world>,
-                        loc: ::std::option::Option<::cucumber::step::Location>,
                     ) -> Self {
-                        Self { regex, func, loc }
+                        Self { loc, regex, func }
                     }
 
                     fn inner(&self) -> (
+                        ::std::option::Option<::cucumber::step::Location>,
                         ::cucumber::codegen::Regex,
                         ::cucumber::Step<#world>,
-                        ::std::option::Option<::cucumber::step::Location>,
                     ) {
                         (
+                            self.loc.clone(),
                             self.regex.clone(),
                             self.func.clone(),
-                            self.loc.clone(),
                         )
                     }
                 }

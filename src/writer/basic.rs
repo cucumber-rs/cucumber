@@ -241,7 +241,7 @@ impl Basic {
             sc.position.line,
             sc.position.col,
             coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
@@ -437,7 +437,7 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -448,7 +448,10 @@ impl Basic {
         .unwrap();
     }
 
-    /// TODO
+    /// Outputs [ambiguous] [`Step`] to STDOUT.
+    ///
+    /// [ambiguous]: event::Step::Ambiguous
+    /// [`Step`]: [`gherkin::Step`]
     fn step_ambiguous_match(
         &mut self,
         feat: &gherkin::Feature,
@@ -460,7 +463,7 @@ impl Basic {
         self.write_line(&self.styles.err(format!(
             "{indent}\u{2718}  {} {}{}\n\
              {indent}   Step match is ambiguous: {}:{}:{}\n\
-             {indent}   Possible matches: {:?}",
+             {indent}   Possible matches: {}",
             step.keyword,
             step.value,
             step.table
@@ -473,10 +476,10 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            err.possible_matches
+            format_debug_with_indent(&err.possible_matches
                 .iter()
                 .map(|(re, loc)| (re.as_str(), loc))
-                .collect::<Vec<_>>(),
+                .collect::<Vec<_>>(), self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         )))
         .unwrap();
@@ -503,8 +506,8 @@ impl Basic {
             Step::Started => {
                 self.bg_step_started(bg);
             }
-            Step::AmbiguousMatch(_e) => {
-                // TODO
+            Step::AmbiguousMatch(e) => {
+                self.bg_step_ambiguous_match(feat, bg, e);
             }
             Step::Passed(captures) => {
                 self.bg_step_passed(bg, captures);
@@ -665,7 +668,7 @@ impl Basic {
             step.position.line,
             step.position.col,
             coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -673,6 +676,44 @@ impl Basic {
             "{} {}{}",
             step_keyword, step_value, diagnostics,
         ))
+        .unwrap();
+    }
+
+    /// Outputs [ambiguous] [`Background`] [`Step`] to STDOUT.
+    ///
+    /// [ambiguous]: event::Step::Ambiguous
+    /// [`Background`]: [`gherkin::Background`]
+    /// [`Step`]: [`gherkin::Step`]
+    fn bg_step_ambiguous_match(
+        &mut self,
+        feat: &gherkin::Feature,
+        step: &gherkin::Step,
+        err: &AmbiguousMatchError,
+    ) {
+        self.clear_last_lines_if_term_present();
+
+        self.write_line(&self.styles.err(format!(
+            "{indent}\u{2718}  {} {}{}\n\
+             {indent}   Background Step match is ambiguous: {}:{}:{}\n\
+             {indent}   Possible matches: {}",
+            step.keyword,
+            step.value,
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            format_debug_with_indent(&err.possible_matches
+                .iter()
+                .map(|(re, loc)| (re.as_str(), loc))
+                .collect::<Vec<_>>(), self.indent.saturating_sub(3) + 3),
+            indent = " ".repeat(self.indent.saturating_sub(3))
+        )))
         .unwrap();
     }
 }
@@ -691,10 +732,17 @@ fn coerce_error(err: &Info) -> String {
     }
 }
 
-/// Formats the given [`World`] using [`Debug`], then adds `indent`s to each
-/// line to prettify the output.
-fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
+/// Formats the given [`Debug`] implementor, then adds `indent`s to each line to
+/// prettify the output.
+fn format_debug_with_indent<'w, O, W: 'w + Debug>(
+    world: O,
+    indent: usize,
+) -> String
+where
+    O: Into<Option<&'w W>>,
+{
     let world = world
+        .into()
         .map(|world| format!("{:#?}", world))
         .unwrap_or_default()
         .lines()

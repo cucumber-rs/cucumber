@@ -41,18 +41,18 @@ where
         let mut out = step::Collection::new();
 
         for given in Self::cucumber_given() {
-            let (regex, fun, loc) = given.inner();
-            out = out.given(regex, fun, loc);
+            let (loc, regex, fun) = given.inner();
+            out = out.given(loc, regex, fun);
         }
 
         for when in Self::cucumber_when() {
-            let (regex, fun, loc) = when.inner();
-            out = out.when(regex, fun, loc);
+            let (loc, regex, fun) = when.inner();
+            out = out.when(loc, regex, fun);
         }
 
         for then in Self::cucumber_then() {
-            let (regex, fun, loc) = then.inner();
-            out = out.then(regex, fun, loc);
+            let (loc, regex, fun) = then.inner();
+            out = out.then(loc, regex, fun);
         }
 
         out
@@ -144,11 +144,11 @@ where
     /// [`given`]: crate::given
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     fn new_given(
+        loc: Option<step::Location>,
         regex: Regex,
         fun: Step<Self>,
-        loc: Option<step::Location>,
     ) -> G {
-        G::new(regex, fun, loc)
+        G::new(loc, regex, fun)
     }
 
     /// Returns an [`Iterator`] over items with [`when`] attribute.
@@ -164,11 +164,11 @@ where
     /// [`when`]: crate::when
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
     fn new_when(
+        loc: Option<step::Location>,
         regex: Regex,
         fun: Step<Self>,
-        loc: Option<step::Location>,
     ) -> W {
-        W::new(regex, fun, loc)
+        W::new(loc, regex, fun)
     }
 
     /// Returns an [`Iterator`] over items with [`then`] attribute.
@@ -184,11 +184,11 @@ where
     /// [`then`]: crate::then
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     fn new_then(
+        loc: Option<step::Location>,
         regex: Regex,
         fun: Step<Self>,
-        loc: Option<step::Location>,
     ) -> T {
-        T::new(regex, fun, loc)
+        T::new(loc, regex, fun)
     }
 }
 
@@ -202,8 +202,8 @@ where
 pub trait StepConstructor<W> {
     /// Creates a new [`Step`] with the corresponding [`Regex`].
     #[must_use]
-    fn new(_: Regex, _: Step<W>, _: Option<step::Location>) -> Self;
+    fn new(_: Option<step::Location>, _: Regex, _: Step<W>) -> Self;
 
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
-    fn inner(&self) -> (Regex, Step<W>, Option<step::Location>);
+    fn inner(&self) -> (Option<step::Location>, Regex, Step<W>);
 }

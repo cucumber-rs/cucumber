@@ -31,7 +31,7 @@ use regex::Regex;
 pub type Step<World> =
     for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
-/// TODO
+/// Alias for return value of [`Collection::find()`].
 pub type FindValue<'me, World> =
     (&'me Step<World>, regex::CaptureLocations, Context);
 
@@ -46,16 +46,16 @@ pub struct Collection<World> {
     then: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
 }
 
-/// TODO
+/// Location of a [`Step`] [`fn`]. Automatically filled by proc macro.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Location {
-    /// TODO
+    /// Path to the file, where [`Step`] [`fn`] is located.
     pub path: PathBuf,
 
-    /// TODO
+    /// Line of the file, where [`Step`] [`fn`] is located.
     pub line: u32,
 
-    /// TODO
+    /// Column of the file, where [`Step`] [`fn`] is located.
     pub column: u32,
 }
 
@@ -113,9 +113,9 @@ impl<World> Collection<World> {
     #[must_use]
     pub fn given(
         mut self,
+        loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<Location>,
     ) -> Self {
         let _ = self.given.insert((regex.into(), loc), step);
         self
@@ -127,9 +127,9 @@ impl<World> Collection<World> {
     #[must_use]
     pub fn when(
         mut self,
+        loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<Location>,
     ) -> Self {
         let _ = self.when.insert((regex.into(), loc), step);
         self
@@ -141,9 +141,9 @@ impl<World> Collection<World> {
     #[must_use]
     pub fn then(
         mut self,
+        loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<Location>,
     ) -> Self {
         let _ = self.then.insert((regex.into(), loc), step);
         self
@@ -153,6 +153,8 @@ impl<World> Collection<World> {
     /// if any.
     ///
     /// # Errors
+    ///
+    /// If [`gherkin::Step`] is matched by multiple [`Regex`]es.
     pub fn find(
         &self,
         step: &gherkin::Step,
@@ -211,10 +213,11 @@ impl<World> Collection<World> {
     }
 }
 
-/// TODO
+/// Error of a [`gherkin::Step`] being matched by multiple [`Step`] [`Regex`]es
+/// inside a [`Collection`].
 #[derive(Clone, Debug)]
 pub struct AmbiguousMatchError {
-    /// TODO
+    /// Possible [`Regex`]es that matched [`gherkin::Step`].
     pub possible_matches: Vec<(HashableRegex, Option<Location>)>,
 }
 
@@ -232,7 +235,7 @@ pub struct Context {
     pub matches: Vec<String>,
 }
 
-/// [`Regex`] wrapper to store inside a [`LinkedHashMap`].
+/// [`Regex`] wrapper that implements [`Eq`], [`Ord`] and [`Hash`].
 #[derive(Clone, Debug, Deref, DerefMut)]
 pub struct HashableRegex(Regex);
 

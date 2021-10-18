@@ -190,7 +190,10 @@ pub enum Step<World> {
     /// [`Step`]: gherkin::Step
     Started,
 
-    /// TODO
+    /// [`Step`] matched by multiple [`Regex`]es.
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
     AmbiguousMatch(step::AmbiguousMatchError),
 
     /// [`Step`] being skipped.

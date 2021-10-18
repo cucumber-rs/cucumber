@@ -321,11 +321,11 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     #[must_use]
     pub fn given(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.steps = mem::take(&mut self.steps).given(regex, step, loc);
+        self.steps = mem::take(&mut self.steps).given(loc, regex, step);
         self
     }
 
@@ -335,11 +335,11 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     #[must_use]
     pub fn when(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.steps = mem::take(&mut self.steps).when(regex, step, loc);
+        self.steps = mem::take(&mut self.steps).when(loc, regex, step);
         self
     }
 
@@ -349,11 +349,11 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     #[must_use]
     pub fn then(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<World>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.steps = mem::take(&mut self.steps).then(regex, step, loc);
+        self.steps = mem::take(&mut self.steps).then(loc, regex, step);
         self
     }
 }
@@ -625,50 +625,40 @@ where
     /// [`Scenario`]: gherkin::Scenario
     async fn run_scenario(
         &self,
-        f: Arc<gherkin::Feature>,
-        r: Option<Arc<gherkin::Rule>>,
-        s: Arc<gherkin::Scenario>,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
     ) {
         use event::{
             Cucumber,
             Scenario::{Finished, Started},
         };
 
+        let (f, r, s) = (&feature, &rule, &scenario);
         let ok = |e: fn(Arc<gherkin::Step>) -> event::Scenario<W>| {
-            let (f, r, s) = (&f, &r, &s);
             move |step| {
                 Cucumber::scenario(f.clone(), r.clone(), s.clone(), e(step))
             }
         };
         let ok_capt = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
-            let (f, r, s) = (&f, &r, &s);
             move |st, cap| {
                 Cucumber::scenario(f.clone(), r.clone(), s.clone(), e(st, cap))
             }
         };
-        let panic_err =
-            |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
-                let (f, r, s) = (&f, &r, &s);
-                move |step, captures, w, info| {
-                    let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                    Cucumber::scenario(f, r, s, e(step, captures, w, info))
-                }
-            };
+        let panic_err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
+            move |step, captures, w, info| {
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                Cucumber::scenario(f, r, s, e(step, captures, w, info))
+            }
+        };
         let amb_err = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
-            let (f, r, s) = (&f, &r, &s);
             move |st, err| {
                 Cucumber::scenario(f.clone(), r.clone(), s.clone(), e(st, err))
             }
         };
 
-        let compose = |started, passed, skipped, failed, amb| {
-            (
-                ok(started),
-                ok_capt(passed),
-                ok(skipped),
-                panic_err(failed),
-                amb_err(amb),
-            )
+        let compose = |st, ps, sk, fl, amb| {
+            (ok(st), ok_capt(ps), ok(sk), panic_err(fl), amb_err(amb))
         };
         let into_bg_step_ev = compose(
             event::Scenario::background_step_started,
@@ -685,48 +675,42 @@ where
             event::Scenario::ambiguous_step,
         );
 
+        let flatten_bg = |bg: Option<&gherkin::Background>| {
+            bg.map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+        };
+
         self.send(Cucumber::scenario(f.clone(), r.clone(), s.clone(), Started));
 
         let res = async {
             let before_hook = self
-                .run_before_hook(&f, r.as_ref(), &s)
+                .run_before_hook(f, r.as_ref(), s)
                 .await
                 .map_err(|_| None)?;
 
-            let feature_background = f
-                .background
-                .as_ref()
-                .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                .into_iter()
-                .flatten();
-
-            let feature_background = stream::iter(feature_background)
+            let feature_bg = stream::iter(flatten_bg(f.background.as_ref()))
                 .map(Ok)
                 .try_fold(before_hook, |world, bg_step| {
                     self.run_step(world, bg_step, into_bg_step_ev).map_ok(Some)
                 })
                 .await?;
 
-            let rule_background = r
+            let rule_bg = rule
                 .as_ref()
-                .map(|rule| {
-                    rule.background
-                        .as_ref()
-                        .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                        .into_iter()
-                        .flatten()
-                })
+                .map(|rule| flatten_bg(rule.background.as_ref()))
                 .into_iter()
                 .flatten();
 
-            let rule_background = stream::iter(rule_background)
+            let rule_background = stream::iter(rule_bg)
                 .map(Ok)
-                .try_fold(feature_background, |world, bg_step| {
+                .try_fold(feature_bg, |world, bg_step| {
                     self.run_step(world, bg_step, into_bg_step_ev).map_ok(Some)
                 })
                 .await?;
 
-            stream::iter(s.steps.iter().map(|s| Arc::new(s.clone())))
+            stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
                 .map(Ok)
                 .try_fold(rule_background, |world, step| {
                     self.run_step(world, step, into_step_ev).map_ok(Some)
@@ -738,7 +722,7 @@ where
             Ok(world) | Err(world) => world,
         };
 
-        drop(self.run_after_hook(world, &f, r.as_ref(), &s).await);
+        drop(self.run_after_hook(world, f, r.as_ref(), s).await);
 
         self.send(Cucumber::scenario(
             f.clone(),
@@ -747,13 +731,13 @@ where
             Finished,
         ));
 
-        if let Some(rule) = r {
+        if let Some(rule) = rule {
             if let Some(fin) = self.rule_scenario_finished(f.clone(), rule) {
                 self.send(fin);
             }
         }
 
-        if let Some(fin) = self.feature_scenario_finished(f) {
+        if let Some(fin) = self.feature_scenario_finished(feature) {
             self.send(fin);
         }
     }

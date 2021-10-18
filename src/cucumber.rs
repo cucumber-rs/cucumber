@@ -969,11 +969,11 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     #[must_use]
     pub fn given(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<W>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.runner = self.runner.given(regex, step, loc);
+        self.runner = self.runner.given(loc, regex, step);
         self
     }
 
@@ -983,11 +983,11 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     #[must_use]
     pub fn when(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<W>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.runner = self.runner.when(regex, step, loc);
+        self.runner = self.runner.when(loc, regex, step);
         self
     }
 
@@ -997,11 +997,11 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     #[must_use]
     pub fn then(
         mut self,
+        loc: Option<step::Location>,
         regex: Regex,
         step: Step<W>,
-        loc: Option<step::Location>,
     ) -> Self {
-        self.runner = self.runner.then(regex, step, loc);
+        self.runner = self.runner.then(loc, regex, step);
         self
     }
 }
