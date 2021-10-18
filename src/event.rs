@@ -190,7 +190,7 @@ pub enum Step<World> {
     /// [`Step`]: gherkin::Step
     Started,
 
-    /// [`Step`] matched by multiple [`Regex`]es.
+    /// [`Step`] matches multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex
     /// [`Step`]: gherkin::Step
@@ -366,8 +366,7 @@ impl<World> Scenario<World> {
         Self::Step(step, Step::Started)
     }
 
-    /// Constructs an event of a [`Step`] being matched to more than 1
-    /// [`Regex`].
+    /// Constructs an event of a [`Step`] matching multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex
     /// [`Step`]: gherkin::Step
@@ -379,8 +378,8 @@ impl<World> Scenario<World> {
         Self::Step(step, Step::AmbiguousMatch(err))
     }
 
-    /// Constructs an event of a [`Background`] [`Step`] being matched to more
-    /// than 1 [`Regex`].
+    /// Constructs an event of a [`Background`] [`Step`] matching multiple
+    /// [`Regex`]es.
     ///
     /// [`Background`]: gherkin::Background
     /// [`Regex`]: regex::Regex

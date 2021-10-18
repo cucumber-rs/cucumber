@@ -108,7 +108,7 @@ impl Step {
         let world = parse_world_from_args(&self.func.sig)?;
         let constructor_method = self.constructor_method();
         let (func_args, addon_parsing) =
-            self.fn_arguments_and_addition_parsing()?;
+            self.fn_arguments_and_additional_parsing()?;
 
         let step_matcher = self.attr_arg.regex_literal().value();
         let caller_name =
@@ -159,10 +159,10 @@ impl Step {
         })
     }
 
-    /// Generates code that prepares function's arguments based on
-    /// [`AttributeArgument`] and additional parsing if it's
+    /// Generates code that prepares function's arguments basing on
+    /// [`AttributeArgument`] and additional parsing if it's an
     /// [`AttributeArgument::Regex`].
-    fn fn_arguments_and_addition_parsing(
+    fn fn_arguments_and_additional_parsing(
         &self,
     ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
         let is_regex = matches!(self.attr_arg, AttributeArgument::Regex(_));

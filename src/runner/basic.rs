@@ -653,12 +653,8 @@ where
         let ambiguous_err = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |st, err| {
-                event::Cucumber::scenario(
-                    f.clone(),
-                    r.clone(),
-                    s.clone(),
-                    e(st, err),
-                )
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                event::Cucumber::scenario(f, r, s, e(st, err))
             }
         };
 

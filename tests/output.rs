@@ -31,16 +31,6 @@ impl cucumber::World for World {
 #[derive(Default)]
 struct DebugWriter(String);
 
-// This regex exists to make tests work on Windows, Linux and macOS by
-// replacing `Span { .. }` and `path: ..`.
-static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
-        | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
-    )
-    .unwrap()
-});
-
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     async fn handle_event(
@@ -57,6 +47,16 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         self.0.push_str(without_span.as_ref());
     }
 }
+
+/// [`Regex`] to unify spans and file paths on Windows, Linux and macOS for
+/// tests.
+static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+         | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
+    )
+    .unwrap()
+});
 
 #[cfg(test)]
 mod spec {
