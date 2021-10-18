@@ -57,6 +57,34 @@ impl Stats {
     }
 }
 
+/// Alias for [`fn`] used to determine should [`Skipped`] test considered as
+/// [`Failed`] or not.
+///
+/// [`Failed`]: event::Step::Failed
+/// [`Skipped`]: event::Step::Skipped
+pub type SkipFn =
+    fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
+
+/// Indicator of a [`Failed`] or [`Skipped`] [`Scenario`].
+///
+/// [`Failed`]: event::Step::Failed
+/// [`Scenario`]: gherkin::Scenario
+/// [`Skipped`]: event::Step::Skipped
+#[derive(Clone, Copy, Debug)]
+enum Indicator {
+    /// [`Failed`] [`Scenario`].
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    Failed,
+
+    /// [`Skipped`] [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    Skipped,
+}
+
 /// Wrapper for a [`Writer`] for outputting an execution summary (number of
 /// executed features, scenarios, steps and parsing errors).
 ///
@@ -104,35 +132,7 @@ pub struct Summarized<Writer> {
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    handled_scenarios: HashMap<Arc<gherkin::Scenario>, FailedOrSkipped>,
-}
-
-/// Alias for [`fn`] used to determine should [`Skipped`] test considered as
-/// [`Failed`] or not.
-///
-/// [`Failed`]: event::Step::Failed
-/// [`Skipped`]: event::Step::Skipped
-pub type SkipFn =
-    fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
-
-/// [`Failed`] or [`Skipped`] [`Scenario`]s.
-///
-/// [`Failed`]: event::Step::Failed
-/// [`Scenario`]: gherkin::Scenario
-/// [`Skipped`]: event::Step::Skipped
-#[derive(Clone, Copy, Debug)]
-enum FailedOrSkipped {
-    /// [`Failed`] [`Scenario`].
-    ///
-    /// [`Failed`]: event::Step::Failed
-    /// [`Scenario`]: gherkin::Scenario
-    Failed,
-
-    /// [`Skipped`] [`Scenario`].
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: event::Step::Skipped
-    Skipped,
+    handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
 }
 
 #[async_trait(?Send)]
@@ -238,7 +238,7 @@ impl<Writer> Summarized<Writer> {
     ) {
         use self::{
             event::Step,
-            FailedOrSkipped::{Failed, Skipped},
+            Indicator::{Failed, Skipped},
         };
 
         match ev {
@@ -279,8 +279,8 @@ impl<Writer> Summarized<Writer> {
                 // - If Scenario executed no Steps and then Hook failed, we
                 //   track Scenario as failed.
                 match self.handled_scenarios.get(scenario) {
-                    Some(FailedOrSkipped::Failed) => {}
-                    Some(FailedOrSkipped::Skipped) => {
+                    Some(Indicator::Failed) => {}
+                    Some(Indicator::Skipped) => {
                         self.scenarios.skipped -= 1;
                         self.scenarios.failed += 1;
                     }
@@ -288,7 +288,7 @@ impl<Writer> Summarized<Writer> {
                         self.scenarios.failed += 1;
                         let _ = self
                             .handled_scenarios
-                            .insert(scenario.clone(), FailedOrSkipped::Failed);
+                            .insert(scenario.clone(), Indicator::Failed);
                     }
                 }
                 self.failed_hooks += 1;
@@ -345,11 +345,11 @@ impl Styles {
             .unwrap_or_default();
 
         let comma = (!parsing_errors.is_empty() && !hook_errors.is_empty())
-            .then(|| self.err(","))
+            .then(|| self.err(", "))
             .unwrap_or_default();
 
         format!(
-            "{}\n{}\n{}{}{}\n{}{}\n{}{} {}",
+            "{}\n{}\n{}{}{}\n{}{}\n{}{}{}",
             self.bold(self.header("[Summary]")),
             features,
             rules,

@@ -26,7 +26,7 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error, 0 hook errors");
+    assert_eq!(err, "2 steps failed, 1 parsing error");
 }
 
 #[given(regex = r"(\d+) secs?")]
