@@ -643,20 +643,14 @@ where
                 event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
-        let panic_err =
-            |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
-                let (f, r, s) = (&feature, &rule, &scenario);
-                move |step, captures, w, info| {
-                    let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                    event::Cucumber::scenario(
-                        f,
-                        r,
-                        s,
-                        e(step, captures, w, info),
-                    )
-                }
-            };
-        let amb_err = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
+        let panic_err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
+            let (f, r, s) = (&feature, &rule, &scenario);
+            move |step, captures, w, info| {
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
+            }
+        };
+        let ambiguous_err = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |st, err| {
                 event::Cucumber::scenario(
@@ -668,8 +662,14 @@ where
             }
         };
 
-        let compose = |st, ps, sk, fl, amb| {
-            (ok(st), ok_capt(ps), ok(sk), panic_err(fl), amb_err(amb))
+        let compose = |started, passed, skipped, failed, ambiguous| {
+            (
+                ok(started),
+                ok_capt(passed),
+                ok(skipped),
+                panic_err(failed),
+                ambiguous_err(ambiguous),
+            )
         };
         let into_bg_step_ev = compose(
             event::Scenario::background_step_started,
