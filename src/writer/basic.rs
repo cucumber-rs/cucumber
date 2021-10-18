@@ -130,7 +130,7 @@ impl Basic {
     /// Outputs [started] [`Feature`] to STDOUT.
     ///
     /// [started]: event::Feature::Started
-    /// [`Feature`]: [`gherkin::Feature`]
+    /// [`Feature`]: gherkin::Feature
     fn feature_started(&mut self, feature: &gherkin::Feature) {
         self.lines_to_clear = 1;
         self.write_line(
@@ -170,7 +170,7 @@ impl Basic {
     /// Outputs [started] [`Rule`] to STDOUT.
     ///
     /// [started]: event::Rule::Started
-    /// [`Rule`]: [`gherkin::Rule`]
+    /// [`Rule`]: gherkin::Rule
     fn rule_started(&mut self, rule: &gherkin::Rule) {
         self.lines_to_clear = 1;
         self.indent += 2;
@@ -188,6 +188,7 @@ impl Basic {
     /// [background]: event::Background
     /// [started]: event::Scenario::Started
     /// [step]: event::Step
+    /// [`Scenario`]: gherkin::Scenario
     fn scenario<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -220,18 +221,22 @@ impl Basic {
         }
     }
 
+    /// Outputs [failed] [`Scenario`]'s hook to STDOUT.
+    ///
+    /// [failed]: event::Hook::Failed
+    /// [`Scenario`]: gherkin::Scenario
     fn hook_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
         sc: &gherkin::Scenario,
-        which: event::HookTy,
+        which: event::HookType,
         world: Option<&W>,
         info: &Info,
     ) {
         self.clear_last_lines_if_term_present();
 
         self.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  {} Scenario hook failed {}:{}:{}\n\
+            "{indent}\u{2718}  Scenario's {} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             which,
             feat.path
@@ -250,7 +255,7 @@ impl Basic {
     /// Outputs [started] [`Scenario`] to STDOUT.
     ///
     /// [started]: event::Scenario::Started
-    /// [`Scenario`]: [`gherkin::Scenario`]
+    /// [`Scenario`]: gherkin::Scenario
     fn scenario_started(&mut self, scenario: &gherkin::Scenario) {
         self.lines_to_clear = 1;
         self.indent += 2;
@@ -269,7 +274,7 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Step`]: gherkin::Step
     fn step<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -310,7 +315,7 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Step`]: gherkin::Step
     fn step_started(&mut self, step: &gherkin::Step) {
         self.indent += 4;
         if self.styles.is_present {
@@ -332,7 +337,7 @@ impl Basic {
     /// Outputs [passed] [`Step`] to STDOUT.
     ///
     /// [passed]: event::Step::Passed
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Step`]: gherkin::Step
     fn step_passed(
         &mut self,
         step: &gherkin::Step,
@@ -367,7 +372,7 @@ impl Basic {
     /// Outputs [skipped] [`Step`] to STDOUT.
     ///
     /// [skipped]: event::Step::Skipped
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Step`]: gherkin::Step
     fn step_skipped(&mut self, feat: &gherkin::Feature, step: &gherkin::Step) {
         self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
@@ -393,7 +398,7 @@ impl Basic {
     /// Outputs [failed] [`Step`] to STDOUT.
     ///
     /// [failed]: event::Step::Failed
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Step`]: gherkin::Step
     fn step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -492,8 +497,8 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
     fn background<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -533,8 +538,8 @@ impl Basic {
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
     fn bg_step_started(&mut self, step: &gherkin::Step) {
         self.indent += 4;
         if self.styles.is_present {
@@ -556,8 +561,8 @@ impl Basic {
     /// Outputs [passed] [`Background`] [`Step`] to STDOUT.
     ///
     /// [passed]: event::Step::Passed
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
     fn bg_step_passed(
         &mut self,
         step: &gherkin::Step,
@@ -592,8 +597,8 @@ impl Basic {
     /// Outputs [skipped] [`Background`] [`Step`] to STDOUT.
     ///
     /// [skipped]: event::Step::Skipped
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
     fn bg_step_skipped(
         &mut self,
         feat: &gherkin::Feature,
@@ -623,8 +628,8 @@ impl Basic {
     /// Outputs [failed] [`Background`] [`Step`] to STDOUT.
     ///
     /// [failed]: event::Step::Failed
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
     fn bg_step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,

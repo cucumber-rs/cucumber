@@ -19,7 +19,7 @@ use regex::Regex;
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(Debug, clap::Parser)]
+#[derive(clap::Parser, Debug)]
 pub struct Opts {
     /// Regex to select scenarios from.
     #[clap(short = 'e', long = "expression", name = "regex")]

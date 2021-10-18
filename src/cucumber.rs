@@ -875,8 +875,8 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         }
     }
 
-    /// Sets hook, executed on every [`Scenario`] before any [`Step`]s,
-    /// including [`Background`] ones.
+    /// Sets a hook, executed on each [`Scenario`] before running all its
+    /// [`Step`]s, including [`Background`] ones.
     ///
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
@@ -909,15 +909,15 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         }
     }
 
-    /// Sets hook, executed on every [`Scenario`] after all [`Step`]s even after
-    /// [`Skipped`] of [`Failed`] [`Step`]s.
+    /// Sets a hook, executed on each [`Scenario`] after running all its
+    /// [`Step`]s, even after [`Skipped`] of [`Failed`] [`Step`]s.
     ///
-    /// Last `World` argument is supplied to the function, in case it
-    /// was initialized before by [`before`] hook or any non-failed [`Step`].
-    /// In case last [`Scenario`]'s [`Step`] failed,  we want to return event
-    /// with exact `World` state. Also we don't want to impose additional
-    /// [`Clone`] bounds on `World`, so the only option left is to pass [`None`]
-    /// to the function.
+    /// Last `World` argument is supplied to the function, in case it was
+    /// initialized before by running [`before`] hook or any non-failed
+    /// [`Step`]. In case the last [`Scenario`]'s [`Step`] failed, we want to
+    /// return event with an exact `World` state. Also, we don't want to impose
+    /// additional [`Clone`] bounds on `World`, so the only option left is to
+    /// pass [`None`] to the function.
     ///
     ///
     /// [`before`]: Self::before()
@@ -1107,18 +1107,36 @@ where
     {
         let writer = self.filter_run(input, filter).await;
         if writer.execution_has_failed() {
+            let mut msg = Vec::with_capacity(3);
+
             let failed_steps = writer.failed_steps();
+            if failed_steps > 0 {
+                msg.push(format!(
+                    "{} step{} failed",
+                    failed_steps,
+                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
             let parsing_errors = writer.parsing_errors();
+            if parsing_errors > 0 {
+                msg.push(format!(
+                    "{} parsing error{}",
+                    parsing_errors,
+                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
             let hook_errors = writer.hook_errors();
-            panic!(
-                "{} step{} failed, {} parsing error{}, {} hook error{}",
-                failed_steps,
-                (failed_steps != 1).then(|| "s").unwrap_or_default(),
-                parsing_errors,
-                (parsing_errors != 1).then(|| "s").unwrap_or_default(),
-                hook_errors,
-                (hook_errors != 1).then(|| "s").unwrap_or_default(),
-            );
+            if hook_errors > 0 {
+                msg.push(format!(
+                    "{} hook error{}",
+                    hook_errors,
+                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
+            panic!("{}", msg.join(", "));
         }
     }
 }

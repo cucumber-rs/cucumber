@@ -233,29 +233,35 @@ impl<World> Clone for Step<World> {
     }
 }
 
-/// Type of the hook, executed before or after all [`Scenario`]'s [`Step`]s.
+/// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
 #[derive(Clone, Copy, Debug)]
-pub enum HookTy {
-    /// Hook, executed on every [`Scenario`] before any [`Step`]s.
+pub enum HookType {
+    /// Executing on each [`Scenario`] before running all [`Step`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     Before,
 
-    /// Hook, executed on every [`Scenario`] after all [`Step`]s.
+    /// Executing on each [`Scenario`] after running all [`Step`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     After,
 }
 
-/// [`Before`] or [`After`] hook event.
+impl fmt::Display for HookType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Event of running [`Before`] or [`After`] hook.
 ///
-/// [`After`]: HookTy::After
-/// [`Before`]: HookTy::Before
+/// [`After`]: HookType::After
+/// [`Before`]: HookType::Before
 #[derive(Debug)]
 pub enum Hook<World> {
     /// Hook execution being started.
@@ -268,24 +274,14 @@ pub enum Hook<World> {
     Failed(Option<Arc<World>>, Info),
 }
 
-impl fmt::Display for HookTy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            HookTy::Before => "Before",
-            HookTy::After => "After",
-        };
-        write!(f, "{}", s)
-    }
-}
-
 // Manual implementation is required to omit the redundant `World: Clone` trait
 // bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for Hook<World> {
     fn clone(&self) -> Self {
         match self {
-            Hook::Started => Hook::Started,
-            Hook::Passed => Hook::Passed,
-            Hook::Failed(w, i) => Hook::Failed(w.clone(), i.clone()),
+            Self::Started => Self::Started,
+            Self::Passed => Self::Passed,
+            Self::Failed(w, i) => Self::Failed(w.clone(), i.clone()),
         }
     }
 }
@@ -301,7 +297,7 @@ pub enum Scenario<World> {
     Started,
 
     /// [`Hook`] event.
-    Hook(HookTy, Hook<World>),
+    Hook(HookType, Hook<World>),
 
     /// [`Background`] [`Step`] event.
     ///
@@ -338,7 +334,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn hook_started(which: HookTy) -> Self {
+    pub fn hook_started(which: HookType) -> Self {
         Self::Hook(which, Hook::Started)
     }
 
@@ -346,7 +342,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn hook_passed(which: HookTy) -> Self {
+    pub fn hook_passed(which: HookType) -> Self {
         Self::Hook(which, Hook::Passed)
     }
 
@@ -355,7 +351,7 @@ impl<World> Scenario<World> {
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn hook_failed(
-        which: HookTy,
+        which: HookType,
         world: Option<Arc<World>>,
         info: Info,
     ) -> Self {
