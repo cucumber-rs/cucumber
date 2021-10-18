@@ -8,6 +8,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![doc(
+    html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
+    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
+)]
 #![doc = include_str!("../README.md")]
 #![deny(
     nonstandard_style,
