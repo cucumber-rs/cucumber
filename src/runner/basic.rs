@@ -629,14 +629,14 @@ where
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
     ) {
-        let ok = |e: fn(Arc<gherkin::Step>) -> event::Scenario<W>| {
+        let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let ok_capt = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());

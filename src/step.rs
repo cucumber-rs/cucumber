@@ -31,14 +31,16 @@ use regex::Regex;
 pub type Step<World> =
     for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
-/// Alias for return value of [`Collection::find()`].
-pub type FindValue<'me, World> =
+/// Alias for [`Step`] with [`CaptureLocations`] and [`Context`] returned by 
+/// [`Collection::find()`].
+/// 
+/// [`CaptureLocations`]: regex::CaptureLocations
+pub type WithContext<'me, World> =
     (&'me Step<World>, regex::CaptureLocations, Context);
 
 /// Collection of [`Step`]s.
 ///
-/// Every [`Step`] must be matched by exactly 1 [`Regex`]. Otherwise
-/// [`AmbiguousMatchError`] will be returned.
+/// Every [`Step`] must be matched by exactly 1 [`Regex`].
 pub struct Collection<World> {
     given: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
     when: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
@@ -157,7 +159,7 @@ impl<World> Collection<World> {
     pub fn find(
         &self,
         step: &gherkin::Step,
-    ) -> Result<Option<FindValue<'_, World>>, AmbiguousMatchError> {
+    ) -> Result<Option<WithContext<'_, World>>, AmbiguousMatchError> {
         let collection = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,

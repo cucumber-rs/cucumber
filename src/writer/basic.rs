@@ -24,8 +24,7 @@ use regex::CaptureLocations;
 
 use crate::{
     event::{self, Info},
-    parser,
-    step::AmbiguousMatchError,
+    parser, step,
     writer::term::Styles,
     ArbitraryWriter, World, Writer,
 };
@@ -457,13 +456,13 @@ impl Basic {
 
     /// Outputs [ambiguous] [`Step`] to STDOUT.
     ///
-    /// [ambiguous]: event::Step::Ambiguous
+    /// [ambiguous]: event::Step::AmbiguousMatch
     /// [`Step`]: [`gherkin::Step`]
     fn step_ambiguous_match(
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        err: &AmbiguousMatchError,
+        err: &step::AmbiguousMatchError,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -688,14 +687,14 @@ impl Basic {
 
     /// Outputs [ambiguous] [`Background`] [`Step`] to STDOUT.
     ///
-    /// [ambiguous]: event::Step::Ambiguous
+    /// [ambiguous]: event::Step::AmbiguousMatch
     /// [`Background`]: [`gherkin::Background`]
     /// [`Step`]: [`gherkin::Step`]
     fn bg_step_ambiguous_match(
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        err: &AmbiguousMatchError,
+        err: &step::AmbiguousMatchError,
     ) {
         self.clear_last_lines_if_term_present();
 
