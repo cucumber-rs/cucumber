@@ -1,4 +1,4 @@
-use std::{borrow::Cow, convert::Infallible, fmt::Debug, sync::Arc};
+use std::{borrow::Cow, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
 use cucumber::{event, given, parser, then, when, WorldInit, Writer};
@@ -38,17 +38,11 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
     ) {
         let ev: Cow<_> = match ev {
             Err(_) => "ParsingError".into(),
-            Ok(event::Cucumber::Feature(f, ev)) => {
-                let mut f = f.as_ref().clone();
-                f.path = None;
-                format!("{:?}", event::Cucumber::Feature(Arc::new(f), ev))
-                    .into()
-            }
             Ok(ev) => format!("{:?}", ev).into(),
         };
 
         let re =
-            Regex::new(r" span: Span \{ start: (\d+), end: (\d+) },").unwrap();
+            Regex::new(r#"( span: Span \{ start: (\d+), end: (\d+) },| path: (None|(Some\()?"[^"]*")\)?,?)"#).unwrap();
         let without_span = re.replace_all(ev.as_ref(), "");
 
         self.0.push_str(without_span.as_ref());
