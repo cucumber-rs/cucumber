@@ -10,7 +10,6 @@
 
 //! CLI options.
 
-use clap::Clap;
 use regex::Regex;
 
 /// Run the tests, pet a dog!.
@@ -20,7 +19,7 @@ use regex::Regex;
 ///                 [cucumber-rs/cucumber#134][1].
 ///
 /// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(Clap, Debug)]
+#[derive(clap::Parser, Debug)]
 pub struct Opts {
     /// Regex to select scenarios from.
     #[clap(short = 'e', long = "expression", name = "regex")]
