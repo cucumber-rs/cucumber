@@ -31,9 +31,9 @@ use regex::Regex;
 pub type Step<World> =
     for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
-/// Alias for [`Step`] with [`CaptureLocations`] and [`Context`] returned by 
+/// Alias for [`Step`] with [`CaptureLocations`] and [`Context`] returned by
 /// [`Collection::find()`].
-/// 
+///
 /// [`CaptureLocations`]: regex::CaptureLocations
 pub type WithContext<'me, World> =
     (&'me Step<World>, regex::CaptureLocations, Context);
