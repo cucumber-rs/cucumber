@@ -115,7 +115,7 @@ impl Ext for gherkin::Feature {
 ///
 /// See [`ExpandExamplesError`] for details.
 ///
-/// [`Examples`]: gherkin::Example
+/// [`Examples`]: gherkin::Examples
 /// [`Scenario`]: gherkin::Scenario
 fn expand_scenario(
     scenario: gherkin::Scenario,

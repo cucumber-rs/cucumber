@@ -212,8 +212,8 @@ impl Step {
         })
     }
 
-    /// Composes name of the [`WorldInventory`] method to wire this [`Step`]
-    /// with.
+    /// Composes a name of the `cucumber::codegen::WorldInventory` method to
+    /// wire this [`Step`] with.
     fn constructor_method(&self) -> syn::Ident {
         format_ident!("new_{}", self.attr_name)
     }
@@ -224,6 +224,7 @@ impl Step {
     /// Function's argument type have to implement [`FromStr`].
     ///
     /// [`FromStr`]: std::str::FromStr
+    /// [`syn::Ident`]: struct@syn::Ident
     fn arg_ident_and_parse_code<'a>(
         &self,
         arg: &'a syn::FnArg,
@@ -302,7 +303,9 @@ enum AttributeArgument {
 }
 
 impl AttributeArgument {
-    /// Returns [`syn::LitStr`] to construct a [`Regex`] with.
+    /// Returns a [`syn::LitStr`] to construct a [`Regex`] with.
+    ///
+    /// [`syn::LitStr`]: struct@syn::LitStr
     fn regex_literal(&self) -> syn::LitStr {
         match self {
             Self::Regex(l) => l.clone(),
@@ -431,6 +434,8 @@ fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
 }
 
 /// Parses [`syn::Ident`] and [`syn::Type`] from the given [`syn::FnArg`].
+///
+/// [`syn::Ident`]: struct@syn::Ident
 fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
     let arg = match arg {
         syn::FnArg::Typed(t) => t,
@@ -476,7 +481,7 @@ fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
     })
 }
 
-/// Parses [`cucumber::World`] from arguments of the function signature.
+/// Parses `cucumber::World` from arguments of the function signature.
 fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
     sig.inputs
         .first()
@@ -506,6 +511,9 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
 }
 
 /// Converts [`syn::Lit`] to [`syn::LitStr`] if possible.
+///
+/// [`syn::Lit`]: enum@syn::Lit
+/// [`syn::LitStr`]: struct@syn::LitStr
 fn to_string_literal(l: syn::Lit) -> syn::Result<syn::LitStr> {
     match l {
         syn::Lit::Str(str) => Ok(str),

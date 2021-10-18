@@ -117,13 +117,14 @@ impl Basic {
         }
     }
 
-    /// Outputs [error] encountered while parsing some [`Feature`].
+    /// Outputs the parsing `error` encountered while parsing some [`Feature`].
     ///
-    /// [error]: event::Cucumber::ParsingError
     /// [`Feature`]: gherkin::Feature
-    fn parsing_failed(&self, err: impl Display) {
-        self.write_line(&self.styles.err(format!("Failed to parse: {}", err)))
-            .unwrap();
+    fn parsing_failed(&self, error: impl Display) {
+        self.write_line(
+            &self.styles.err(format!("Failed to parse: {}", error)),
+        )
+        .unwrap();
     }
 
     /// Outputs [started] [`Feature`] to STDOUT.
@@ -145,6 +146,7 @@ impl Basic {
     /// [finished]: event::Rule::Finished
     /// [scenario]: event::Rule::Scenario
     /// [started]: event::Rule::Started
+    /// [`Rule`]: gherkin::Rule
     fn rule<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -184,7 +186,7 @@ impl Basic {
 
     /// Outputs [`Scenario`] [started]/[background]/[step] event to STDOUT.
     ///
-    /// [background]: event::Background
+    /// [background]: event::Scenario::Background
     /// [started]: event::Scenario::Started
     /// [step]: event::Step
     /// [`Scenario`]: gherkin::Scenario
@@ -306,7 +308,7 @@ impl Basic {
     /// This [`Step`] is printed only if terminal is present and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
-    /// [started]: event::Step::Started
+    /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
@@ -489,7 +491,7 @@ impl Basic {
     /// This [`Step`] is printed only if terminal is present and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
-    /// [started]: event::Step::Started
+    /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started

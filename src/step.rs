@@ -169,7 +169,7 @@ pub struct Context {
     pub matches: Vec<String>,
 }
 
-/// [`Regex`] wrapper to store inside a [`LinkedHashMap`].
+/// [`Regex`] wrapper to store it as a key of a [`HashMap`].
 #[derive(Clone, Debug)]
 struct HashableRegex(Regex);
 

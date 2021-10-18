@@ -1087,6 +1087,8 @@ struct Features {
     scenarios: Arc<Mutex<Scenarios>>,
 
     /// Indicates whether all parsed [`Feature`]s are sorted and stored.
+    ///
+    /// [`Feature`]: gherkin::Feature
     finished: Arc<AtomicBool>,
 }
 
