@@ -20,8 +20,8 @@ use std::{
     path::Path,
 };
 
-use clap::Parser as _;
-use futures::{future::LocalBoxFuture, StreamExt as _};
+use clap::Clap as _;
+use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
