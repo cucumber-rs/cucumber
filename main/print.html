@@ -665,6 +665,7 @@ async fn main() {
 <h2 id="background-keyword"><a class="header" href="#background-keyword"><code>Background</code> keyword</a></h2>
 <p>Occasionally you’ll find yourself repeating the same <code>Given</code> steps in all the scenarios of a <code>Feature</code>.</p>
 <p>Since it's repeated in every scenario, this is an indication that those steps are not essential to describe the scenarios, so they are <em>incidental details</em>. You can literally move such <code>Given</code> steps to background, by grouping them under a <code>Background</code> section.</p>
+<p><code>Background</code> allows you to add some context to the <code>Scenario</code>s following it. It can contain one or more steps, which are run before each scenario (but after any <a href="Features.html#before-hook"><code>Before</code> hooks</a>).</p>
 <pre><code class="language-gherkin">Feature: Animal feature
     
   Background: 
@@ -888,6 +889,69 @@ Egenskap: Animal feature
 </code></pre>
 <script id="asciicast-DFtCqnpcnXpKbGxtxfedkW0Ga" src="https://asciinema.org/a/DFtCqnpcnXpKbGxtxfedkW0Ga.js" async data-autoplay="true" data-rows="18"></script>
 <p>In case most of your <code>.feature</code> files aren't written in English and you want to avoid endless <code># language:</code> comments, use <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.language"><code>Cucumber::language()</code></a> method to override the default language.</p>
+<h2 id="scenario-hooks"><a class="header" href="#scenario-hooks">Scenario hooks</a></h2>
+<h3 id="before-hook"><a class="header" href="#before-hook"><code>Before</code> hook</a></h3>
+<p><code>Before</code> hook runs before the first step of each scenario, even before <a href="Features.html#background-keyword"><code>Background</code> ones</a>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::{convert::Infallible, time::Duration};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::WorldInit;
+</span><span class="boring">use futures::FutureExt as _;
+</span><span class="boring">use tokio::time;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">struct World;
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl cucumber::World for World {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">        Ok(World)
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn main() {
+</span>World::cucumber()
+    .before(|_feature, _rule, _scenario, _world| {
+        time::sleep(Duration::from_millis(10)).boxed_local()
+    })
+    .run_and_exit(&quot;tests/features/book&quot;);
+<span class="boring">}
+</span></code></pre></pre>
+<blockquote>
+<p>⚠️ <strong>Think twice before using <code>Before</code> hook!</strong><br />
+Whatever happens in a <code>Before</code> hook is invisible to people reading <code>.feature</code>s. You should consider using a <a href="Features.html#background-keyword"><code>Background</code></a> as a more explicit alternative, especially if the setup should be readable by non-technical people. Only use a <code>Before</code> hook for low-level logic such as starting a browser or deleting data from a database.</p>
+</blockquote>
+<h3 id="after-hook"><a class="header" href="#after-hook"><code>After</code> hook</a></h3>
+<p><code>After</code> hook runs after the last step of each <code>Scenario</code>, even when that step fails or is skipped.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::{convert::Infallible, time::Duration};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::WorldInit;
+</span><span class="boring">use futures::FutureExt as _;
+</span><span class="boring">use tokio::time;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">struct World;
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl cucumber::World for World {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">        Ok(World)
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn main() {
+</span>World::cucumber()
+    .after(|_feature, _rule, _scenario, _world| {
+        time::sleep(Duration::from_millis(10)).boxed_local()
+    })
+    .run_and_exit(&quot;tests/features/book&quot;);
+<span class="boring">}
+</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test-modules-organization"><a class="header" href="#test-modules-organization">Test Modules Organization</a></h1>
 <p>You can have all of your step definitions in one file, or in multiple files. When you start with your project, all your step definitions will probably be in one file. As your project grows, you should split your step definitions into meaningful groups in different files. This will make your project more logically organized and easier to maintain.</p>
 <h2 id="grouping-step-definitions"><a class="header" href="#grouping-step-definitions">Grouping step definitions</a></h2>
