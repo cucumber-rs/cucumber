@@ -7,7 +7,18 @@ use tokio::time;
 
 #[tokio::main]
 async fn main() {
-    let res = World::run("tests/features/wait");
+    let res = World::cucumber()
+        .before(|_, _, _, w| {
+            async move {
+                w.0 = 0;
+                time::sleep(Duration::from_millis(10)).await;
+            }
+            .boxed_local()
+        })
+        .after(|_, _, _, _| {
+            time::sleep(Duration::from_millis(10)).boxed_local()
+        })
+        .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
         .catch_unwind()

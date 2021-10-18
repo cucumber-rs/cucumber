@@ -12,7 +12,7 @@ publish = false
 
 [dependencies]
 async-trait = "0.1"
-cucumber = { path = "../.." }
+cucumber = { version = "0.10", path = "../.." }
 futures = "0.3"
 skeptic = "0.13"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

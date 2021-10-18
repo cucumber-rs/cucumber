@@ -94,6 +94,10 @@ where
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }
+
+    fn hook_errors(&self) -> usize {
+        self.writer.hook_errors()
+    }
 }
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
@@ -151,7 +155,7 @@ impl<W, Wr> Repeat<W, Wr> {
     /// [`Parser`]: crate::Parser
     #[must_use]
     pub fn failed(writer: Wr) -> Self {
-        use event::{Cucumber, Feature, Rule, Scenario, Step};
+        use event::{Cucumber, Feature, Hook, Rule, Scenario, Step};
 
         Self {
             writer,
@@ -166,11 +170,13 @@ impl<W, Wr> Repeat<W, Wr> {
                                 _,
                                 Scenario::Step(_, Step::Failed(..))
                                     | Scenario::Background(_, Step::Failed(..))
+                                    | Scenario::Hook(_, Hook::Failed(..))
                             )
                         ) | Feature::Scenario(
                             _,
                             Scenario::Step(_, Step::Failed(..))
                                 | Scenario::Background(_, Step::Failed(..))
+                                | Scenario::Hook(_, Hook::Failed(..))
                         )
                     )) | Err(_)
                 )

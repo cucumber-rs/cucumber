@@ -10,7 +10,7 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{array, borrow::Cow, collections::HashSet, sync::Arc};
+use std::{array, borrow::Cow, collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use derive_more::Deref;
@@ -57,6 +57,34 @@ impl Stats {
     }
 }
 
+/// Alias for [`fn`] used to determine should [`Skipped`] test considered as
+/// [`Failed`] or not.
+///
+/// [`Failed`]: event::Step::Failed
+/// [`Skipped`]: event::Step::Skipped
+pub type SkipFn =
+    fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
+
+/// Indicator of a [`Failed`] or [`Skipped`] [`Scenario`].
+///
+/// [`Failed`]: event::Step::Failed
+/// [`Scenario`]: gherkin::Scenario
+/// [`Skipped`]: event::Step::Skipped
+#[derive(Clone, Copy, Debug)]
+enum Indicator {
+    /// [`Failed`] [`Scenario`].
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    Failed,
+
+    /// [`Skipped`] [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    Skipped,
+}
+
 /// Wrapper for a [`Writer`] for outputting an execution summary (number of
 /// executed features, scenarios, steps and parsing errors).
 ///
@@ -96,19 +124,16 @@ pub struct Summarized<Writer> {
     /// [`Parser`]: crate::Parser
     pub parsing_errors: usize,
 
+    /// Number of failed [`Scenario`] hooks.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    pub failed_hooks: usize,
+
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    handled_scenarios: HashSet<Arc<gherkin::Scenario>>,
+    handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
 }
-
-/// Alias for [`fn`] used to determine should [`Skipped`] test considered as
-/// [`Failed`] or not.
-///
-/// [`Failed`]: event::Step::Failed
-/// [`Skipped`]: event::Step::Skipped
-pub type SkipFn =
-    fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
 
 #[async_trait(?Send)]
 impl<W, Wr> Writer<W> for Summarized<Wr>
@@ -173,6 +198,10 @@ where
     fn parsing_errors(&self) -> usize {
         self.parsing_errors
     }
+
+    fn hook_errors(&self) -> usize {
+        self.failed_hooks
+    }
 }
 
 impl<Writer> From<Writer> for Summarized<Writer> {
@@ -192,7 +221,8 @@ impl<Writer> From<Writer> for Summarized<Writer> {
                 failed: 0,
             },
             parsing_errors: 0,
-            handled_scenarios: HashSet::new(),
+            failed_hooks: 0,
+            handled_scenarios: HashMap::new(),
         }
     }
 }
@@ -206,7 +236,10 @@ impl<Writer> Summarized<Writer> {
         scenario: &Arc<gherkin::Scenario>,
         ev: &event::Step<W>,
     ) {
-        use event::Step;
+        use self::{
+            event::Step,
+            Indicator::{Failed, Skipped},
+        };
 
         match ev {
             Step::Started => {}
@@ -214,12 +247,13 @@ impl<Writer> Summarized<Writer> {
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;
-                let _ = self.handled_scenarios.insert(scenario.clone());
+                let _ =
+                    self.handled_scenarios.insert(scenario.clone(), Skipped);
             }
             Step::Failed(..) => {
                 self.steps.failed += 1;
                 self.scenarios.failed += 1;
-                let _ = self.handled_scenarios.insert(scenario.clone());
+                let _ = self.handled_scenarios.insert(scenario.clone(), Failed);
             }
         }
     }
@@ -232,15 +266,38 @@ impl<Writer> Summarized<Writer> {
         scenario: &Arc<gherkin::Scenario>,
         ev: &event::Scenario<W>,
     ) {
-        use event::Scenario;
+        use event::{Hook, Scenario};
 
         match ev {
-            Scenario::Started => {}
+            Scenario::Started
+            | Scenario::Hook(_, Hook::Passed | Hook::Started) => {}
+            Scenario::Hook(_, Hook::Failed(..)) => {
+                // - If Scenario's last Step failed and then After Hook failed
+                //   too, we don't need to track second failure;
+                // - If Scenario's last Step was skipped and then After Hook
+                //   failed, we need to override skipped Scenario with failed;
+                // - If Scenario executed no Steps and then Hook failed, we
+                //   track Scenario as failed.
+                match self.handled_scenarios.get(scenario) {
+                    Some(Indicator::Failed) => {}
+                    Some(Indicator::Skipped) => {
+                        self.scenarios.skipped -= 1;
+                        self.scenarios.failed += 1;
+                    }
+                    None => {
+                        self.scenarios.failed += 1;
+                        let _ = self
+                            .handled_scenarios
+                            .insert(scenario.clone(), Indicator::Failed);
+                    }
+                }
+                self.failed_hooks += 1;
+            }
             Scenario::Background(_, ev) | Scenario::Step(_, ev) => {
                 self.handle_step(scenario, ev);
             }
             Scenario::Finished => {
-                if !self.handled_scenarios.remove(scenario) {
+                if self.handled_scenarios.remove(scenario).is_none() {
                     self.scenarios.passed += 1;
                 }
             }
@@ -281,8 +338,18 @@ impl Styles {
             })
             .unwrap_or_default();
 
+        let hook_errors = (summary.failed_hooks > 0)
+            .then(|| {
+                self.err(self.maybe_plural("hook error", summary.failed_hooks))
+            })
+            .unwrap_or_default();
+
+        let comma = (!parsing_errors.is_empty() && !hook_errors.is_empty())
+            .then(|| self.err(", "))
+            .unwrap_or_default();
+
         format!(
-            "{}\n{}\n{}{}{}\n{}{}\n{}",
+            "{}\n{}\n{}{}{}\n{}{}\n{}{}{}",
             self.bold(self.header("[Summary]")),
             features,
             rules,
@@ -291,6 +358,8 @@ impl Styles {
             steps,
             steps_stats,
             parsing_errors,
+            comma,
+            hook_errors
         )
         .trim_end_matches('\n')
         .to_string()

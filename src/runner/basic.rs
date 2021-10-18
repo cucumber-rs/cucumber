@@ -13,6 +13,7 @@
 use std::{
     cmp,
     collections::HashMap,
+    convert::identity,
     fmt, mem,
     panic::{self, AssertUnwindSafe},
     path::PathBuf,
@@ -24,7 +25,7 @@ use std::{
 
 use futures::{
     channel::mpsc,
-    future::{self, Either},
+    future::{self, Either, LocalBoxFuture},
     lock::Mutex,
     pin_mut,
     stream::{self, LocalBoxStream},
@@ -35,7 +36,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
-    event::{self, Info},
+    event::{self, HookType, Info},
     feature::Ext as _,
     parser, step, Runner, Step, World,
 };
@@ -57,6 +58,40 @@ pub enum ScenarioType {
     Concurrent,
 }
 
+/// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
+/// or a [`Serial`] one.
+///
+/// [`Concurrent`]: ScenarioType::Concurrent
+/// [`Serial`]: ScenarioType::Serial
+/// [`Scenario`]: gherkin::Scenario
+pub type WhichScenarioFn = fn(
+    &gherkin::Feature,
+    Option<&gherkin::Rule>,
+    &gherkin::Scenario,
+) -> ScenarioType;
+
+/// Alias for [`fn`] executed on each [`Scenario`] before running all [`Step`]s.
+///
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+pub type BeforeHookFn<World> = for<'a> fn(
+    &'a gherkin::Feature,
+    Option<&'a gherkin::Rule>,
+    &'a gherkin::Scenario,
+    &'a mut World,
+) -> LocalBoxFuture<'a, ()>;
+
+/// Alias for [`fn`] executed on each [`Scenario`] after running all [`Step`]s.
+///
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+pub type AfterHookFn<World> = for<'a> fn(
+    &'a gherkin::Feature,
+    Option<&'a gherkin::Rule>,
+    &'a gherkin::Scenario,
+    Option<&'a mut World>,
+) -> LocalBoxFuture<'a, ()>;
+
 /// Default [`Runner`] implementation which follows [_order guarantees_][1] from
 /// the [`Runner`] trait docs.
 ///
@@ -66,7 +101,12 @@ pub enum ScenarioType {
 ///
 /// [1]: Runner#order-guarantees
 /// [`Scenario`]: gherkin::Scenario
-pub struct Basic<World, F = WhichScenarioFn> {
+pub struct Basic<
+    World,
+    F = WhichScenarioFn,
+    Before = BeforeHookFn<World>,
+    After = AfterHookFn<World>,
+> {
     /// Optional number of concurrently executed [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -84,23 +124,26 @@ pub struct Basic<World, F = WhichScenarioFn> {
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
     which_scenario: F,
-}
 
-/// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
-/// or a [`Serial`] one.
-///
-/// [`Concurrent`]: ScenarioType::Concurrent
-/// [`Serial`]: ScenarioType::Serial
-/// [`Scenario`]: gherkin::Scenario
-pub type WhichScenarioFn = fn(
-    &gherkin::Feature,
-    Option<&gherkin::Rule>,
-    &gherkin::Scenario,
-) -> ScenarioType;
+    /// Function, executed on each [`Scenario`] before running all [`Step`]s,
+    /// including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    before_hook: Option<Before>,
+
+    /// Function, executed on each [`Scenario`] after running all [`Step`]s.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    after_hook: Option<After>,
+}
 
 // Implemented manually to omit redundant trait bounds on `World` and to omit
 // outputting `F`.
-impl<World, F> fmt::Debug for Basic<World, F> {
+impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Basic")
             .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
@@ -117,11 +160,34 @@ impl<World> Basic<World, ()> {
             max_concurrent_scenarios: None,
             steps: step::Collection::new(),
             which_scenario: (),
+            before_hook: None,
+            after_hook: None,
         }
     }
 }
 
-impl<World, F> Basic<World, F> {
+impl<World> Default for Basic<World> {
+    fn default() -> Self {
+        let which_scenario: WhichScenarioFn = |_, _, scenario| {
+            scenario
+                .tags
+                .iter()
+                .any(|tag| tag == "serial")
+                .then(|| ScenarioType::Serial)
+                .unwrap_or(ScenarioType::Concurrent)
+        };
+
+        Self {
+            max_concurrent_scenarios: Some(64),
+            steps: step::Collection::new(),
+            which_scenario,
+            before_hook: None,
+            after_hook: None,
+        }
+    }
+}
+
+impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
     /// will be limited.
     ///
@@ -142,9 +208,9 @@ impl<World, F> Basic<World, F> {
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn which_scenario<Which>(self, func: Which) -> Basic<World, Which>
+    pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
     where
-        Which: Fn(
+        F: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
@@ -154,12 +220,89 @@ impl<World, F> Basic<World, F> {
         let Self {
             max_concurrent_scenarios,
             steps,
+            before_hook,
+            after_hook,
             ..
         } = self;
         Basic {
             max_concurrent_scenarios,
             steps,
             which_scenario: func,
+            before_hook,
+            after_hook,
+        }
+    }
+
+    /// Sets a hook, executed on each [`Scenario`] before running all its
+    /// [`Step`]s, including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
+    where
+        Func: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut World,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            after_hook,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            before_hook: Some(func),
+            after_hook,
+        }
+    }
+
+    /// Sets hook, executed on each [`Scenario`] after running all its
+    /// [`Step`]s, even after [`Skipped`] of [`Failed`] ones.
+    ///
+    /// Last `World` argument is supplied to the function, in case it was
+    /// initialized before by running [`before`] hook or any non-failed
+    /// [`Step`]. In case the last [`Scenario`]'s [`Step`] failed, we want to
+    /// return event with an exact `World` state. Also, we don't want to impose
+    /// additional [`Clone`] bounds on `World`, so the only option left is to
+    /// pass [`None`] to the function.
+    ///
+    /// [`before`]: Self::before()
+    /// [`Failed`]: event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
+    where
+        Func: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            Option<&'a mut World>,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            before_hook,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            before_hook,
+            after_hook: Some(func),
         }
     }
 
@@ -200,7 +343,7 @@ impl<World, F> Basic<World, F> {
     }
 }
 
-impl<W, Which> Runner<W> for Basic<W, Which>
+impl<W, Which, Before, After> Runner<W> for Basic<W, Which, Before, After>
 where
     W: World,
     Which: Fn(
@@ -208,6 +351,20 @@ where
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
+        + 'static,
+    Before: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>
+        + 'static,
+    After: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
     type EventStream =
@@ -221,6 +378,8 @@ where
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            before_hook,
+            after_hook,
         } = self;
 
         let buffer = Features::default();
@@ -232,7 +391,14 @@ where
             which_scenario,
             sender.clone(),
         );
-        let execute = execute(buffer, max_concurrent_scenarios, steps, sender);
+        let execute = execute(
+            buffer,
+            max_concurrent_scenarios,
+            steps,
+            sender,
+            before_hook,
+            after_hook,
+        );
 
         stream::select(
             receiver.map(Either::Left),
@@ -281,12 +447,30 @@ async fn insert_features<W, S, F>(
 /// Retrieves [`Feature`]s and executes them.
 ///
 /// [`Feature`]: gherkin::Feature
-async fn execute<W: World>(
+async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
     sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
-) {
+    before_hook: Option<Before>,
+    after_hook: Option<After>,
+) where
+    W: World,
+    Before: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    After: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>,
+{
     // Those panic hook shenanigans are done to avoid console messages like
     // "thread 'main' panicked at ..."
     //
@@ -298,7 +482,8 @@ async fn execute<W: World>(
     let hook = panic::take_hook();
     panic::set_hook(Box::new(|_| {}));
 
-    let mut executor = Executor::new(collection, sender);
+    let mut executor =
+        Executor::new(collection, before_hook, after_hook, sender);
 
     executor.send(event::Cucumber::Started);
 
@@ -334,7 +519,7 @@ async fn execute<W: World>(
 /// completion.
 ///
 /// [`Feature`]: gherkin::Feature.
-struct Executor<W> {
+struct Executor<W, Before, After> {
     /// Number of finished [`Scenario`]s of [`Feature`].
     ///
     /// [`Feature`]: gherkin::Feature
@@ -357,22 +542,56 @@ struct Executor<W> {
     /// [`Step`]: step::Step
     collection: step::Collection<W>,
 
+    /// Function, executed on each [`Scenario`] before running all [`Step`]s,
+    /// including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    before_hook: Option<Before>,
+
+    /// Function, executed on each [`Scenario`] after running all [`Step`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    after_hook: Option<After>,
+
     /// Sender for notifying state of [`Feature`]s completion.
     ///
     /// [`Feature`]: gherkin::Feature
     sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
 }
 
-impl<W: World> Executor<W> {
+impl<W: World, Before, After> Executor<W, Before, After>
+where
+    Before: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    After: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>,
+{
     /// Creates a new [`Executor`].
     fn new(
         collection: step::Collection<W>,
+        before_hook: Option<Before>,
+        after_hook: Option<After>,
         sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
     ) -> Self {
         Self {
             features_scenarios_count: HashMap::new(),
             rule_scenarios_count: HashMap::new(),
             collection,
+            before_hook,
+            after_hook,
             sender,
         }
     }
@@ -388,6 +607,7 @@ impl<W: World> Executor<W> {
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::too_many_lines)]
     async fn run_scenario(
         &self,
         feature: Arc<gherkin::Feature>,
@@ -439,7 +659,12 @@ impl<W: World> Executor<W> {
             event::Scenario::Started,
         ));
 
-        let res = async {
+        let world = async {
+            let before_hook = self
+                .run_before_hook(&feature, rule.as_ref(), &scenario)
+                .await
+                .map_err(|_| None)?;
+
             let feature_background = feature
                 .background
                 .as_ref()
@@ -449,7 +674,7 @@ impl<W: World> Executor<W> {
 
             let feature_background = stream::iter(feature_background)
                 .map(Ok)
-                .try_fold(None, |world, bg_step| {
+                .try_fold(before_hook, |world, bg_step| {
                     self.run_step(world, bg_step, into_bg_step_ev).map_ok(Some)
                 })
                 .await?;
@@ -479,9 +704,13 @@ impl<W: World> Executor<W> {
                     self.run_step(world, step, into_step_ev).map_ok(Some)
                 })
                 .await
-        };
+        }
+        .await
+        .unwrap_or_else(identity);
 
-        drop(res.await);
+        self.run_after_hook(world, &feature, rule.as_ref(), &scenario)
+            .await
+            .map_or((), drop);
 
         self.send(event::Cucumber::scenario(
             feature.clone(),
@@ -490,16 +719,138 @@ impl<W: World> Executor<W> {
             event::Scenario::Finished,
         ));
 
-        if let Some(rule) = rule {
-            if let Some(finished) =
-                self.rule_scenario_finished(feature.clone(), rule)
-            {
-                self.send(finished);
+        if let Some(r) = rule {
+            if let Some(f) = self.rule_scenario_finished(feature.clone(), r) {
+                self.send(f);
             }
         }
 
-        if let Some(finished) = self.feature_scenario_finished(feature) {
-            self.send(finished);
+        if let Some(f) = self.feature_scenario_finished(feature) {
+            self.send(f);
+        }
+    }
+
+    /// Executes [`HookType::Before`], if present.
+    async fn run_before_hook(
+        &self,
+        feature: &Arc<gherkin::Feature>,
+        rule: Option<&Arc<gherkin::Rule>>,
+        scenario: &Arc<gherkin::Scenario>,
+    ) -> Result<Option<W>, ()> {
+        let init_world = async {
+            let world_fut =
+                async { W::new().await.expect("failed to initialize World") };
+            AssertUnwindSafe(world_fut)
+                .catch_unwind()
+                .await
+                .map_err(|info| (info, None))
+        };
+
+        if let Some(hook) = self.before_hook.as_ref() {
+            self.send(event::Cucumber::scenario(
+                feature.clone(),
+                rule.map(Arc::clone),
+                scenario.clone(),
+                event::Scenario::hook_started(HookType::Before),
+            ));
+
+            let fut = init_world.and_then(|mut world| async {
+                let fut = (hook)(
+                    feature.as_ref(),
+                    rule.as_ref().map(AsRef::as_ref),
+                    scenario.as_ref(),
+                    &mut world,
+                );
+                match AssertUnwindSafe(fut).catch_unwind().await {
+                    Ok(()) => Ok(world),
+                    Err(info) => Err((info, Some(world))),
+                }
+            });
+
+            match fut.await {
+                Ok(world) => {
+                    self.send(event::Cucumber::scenario(
+                        feature.clone(),
+                        rule.map(Arc::clone),
+                        scenario.clone(),
+                        event::Scenario::hook_passed(HookType::Before),
+                    ));
+                    Ok(Some(world))
+                }
+                Err((info, world)) => {
+                    self.send(event::Cucumber::scenario(
+                        feature.clone(),
+                        rule.map(Arc::clone),
+                        scenario.clone(),
+                        event::Scenario::hook_failed(
+                            HookType::Before,
+                            world.map(Arc::new),
+                            info.into(),
+                        ),
+                    ));
+                    Err(())
+                }
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Executes [`HookType::After`], if present.
+    async fn run_after_hook(
+        &self,
+        mut world: Option<W>,
+        feature: &Arc<gherkin::Feature>,
+        rule: Option<&Arc<gherkin::Rule>>,
+        scenario: &Arc<gherkin::Scenario>,
+    ) -> Result<Option<W>, ()> {
+        if let Some(hook) = self.after_hook.as_ref() {
+            self.send(event::Cucumber::scenario(
+                feature.clone(),
+                rule.map(Arc::clone),
+                scenario.clone(),
+                event::Scenario::hook_started(HookType::After),
+            ));
+
+            let fut = async {
+                let fut = (hook)(
+                    feature.as_ref(),
+                    rule.as_ref().map(AsRef::as_ref),
+                    scenario.as_ref(),
+                    world.as_mut(),
+                );
+                match AssertUnwindSafe(fut).catch_unwind().await {
+                    Ok(()) => Ok(world),
+                    Err(info) => Err((info, world)),
+                }
+            };
+
+            match fut.await {
+                Ok(world) => {
+                    self.send(event::Cucumber::scenario(
+                        feature.clone(),
+                        rule.map(Arc::clone),
+                        scenario.clone(),
+                        event::Scenario::hook_passed(HookType::After),
+                    ));
+                    Ok(world)
+                }
+                Err((info, world)) => {
+                    self.send(event::Cucumber::scenario(
+                        feature.clone(),
+                        rule.map(Arc::clone),
+                        scenario.clone(),
+                        event::Scenario::hook_failed(
+                            HookType::After,
+                            world.map(Arc::new),
+                            info.into(),
+                        ),
+                    ));
+                    Err(())
+                }
+            }
+        } else {
+            Ok(None)
         }
     }
 
@@ -515,7 +866,7 @@ impl<W: World> Executor<W> {
         mut world: Option<W>,
         step: Arc<gherkin::Step>,
         (started, passed, skipped, failed): (St, Ps, Sk, F),
-    ) -> Result<W, ()>
+    ) -> Result<W, Option<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
         Ps: FnOnce(Arc<gherkin::Step>, CaptureLocations) -> event::Cucumber<W>,
@@ -561,7 +912,7 @@ impl<W: World> Executor<W> {
             }
             Ok(None) => {
                 self.send(skipped(step));
-                Err(())
+                Err(world)
             }
             Err((err, captures)) => {
                 self.send(failed(
@@ -570,7 +921,7 @@ impl<W: World> Executor<W> {
                     world.map(Arc::new),
                     Arc::from(err),
                 ));
-                Err(())
+                Err(None)
             }
         }
     }

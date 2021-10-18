@@ -120,6 +120,10 @@ where
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }
+
+    fn hook_errors(&self) -> usize {
+        self.writer.hook_errors()
+    }
 }
 
 impl<Writer> From<Writer> for FailOnSkipped<Writer> {

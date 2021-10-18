@@ -22,7 +22,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Made test callbacks first argument `&mut World` instead of `World`. ([#128])
 - Made `#[step]` argument of step functions `Step` instead of `StepContext` again, while test callbacks still receive `StepContext` as a second parameter. ([#128])
 - Deprecated `--nocapture` and `--debug` CLI options to be completely redesigned in `0.11` release. ([#137])
-- [Hooks](https://cucumber.io/docs/cucumber/api/#hooks) were removed, but are planned to be re-implemented with some changes in `0.11` release. ([#128])
+- [Hooks](https://cucumber.io/docs/cucumber/api/#hooks) now accept optional `&mut World` as their last parameter. ([#142])
 
 ### Added
 
@@ -32,6 +32,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#128]: /../../pull/128
 [#136]: /../../pull/136
 [#137]: /../../pull/137
+[#142]: /../../pull/142
 
 
 

@@ -19,7 +19,7 @@
 //! [`Runner`]: crate::Runner
 //! [Cucumber]: https://cucumber.io
 
-use std::{any::Any, sync::Arc};
+use std::{any::Any, fmt, sync::Arc};
 
 /// Alias for a [`catch_unwind()`] error.
 ///
@@ -224,6 +224,59 @@ impl<World> Clone for Step<World> {
     }
 }
 
+/// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
+///
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+#[derive(Clone, Copy, Debug)]
+pub enum HookType {
+    /// Executing on each [`Scenario`] before running all [`Step`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    Before,
+
+    /// Executing on each [`Scenario`] after running all [`Step`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    After,
+}
+
+impl fmt::Display for HookType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Event of running [`Before`] or [`After`] hook.
+///
+/// [`After`]: HookType::After
+/// [`Before`]: HookType::Before
+#[derive(Debug)]
+pub enum Hook<World> {
+    /// Hook execution being started.
+    Started,
+
+    /// Hook passed.
+    Passed,
+
+    /// Hook failed.
+    Failed(Option<Arc<World>>, Info),
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Hook<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Passed => Self::Passed,
+            Self::Failed(w, i) => Self::Failed(w.clone(), i.clone()),
+        }
+    }
+}
+
 /// Event specific to a particular [Scenario].
 ///
 /// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
@@ -233,6 +286,9 @@ pub enum Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     Started,
+
+    /// [`Hook`] event.
+    Hook(HookType, Hook<World>),
 
     /// [`Background`] [`Step`] event.
     ///
@@ -254,6 +310,7 @@ impl<World> Clone for Scenario<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
+            Self::Hook(ty, ev) => Self::Hook(*ty, ev.clone()),
             Self::Background(bg, ev) => {
                 Self::Background(bg.clone(), ev.clone())
             }
@@ -264,6 +321,34 @@ impl<World> Clone for Scenario<World> {
 }
 
 impl<World> Scenario<World> {
+    /// Constructs an event of a [`Scenario`] hook being started.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn hook_started(which: HookType) -> Self {
+        Self::Hook(which, Hook::Started)
+    }
+
+    /// Constructs an event of a passed [`Scenario`] hook.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn hook_passed(which: HookType) -> Self {
+        Self::Hook(which, Hook::Passed)
+    }
+
+    /// Constructs an event of a failed [`Scenario`] hook.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn hook_failed(
+        which: HookType,
+        world: Option<Arc<World>>,
+        info: Info,
+    ) -> Self {
+        Self::Hook(which, Hook::Failed(world, info))
+    }
+
     /// Constructs an event of a [`Step`] being started.
     ///
     /// [`Step`]: gherkin::Step
