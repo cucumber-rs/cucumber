@@ -21,7 +21,7 @@ use std::{
 };
 
 use clap::Parser as _;
-use futures::{future::LocalBoxFuture, StreamExt as _};
+use futures::StreamExt as _;
 use regex::Regex;
 
 use crate::{
@@ -774,9 +774,22 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
+        let which: runner::basic::WhichScenarioFn = |_, _, scenario| {
+            scenario
+                .tags
+                .iter()
+                .any(|tag| tag == "serial")
+                .then(|| ScenarioType::Serial)
+                .unwrap_or(ScenarioType::Concurrent)
+        };
+
         Cucumber::custom()
             .with_parser(parser::Basic::new())
-            .with_runner(runner::Basic::default())
+            .with_runner(
+                runner::Basic::custom()
+                    .which_scenario(which)
+                    .max_concurrent_scenarios(64),
+            )
             .with_writer(writer::Basic::new().normalized().summarized())
     }
 }
@@ -827,7 +840,7 @@ impl<W, I, R, Wr> Cucumber<W, parser::Basic, I, R, Wr> {
     }
 }
 
-impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
+impl<W, I, P, Wr, F> Cucumber<W, P, I, runner::Basic<W, F>, Wr> {
     /// If `max` is [`Some`] number of concurrently executed [`Scenario`]s will
     /// be limited.
     ///
@@ -851,7 +864,7 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which>, Wr>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -869,84 +882,6 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
         Cucumber {
             parser,
             runner: runner.which_scenario(func),
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
-    }
-
-    /// Sets a hook, executed on each [`Scenario`] before running all its
-    /// [`Step`]s, including [`Background`] ones.
-    ///
-    /// [`Background`]: gherkin::Background
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub fn before<Before>(
-        self,
-        func: Before,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr>
-    where
-        Before: for<'a> Fn(
-            &'a gherkin::Feature,
-            Option<&'a gherkin::Rule>,
-            &'a gherkin::Scenario,
-            &'a mut W,
-        ) -> LocalBoxFuture<'a, ()>,
-    {
-        let Self {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.before(func),
-            writer,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
-    }
-
-    /// Sets a hook, executed on each [`Scenario`] after running all its
-    /// [`Step`]s, even after [`Skipped`] of [`Failed`] [`Step`]s.
-    ///
-    /// Last `World` argument is supplied to the function, in case it was
-    /// initialized before by running [`before`] hook or any non-failed
-    /// [`Step`]. In case the last [`Scenario`]'s [`Step`] failed, we want to
-    /// return event with an exact `World` state. Also, we don't want to impose
-    /// additional [`Clone`] bounds on `World`, so the only option left is to
-    /// pass [`None`] to the function.
-    ///
-    ///
-    /// [`before`]: Self::before()
-    /// [`Failed`]: event::Step::Failed
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: event::Step::Skipped
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub fn after<After>(
-        self,
-        func: After,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr>
-    where
-        After: for<'a> Fn(
-            &'a gherkin::Feature,
-            Option<&'a gherkin::Rule>,
-            &'a gherkin::Scenario,
-            Option<&'a mut W>,
-        ) -> LocalBoxFuture<'a, ()>,
-    {
-        let Self {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.after(func),
             writer,
             _world: PhantomData,
             _parser_input: PhantomData,
@@ -1092,36 +1027,15 @@ where
     {
         let writer = self.filter_run(input, filter).await;
         if writer.execution_has_failed() {
-            let mut msg = Vec::with_capacity(3);
-
             let failed_steps = writer.failed_steps();
-            if failed_steps > 0 {
-                msg.push(format!(
-                    "{} step{} failed",
-                    failed_steps,
-                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
             let parsing_errors = writer.parsing_errors();
-            if parsing_errors > 0 {
-                msg.push(format!(
-                    "{} parsing error{}",
-                    parsing_errors,
-                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            let hook_errors = writer.hook_errors();
-            if hook_errors > 0 {
-                msg.push(format!(
-                    "{} hook error{}",
-                    hook_errors,
-                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            panic!("{}", msg.join(", "));
+            panic!(
+                "{} step{} failed, {} parsing error{}",
+                failed_steps,
+                (failed_steps != 1).then(|| "s").unwrap_or_default(),
+                parsing_errors,
+                (parsing_errors != 1).then(|| "s").unwrap_or_default(),
+            );
         }
     }
 }
