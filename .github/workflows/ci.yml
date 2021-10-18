@@ -115,7 +115,7 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - run: make cargo.doc open=no
+      - run: make cargo.doc private=yes open=no
 
 
 

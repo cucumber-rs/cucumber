@@ -36,6 +36,8 @@ pub(crate) fn world_init(
 }
 
 /// Generates [`syn::Ident`]s of generic types for private trait impl.
+///
+/// [`syn::Ident`]: struct@syn::Ident
 fn step_types(steps: &[&str]) -> Vec<syn::Ident> {
     steps
         .iter()
