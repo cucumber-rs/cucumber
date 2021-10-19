@@ -22,16 +22,16 @@ proc-macro = true
 [dependencies]
 inflections = "1.1"
 itertools = "0.10"
-proc-macro2 = "1.0"
-quote = "1.0"
+proc-macro2 = "1.0.28"
+quote = "1.0.9"
 regex = "1.4"
-syn = { version = "1.0", features = ["derive", "extra-traits", "full"] }
+syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
 
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
 futures = "0.3"
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 name = "example"

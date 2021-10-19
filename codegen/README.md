@@ -3,6 +3,7 @@
 
 [![Documentation](https://docs.rs/cucumber-codegen/badge.svg)](https://docs.rs/cucumber-codegen)
 [![Actions Status](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg)](https://github.com/cucumber-rs/cucumber/actions)
+[![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
 - [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/codegen/CHANGELOG.md)

@@ -3,6 +3,7 @@ Cucumber testing framework for Rust
 
 [![Documentation](https://docs.rs/cucumber/badge.svg)](https://docs.rs/cucumber)
 [![Actions Status](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg)](https://github.com/cucumber-rs/cucumber/actions)
+[![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
 An implementation of the [Cucumber] testing framework for Rust. Fully native, no external test runners or dependencies.
