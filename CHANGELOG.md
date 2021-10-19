@@ -23,18 +23,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Made `#[step]` argument of step functions `Step` instead of `StepContext` again, while test callbacks still receive `StepContext` as a second parameter. ([#128])
 - Deprecated `--nocapture` and `--debug` CLI options to be completely redesigned in `0.11` release. ([#137])
 - [Hooks](https://cucumber.io/docs/cucumber/api/#hooks) now accept optional `&mut World` as their last parameter. ([#142])
-- Propagate `Step` being matched by multiple `Regex`es as `AmbiguousMatchError` ([#143])
 
 ### Added
 
 - Ability to run `Scenario`s concurrently. ([#128])
 - Highlighting of regex capture groups in terminal output with __bold__ style. ([#136])
+- Error on a step matching multiple step functions ([#143]).
 
 [#128]: /../../pull/128
 [#136]: /../../pull/136
 [#137]: /../../pull/137
 [#142]: /../../pull/142
-[#142]: /../../pull/143
+[#143]: /../../pull/143
 
 
 

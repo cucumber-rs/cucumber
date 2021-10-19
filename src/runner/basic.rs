@@ -319,13 +319,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn given(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<World>,
-    ) -> Self {
-        self.steps = mem::take(&mut self.steps).given(loc, regex, step);
+    pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
+        self.steps = mem::take(&mut self.steps).given(None, regex, step);
         self
     }
 
@@ -333,13 +328,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn when(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<World>,
-    ) -> Self {
-        self.steps = mem::take(&mut self.steps).when(loc, regex, step);
+    pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
+        self.steps = mem::take(&mut self.steps).when(None, regex, step);
         self
     }
 
@@ -347,13 +337,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
-    pub fn then(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<World>,
-    ) -> Self {
-        self.steps = mem::take(&mut self.steps).then(loc, regex, step);
+    pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
+        self.steps = mem::take(&mut self.steps).then(None, regex, step);
         self
     }
 }
@@ -897,7 +882,7 @@ where
 
         let run = async {
             let (step_fn, captures, ctx) = match self.collection.find(&step) {
-                Ok(Some(step_fn)) => step_fn,
+                Ok(Some(f)) => f,
                 Ok(None) => return Ok(None),
                 Err(e) => {
                     return Err((event::StepError::AmbiguousMatch(e), None));

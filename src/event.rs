@@ -217,7 +217,22 @@ pub enum Step<World> {
     ),
 }
 
-/// [`Step`] error.
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for Step<World> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Started => Self::Started,
+            Self::Skipped => Self::Skipped,
+            Self::Passed(captures) => Self::Passed(captures.clone()),
+            Self::Failed(captures, w, info) => {
+                Self::Failed(captures.clone(), w.clone(), info.clone())
+            }
+        }
+    }
+}
+
+/// Error of executing a [`Step`].
 ///
 /// [`Step`]: gherkin::Step
 #[derive(Clone, Debug, Display, Error, From)]
@@ -234,21 +249,6 @@ pub enum StepError {
     /// [`Step`]: gherkin::Step
     #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
     Panic(#[error(not(source))] Info),
-}
-
-// Manual implementation is required to omit the redundant `World: Clone` trait
-// bound imposed by `#[derive(Clone)]`.
-impl<World> Clone for Step<World> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Started => Self::Started,
-            Self::Skipped => Self::Skipped,
-            Self::Passed(captures) => Self::Passed(captures.clone()),
-            Self::Failed(captures, w, info) => {
-                Self::Failed(captures.clone(), w.clone(), info.clone())
-            }
-        }
-    }
 }
 
 /// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
@@ -440,9 +440,9 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: StepError,
+        info: impl Into<StepError>,
     ) -> Self {
-        Self::Step(step, Step::Failed(captures, world, info))
+        Self::Step(step, Step::Failed(captures, world, info.into()))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -454,8 +454,8 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: StepError,
+        info: impl Into<StepError>,
     ) -> Self {
-        Self::Background(step, Step::Failed(captures, world, info))
+        Self::Background(step, Step::Failed(captures, world, info.into()))
     }
 }

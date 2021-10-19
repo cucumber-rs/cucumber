@@ -40,7 +40,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
     ) {
         use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
 
-        // This function is used to have deterministic ordering of
+        // This function is used to provide a deterministic ordering of
         // `possible_matches`.
         let sort_matches = |mut e: step::AmbiguousMatchError| {
             e.possible_matches = e
@@ -48,16 +48,13 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                 .into_iter()
                 .sorted_by(|(re_l, loc_l), (re_r, loc_r)| {
                     let re_ord = Ord::cmp(re_l, re_r);
-                    if re_ord == Ordering::Equal {
-                        loc_l
-                            .as_ref()
-                            .and_then(|l| {
-                                loc_r.as_ref().map(|r| Ord::cmp(l, r))
-                            })
-                            .unwrap_or(Ordering::Equal)
-                    } else {
-                        re_ord
+                    if re_ord != Ordering::Equal {
+                        return re_ord;
                     }
+                    loc_l
+                        .as_ref()
+                        .and_then(|l| loc_r.as_ref().map(|r| Ord::cmp(l, r)))
+                        .unwrap_or(Ordering::Equal)
                 })
                 .collect();
             e

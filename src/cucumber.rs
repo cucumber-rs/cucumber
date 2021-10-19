@@ -967,13 +967,8 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn given(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<W>,
-    ) -> Self {
-        self.runner = self.runner.given(loc, regex, step);
+    pub fn given(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.given(regex, step);
         self
     }
 
@@ -981,13 +976,8 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#When
     #[must_use]
-    pub fn when(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<W>,
-    ) -> Self {
-        self.runner = self.runner.when(loc, regex, step);
+    pub fn when(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.when(regex, step);
         self
     }
 
@@ -995,13 +985,8 @@ impl<W, I, P, Wr, F, B, A> Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr> {
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
-    pub fn then(
-        mut self,
-        loc: Option<step::Location>,
-        regex: Regex,
-        step: Step<W>,
-    ) -> Self {
-        self.runner = self.runner.then(loc, regex, step);
+    pub fn then(mut self, regex: Regex, step: Step<W>) -> Self {
+        self.runner = self.runner.then(regex, step);
         self
     }
 }
