@@ -42,17 +42,17 @@ where
 
         for given in Self::cucumber_given() {
             let (loc, regex, fun) = given.inner();
-            out = out.given(loc, regex, fun);
+            out = out.given(Some(loc), regex, fun);
         }
 
         for when in Self::cucumber_when() {
             let (loc, regex, fun) = when.inner();
-            out = out.when(loc, regex, fun);
+            out = out.when(Some(loc), regex, fun);
         }
 
         for then in Self::cucumber_then() {
             let (loc, regex, fun) = then.inner();
-            out = out.then(loc, regex, fun);
+            out = out.then(Some(loc), regex, fun);
         }
 
         out
@@ -143,11 +143,7 @@ where
     ///
     /// [`given`]: crate::given
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
-    fn new_given(
-        loc: Option<step::Location>,
-        regex: Regex,
-        fun: Step<Self>,
-    ) -> G {
+    fn new_given(loc: step::Location, regex: Regex, fun: Step<Self>) -> G {
         G::new(loc, regex, fun)
     }
 
@@ -163,11 +159,7 @@ where
     ///
     /// [`when`]: crate::when
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
-    fn new_when(
-        loc: Option<step::Location>,
-        regex: Regex,
-        fun: Step<Self>,
-    ) -> W {
+    fn new_when(loc: step::Location, regex: Regex, fun: Step<Self>) -> W {
         W::new(loc, regex, fun)
     }
 
@@ -183,11 +175,7 @@ where
     ///
     /// [`then`]: crate::then
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
-    fn new_then(
-        loc: Option<step::Location>,
-        regex: Regex,
-        fun: Step<Self>,
-    ) -> T {
+    fn new_then(loc: step::Location, regex: Regex, fun: Step<Self>) -> T {
         T::new(loc, regex, fun)
     }
 }
@@ -202,8 +190,8 @@ where
 pub trait StepConstructor<W> {
     /// Creates a new [`Step`] with the corresponding [`Regex`].
     #[must_use]
-    fn new(_: Option<step::Location>, _: Regex, _: Step<W>) -> Self;
+    fn new(_: step::Location, _: Regex, _: Step<W>) -> Self;
 
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
-    fn inner(&self) -> (Option<step::Location>, Regex, Step<W>);
+    fn inner(&self) -> (step::Location, Regex, Step<W>);
 }

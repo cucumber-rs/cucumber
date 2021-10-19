@@ -145,11 +145,11 @@ impl Step {
                     <#world as ::cucumber::codegen::WorldInventory<
                         _, _, _,
                     >>::#constructor_method(
-                        Some(::cucumber::step::Location {
+                        ::cucumber::step::Location {
                             path: ::std::convert::From::from(::std::file!()),
                             line: ::std::line!(),
                             column: ::std::column!(),
-                        }),
+                        },
                         ::cucumber::codegen::Regex::new(#step_matcher)
                             .unwrap(),
                         #step_caller,

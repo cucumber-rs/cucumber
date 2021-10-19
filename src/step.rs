@@ -162,7 +162,15 @@ impl<World> Collection<World> {
 
         let (_, _, whole_match, captures, step_fn) = match matches.len() {
             0 => return Ok(None),
-            1 => matches.pop().unwrap(),
+            1 => {
+                if let Some(m) = matches.pop() {
+                    m
+                } else {
+                    // Instead of `.unwrap()` to avoid documenting `# Panics`
+                    // section.
+                    unreachable!()
+                }
+            }
             _ => {
                 return Err(AmbiguousMatchError {
                     possible_matches: matches
