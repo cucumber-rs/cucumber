@@ -22,7 +22,7 @@ use std::{
     path::PathBuf,
 };
 
-use derive_more::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use regex::Regex;
@@ -217,7 +217,8 @@ pub struct Context {
 
 /// Error of a [`gherkin::Step`] matching multiple [`Step`] [`Regex`]es inside a
 /// [`Collection`].
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Display, Error)]
+#[display(fmt = "Possible matches: {:#?}", possible_matches)]
 pub struct AmbiguousMatchError {
     /// Possible [`Regex`]es the [`gherkin::Step`] matches.
     pub possible_matches: Vec<(HashableRegex, Option<Location>)>,

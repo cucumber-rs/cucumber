@@ -24,7 +24,7 @@ use regex::CaptureLocations;
 
 use crate::{
     event::{self, Info},
-    parser, step,
+    parser,
     writer::term::Styles,
     ArbitraryWriter, World, Writer,
 };
@@ -288,10 +288,6 @@ impl Basic {
             Step::Started => {
                 self.step_started(step);
             }
-            Step::AmbiguousMatch(e) => {
-                self.step_ambiguous_match(feat, step, e);
-                self.indent = self.indent.saturating_sub(4);
-            }
             Step::Passed(captures) => {
                 self.step_passed(step, captures);
                 self.indent = self.indent.saturating_sub(4);
@@ -406,7 +402,7 @@ impl Basic {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
-        info: &Info,
+        err: &event::StepError,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -442,7 +438,7 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            coerce_error(info),
+            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
             format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
@@ -451,43 +447,6 @@ impl Basic {
             "{} {}{}",
             step_keyword, step_value, diagnostics,
         ))
-        .unwrap();
-    }
-
-    /// Outputs [ambiguous] [`Step`] to STDOUT.
-    ///
-    /// [ambiguous]: event::Step::AmbiguousMatch
-    /// [`Step`]: [`gherkin::Step`]
-    fn step_ambiguous_match(
-        &mut self,
-        feat: &gherkin::Feature,
-        step: &gherkin::Step,
-        err: &step::AmbiguousMatchError,
-    ) {
-        self.clear_last_lines_if_term_present();
-
-        self.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  {} {}{}\n\
-             {indent}   Step match is ambiguous: {}:{}:{}\n\
-             {indent}   Possible matches: {}",
-            step.keyword,
-            step.value,
-            step.table
-                .as_ref()
-                .map(|t| format_table(t, self.indent))
-                .unwrap_or_default(),
-            feat.path
-                .as_ref()
-                .and_then(|p| p.to_str())
-                .unwrap_or(&feat.name),
-            step.position.line,
-            step.position.col,
-            format_debug_with_indent(&err.possible_matches
-                .iter()
-                .map(|(re, loc)| (re.as_str(), loc))
-                .collect::<Vec<_>>(), self.indent.saturating_sub(3) + 3),
-            indent = " ".repeat(self.indent.saturating_sub(3))
-        )))
         .unwrap();
     }
 
@@ -511,9 +470,6 @@ impl Basic {
         match ev {
             Step::Started => {
                 self.bg_step_started(bg);
-            }
-            Step::AmbiguousMatch(e) => {
-                self.bg_step_ambiguous_match(feat, bg, e);
             }
             Step::Passed(captures) => {
                 self.bg_step_passed(bg, captures);
@@ -637,7 +593,7 @@ impl Basic {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
-        info: &Info,
+        err: &event::StepError,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -673,7 +629,7 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            coerce_error(info),
+            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
             format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
@@ -684,51 +640,13 @@ impl Basic {
         ))
         .unwrap();
     }
-
-    /// Outputs [ambiguous] [`Background`] [`Step`] to STDOUT.
-    ///
-    /// [ambiguous]: event::Step::AmbiguousMatch
-    /// [`Background`]: [`gherkin::Background`]
-    /// [`Step`]: [`gherkin::Step`]
-    fn bg_step_ambiguous_match(
-        &mut self,
-        feat: &gherkin::Feature,
-        step: &gherkin::Step,
-        err: &step::AmbiguousMatchError,
-    ) {
-        self.clear_last_lines_if_term_present();
-
-        self.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  {} {}{}\n\
-             {indent}   Background Step match is ambiguous: {}:{}:{}\n\
-             {indent}   Possible matches: {}",
-            step.keyword,
-            step.value,
-            step.table
-                .as_ref()
-                .map(|t| format_table(t, self.indent))
-                .unwrap_or_default(),
-            feat.path
-                .as_ref()
-                .and_then(|p| p.to_str())
-                .unwrap_or(&feat.name),
-            step.position.line,
-            step.position.col,
-            format_debug_with_indent(&err.possible_matches
-                .iter()
-                .map(|(re, loc)| (re.as_str(), loc))
-                .collect::<Vec<_>>(), self.indent.saturating_sub(3) + 3),
-            indent = " ".repeat(self.indent.saturating_sub(3))
-        )))
-        .unwrap();
-    }
 }
 
 /// Tries to coerce [`catch_unwind()`] output to [`String`].
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
-fn coerce_error(err: &Info) -> String {
+pub(crate) fn coerce_error(err: &Info) -> String {
     if let Some(string) = err.downcast_ref::<String>() {
         string.clone()
     } else if let Some(&string) = err.downcast_ref::<&str>() {
@@ -745,15 +663,34 @@ where
     D: Debug + 'd,
     I: Into<Option<&'d D>>,
 {
-    let world = debug
+    let debug = debug
         .into()
-        .map(|world| format!("{:#?}", world))
+        .map(|debug| format!("{:#?}", debug))
         .unwrap_or_default()
         .lines()
         .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");
-    (!world.is_empty())
-        .then(|| format!("\n{}", world))
+    (!debug.is_empty())
+        .then(|| format!("\n{}", debug))
+        .unwrap_or_default()
+}
+
+/// Formats the given [`Display`] implementor, then adds `indent`s to each line
+/// to prettify the output.
+fn format_display_with_indent<'d, D, I>(display: I, indent: usize) -> String
+where
+    D: Display + 'd,
+    I: Into<Option<&'d D>>,
+{
+    let display = display
+        .into()
+        .map(|display| format!("{}", display))
+        .unwrap_or_default()
+        .lines()
+        .map(|line| format!("{}{}", " ".repeat(indent), line))
+        .join("\n");
+    (!display.is_empty())
+        .then(|| format!("\n{}", display))
         .unwrap_or_default()
 }
 

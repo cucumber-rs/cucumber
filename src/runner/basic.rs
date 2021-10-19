@@ -36,7 +36,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
-    event::{self, HookType, Info},
+    event::{self, HookType},
     feature::Ext as _,
     parser, step, Runner, Step, World,
 };
@@ -643,43 +643,27 @@ where
                 event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
-        let panic_err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
+        let err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures, w, info| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
             }
         };
-        let ambiguous_err = |e: fn(_, _) -> event::Scenario<W>| {
-            let (f, r, s) = (&feature, &rule, &scenario);
-            move |st, err| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                event::Cucumber::scenario(f, r, s, e(st, err))
-            }
-        };
-
-        let compose = |started, passed, skipped, failed, ambiguous| {
-            (
-                ok(started),
-                ok_capt(passed),
-                ok(skipped),
-                panic_err(failed),
-                ambiguous_err(ambiguous),
-            )
+        let compose = |started, passed, skipped, failed| {
+            (ok(started), ok_capt(passed), ok(skipped), err(failed))
         };
         let into_bg_step_ev = compose(
             event::Scenario::background_step_started,
             event::Scenario::background_step_passed,
             event::Scenario::background_step_skipped,
             event::Scenario::background_step_failed,
-            event::Scenario::background_ambiguous_step,
         );
         let into_step_ev = compose(
             event::Scenario::step_started,
             event::Scenario::step_passed,
             event::Scenario::step_skipped,
             event::Scenario::step_failed,
-            event::Scenario::ambiguous_step,
         );
 
         self.send(event::Cucumber::scenario(
@@ -891,11 +875,11 @@ where
     /// - Emits all [`Step`] events.
     ///
     /// [`Step`]: gherkin::Step
-    async fn run_step<St, Ps, Sk, F, A>(
+    async fn run_step<St, Ps, Sk, F>(
         &self,
         mut world: Option<W>,
         step: Arc<gherkin::Step>,
-        (started, passed, skipped, failed, ambiguous): (St, Ps, Sk, F, A),
+        (started, passed, skipped, failed): (St, Ps, Sk, F),
     ) -> Result<W, Option<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
@@ -905,11 +889,7 @@ where
             Arc<gherkin::Step>,
             Option<CaptureLocations>,
             Option<Arc<W>>,
-            Info,
-        ) -> event::Cucumber<W>,
-        A: FnOnce(
-            Arc<gherkin::Step>,
-            step::AmbiguousMatchError,
+            event::StepError,
         ) -> event::Cucumber<W>,
     {
         self.send(started(step.clone()));
@@ -921,7 +901,9 @@ where
                 };
                 world = match AssertUnwindSafe(w_fut).catch_unwind().await {
                     Ok(w) => Some(w),
-                    Err(e) => return Err(Some((e, None))),
+                    Err(e) => {
+                        return Err((event::StepError::Panic(e.into()), None))
+                    }
                 };
             }
 
@@ -929,8 +911,7 @@ where
                 Ok(Some(step_fn)) => step_fn,
                 Ok(None) => return Ok(None),
                 Err(e) => {
-                    self.send(ambiguous(step.clone(), e));
-                    return Err(None);
+                    return Err((event::StepError::AmbiguousMatch(e), None));
                 }
             };
 
@@ -939,7 +920,9 @@ where
                 .await
             {
                 Ok(()) => Ok(Some(captures)),
-                Err(e) => Err(Some((e, Some(captures)))),
+                Err(e) => {
+                    Err((event::StepError::Panic(e.into()), Some(captures)))
+                }
             }
         };
 
@@ -952,16 +935,10 @@ where
                 self.send(skipped(step));
                 Err(world)
             }
-            Err(Some((err, captures))) => {
-                self.send(failed(
-                    step,
-                    captures,
-                    world.map(Arc::new),
-                    Arc::from(err),
-                ));
+            Err((err, captures)) => {
+                self.send(failed(step, captures, world.map(Arc::new), err));
                 Err(None)
             }
-            Err(None) => Err(None),
         }
     }
 

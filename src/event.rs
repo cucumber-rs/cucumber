@@ -21,7 +21,9 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
-use crate::step;
+use derive_more::{Display, Error, From};
+
+use crate::{step, writer::basic::coerce_error};
 
 /// Alias for a [`catch_unwind()`] error.
 ///
@@ -190,12 +192,6 @@ pub enum Step<World> {
     /// [`Step`]: gherkin::Step
     Started,
 
-    /// [`Step`] matches multiple [`Regex`]es.
-    ///
-    /// [`Regex`]: regex::Regex
-    /// [`Step`]: gherkin::Step
-    AmbiguousMatch(step::AmbiguousMatchError),
-
     /// [`Step`] being skipped.
     ///
     /// That means there is no [`Regex`] matching [`Step`] in a
@@ -214,7 +210,30 @@ pub enum Step<World> {
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<regex::CaptureLocations>, Option<Arc<World>>, Info),
+    Failed(
+        Option<regex::CaptureLocations>,
+        Option<Arc<World>>,
+        StepError,
+    ),
+}
+
+/// [`Step`] error.
+///
+/// [`Step`]: gherkin::Step
+#[derive(Clone, Debug, Display, Error, From)]
+pub enum StepError {
+    /// [`Step`] matches multiple [`Regex`]es.
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    #[display(fmt = "Step match is ambiguous: {}", _0)]
+    AmbiguousMatch(step::AmbiguousMatchError),
+
+    /// [`Step`] panicked.
+    ///
+    /// [`Step`]: gherkin::Step
+    #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
+    Panic(#[error(not(source))] Info),
 }
 
 // Manual implementation is required to omit the redundant `World: Clone` trait
@@ -223,7 +242,6 @@ impl<World> Clone for Step<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::AmbiguousMatch(e) => Self::AmbiguousMatch(e.clone()),
             Self::Skipped => Self::Skipped,
             Self::Passed(captures) => Self::Passed(captures.clone()),
             Self::Failed(captures, w, info) => {
@@ -366,32 +384,6 @@ impl<World> Scenario<World> {
         Self::Step(step, Step::Started)
     }
 
-    /// Constructs an event of a [`Step`] matching multiple [`Regex`]es.
-    ///
-    /// [`Regex`]: regex::Regex
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub fn ambiguous_step(
-        step: Arc<gherkin::Step>,
-        err: step::AmbiguousMatchError,
-    ) -> Self {
-        Self::Step(step, Step::AmbiguousMatch(err))
-    }
-
-    /// Constructs an event of a [`Background`] [`Step`] matching multiple
-    /// [`Regex`]es.
-    ///
-    /// [`Background`]: gherkin::Background
-    /// [`Regex`]: regex::Regex
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub fn background_ambiguous_step(
-        step: Arc<gherkin::Step>,
-        err: step::AmbiguousMatchError,
-    ) -> Self {
-        Self::Background(step, Step::AmbiguousMatch(err))
-    }
-
     /// Constructs an event of a [`Background`] [`Step`] being started.
     ///
     /// [`Background`]: gherkin::Background
@@ -448,7 +440,7 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: Info,
+        info: StepError,
     ) -> Self {
         Self::Step(step, Step::Failed(captures, world, info))
     }
@@ -462,7 +454,7 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: Info,
+        info: StepError,
     ) -> Self {
         Self::Background(step, Step::Failed(captures, world, info))
     }
