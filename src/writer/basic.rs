@@ -646,13 +646,13 @@ impl Basic {
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
-pub(crate) fn coerce_error(err: &Info) -> String {
+pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
     if let Some(string) = err.downcast_ref::<String>() {
-        string.clone()
+        string.clone().into()
     } else if let Some(&string) = err.downcast_ref::<&str>() {
-        string.to_owned()
+        string.to_owned().into()
     } else {
-        "(Could not resolve panic payload)".to_owned()
+        "(Could not resolve panic payload)".into()
     }
 }
 
