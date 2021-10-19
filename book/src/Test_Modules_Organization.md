@@ -26,7 +26,7 @@ Avoid writing similar step definitions, as they can lead to clutter. While docum
 
 ## Managing growth
 
-To help with non-intuitive and frustrating problems that can be encountered in case your `Step` is matched by multiple functions, annotated with `Step` attributes, we propagate that case as an [`AmbiguousMatchError`](https://docs.rs/cucumber/*/cucumber/event/enum.Step.html#variant.AmbiguousMatch).
+To help with non-intuitive and frustrating problems that can be encountered in case your `Step` is matched by multiple functions, annotated with `Step` attributes, we propagate that case as an [`AmbiguousMatchError`](https://docs.rs/cucumber/*/cucumber/event/enum.StepError.html#variant.AmbiguousMatch).
 
 As your test suit grows, it may become harder to notice how minimal changes to `regex`es can lead to mismatched `Step`s. To avoid this, we recommend using [`Cucumber::fail_on_skipped()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped) combining with `@allow_skipped` tag. This will allow you to mark out `Scenario`s which `Step`s are allowed to skip.
 

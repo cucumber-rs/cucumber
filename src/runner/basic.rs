@@ -650,6 +650,7 @@ where
                 event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
             }
         };
+
         let compose = |started, passed, skipped, failed| {
             (ok(started), ok_capt(passed), ok(skipped), err(failed))
         };
@@ -895,6 +896,14 @@ where
         self.send(started(step.clone()));
 
         let run = async {
+            let (step_fn, captures, ctx) = match self.collection.find(&step) {
+                Ok(Some(step_fn)) => step_fn,
+                Ok(None) => return Ok(None),
+                Err(e) => {
+                    return Err((event::StepError::AmbiguousMatch(e), None));
+                }
+            };
+
             if world.is_none() {
                 let w_fut = async {
                     W::new().await.expect("failed to initialize World")
@@ -906,14 +915,6 @@ where
                     }
                 };
             }
-
-            let (step_fn, captures, ctx) = match self.collection.find(&step) {
-                Ok(Some(step_fn)) => step_fn,
-                Ok(None) => return Ok(None),
-                Err(e) => {
-                    return Err((event::StepError::AmbiguousMatch(e), None));
-                }
-            };
 
             match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
                 .catch_unwind()

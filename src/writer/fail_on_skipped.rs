@@ -60,15 +60,13 @@ where
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
     async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
-        use event::{Cucumber, Feature, Rule, Scenario, Step};
+        use event::{
+            Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
+        };
 
         let map_failed = |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: _| {
             let event = if (self.should_fail)(&f, r.as_deref(), &sc) {
-                Step::Failed(
-                    None,
-                    None,
-                    event::StepError::Panic(Arc::new("not allowed to skip")),
-                )
+                Step::Failed(None, None, Panic(Arc::new("not allowed to skip")))
             } else {
                 Step::Skipped
             };
