@@ -21,6 +21,10 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
+use derive_more::{Display, Error, From};
+
+use crate::{step, writer::basic::coerce_error};
+
 /// Alias for a [`catch_unwind()`] error.
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
@@ -206,7 +210,11 @@ pub enum Step<World> {
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(Option<regex::CaptureLocations>, Option<Arc<World>>, Info),
+    Failed(
+        Option<regex::CaptureLocations>,
+        Option<Arc<World>>,
+        StepError,
+    ),
 }
 
 // Manual implementation is required to omit the redundant `World: Clone` trait
@@ -222,6 +230,25 @@ impl<World> Clone for Step<World> {
             }
         }
     }
+}
+
+/// Error of executing a [`Step`].
+///
+/// [`Step`]: gherkin::Step
+#[derive(Clone, Debug, Display, Error, From)]
+pub enum StepError {
+    /// [`Step`] matches multiple [`Regex`]es.
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`Step`]: gherkin::Step
+    #[display(fmt = "Step match is ambiguous: {}", _0)]
+    AmbiguousMatch(step::AmbiguousMatchError),
+
+    /// [`Step`] panicked.
+    ///
+    /// [`Step`]: gherkin::Step
+    #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
+    Panic(#[error(not(source))] Info),
 }
 
 /// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
@@ -413,9 +440,9 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: Info,
+        info: impl Into<StepError>,
     ) -> Self {
-        Self::Step(step, Step::Failed(captures, world, info))
+        Self::Step(step, Step::Failed(captures, world, info.into()))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -427,8 +454,8 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: Option<regex::CaptureLocations>,
         world: Option<Arc<World>>,
-        info: Info,
+        info: impl Into<StepError>,
     ) -> Self {
-        Self::Background(step, Step::Failed(captures, world, info))
+        Self::Background(step, Step::Failed(captures, world, info.into()))
     }
 }

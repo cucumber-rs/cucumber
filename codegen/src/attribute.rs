@@ -102,71 +102,13 @@ impl Step {
 
     /// Expands generated code of this [`Step`] definition.
     fn expand(self) -> syn::Result<TokenStream> {
-        let is_regex = matches!(self.attr_arg, AttributeArgument::Regex(_));
-
         let func = &self.func;
         let func_name = &func.sig.ident;
 
-        let (func_args, addon_parsing) = if is_regex {
-            if let Some(elem_ty) = find_first_slice(&func.sig) {
-                let addon_parsing = Some(quote! {
-                    let __cucumber_matches = __cucumber_ctx
-                        .matches
-                        .iter()
-                        .skip(1)
-                        .enumerate()
-                        .map(|(i, s)| {
-                            s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
-                                "Failed to parse element at {} '{}': {}",
-                                i, s, e,
-                            ))
-                        })
-                        .collect::<Vec<_>>();
-                });
-                let func_args = func
-                    .sig
-                    .inputs
-                    .iter()
-                    .skip(1)
-                    .map(|arg| self.borrow_step_or_slice(arg))
-                    .collect::<Result<TokenStream, _>>()?;
-
-                (func_args, addon_parsing)
-            } else {
-                #[allow(clippy::redundant_closure_for_method_calls)]
-                let (idents, parsings): (Vec<_>, Vec<_>) =
-                    itertools::process_results(
-                        func.sig
-                            .inputs
-                            .iter()
-                            .skip(1)
-                            .map(|arg| self.arg_ident_and_parse_code(arg)),
-                        |i| i.unzip(),
-                    )?;
-
-                let addon_parsing = Some(quote! {
-                    let mut __cucumber_iter = __cucumber_ctx
-                        .matches.iter()
-                        .skip(1);
-                    #( #parsings )*
-                });
-                let func_args = quote! {
-                    #( #idents, )*
-                };
-
-                (func_args, addon_parsing)
-            }
-        } else if self.step_arg_name.is_some() {
-            (
-                quote! { ::std::borrow::Borrow::borrow(&__cucumber_ctx.step), },
-                None,
-            )
-        } else {
-            (TokenStream::default(), None)
-        };
-
         let world = parse_world_from_args(&self.func.sig)?;
         let constructor_method = self.constructor_method();
+        let (func_args, addon_parsing) =
+            self.fn_arguments_and_additional_parsing()?;
 
         let step_matcher = self.attr_arg.regex_literal().value();
         let caller_name =
@@ -203,6 +145,11 @@ impl Step {
                     <#world as ::cucumber::codegen::WorldInventory<
                         _, _, _,
                     >>::#constructor_method(
+                        ::cucumber::step::Location {
+                            path: ::std::convert::From::from(::std::file!()),
+                            line: ::std::line!(),
+                            column: ::std::column!(),
+                        },
                         ::cucumber::codegen::Regex::new(#step_matcher)
                             .unwrap(),
                         #step_caller,
@@ -210,6 +157,74 @@ impl Step {
                 }
             );
         })
+    }
+
+    /// Generates code that prepares function's arguments basing on
+    /// [`AttributeArgument`] and additional parsing if it's an
+    /// [`AttributeArgument::Regex`].
+    fn fn_arguments_and_additional_parsing(
+        &self,
+    ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
+        let is_regex = matches!(self.attr_arg, AttributeArgument::Regex(_));
+        let func = &self.func;
+
+        if is_regex {
+            if let Some(elem_ty) = find_first_slice(&func.sig) {
+                let addon_parsing = Some(quote! {
+                    let __cucumber_matches = __cucumber_ctx
+                        .matches
+                        .iter()
+                        .skip(1)
+                        .enumerate()
+                        .map(|(i, s)| {
+                            s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
+                                "Failed to parse element at {} '{}': {}",
+                                i, s, e,
+                            ))
+                        })
+                        .collect::<Vec<_>>();
+                });
+                let func_args = func
+                    .sig
+                    .inputs
+                    .iter()
+                    .skip(1)
+                    .map(|arg| self.borrow_step_or_slice(arg))
+                    .collect::<Result<TokenStream, _>>()?;
+
+                Ok((func_args, addon_parsing))
+            } else {
+                #[allow(clippy::redundant_closure_for_method_calls)]
+                let (idents, parsings): (Vec<_>, Vec<_>) =
+                    itertools::process_results(
+                        func.sig
+                            .inputs
+                            .iter()
+                            .skip(1)
+                            .map(|arg| self.arg_ident_and_parse_code(arg)),
+                        |i| i.unzip(),
+                    )?;
+
+                let addon_parsing = Some(quote! {
+                    let mut __cucumber_iter = __cucumber_ctx
+                        .matches.iter()
+                        .skip(1);
+                    #( #parsings )*
+                });
+                let func_args = quote! {
+                    #( #idents, )*
+                };
+
+                Ok((func_args, addon_parsing))
+            }
+        } else if self.step_arg_name.is_some() {
+            Ok((
+                quote! { ::std::borrow::Borrow::borrow(&__cucumber_ctx.step), },
+                None,
+            ))
+        } else {
+            Ok((TokenStream::default(), None))
+        }
     }
 
     /// Composes a name of the `cucumber::codegen::WorldInventory` method to

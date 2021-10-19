@@ -36,7 +36,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
-    event::{self, HookType, Info},
+    event::{self, HookType},
     feature::Ext as _,
     parser, step, Runner, Step, World,
 };
@@ -320,7 +320,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).given(regex, step);
+        self.steps = mem::take(&mut self.steps).given(None, regex, step);
         self
     }
 
@@ -329,7 +329,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [When]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).when(regex, step);
+        self.steps = mem::take(&mut self.steps).when(None, regex, step);
         self
     }
 
@@ -338,7 +338,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
-        self.steps = mem::take(&mut self.steps).then(regex, step);
+        self.steps = mem::take(&mut self.steps).then(None, regex, step);
         self
     }
 }
@@ -614,21 +614,21 @@ where
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
     ) {
-        let ok = |e: fn(Arc<gherkin::Step>) -> event::Scenario<W>| {
+        let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let ok_capt = |e: fn(Arc<gherkin::Step>, _) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
-        let err = |e: fn(Arc<gherkin::Step>, _, _, _) -> event::Scenario<W>| {
+        let err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures, w, info| {
                 let (f, r, s) = (f.clone(), r.clone(), s.clone());
@@ -875,33 +875,40 @@ where
             Arc<gherkin::Step>,
             Option<CaptureLocations>,
             Option<Arc<W>>,
-            Info,
+            event::StepError,
         ) -> event::Cucumber<W>,
     {
         self.send(started(step.clone()));
 
         let run = async {
+            let (step_fn, captures, ctx) = match self.collection.find(&step) {
+                Ok(Some(f)) => f,
+                Ok(None) => return Ok(None),
+                Err(e) => {
+                    return Err((event::StepError::AmbiguousMatch(e), None));
+                }
+            };
+
             if world.is_none() {
                 let w_fut = async {
                     W::new().await.expect("failed to initialize World")
                 };
                 world = match AssertUnwindSafe(w_fut).catch_unwind().await {
                     Ok(w) => Some(w),
-                    Err(e) => return Err((e, None)),
+                    Err(e) => {
+                        return Err((event::StepError::Panic(e.into()), None))
+                    }
                 };
             }
-
-            let (step_fn, captures, ctx) = match self.collection.find(&step) {
-                Some(step_fn) => step_fn,
-                None => return Ok(None),
-            };
 
             match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
                 .catch_unwind()
                 .await
             {
                 Ok(()) => Ok(Some(captures)),
-                Err(e) => Err((e, Some(captures))),
+                Err(e) => {
+                    Err((event::StepError::Panic(e.into()), Some(captures)))
+                }
             }
         };
 
@@ -915,12 +922,7 @@ where
                 Err(world)
             }
             Err((err, captures)) => {
-                self.send(failed(
-                    step,
-                    captures,
-                    world.map(Arc::new),
-                    Arc::from(err),
-                ));
+                self.send(failed(step, captures, world.map(Arc::new), err));
                 Err(None)
             }
         }

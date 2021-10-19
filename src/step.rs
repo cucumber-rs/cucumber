@@ -14,13 +14,15 @@
 //! [`Step`]: gherkin::Step
 
 use std::{
+    cmp::Ordering,
     collections::HashMap,
     fmt,
     hash::{Hash, Hasher},
     iter,
-    ops::Deref,
+    path::PathBuf,
 };
 
+use derive_more::{Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use regex::Regex;
@@ -29,15 +31,18 @@ use regex::Regex;
 pub type Step<World> =
     for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
+/// Alias for a [`Step`] with [`regex::CaptureLocations`] and [`Context`]
+/// returned by [`Collection::find()`].
+pub type WithContext<'me, World> =
+    (&'me Step<World>, regex::CaptureLocations, Context);
+
 /// Collection of [`Step`]s.
 ///
-/// Every [`Step`] should be matched by exactly 1 [`Regex`]. Otherwise there are
-/// no guarantees that [`Step`]s will be matched deterministically from run to
-/// run.
+/// Every [`Step`] has to match with exactly 1 [`Regex`].
 pub struct Collection<World> {
-    given: HashMap<HashableRegex, Step<World>>,
-    when: HashMap<HashableRegex, Step<World>>,
-    then: HashMap<HashableRegex, Step<World>>,
+    given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 }
 
 impl<World> fmt::Debug for Collection<World> {
@@ -92,8 +97,13 @@ impl<World> Collection<World> {
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     #[must_use]
-    pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
-        let _ = self.given.insert(regex.into(), step);
+    pub fn given(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+    ) -> Self {
+        let _ = self.given.insert((regex.into(), loc), step);
         self
     }
 
@@ -101,8 +111,13 @@ impl<World> Collection<World> {
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference/#when
     #[must_use]
-    pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
-        let _ = self.when.insert(regex.into(), step);
+    pub fn when(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+    ) -> Self {
+        let _ = self.when.insert((regex.into(), loc), step);
         self
     }
 
@@ -110,30 +125,54 @@ impl<World> Collection<World> {
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     #[must_use]
-    pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
-        let _ = self.then.insert(regex.into(), step);
+    pub fn then(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+    ) -> Self {
+        let _ = self.then.insert((regex.into(), loc), step);
         self
     }
 
-    /// Returns a [`Step`] function matching the given [`gherkin::Step`],
-    /// if any.
-    #[must_use]
+    /// Returns a [`Step`] function matching the given [`gherkin::Step`], if
+    /// any.
+    ///
+    /// # Errors
+    ///
+    /// If the given [`gherkin::Step`] matches multiple [`Regex`]es.
     pub fn find(
         &self,
         step: &gherkin::Step,
-    ) -> Option<(&Step<World>, regex::CaptureLocations, Context)> {
+    ) -> Result<Option<WithContext<'_, World>>, AmbiguousMatchError> {
         let collection = match step.ty {
             StepType::Given => &self.given,
             StepType::When => &self.when,
             StepType::Then => &self.then,
         };
 
-        let (whole_match, captures, step_fn) =
-            collection.iter().find_map(|(re, step_fn)| {
+        let mut matches = collection
+            .iter()
+            .filter_map(|((re, loc), step_fn)| {
                 let mut captures = re.capture_locations();
                 re.captures_read(&mut captures, &step.value)
-                    .map(|m| (m, captures, step_fn))
-            })?;
+                    .map(|m| (re, loc, m, captures, step_fn))
+            })
+            .collect::<Vec<_>>();
+
+        let (_, _, whole_match, captures, step_fn) = match matches.len() {
+            0 => return Ok(None),
+            // Instead of `.unwrap()` to avoid documenting `# Panics` section.
+            1 => matches.pop().unwrap_or_else(|| unreachable!()),
+            _ => {
+                return Err(AmbiguousMatchError {
+                    possible_matches: matches
+                        .into_iter()
+                        .map(|(re, loc, ..)| (re.clone(), loc.clone()))
+                        .collect(),
+                })
+            }
+        };
 
         let matches = iter::once(whole_match.as_str().to_owned())
             .chain((1..captures.len()).map(|group_id| {
@@ -144,14 +183,14 @@ impl<World> Collection<World> {
             }))
             .collect();
 
-        Some((
+        Ok(Some((
             step_fn,
             captures,
             Context {
                 step: step.clone(),
                 matches,
             },
-        ))
+        )))
     }
 }
 
@@ -169,9 +208,31 @@ pub struct Context {
     pub matches: Vec<String>,
 }
 
-/// [`Regex`] wrapper to store it as a key of a [`HashMap`].
-#[derive(Clone, Debug)]
-struct HashableRegex(Regex);
+/// Error of a [`gherkin::Step`] matching multiple [`Step`] [`Regex`]es inside a
+/// [`Collection`].
+#[derive(Clone, Debug, Display, Error)]
+#[display(fmt = "Possible matches: {:#?}", possible_matches)]
+pub struct AmbiguousMatchError {
+    /// Possible [`Regex`]es the [`gherkin::Step`] matches.
+    pub possible_matches: Vec<(HashableRegex, Option<Location>)>,
+}
+
+/// Location of a [`Step`] [`fn`] automatically filled by a proc macro.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Location {
+    /// Path to the file where [`Step`] [`fn`] is located.
+    pub path: PathBuf,
+
+    /// Line of the file where [`Step`] [`fn`] is located.
+    pub line: u32,
+
+    /// Column of the file where [`Step`] [`fn`] is located.
+    pub column: u32,
+}
+
+/// [`Regex`] wrapper implementing [`Eq`], [`Ord`] and [`Hash`].
+#[derive(Clone, Debug, Deref, DerefMut)]
+pub struct HashableRegex(Regex);
 
 impl From<Regex> for HashableRegex {
     fn from(re: Regex) -> Self {
@@ -193,10 +254,14 @@ impl PartialEq for HashableRegex {
 
 impl Eq for HashableRegex {}
 
-impl Deref for HashableRegex {
-    type Target = Regex;
+impl PartialOrd for HashableRegex {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.as_str().partial_cmp(other.0.as_str())
+    }
+}
 
-    fn deref(&self) -> &Regex {
-        &self.0
+impl Ord for HashableRegex {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.as_str().cmp(other.0.as_str())
     }
 }

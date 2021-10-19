@@ -247,7 +247,7 @@ impl Basic {
             sc.position.line,
             sc.position.col,
             coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
         .unwrap();
@@ -402,7 +402,7 @@ impl Basic {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
-        info: &Info,
+        err: &event::StepError,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -438,8 +438,8 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -593,7 +593,7 @@ impl Basic {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
-        info: &Info,
+        err: &event::StepError,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -629,8 +629,8 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            coerce_error(info),
-            format_world(world, self.indent.saturating_sub(3) + 3),
+            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
+            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -646,27 +646,51 @@ impl Basic {
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
-fn coerce_error(err: &Info) -> String {
+pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
     if let Some(string) = err.downcast_ref::<String>() {
-        string.clone()
+        string.clone().into()
     } else if let Some(&string) = err.downcast_ref::<&str>() {
-        string.to_owned()
+        string.to_owned().into()
     } else {
-        "(Could not resolve panic payload)".to_owned()
+        "(Could not resolve panic payload)".into()
     }
 }
 
-/// Formats the given [`World`] using [`Debug`], then adds `indent`s to each
-/// line to prettify the output.
-fn format_world<W: Debug>(world: Option<&W>, indent: usize) -> String {
-    let world = world
-        .map(|world| format!("{:#?}", world))
+/// Formats the given [`Debug`] implementor, then adds `indent`s to each line to
+/// prettify the output.
+fn format_debug_with_indent<'d, D, I>(debug: I, indent: usize) -> String
+where
+    D: Debug + 'd,
+    I: Into<Option<&'d D>>,
+{
+    let debug = debug
+        .into()
+        .map(|debug| format!("{:#?}", debug))
         .unwrap_or_default()
         .lines()
         .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");
-    (!world.is_empty())
-        .then(|| format!("\n{}", world))
+    (!debug.is_empty())
+        .then(|| format!("\n{}", debug))
+        .unwrap_or_default()
+}
+
+/// Formats the given [`Display`] implementor, then adds `indent`s to each line
+/// to prettify the output.
+fn format_display_with_indent<'d, D, I>(display: I, indent: usize) -> String
+where
+    D: Display + 'd,
+    I: Into<Option<&'d D>>,
+{
+    let display = display
+        .into()
+        .map(|display| format!("{}", display))
+        .unwrap_or_default()
+        .lines()
+        .map(|line| format!("{}{}", " ".repeat(indent), line))
+        .join("\n");
+    (!display.is_empty())
+        .then(|| format!("\n{}", display))
         .unwrap_or_default()
 }
 

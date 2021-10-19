@@ -28,11 +28,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Ability to run `Scenario`s concurrently. ([#128])
 - Highlighting of regex capture groups in terminal output with __bold__ style. ([#136])
+- Error on a step matching multiple step functions ([#143]).
 
 [#128]: /../../pull/128
 [#136]: /../../pull/136
 [#137]: /../../pull/137
 [#142]: /../../pull/142
+[#143]: /../../pull/143
 
 
 

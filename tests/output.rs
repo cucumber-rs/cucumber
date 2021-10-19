@@ -1,7 +1,9 @@
-use std::{borrow::Cow, convert::Infallible, fmt::Debug, sync::Arc};
+use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
-use cucumber::{event, given, parser, then, when, WorldInit, Writer};
+use cucumber::{event, given, parser, step, then, when, WorldInit, Writer};
+use itertools::Itertools as _;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 #[derive(Debug, Default, WorldInit)]
@@ -14,6 +16,9 @@ fn step(w: &mut World, num: usize) {
     assert_eq!(w.0, num);
     w.0 += 1;
 }
+
+#[given(regex = r"foo is (\d+) ambiguous")]
+fn ambiguous(_w: &mut World) {}
 
 #[async_trait(?Send)]
 impl cucumber::World for World {
@@ -33,24 +38,103 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
     ) {
+        use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
+
+        // This function is used to provide a deterministic ordering of
+        // `possible_matches`.
+        let sort_matches = |mut e: step::AmbiguousMatchError| {
+            e.possible_matches = e
+                .possible_matches
+                .into_iter()
+                .sorted_by(|(re_l, loc_l), (re_r, loc_r)| {
+                    let re_ord = Ord::cmp(re_l, re_r);
+                    if re_ord != Ordering::Equal {
+                        return re_ord;
+                    }
+                    loc_l
+                        .as_ref()
+                        .and_then(|l| loc_r.as_ref().map(|r| Ord::cmp(l, r)))
+                        .unwrap_or(Ordering::Equal)
+                })
+                .collect();
+            e
+        };
+
         let ev: Cow<_> = match ev {
             Err(_) => "ParsingError".into(),
-            Ok(event::Cucumber::Feature(f, ev)) => {
-                let mut f = f.as_ref().clone();
-                f.path = None;
-                format!("{:?}", event::Cucumber::Feature(Arc::new(f), ev))
-                    .into()
+            Ok(Cucumber::Feature(
+                feat,
+                Feature::Rule(
+                    rule,
+                    Rule::Scenario(
+                        sc,
+                        Scenario::Step(
+                            st,
+                            Step::Failed(cap, w, StepError::AmbiguousMatch(e)),
+                        ),
+                    ),
+                ),
+            )) => {
+                let ev = Cucumber::scenario(
+                    feat,
+                    Some(rule),
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(
+                            cap,
+                            w,
+                            StepError::AmbiguousMatch(sort_matches(e)),
+                        ),
+                    ),
+                );
+
+                format!("{:?}", ev).into()
+            }
+            Ok(Cucumber::Feature(
+                feat,
+                Feature::Scenario(
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(cap, w, StepError::AmbiguousMatch(e)),
+                    ),
+                ),
+            )) => {
+                let ev = Cucumber::scenario(
+                    feat,
+                    None,
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(
+                            cap,
+                            w,
+                            StepError::AmbiguousMatch(sort_matches(e)),
+                        ),
+                    ),
+                );
+
+                format!("{:?}", ev).into()
             }
             Ok(ev) => format!("{:?}", ev).into(),
         };
 
-        let re =
-            Regex::new(r" span: Span \{ start: (\d+), end: (\d+) },").unwrap();
-        let without_span = re.replace_all(ev.as_ref(), "");
+        let without_span = SPAN_OR_PATH_RE.replace_all(ev.as_ref(), "");
 
         self.0.push_str(without_span.as_ref());
     }
 }
+
+/// [`Regex`] to unify spans and file paths on Windows, Linux and macOS for
+/// tests.
+static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+         | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
+    )
+    .unwrap()
+});
 
 #[cfg(test)]
 mod spec {
