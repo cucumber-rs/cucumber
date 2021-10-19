@@ -1,7 +1,8 @@
-use std::{borrow::Cow, convert::Infallible, fmt::Debug};
+use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
-use cucumber::{event, given, parser, then, when, WorldInit, Writer};
+use cucumber::{event, given, parser, step, then, when, WorldInit, Writer};
+use itertools::Itertools as _;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -37,8 +38,88 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
     ) {
+        use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
+
+        // This function is used to have deterministic ordering of
+        // `possible_matches`.
+        let sort_matches = |mut e: step::AmbiguousMatchError| {
+            e.possible_matches = e
+                .possible_matches
+                .into_iter()
+                .sorted_by(|(re_l, loc_l), (re_r, loc_r)| {
+                    let re_ord = Ord::cmp(re_l, re_r);
+                    if re_ord == Ordering::Equal {
+                        loc_l
+                            .as_ref()
+                            .and_then(|l| {
+                                loc_r.as_ref().map(|r| Ord::cmp(l, r))
+                            })
+                            .unwrap_or(Ordering::Equal)
+                    } else {
+                        re_ord
+                    }
+                })
+                .collect();
+            e
+        };
+
         let ev: Cow<_> = match ev {
             Err(_) => "ParsingError".into(),
+            Ok(Cucumber::Feature(
+                feat,
+                Feature::Rule(
+                    rule,
+                    Rule::Scenario(
+                        sc,
+                        Scenario::Step(
+                            st,
+                            Step::Failed(cap, w, StepError::AmbiguousMatch(e)),
+                        ),
+                    ),
+                ),
+            )) => {
+                let ev = Cucumber::scenario(
+                    feat,
+                    Some(rule),
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(
+                            cap,
+                            w,
+                            StepError::AmbiguousMatch(sort_matches(e)),
+                        ),
+                    ),
+                );
+
+                format!("{:?}", ev).into()
+            }
+            Ok(Cucumber::Feature(
+                feat,
+                Feature::Scenario(
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(cap, w, StepError::AmbiguousMatch(e)),
+                    ),
+                ),
+            )) => {
+                let ev = Cucumber::scenario(
+                    feat,
+                    None,
+                    sc,
+                    Scenario::Step(
+                        st,
+                        Step::Failed(
+                            cap,
+                            w,
+                            StepError::AmbiguousMatch(sort_matches(e)),
+                        ),
+                    ),
+                );
+
+                format!("{:?}", ev).into()
+            }
             Ok(ev) => format!("{:?}", ev).into(),
         };
 

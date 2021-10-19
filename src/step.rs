@@ -15,7 +15,7 @@
 
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     fmt,
     hash::{Hash, Hasher},
     iter,
@@ -38,11 +38,11 @@ pub type WithContext<'me, World> =
 
 /// Collection of [`Step`]s.
 ///
-/// Every [`Step`] has to be matched by exactly 1 [`Regex`].
+/// Every [`Step`] has to match with exactly 1 [`Regex`].
 pub struct Collection<World> {
-    given: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
-    when: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
-    then: BTreeMap<(HashableRegex, Option<Location>), Step<World>>,
+    given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 }
 
 impl<World> fmt::Debug for Collection<World> {
@@ -79,9 +79,9 @@ impl<World> fmt::Debug for Collection<World> {
 impl<World> Default for Collection<World> {
     fn default() -> Self {
         Self {
-            given: BTreeMap::new(),
-            when: BTreeMap::new(),
-            then: BTreeMap::new(),
+            given: HashMap::new(),
+            when: HashMap::new(),
+            then: HashMap::new(),
         }
     }
 }
