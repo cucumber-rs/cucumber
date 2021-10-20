@@ -468,7 +468,7 @@ impl Basic {
     ) {
         self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
-            "{indent}?  {} {}{}{}{}\n\
+            "{indent}?  {} {}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,

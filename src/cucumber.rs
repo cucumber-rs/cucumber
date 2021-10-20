@@ -20,9 +20,9 @@ use std::{
     path::Path,
 };
 
-use futures::{future::LocalBoxFuture, StreamExt as _};
+use futures::{future::LocalBoxFuture, Future, StreamExt as _};
 use regex::Regex;
-use structopt::StructOpt as _;
+use structopt::{StructOpt, StructOptInternal};
 
 use crate::{
     cli, event, parser, runner, step, tag::Ext as _, writer, ArbitraryWriter,
@@ -673,8 +673,110 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::non_ascii_literal)]
     pub async fn filter_run<F>(self, input: I, filter: F) -> Wr
+    where
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    {
+        self.filter_run_with_cli(
+            input,
+            filter,
+            cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args(),
+        )
+        .await
+    }
+
+    /// Runs [`Cucumber`] with [`Scenario`]s filter and additional CLI options.
+    ///
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
+    ///
+    /// # Example
+    ///
+    /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::{WorldInit, cli};
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// let (_cli, cucumber) = MyWorld::cucumber()
+    ///     .filter_run_with_additional_cli::<cli::Empty>(
+    ///         "tests/features/readme",
+    ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
+    ///     );
+    /// cucumber.await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
+    /// <script
+    ///     id="asciicast-0KvTxnfaMRjsvsIKsalS611Ta"
+    ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
+    ///     async data-autoplay="true" data-rows="14">
+    /// </script>
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Scenario`]: gherkin::Scenario
+    pub fn filter_run_with_additional_cli<CustomCli>(
+        self,
+        input: I,
+        filter: impl Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    ) -> (CustomCli, impl Future<Output = Wr>)
+    where
+        CustomCli: StructOptInternal,
+    {
+        let cli::Compose { left, right } = cli::Compose::<
+            CustomCli,
+            cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+        >::from_args();
+        (left, self.filter_run_with_cli(input, filter, right))
+    }
+
+    /// Runs [`Cucumber`] with [`Scenario`]s filter with provided CLI options.
+    async fn filter_run_with_cli<F>(
+        self,
+        input: I,
+        filter: F,
+        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+    ) -> Wr
     where
         F: Fn(
                 &gherkin::Feature,
@@ -689,7 +791,7 @@ where
             parser: parser_cli,
             runner: runner_cli,
             writer: writer_cli,
-        } = cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args();
+        } = cli;
 
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
@@ -1014,6 +1116,29 @@ where
         self.filter_run_and_exit(input, |_, _, _| true).await;
     }
 
+    /// Runs [`Cucumber`].
+    ///
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// Returned [`Future`] panics if encountered errors while parsing
+    /// [`Feature`]s or at least one [`Step`] [`Failed`].
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Feature`]: gherkin::Feature
+    /// [`Step`]: gherkin::Step
+    pub fn run_and_exit_with_additional_cli<CustomCli>(
+        self,
+        input: I,
+    ) -> (CustomCli, impl Future<Output = ()>)
+    where
+        CustomCli: StructOptInternal,
+    {
+        self.filter_run_and_exit_with_additional_cli(input, |_, _, _| true)
+    }
+
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
     /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
@@ -1089,38 +1214,102 @@ where
             ) -> bool
             + 'static,
     {
-        let writer = self.filter_run(input, filter).await;
-        if writer.execution_has_failed() {
-            let mut msg = Vec::with_capacity(3);
+        self.filter_run(input, filter)
+            .await
+            .panic_with_diagnostic_message();
+    }
 
-            let failed_steps = writer.failed_steps();
-            if failed_steps > 0 {
-                msg.push(format!(
-                    "{} step{} failed",
-                    failed_steps,
-                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
+    /// Runs [`Cucumber`] with [`Scenario`]s filter and additional CLI options.
+    ///
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// Returned [`Future`] panics if encountered errors while parsing
+    /// [`Feature`]s or at least one [`Step`] [`Failed`].
+    ///
+    /// # Example
+    ///
+    /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::{WorldInit, cli};
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// let (_cli, cucumber) = MyWorld::cucumber()
+    ///     .filter_run_and_exit_with_additional_cli::<cli::Empty>(
+    ///         "tests/features/readme",
+    ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
+    ///     );
+    /// cucumber.await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    /// ```gherkin
+    /// Feature: Animal feature
+    ///
+    ///   @cat
+    ///   Scenario: If we feed a hungry cat it will no longer be hungry
+    ///     Given a hungry cat
+    ///     When I feed the cat
+    ///     Then the cat is not hungry
+    ///
+    ///   @dog
+    ///   Scenario: If we feed a satiated dog it will not become hungry
+    ///     Given a satiated dog
+    ///     When I feed the dog
+    ///     Then the dog is not hungry
+    /// ```
+    /// <script
+    ///     id="asciicast-0KvTxnfaMRjsvsIKsalS611Ta"
+    ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
+    ///     async data-autoplay="true" data-rows="14">
+    /// </script>
+    ///
+    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Feature`]: gherkin::Feature
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: crate::Step
+    pub fn filter_run_and_exit_with_additional_cli<CustomCli>(
+        self,
+        input: I,
+        filter: impl Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    ) -> (CustomCli, impl Future<Output = ()>)
+    where
+        CustomCli: StructOptInternal,
+    {
+        let cli::Compose { left, right } = cli::Compose::<
+            CustomCli,
+            cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+        >::from_args();
 
-            let parsing_errors = writer.parsing_errors();
-            if parsing_errors > 0 {
-                msg.push(format!(
-                    "{} parsing error{}",
-                    parsing_errors,
-                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
+        let f = async {
+            self.filter_run_with_cli(input, filter, right)
+                .await
+                .panic_with_diagnostic_message();
+        };
 
-            let hook_errors = writer.hook_errors();
-            if hook_errors > 0 {
-                msg.push(format!(
-                    "{} hook error{}",
-                    hook_errors,
-                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            panic!("{}", msg.join(", "));
-        }
+        (left, f)
     }
 }

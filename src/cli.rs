@@ -15,7 +15,7 @@ use regex::Regex;
 use structopt::StructOpt;
 
 /// Run the tests, pet a dog!.
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 pub struct Opts<Parser, Runner, Writer>
 where
     Parser: StructOpt,
@@ -64,10 +64,29 @@ where
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(not(doc), allow(missing_docs))]
 #[cfg_attr(doc, doc = "Empty CLI options.")]
-#[derive(StructOpt, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, StructOpt)]
 pub struct Empty {
     /// This field exists only because [`StructOpt`] derive macro doesn't
     /// support unit structs.
     #[structopt(skip)]
     skipped: (),
+}
+
+// Workaround for overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(doc, doc = "Composes two [`StructOpt`] derivers together.")]
+#[derive(Debug, StructOpt)]
+pub struct Compose<L, R>
+where
+    L: StructOpt,
+    R: StructOpt,
+{
+    /// [`StructOpt`] deriver.
+    #[structopt(flatten)]
+    pub left: L,
+
+    /// [`StructOpt`] deriver.
+    #[structopt(flatten)]
+    pub right: R,
 }
