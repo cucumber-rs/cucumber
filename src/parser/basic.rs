@@ -13,6 +13,7 @@
 use std::{
     borrow::Cow,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
     vec,
 };
@@ -20,9 +21,10 @@ use std::{
 use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
-use globwalk::GlobWalkerBuilder;
+use globwalk::{GlobWalker, GlobWalkerBuilder};
+use structopt::StructOpt;
 
-use crate::{cli, feature::Ext as _};
+use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
 
@@ -38,59 +40,99 @@ pub struct Basic {
     language: Option<Cow<'static, str>>,
 }
 
+// Workaround for overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
+#[allow(missing_debug_implementations)]
+#[derive(StructOpt)]
+pub struct CLI {
+    /// Feature-files glob pattern.
+    #[structopt(long, short, name = "glob")]
+    pub features: Option<Walker>,
+}
+
+/// [`GlobWalker`] wrapper with [`FromStr`] impl.
+#[allow(missing_debug_implementations)]
+pub struct Walker(GlobWalker);
+
+impl FromStr for Walker {
+    type Err = globwalk::GlobError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        globwalk::glob(s).map(Walker)
+    }
+}
+
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type CLI = cli::Empty;
+    type CLI = CLI;
 
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I, _: cli::Empty) -> Self::Output {
-        let features = || {
-            let path = path.as_ref();
-            let path = match path.canonicalize().or_else(|_| {
-                let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                buf.push(
-                    path.strip_prefix("/")
-                        .or_else(|_| path.strip_prefix("./"))
-                        .unwrap_or(path),
-                );
-                buf.as_path().canonicalize()
-            }) {
-                Ok(p) => p,
-                Err(err) => {
-                    return vec![
-                        (Err(Arc::new(gherkin::ParseFileError::Reading {
-                            path: path.to_path_buf(),
-                            source: err,
-                        })
-                        .into())),
-                    ];
-                }
-            };
+    fn parse(self, path: I, cli: Self::CLI) -> Self::Output {
+        let walk = |walker: GlobWalker| {
+            walker
+                .filter_map(Result::ok)
+                .filter(|entry| {
+                    entry
+                        .path()
+                        .extension()
+                        .map(|ext| ext == "feature")
+                        .unwrap_or_default()
+                })
+                .map(|entry| {
+                    let env = self
+                        .language
+                        .as_ref()
+                        .and_then(|l| GherkinEnv::new(l).ok())
+                        .unwrap_or_default();
+                    gherkin::Feature::parse_path(entry.path(), env)
+                })
+                .collect::<Vec<_>>()
+        };
 
-            let features = if path.is_file() {
-                let env = self
-                    .language
-                    .as_ref()
-                    .and_then(|l| GherkinEnv::new(l).ok())
-                    .unwrap_or_default();
-                vec![gherkin::Feature::parse_path(path, env)]
+        let get_path = || {
+            let path = path.as_ref();
+            path.canonicalize()
+                .or_else(|_| {
+                    let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                    buf.push(
+                        path.strip_prefix("/")
+                            .or_else(|_| path.strip_prefix("./"))
+                            .unwrap_or(path),
+                    );
+                    buf.as_path().canonicalize()
+                })
+                .map_err(|e| gherkin::ParseFileError::Reading {
+                    path: path.to_path_buf(),
+                    source: e,
+                })
+        };
+
+        let features = || {
+            let features = if let Some(walker) = cli.features {
+                walk(walker.0)
             } else {
-                let walker = GlobWalkerBuilder::new(path, "*.feature")
-                    .case_insensitive(true)
-                    .build()
-                    .unwrap();
-                walker
-                    .filter_map(Result::ok)
-                    .map(|entry| {
-                        let env = self
-                            .language
-                            .as_ref()
-                            .and_then(|l| GherkinEnv::new(l).ok())
-                            .unwrap_or_default();
-                        gherkin::Feature::parse_path(entry.path(), env)
-                    })
-                    .collect::<Vec<_>>()
+                let path = match get_path() {
+                    Ok(path) => path,
+                    Err(e) => return vec![Err(Arc::new(e).into())],
+                };
+
+                if path.is_file() {
+                    let env = self
+                        .language
+                        .as_ref()
+                        .and_then(|l| GherkinEnv::new(l).ok())
+                        .unwrap_or_default();
+                    vec![gherkin::Feature::parse_path(path, env)]
+                } else {
+                    let walker = GlobWalkerBuilder::new(path, "*.feature")
+                        .case_insensitive(true)
+                        .build()
+                        .unwrap();
+                    walk(walker)
+                }
             };
 
             features

@@ -60,7 +60,7 @@ where
     pub writer: Writer,
 }
 
-// Workaround overwritten doc-comments.
+// Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(not(doc), allow(missing_docs))]
 #[cfg_attr(doc, doc = "Empty CLI options.")]

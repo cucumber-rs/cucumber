@@ -51,13 +51,13 @@ pub struct Basic {
     lines_to_clear: usize,
 }
 
-// Workaround overwritten doc-comments.
+// Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(not(doc), allow(missing_docs))]
 #[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
 pub struct CLI {
-    /// Outputs Doc String, if present.
+    /// Outputs Step's Doc String, if present.
     #[structopt(long)]
     pub verbose: bool,
 
