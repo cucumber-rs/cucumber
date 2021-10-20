@@ -152,8 +152,13 @@ where
 /// [`next()`]: std::iter::Iterator::next()
 #[derive(Debug)]
 struct Queue<K: Eq + Hash, V> {
+    /// Indicator whether this [`Queue`] started emitting values.
     started_emitted: bool,
+
+    /// Underlying FIFO queue of values.
     queue: LinkedHashMap<K, V>,
+
+    /// Indicator whether this [`Queue`] finished emitting values.
     finished: bool,
 }
 
@@ -323,7 +328,10 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
     type EmittedPath = ();
 
     fn current_item(self) -> Option<Self::Current> {
-        self.queue.iter_mut().next().map(|(f, ev)| (f.clone(), ev))
+        self.queue
+            .iter_mut()
+            .next()
+            .map(|(f, ev)| (Arc::clone(f), ev))
     }
 
     async fn emit<W: Writer<World>>(
@@ -335,14 +343,14 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
             if !events.is_started_emitted() {
                 writer
                     .handle_event(Ok(event::Cucumber::feature_started(
-                        f.clone(),
+                        Arc::clone(&f),
                     )))
                     .await;
                 events.started_emitted();
             }
 
             while let Some(scenario_or_rule_to_remove) =
-                events.emit(f.clone(), writer).await
+                events.emit(Arc::clone(&f), writer).await
             {
                 events.remove(&scenario_or_rule_to_remove);
             }
@@ -350,10 +358,10 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
             if events.is_finished() {
                 writer
                     .handle_event(Ok(event::Cucumber::feature_finished(
-                        f.clone(),
+                        Arc::clone(&f),
                     )))
                     .await;
-                return Some(f.clone());
+                return Some(Arc::clone(&f));
             }
         }
         None
@@ -423,7 +431,7 @@ impl<World> FeatureQueue<World> {
         if let Some(rule) = rule {
             match self
                 .queue
-                .get_mut(&Either::Left(rule.clone()))
+                .get_mut(&Either::Left(Arc::clone(&rule)))
                 .unwrap_or_else(|| panic!("No Rule {}", rule.name))
             {
                 Either::Left(rules) => rules
@@ -456,10 +464,10 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
     fn current_item(self) -> Option<Self::Current> {
         Some(match self.queue.iter_mut().next()? {
             (Either::Left(rule), Either::Left(events)) => {
-                Either::Left((rule.clone(), events))
+                Either::Left((Arc::clone(rule), events))
             }
             (Either::Right(scenario), Either::Right(events)) => {
-                Either::Right((scenario.clone(), events))
+                Either::Right((Arc::clone(scenario), events))
             }
             _ => unreachable!(),
         })
@@ -497,7 +505,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         self.queue
             .iter_mut()
             .next()
-            .map(|(sc, ev)| (sc.clone(), ev))
+            .map(|(sc, ev)| (Arc::clone(sc), ev))
     }
 
     async fn emit<W: Writer<World>>(
@@ -508,8 +516,8 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         if !self.is_started_emitted() {
             writer
                 .handle_event(Ok(event::Cucumber::rule_started(
-                    feature.clone(),
-                    rule.clone(),
+                    Arc::clone(&feature),
+                    Arc::clone(&rule),
                 )))
                 .await;
             self.started_emitted();
@@ -517,7 +525,10 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 
         while let Some((scenario, events)) = self.current_item() {
             if let Some(should_be_removed) = events
-                .emit((feature.clone(), Some(rule.clone()), scenario), writer)
+                .emit(
+                    (Arc::clone(&feature), Some(Arc::clone(&rule)), scenario),
+                    writer,
+                )
                 .await
             {
                 self.remove(&should_be_removed);
@@ -530,7 +541,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
             writer
                 .handle_event(Ok(event::Cucumber::rule_finished(
                     feature,
-                    rule.clone(),
+                    Arc::clone(&rule),
                 )))
                 .await;
             return Some(rule);
@@ -548,13 +559,13 @@ struct ScenariosQueue<World>(Vec<event::Scenario<World>>);
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].
-    fn new() -> Self {
+    const fn new() -> Self {
         Self(Vec::new())
     }
 }
 
 #[async_trait(?Send)]
-impl<'me, World> Emitter<World> for &'me mut ScenariosQueue<World> {
+impl<World> Emitter<World> for &mut ScenariosQueue<World> {
     type Current = event::Scenario<World>;
     type Emitted = Arc<gherkin::Scenario>;
     type EmittedPath = (
@@ -576,15 +587,15 @@ impl<'me, World> Emitter<World> for &'me mut ScenariosQueue<World> {
             let should_be_removed = matches!(ev, event::Scenario::Finished);
 
             let ev = event::Cucumber::scenario(
-                feature.clone(),
-                rule.clone(),
-                scenario.clone(),
+                Arc::clone(&feature),
+                rule.as_ref().map(Arc::clone),
+                Arc::clone(&scenario),
                 ev,
             );
             writer.handle_event(Ok(ev)).await;
 
             if should_be_removed {
-                return Some(scenario.clone());
+                return Some(Arc::clone(&scenario));
             }
         }
         None

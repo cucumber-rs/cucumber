@@ -13,7 +13,6 @@
 use std::{
     borrow::Cow,
     path::{Path, PathBuf},
-    sync::Arc,
     vec,
 };
 
@@ -56,13 +55,11 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             }) {
                 Ok(p) => p,
                 Err(err) => {
-                    return vec![
-                        (Err(Arc::new(gherkin::ParseFileError::Reading {
-                            path: path.to_path_buf(),
-                            source: err,
-                        })
-                        .into())),
-                    ];
+                    return vec![Err(gherkin::ParseFileError::Reading {
+                        path: path.to_path_buf(),
+                        source: err,
+                    }
+                    .into())];
                 }
             };
 
@@ -77,7 +74,9 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 let walker = GlobWalkerBuilder::new(path, "*.feature")
                     .case_insensitive(true)
                     .build()
-                    .unwrap();
+                    .unwrap_or_else(|e| {
+                        unreachable!("GlobWalkerBuilder panicked: {}", e)
+                    });
                 walker
                     .filter_map(Result::ok)
                     .map(|entry| {
@@ -95,7 +94,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .into_iter()
                 .map(|f| match f {
                     Ok(f) => f.expand_examples().map_err(ParseError::from),
-                    Err(e) => Err(Arc::new(e).into()),
+                    Err(e) => Err(e.into()),
                 })
                 .collect()
         };
@@ -107,7 +106,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 impl Basic {
     /// Creates a new [`Basic`] [`Parser`].
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { language: None }
     }
 

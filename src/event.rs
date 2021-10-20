@@ -51,7 +51,7 @@ impl<World> Clone for Cucumber<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Feature(f, ev) => Self::Feature(f.clone(), ev.clone()),
+            Self::Feature(f, ev) => Self::Feature(Arc::clone(f), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -144,8 +144,8 @@ impl<World> Clone for Feature<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Rule(r, ev) => Self::Rule(r.clone(), ev.clone()),
-            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Rule(r, ev) => Self::Rule(Arc::clone(r), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -176,7 +176,7 @@ impl<World> Clone for Rule<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Scenario(sc, ev) => Self::Scenario(sc.clone(), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -299,7 +299,7 @@ impl<World> Clone for Hook<World> {
         match self {
             Self::Started => Self::Started,
             Self::Passed => Self::Passed,
-            Self::Failed(w, i) => Self::Failed(w.clone(), i.clone()),
+            Self::Failed(w, i) => Self::Failed(w.clone(), Arc::clone(i)),
         }
     }
 }
@@ -339,9 +339,9 @@ impl<World> Clone for Scenario<World> {
             Self::Started => Self::Started,
             Self::Hook(ty, ev) => Self::Hook(*ty, ev.clone()),
             Self::Background(bg, ev) => {
-                Self::Background(bg.clone(), ev.clone())
+                Self::Background(Arc::clone(bg), ev.clone())
             }
-            Self::Step(st, ev) => Self::Step(st.clone(), ev.clone()),
+            Self::Step(st, ev) => Self::Step(Arc::clone(st), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -352,7 +352,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn hook_started(which: HookType) -> Self {
+    pub const fn hook_started(which: HookType) -> Self {
         Self::Hook(which, Hook::Started)
     }
 
@@ -360,7 +360,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn hook_passed(which: HookType) -> Self {
+    pub const fn hook_passed(which: HookType) -> Self {
         Self::Hook(which, Hook::Passed)
     }
 
