@@ -1,7 +1,9 @@
 use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
-use cucumber::{event, given, parser, step, then, when, WorldInit, Writer};
+use cucumber::{
+    cli, event, given, parser, step, then, when, WorldInit, Writer,
+};
 use itertools::Itertools as _;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -34,9 +36,12 @@ struct DebugWriter(String);
 
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
+    type CLI = cli::Empty;
+
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
+        _: &Self::CLI,
     ) {
         use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
 

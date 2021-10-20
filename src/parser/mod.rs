@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 use derive_more::{Display, Error, From};
 use futures::Stream;
+use structopt::StructOptInternal;
 
 use crate::feature::ExpandExamplesError;
 
@@ -28,6 +29,18 @@ pub use self::basic::Basic;
 ///
 /// [`Feature`]: gherkin::Feature
 pub trait Parser<I> {
+    /// [`StructOpt`] deriver for CLI options of this [`Parser`]. In case no
+    /// options present, use [`cli::Empty`].
+    ///
+    /// All CLI options from [`Parser`], [`Runner`] and [`Writer`] will be
+    /// merged together, so overlapping arguments will cause runtime panic.
+    ///
+    /// [`cli::Empty`]: crate::cli::Empty
+    /// [`Runner`]: crate::Runner
+    /// [`StructOpt`]: structopt::StructOpt
+    /// [`Writer`]: crate::Writer
+    type CLI: StructOptInternal + 'static;
+
     /// Output [`Stream`] of parsed [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -36,7 +49,7 @@ pub trait Parser<I> {
     /// Parses the given `input` into a [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn parse(self, input: I) -> Self::Output;
+    fn parse(self, input: I, cli: Self::CLI) -> Self::Output;
 }
 
 /// Result of parsing [Gherkin] files.

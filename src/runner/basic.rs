@@ -36,6 +36,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
+    cli,
     event::{self, HookType},
     feature::Ext as _,
     parser, step, Runner, Step, World,
@@ -367,10 +368,12 @@ where
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
+    type CLI = cli::Empty;
+
     type EventStream =
         LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
 
-    fn run<S>(self, features: S) -> Self::EventStream
+    fn run<S>(self, features: S, _: cli::Empty) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {

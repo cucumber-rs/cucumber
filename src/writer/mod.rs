@@ -21,6 +21,7 @@ pub mod term;
 
 use async_trait::async_trait;
 use sealed::sealed;
+use structopt::StructOptInternal;
 
 use crate::{event, parser, World};
 
@@ -41,12 +42,25 @@ pub use self::{
 /// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
 #[async_trait(?Send)]
 pub trait Writer<World> {
+    /// [`StructOpt`] deriver for CLI options of this [`Writer`]. In case no
+    /// options present, use [`cli::Empty`].
+    ///
+    /// All CLI options from [`Parser`], [`Runner`] and [`Writer`] will be
+    /// merged together, so overlapping arguments will cause runtime panic.
+    ///
+    /// [`cli::Empty`]: crate::cli::Empty
+    /// [`Parser`]: crate::Parser
+    /// [`Runner`]: crate::Runner
+    /// [`StructOpt`]: structopt::StructOpt
+    type CLI: StructOptInternal;
+
     /// Handles the given [`Cucumber`] event.
     ///
     /// [`Cucumber`]: crate::event::Cucumber
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
+        cli: &Self::CLI,
     );
 }
 

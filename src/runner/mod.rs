@@ -17,6 +17,7 @@
 pub mod basic;
 
 use futures::Stream;
+use structopt::StructOptInternal;
 
 use crate::{event, parser};
 
@@ -59,6 +60,18 @@ pub use self::basic::{Basic, ScenarioType};
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 pub trait Runner<World> {
+    /// [`StructOpt`] deriver for CLI options of this [`Runner`]. In case no
+    /// options present, use [`cli::Empty`].
+    ///
+    /// All CLI options from [`Parser`], [`Runner`] and [`Writer`] will be
+    /// merged together, so overlapping arguments will cause runtime panic.
+    ///
+    /// [`cli::Empty`]: crate::cli::Empty
+    /// [`Parser`]: crate::Parser
+    /// [`StructOpt`]: structopt::StructOpt
+    /// [`Writer`]: crate::Writer
+    type CLI: StructOptInternal;
+
     /// Output events [`Stream`].
     type EventStream: Stream<Item = parser::Result<event::Cucumber<World>>>;
 
@@ -67,7 +80,7 @@ pub trait Runner<World> {
     ///
     /// [`Cucumber`]: event::Cucumber
     /// [`Feature`]: gherkin::Feature
-    fn run<S>(self, features: S) -> Self::EventStream
+    fn run<S>(self, features: S, cli: Self::CLI) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static;
 }

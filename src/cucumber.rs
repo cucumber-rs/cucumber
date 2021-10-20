@@ -20,9 +20,9 @@ use std::{
     path::Path,
 };
 
-use clap::Parser as _;
 use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
+use structopt::StructOpt as _;
 
 use crate::{
     cli, event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
@@ -682,25 +682,21 @@ where
             ) -> bool
             + 'static,
     {
-        let opts = cli::Opts::parse();
-        if opts.nocapture {
-            eprintln!(
-                "WARNING ⚠️: This option does nothing at the moment and is \
-                             deprecated for removal in the next major release. \
-                             Any output of step functions is not captured by \
-                             default.",
-            );
-        }
-        if opts.debug {
-            eprintln!(
-                "WARNING ⚠️: This option does nothing at the moment and is \
-                             deprecated for removal in the next major release.",
-            );
-        }
+        let (filter_cli, parser_cli, runner_cli, writer_cli) = {
+            let cli::Opts {
+                filter,
+                parser,
+                runner,
+                writer,
+            } = cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args();
+
+            (filter, parser, runner, writer)
+        };
+
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
                            s: &gherkin::Scenario| {
-            opts.filter
+            filter_cli
                 .as_ref()
                 .map_or_else(|| filter(f, r, s), |f| f.is_match(&s.name))
         };
@@ -712,7 +708,7 @@ where
             ..
         } = self;
 
-        let features = parser.parse(input);
+        let features = parser.parse(input, parser_cli);
 
         let filtered = features.map(move |feature| {
             let mut feature = feature?;
@@ -735,10 +731,10 @@ where
             Ok(feature)
         });
 
-        let events_stream = runner.run(filtered);
+        let events_stream = runner.run(filtered, runner_cli);
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
-            writer.handle_event(ev).await;
+            writer.handle_event(ev, &writer_cli).await;
         }
         writer
     }

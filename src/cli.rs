@@ -11,28 +11,44 @@
 //! CLI options.
 
 use regex::Regex;
+use structopt::StructOpt;
 
 /// Run the tests, pet a dog!.
-///
-/// __WARNING__ ⚠️: This CLI exists only for backwards compatibility. In `0.11`
-///                 it will be completely reworked:
-///                 [cucumber-rs/cucumber#134][1].
-///
-/// [1]: https://github.com/cucumber-rs/cucumber/issues/134
-#[derive(clap::Parser, Debug)]
-pub struct Opts {
+#[derive(StructOpt, Debug)]
+pub struct Opts<Parser, Runner, Writer>
+where
+    Parser: StructOpt,
+    Runner: StructOpt,
+    Writer: StructOpt,
+{
     /// Regex to select scenarios from.
-    #[clap(short = 'e', long = "expression", name = "regex")]
+    #[structopt(short = "e", long = "expression", name = "regex")]
     pub filter: Option<Regex>,
 
-    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
-    ///                 for removal in the next major release.
-    ///                 Any output of step functions is not captured by default.
-    #[clap(long)]
-    pub nocapture: bool,
+    /// [`Parser`] CLI options.
+    ///
+    /// [`Parser`]: crate::Parser
+    #[structopt(flatten)]
+    pub parser: Parser,
 
-    /// __WARNING__ ⚠️: This option does nothing at the moment and is deprecated
-    ///                 for removal in the next major release.
-    #[clap(long)]
-    pub debug: bool,
+    /// [`Runner`] CLI options.
+    ///
+    /// [`Runner`]: crate::Runner
+    #[structopt(flatten)]
+    pub runner: Runner,
+
+    /// [`Writer`] CLI options.
+    ///
+    /// [`Writer`]: crate::Writer
+    #[structopt(flatten)]
+    pub writer: Writer,
+}
+
+/// Empty CLI options.
+#[derive(StructOpt, Clone, Copy, Debug)]
+pub struct Empty {
+    /// This field exists only because [`StructOpt`] derive macro doesn't
+    /// support unit structs.
+    #[structopt(skip)]
+    skipped: (),
 }

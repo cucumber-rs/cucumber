@@ -21,6 +21,7 @@ use async_trait::async_trait;
 use console::Term;
 use itertools::Itertools as _;
 use regex::CaptureLocations;
+use structopt::StructOpt;
 
 use crate::{
     event::{self, Info},
@@ -49,10 +50,24 @@ pub struct Basic {
     lines_to_clear: usize,
 }
 
+/// CLI options of [`Basic`].
+#[derive(Clone, Copy, Debug, StructOpt)]
+pub struct CLI {
+    /// Outputs Doc String, if present.
+    #[structopt(long)]
+    pub verbose: bool,
+}
+
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
+    type CLI = CLI;
+
     #[allow(clippy::unused_async)]
-    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<W>>,
+        cli: &Self::CLI,
+    ) {
         use event::{Cucumber, Feature};
 
         match ev {
@@ -60,8 +75,8 @@ impl<W: World + Debug> Writer<W> for Basic {
             Ok(Cucumber::Started | Cucumber::Finished) => {}
             Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.feature_started(&f),
-                Feature::Scenario(sc, ev) => self.scenario(&f, &sc, &ev),
-                Feature::Rule(r, ev) => self.rule(&f, &r, ev),
+                Feature::Scenario(sc, ev) => self.scenario(&f, &sc, &ev, *cli),
+                Feature::Rule(r, ev) => self.rule(&f, &r, ev, *cli),
                 Feature::Finished => {}
             },
         }
@@ -152,6 +167,7 @@ impl Basic {
         feat: &gherkin::Feature,
         rule: &gherkin::Rule,
         ev: event::Rule<W>,
+        cli: CLI,
     ) {
         use event::Rule;
 
@@ -160,7 +176,7 @@ impl Basic {
                 self.rule_started(rule);
             }
             Rule::Scenario(sc, ev) => {
-                self.scenario(feat, &sc, &ev);
+                self.scenario(feat, &sc, &ev, cli);
             }
             Rule::Finished => {
                 self.indent = self.indent.saturating_sub(2);
@@ -195,6 +211,7 @@ impl Basic {
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
         ev: &event::Scenario<W>,
+        cli: CLI,
     ) {
         use event::{Hook, Scenario};
 
@@ -213,10 +230,10 @@ impl Basic {
                 self.indent = self.indent.saturating_sub(4);
             }
             Scenario::Background(bg, ev) => {
-                self.background(feat, bg, ev);
+                self.background(feat, bg, ev, cli);
             }
             Scenario::Step(st, ev) => {
-                self.step(feat, st, ev);
+                self.step(feat, st, ev, cli);
             }
             Scenario::Finished => self.indent = self.indent.saturating_sub(2),
         }
@@ -237,19 +254,22 @@ impl Basic {
         self.clear_last_lines_if_term_present();
 
         self.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  Scenario's {} hook failed {}:{}:{}\n\
+                "{indent}\u{2718}  Scenario's {} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
-            which,
-            feat.path
-                .as_ref()
-                .and_then(|p| p.to_str())
-                .unwrap_or(&feat.name),
-            sc.position.line,
-            sc.position.col,
-            coerce_error(info),
-            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
-            indent = " ".repeat(self.indent.saturating_sub(3)),
-        )))
+                which,
+                feat.path
+                    .as_ref()
+                    .and_then(|p| p.to_str())
+                    .unwrap_or(&feat.name),
+                sc.position.line,
+                sc.position.col,
+                coerce_error(info),
+                format_str_with_indent(
+                    world.map(|w| format!("{:#?}", w)).as_deref(),
+                    self.indent.saturating_sub(3) + 3
+                ),
+                indent = " ".repeat(self.indent.saturating_sub(3)),
+            )))
         .unwrap();
     }
 
@@ -281,23 +301,24 @@ impl Basic {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         ev: &event::Step<W>,
+        cli: CLI,
     ) {
         use event::Step;
 
         match ev {
             Step::Started => {
-                self.step_started(step);
+                self.step_started(step, cli);
             }
             Step::Passed(captures) => {
-                self.step_passed(step, captures);
+                self.step_passed(step, captures, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
-                self.step_skipped(feat, step);
+                self.step_skipped(feat, step, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(capts, w, info) => {
-                self.step_failed(feat, step, capts.as_ref(), w.as_ref(), info);
+            Step::Failed(c, w, info) => {
+                self.step_failed(feat, step, c.as_ref(), w.as_ref(), info, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -313,13 +334,22 @@ impl Basic {
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
     /// [`Step`]: gherkin::Step
-    fn step_started(&mut self, step: &gherkin::Step) {
+    fn step_started(&mut self, step: &gherkin::Step, cli: CLI) {
         self.indent += 4;
         if self.styles.is_present {
             let output = format!(
-                "{indent}{} {}{}",
+                "{indent}{} {}{}{}",
                 step.keyword,
                 step.value,
+                step.docstring
+                    .as_ref()
+                    .and_then(|doc| cli.verbose.then(
+                        || format_str_with_indent(
+                            doc.as_str(),
+                            self.indent.saturating_sub(3) + 3,
+                        )
+                    ))
+                    .unwrap_or_default(),
                 step.table
                     .as_ref()
                     .map(|t| format_table(t, self.indent))
@@ -339,6 +369,7 @@ impl Basic {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
+        cli: CLI,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -350,6 +381,18 @@ impl Basic {
             |v| self.styles.ok(v),
             |v| self.styles.ok(self.styles.bold(v)),
         );
+        let doc_str = self.styles.ok(step
+            .docstring
+            .as_ref()
+            .and_then(|doc| {
+                cli.verbose.then(|| {
+                    format_str_with_indent(
+                        doc.as_str(),
+                        self.indent.saturating_sub(3) + 3,
+                    )
+                })
+            })
+            .unwrap_or_default());
         let step_table = self.styles.ok(step
             .table
             .as_ref()
@@ -357,9 +400,10 @@ impl Basic {
             .unwrap_or_default());
 
         self.write_line(&self.styles.ok(format!(
-            "{indent}{} {}{}",
+            "{indent}{} {}{}{}",
             step_keyword,
             step_value,
+            doc_str,
             step_table,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -370,13 +414,25 @@ impl Basic {
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
-    fn step_skipped(&mut self, feat: &gherkin::Feature, step: &gherkin::Step) {
+    fn step_skipped(
+        &mut self,
+        feat: &gherkin::Feature,
+        step: &gherkin::Step,
+        cli: CLI,
+    ) {
         self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
-            "{indent}?  {} {}{}\n\
+            "{indent}?  {} {}{}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,
+            step.docstring
+                .as_ref()
+                .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
+                    doc.as_str(),
+                    self.indent.saturating_sub(3) + 3,
+                )))
+                .unwrap_or_default(),
             step.table
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
@@ -403,6 +459,7 @@ impl Basic {
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
         err: &event::StepError,
+        cli: CLI,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -425,9 +482,16 @@ impl Basic {
         );
 
         let diagnostics = self.styles.err(format!(
-            "{}\n\
+            "{}{}\n\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}{}",
+            step.docstring
+                .as_ref()
+                .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
+                    doc.as_str(),
+                    self.indent.saturating_sub(3) + 3,
+                )))
+                .unwrap_or_default(),
             step.table
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
@@ -438,8 +502,14 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
-            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
+            format_str_with_indent(
+                format!("{}", err).as_str(),
+                self.indent.saturating_sub(3) + 3
+            ),
+            format_str_with_indent(
+                world.map(|w| format!("{:#?}", w)).as_deref(),
+                self.indent.saturating_sub(3) + 3
+            ),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -464,23 +534,24 @@ impl Basic {
         feat: &gherkin::Feature,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
+        cli: CLI,
     ) {
         use event::Step;
 
         match ev {
             Step::Started => {
-                self.bg_step_started(bg);
+                self.bg_step_started(bg, cli);
             }
             Step::Passed(captures) => {
-                self.bg_step_passed(bg, captures);
+                self.bg_step_passed(bg, captures, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
-                self.bg_step_skipped(feat, bg);
+                self.bg_step_skipped(feat, bg, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(capts, w, info) => {
-                self.bg_step_failed(feat, bg, capts.as_ref(), w.as_ref(), info);
+            Step::Failed(c, w, i) => {
+                self.bg_step_failed(feat, bg, c.as_ref(), w.as_ref(), i, cli);
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -497,13 +568,22 @@ impl Basic {
     /// [started]: event::Step::Started
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
-    fn bg_step_started(&mut self, step: &gherkin::Step) {
+    fn bg_step_started(&mut self, step: &gherkin::Step, cli: CLI) {
         self.indent += 4;
         if self.styles.is_present {
             let output = format!(
-                "{indent}> {} {}{}",
+                "{indent}> {} {}{}{}",
                 step.keyword,
                 step.value,
+                step.docstring
+                    .as_ref()
+                    .and_then(|doc| cli.verbose.then(
+                        || format_str_with_indent(
+                            doc.as_str(),
+                            self.indent.saturating_sub(3) + 3,
+                        )
+                    ))
+                    .unwrap_or_default(),
                 step.table
                     .as_ref()
                     .map(|t| format_table(t, self.indent))
@@ -524,6 +604,7 @@ impl Basic {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
+        cli: CLI,
     ) {
         self.clear_last_lines_if_term_present();
 
@@ -535,6 +616,18 @@ impl Basic {
             |v| self.styles.ok(v),
             |v| self.styles.ok(self.styles.bold(v)),
         );
+        let doc_str = self.styles.ok(step
+            .docstring
+            .as_ref()
+            .and_then(|doc| {
+                cli.verbose.then(|| {
+                    format_str_with_indent(
+                        doc.as_str(),
+                        self.indent.saturating_sub(3) + 3,
+                    )
+                })
+            })
+            .unwrap_or_default());
         let step_table = self.styles.ok(step
             .table
             .as_ref()
@@ -542,9 +635,10 @@ impl Basic {
             .unwrap_or_default());
 
         self.write_line(&self.styles.ok(format!(
-            "{indent}{} {}{}",
+            "{indent}{} {}{}{}",
             step_keyword,
             step_value,
+            doc_str,
             step_table,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -560,13 +654,21 @@ impl Basic {
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
+        cli: CLI,
     ) {
         self.clear_last_lines_if_term_present();
         self.write_line(&self.styles.skipped(format!(
-            "{indent}?> {} {}{}\n\
+            "{indent}?> {} {}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,
             step.value,
+            step.docstring
+                .as_ref()
+                .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
+                    doc.as_str(),
+                    self.indent.saturating_sub(3) + 3,
+                )))
+                .unwrap_or_default(),
             step.table
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
@@ -594,11 +696,12 @@ impl Basic {
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
         err: &event::StepError,
+        cli: CLI,
     ) {
         self.clear_last_lines_if_term_present();
 
         let step_keyword = self.styles.err(format!(
-            "{indent}\u{2718}> {}",
+            "{indent}\u{2718}> {}{}",
             step.keyword,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         ));
@@ -616,9 +719,16 @@ impl Basic {
         );
 
         let diagnostics = self.styles.err(format!(
-            "{}\n\
+            "{}{}\n\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}{}",
+            step.docstring
+                .as_ref()
+                .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
+                    doc.as_str(),
+                    self.indent.saturating_sub(3) + 3,
+                )))
+                .unwrap_or_default(),
             step.table
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
@@ -629,8 +739,14 @@ impl Basic {
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
-            format_display_with_indent(err, self.indent.saturating_sub(3) + 3),
-            format_debug_with_indent(world, self.indent.saturating_sub(3) + 3),
+            format_str_with_indent(
+                format!("{}", err).as_str(),
+                self.indent.saturating_sub(3) + 3
+            ),
+            format_str_with_indent(
+                world.map(|w| format!("{:#?}", w)).as_deref(),
+                self.indent.saturating_sub(3) + 3,
+            ),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -656,41 +772,20 @@ pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
     }
 }
 
-/// Formats the given [`Debug`] implementor, then adds `indent`s to each line to
-/// prettify the output.
-fn format_debug_with_indent<'d, D, I>(debug: I, indent: usize) -> String
+/// Formats the given [`str`] by adding `indent`s to each line to prettify
+/// the output.
+fn format_str_with_indent<'s, I>(str: I, indent: usize) -> String
 where
-    D: Debug + 'd,
-    I: Into<Option<&'d D>>,
+    I: Into<Option<&'s str>>,
 {
-    let debug = debug
+    let str = str
         .into()
-        .map(|debug| format!("{:#?}", debug))
         .unwrap_or_default()
         .lines()
         .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");
-    (!debug.is_empty())
-        .then(|| format!("\n{}", debug))
-        .unwrap_or_default()
-}
-
-/// Formats the given [`Display`] implementor, then adds `indent`s to each line
-/// to prettify the output.
-fn format_display_with_indent<'d, D, I>(display: I, indent: usize) -> String
-where
-    D: Display + 'd,
-    I: Into<Option<&'d D>>,
-{
-    let display = display
-        .into()
-        .map(|display| format!("{}", display))
-        .unwrap_or_default()
-        .lines()
-        .map(|line| format!("{}{}", " ".repeat(indent), line))
-        .join("\n");
-    (!display.is_empty())
-        .then(|| format!("\n{}", display))
+    (!str.is_empty())
+        .then(|| format!("\n{}", str))
         .unwrap_or_default()
 }
 

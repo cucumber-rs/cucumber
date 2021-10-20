@@ -49,18 +49,24 @@ where
     Wr: Writer<W>,
     F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
 {
-    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
+    type CLI = Wr::CLI;
+
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<W>>,
+        cli: &Self::CLI,
+    ) {
         if (self.filter)(&ev) {
             self.events.push(ev.clone());
         }
 
         let is_finished = matches!(ev, Ok(event::Cucumber::Finished));
 
-        self.writer.handle_event(ev).await;
+        self.writer.handle_event(ev, cli).await;
 
         if is_finished {
             for ev in mem::take(&mut self.events) {
-                self.writer.handle_event(ev).await;
+                self.writer.handle_event(ev, cli).await;
             }
         }
     }

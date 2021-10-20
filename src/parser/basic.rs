@@ -22,7 +22,7 @@ use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::GlobWalkerBuilder;
 
-use crate::feature::Ext as _;
+use crate::{cli, feature::Ext as _};
 
 use super::{Error as ParseError, Parser};
 
@@ -39,10 +39,12 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
+    type CLI = cli::Empty;
+
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I) -> Self::Output {
+    fn parse(self, path: I, _: cli::Empty) -> Self::Output {
         let features = || {
             let path = path.as_ref();
             let path = match path.canonicalize().or_else(|_| {
