@@ -65,7 +65,7 @@ pub struct CLI {
     #[structopt(
         long,
         short,
-        name = "auto|enabled|disabled",
+        name = "auto|always|never",
         default_value = "auto"
     )]
     pub colors: Colors,
@@ -79,10 +79,10 @@ pub enum Colors {
     Auto,
 
     /// Forces colored output.
-    Enabled,
+    Always,
 
     /// Forces basic output.
-    Disabled,
+    Never,
 }
 
 impl FromStr for Colors {
@@ -91,9 +91,9 @@ impl FromStr for Colors {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_str() {
             "auto" => Ok(Self::Auto),
-            "enabled" => Ok(Self::Enabled),
-            "disabled" => Ok(Self::Disabled),
-            _ => Err("possible options: auto, enabled, disabled"),
+            "always" => Ok(Self::Always),
+            "never" => Ok(Self::Never),
+            _ => Err("possible options: auto, always, never"),
         }
     }
 }
@@ -111,8 +111,8 @@ impl<W: World + Debug> Writer<W> for Basic {
         use event::{Cucumber, Feature};
 
         match cli.colors {
-            Colors::Enabled => self.styles.is_present = true,
-            Colors::Disabled => self.styles.is_present = false,
+            Colors::Always => self.styles.is_present = true,
+            Colors::Never => self.styles.is_present = false,
             Colors::Auto => {}
         };
 
