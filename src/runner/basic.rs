@@ -34,9 +34,9 @@ use futures::{
 };
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
+use structopt::StructOpt;
 
 use crate::{
-    cli,
     event::{self, HookType},
     feature::Ext as _,
     parser, step, Runner, Step, World,
@@ -140,6 +140,17 @@ pub struct Basic<
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     after_hook: Option<After>,
+}
+
+// Workaround overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
+#[derive(Clone, Copy, Debug, StructOpt)]
+pub struct CLI {
+    /// Number of concurrent scenarios.
+    #[structopt(long, name = "int")]
+    pub concurrent: Option<usize>,
 }
 
 // Implemented manually to omit redundant trait bounds on `World` and to omit
@@ -368,12 +379,12 @@ where
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
-    type CLI = cli::Empty;
+    type CLI = CLI;
 
     type EventStream =
         LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
 
-    fn run<S>(self, features: S, _: cli::Empty) -> Self::EventStream
+    fn run<S>(self, features: S, cli: CLI) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
@@ -396,7 +407,7 @@ where
         );
         let execute = execute(
             buffer,
-            max_concurrent_scenarios,
+            cli.concurrent.or(max_concurrent_scenarios),
             steps,
             sender,
             before_hook,

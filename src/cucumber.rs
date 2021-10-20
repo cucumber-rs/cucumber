@@ -25,8 +25,9 @@ use regex::Regex;
 use structopt::StructOpt as _;
 
 use crate::{
-    cli, event, parser, runner, step, writer, ArbitraryWriter, FailureWriter,
-    Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
+    cli, event, parser, runner, step, tag::Ext as _, writer, ArbitraryWriter,
+    FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -682,23 +683,25 @@ where
             ) -> bool
             + 'static,
     {
-        let (filter_cli, parser_cli, runner_cli, writer_cli) = {
-            let cli::Opts {
-                filter,
-                parser,
-                runner,
-                writer,
-            } = cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args();
-
-            (filter, parser, runner, writer)
-        };
+        let cli::Opts {
+            re_filter,
+            tags_filter,
+            parser: parser_cli,
+            runner: runner_cli,
+            writer: writer_cli,
+        } = cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args();
 
         let filter = move |f: &gherkin::Feature,
                            r: Option<&gherkin::Rule>,
                            s: &gherkin::Scenario| {
-            filter_cli
-                .as_ref()
-                .map_or_else(|| filter(f, r, s), |f| f.is_match(&s.name))
+            re_filter.as_ref().map_or_else(
+                || {
+                    tags_filter
+                        .as_ref()
+                        .map_or_else(|| filter(f, r, s), |f| f.eval(&s.tags))
+                },
+                |f| f.is_match(&s.name),
+            )
         };
 
         let Cucumber {

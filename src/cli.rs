@@ -10,6 +10,7 @@
 
 //! CLI options.
 
+use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 use structopt::StructOpt;
 
@@ -22,8 +23,23 @@ where
     Writer: StructOpt,
 {
     /// Regex to select scenarios from.
-    #[structopt(short = "e", long = "expression", name = "regex")]
-    pub filter: Option<Regex>,
+    #[structopt(
+        short = "n",
+        long = "name",
+        name = "regex",
+        visible_alias = "scenario-name"
+    )]
+    pub re_filter: Option<Regex>,
+
+    /// Regex to select scenarios from.
+    #[structopt(
+        short = "t",
+        long = "tags",
+        name = "tagexpr",
+        visible_alias = "scenario-tags",
+        conflicts_with = "regex"
+    )]
+    pub tags_filter: Option<TagOperation>,
 
     /// [`Parser`] CLI options.
     ///
@@ -44,7 +60,10 @@ where
     pub writer: Writer,
 }
 
-/// Empty CLI options.
+// Workaround overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(doc, doc = "Empty CLI options.")]
 #[derive(StructOpt, Clone, Copy, Debug)]
 pub struct Empty {
     /// This field exists only because [`StructOpt`] derive macro doesn't

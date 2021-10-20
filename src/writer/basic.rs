@@ -15,6 +15,7 @@ use std::{
     cmp,
     fmt::{Debug, Display},
     ops::Deref,
+    str::FromStr,
 };
 
 use async_trait::async_trait;
@@ -50,12 +51,51 @@ pub struct Basic {
     lines_to_clear: usize,
 }
 
-/// CLI options of [`Basic`].
+// Workaround overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
 pub struct CLI {
     /// Outputs Doc String, if present.
     #[structopt(long)]
     pub verbose: bool,
+
+    /// Indicates, whether output should be colored or not.
+    #[structopt(
+        long,
+        short,
+        name = "auto|enabled|disabled",
+        default_value = "auto"
+    )]
+    pub colors: Colors,
+}
+
+/// Indicates, whether output should be colored or not.
+#[derive(Clone, Copy, Debug)]
+pub enum Colors {
+    /// Lets [`console::colors_enabled()`] to decide, whether output should be
+    /// colored or not.
+    Auto,
+
+    /// Forces colored output.
+    Enabled,
+
+    /// Forces basic output.
+    Disabled,
+}
+
+impl FromStr for Colors {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "auto" => Ok(Self::Auto),
+            "enabled" => Ok(Self::Enabled),
+            "disabled" => Ok(Self::Disabled),
+            _ => Err("possible options: auto, enabled, disabled"),
+        }
+    }
 }
 
 #[async_trait(?Send)]
@@ -69,6 +109,12 @@ impl<W: World + Debug> Writer<W> for Basic {
         cli: &Self::CLI,
     ) {
         use event::{Cucumber, Feature};
+
+        match cli.colors {
+            Colors::Enabled => self.styles.is_present = true,
+            Colors::Disabled => self.styles.is_present = false,
+            Colors::Auto => {}
+        };
 
         match ev {
             Err(err) => self.parsing_failed(&err),
