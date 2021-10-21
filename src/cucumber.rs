@@ -718,7 +718,7 @@ where
     /// #
     /// # let fut = async {
     /// let (_cli, cucumber) = MyWorld::cucumber()
-    ///     .filter_run_with_additional_cli::<cli::Empty>(
+    ///     .filter_run_with_additional_cli::<cli::Empty, _>(
     ///         "tests/features/readme",
     ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
     ///     );
@@ -750,18 +750,19 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    pub fn filter_run_with_additional_cli<CustomCli>(
+    pub fn filter_run_with_additional_cli<CustomCli, F>(
         self,
         input: I,
-        filter: impl Fn(
+        filter: F,
+    ) -> (CustomCli, impl Future<Output = Wr>)
+    where
+        CustomCli: StructOptInternal,
+        F: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> bool
             + 'static,
-    ) -> (CustomCli, impl Future<Output = Wr>)
-    where
-        CustomCli: StructOptInternal,
     {
         let cli::Compose { left, right } = cli::Compose::<
             CustomCli,
@@ -771,6 +772,8 @@ where
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter with provided CLI options.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     async fn filter_run_with_cli<F>(
         self,
         input: I,
@@ -1252,7 +1255,7 @@ where
     /// #
     /// # let fut = async {
     /// let (_cli, cucumber) = MyWorld::cucumber()
-    ///     .filter_run_and_exit_with_additional_cli::<cli::Empty>(
+    ///     .filter_run_and_exit_with_additional_cli::<cli::Empty, _>(
     ///         "tests/features/readme",
     ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
     ///     );
@@ -1286,18 +1289,19 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: crate::Step
-    pub fn filter_run_and_exit_with_additional_cli<CustomCli>(
+    pub fn filter_run_and_exit_with_additional_cli<CustomCli, F>(
         self,
         input: I,
-        filter: impl Fn(
+        filter: F,
+    ) -> (CustomCli, impl Future<Output = ()>)
+    where
+        CustomCli: StructOptInternal,
+        F: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> bool
             + 'static,
-    ) -> (CustomCli, impl Future<Output = ()>)
-    where
-        CustomCli: StructOptInternal,
     {
         let cli::Compose { left, right } = cli::Compose::<
             CustomCli,
