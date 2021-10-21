@@ -838,8 +838,8 @@ pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
     }
 }
 
-/// Formats the given [`str`] by adding `indent`s to each line to prettify
-/// the output.
+/// Formats the given [`str`] by adding `indent`s to each line to prettify the
+/// output.
 fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
     let str = str
         .as_ref()

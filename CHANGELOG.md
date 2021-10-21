@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.11.0] · 2021-??-??
+[0.11.0]: /../../tree/v0.11.0
+
+[Diff](/../../compare/v0.10.0...v0.11.0)
+
+### BC Breaks
+
+- Complete `CLI` redesign ([#144])
+
+[#144]: /../../pull/144
+
+
+
+
 ## [0.10.0] · 2021-??-??
 [0.10.0]: /../../tree/v0.10.0
 
