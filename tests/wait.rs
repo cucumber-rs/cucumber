@@ -8,9 +8,7 @@ use tokio::time;
 
 #[tokio::main]
 async fn main() {
-    let (_custom, cli) =
-        cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
-            .into_inner();
+    let cli = cli::Opts::<cli::Empty, _, _, _>::from_args();
 
     let res = World::cucumber()
         .before(|_, _, _, w| {

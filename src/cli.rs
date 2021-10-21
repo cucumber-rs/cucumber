@@ -16,8 +16,9 @@ use structopt::StructOpt;
 
 /// Run the tests, pet a dog!.
 #[derive(Debug, StructOpt)]
-pub struct Opts<Parser, Runner, Writer>
+pub struct Opts<Custom, Parser, Runner, Writer>
 where
+    Custom: StructOpt,
     Parser: StructOpt,
     Runner: StructOpt,
     Writer: StructOpt,
@@ -40,6 +41,10 @@ where
         conflicts_with = "regex"
     )]
     pub tags_filter: Option<TagOperation>,
+
+    /// Custom CLI options.
+    #[structopt(flatten)]
+    pub custom: Custom,
 
     /// [`Parser`] CLI options.
     ///

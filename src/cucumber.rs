@@ -22,7 +22,7 @@ use std::{
 
 use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
-use structopt::StructOpt as _;
+use structopt::StructOpt;
 
 use crate::{
     cli, event, parser, runner, step, tag::Ext as _, writer, ArbitraryWriter,
@@ -696,7 +696,7 @@ where
             + 'static,
     {
         self.filter_run_with_cli(
-            cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args(),
+            cli::Opts::<cli::Empty, P::CLI, R::CLI, Wr::CLI>::from_args(),
             input,
             filter,
         )
@@ -706,7 +706,8 @@ where
     /// Runs [`Cucumber`] with [`Scenario`]s filter with provided CLI options.
     ///
     /// This method exists not to hijack console and give users an ability to
-    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
+    /// compose custom `CLI` by providing [`StructOpt`] deriver as first generic
+    /// parameter in [`cli::Opts`].
     ///
     /// # Example
     ///
@@ -730,9 +731,9 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let (_custom, cli) =
-    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
-    ///         .into_inner();
+    /// let cli = cli::Opts::<cli::Empty, _, _, _>::from_args();
+    /// //                        ^ but something more meaningful :)
+    /// // Work with cli.custom
     ///
     /// MyWorld::cucumber()
     ///     .filter_run_with_cli(cli, "tests/features/readme", |_, _, sc| {
@@ -745,13 +746,14 @@ where
     /// ```
     ///
     /// [`Scenario`]: gherkin::Scenario
-    pub async fn filter_run_with_cli<F>(
+    pub async fn filter_run_with_cli<Cli, F>(
         self,
-        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
         input: I,
         filter: F,
     ) -> Wr
     where
+        Cli: StructOpt,
         F: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
@@ -765,6 +767,7 @@ where
             parser: parser_cli,
             runner: runner_cli,
             writer: writer_cli,
+            ..
         } = cli;
 
         let filter = move |f: &gherkin::Feature,
@@ -1096,7 +1099,8 @@ where
     /// produces events handled by a [`Writer`].
     ///
     /// This method exists not to hijack console and give users an ability to
-    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
+    /// compose custom `CLI` by providing [`StructOpt`] deriver as first generic
+    /// parameter in [`cli::Opts`].
     ///
     /// # Panics
     ///
@@ -1125,9 +1129,9 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let (_custom, cli) =
-    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
-    ///         .into_inner();
+    /// let cli = cli::Opts::<cli::Empty, _, _, _>::from_args();
+    /// //                        ^ but something more meaningful :)
+    /// // Work with cli.custom
     ///
     /// MyWorld::cucumber()
     ///     .run_and_exit_with_cli(cli, "tests/features/readme")
@@ -1140,11 +1144,13 @@ where
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
-    pub async fn run_and_exit_with_cli(
+    pub async fn run_and_exit_with_cli<Cli>(
         self,
-        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
         input: I,
-    ) {
+    ) where
+        Cli: StructOpt,
+    {
         self.filter_run_and_exit_with_cli(cli, input, |_, _, _| true)
             .await;
     }
@@ -1232,7 +1238,8 @@ where
     /// Runs [`Cucumber`] with [`Scenario`]s filter and provided [`cli::Opts`].
     ///
     /// This method exists not to hijack console and give users an ability to
-    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
+    /// compose custom `CLI` by providing [`StructOpt`] deriver as first generic
+    /// parameter in [`cli::Opts`].
     ///
     /// # Panics
     ///
@@ -1262,9 +1269,9 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let (_custom, cli) =
-    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
-    ///         .into_inner();
+    /// let cli = cli::Opts::<cli::Empty, _, _, _>::from_args();
+    /// //                        ^ but something more meaningful :)
+    /// // Work with cli.custom
     ///
     /// MyWorld::cucumber()
     ///     .filter_run_and_exit_with_cli(
@@ -1302,12 +1309,13 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: crate::Step
-    pub async fn filter_run_and_exit_with_cli<Filter>(
+    pub async fn filter_run_and_exit_with_cli<Cli, Filter>(
         self,
-        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
         input: I,
         filter: Filter,
     ) where
+        Cli: StructOpt,
         Filter: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
