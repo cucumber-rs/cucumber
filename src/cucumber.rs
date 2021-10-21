@@ -20,9 +20,9 @@ use std::{
     path::Path,
 };
 
-use futures::{future::LocalBoxFuture, Future, StreamExt as _};
+use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
-use structopt::{StructOpt, StructOptInternal};
+use structopt::StructOpt as _;
 
 use crate::{
     cli, event, parser, runner, step, tag::Ext as _, writer, ArbitraryWriter,
@@ -696,102 +696,21 @@ where
             + 'static,
     {
         self.filter_run_with_cli(
+            cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args(),
             input,
             filter,
-            cli::Opts::<P::CLI, R::CLI, Wr::CLI>::from_args(),
         )
         .await
-    }
-
-    /// Runs [`Cucumber`] with [`Scenario`]s filter and additional CLI options.
-    ///
-    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
-    /// produces events handled by a [`Writer`].
-    ///
-    /// # Example
-    ///
-    /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
-    /// ```rust
-    /// # use std::convert::Infallible;
-    /// #
-    /// # use async_trait::async_trait;
-    /// # use cucumber::{WorldInit, cli};
-    /// #
-    /// # #[derive(Debug, WorldInit)]
-    /// # struct MyWorld;
-    /// #
-    /// # #[async_trait(?Send)]
-    /// # impl cucumber::World for MyWorld {
-    /// #     type Error = Infallible;
-    /// #
-    /// #     async fn new() -> Result<Self, Self::Error> {
-    /// #         Ok(Self)
-    /// #     }
-    /// # }
-    /// #
-    /// # let fut = async {
-    /// let (_cli, cucumber) = MyWorld::cucumber()
-    ///     .filter_run_with_additional_cli::<cli::Empty, _>(
-    ///         "tests/features/readme",
-    ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
-    ///     );
-    /// cucumber.await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
-    /// ```
-    /// ```gherkin
-    /// Feature: Animal feature
-    ///
-    ///   @cat
-    ///   Scenario: If we feed a hungry cat it will no longer be hungry
-    ///     Given a hungry cat
-    ///     When I feed the cat
-    ///     Then the cat is not hungry
-    ///
-    ///   @dog
-    ///   Scenario: If we feed a satiated dog it will not become hungry
-    ///     Given a satiated dog
-    ///     When I feed the dog
-    ///     Then the dog is not hungry
-    /// ```
-    /// <script
-    ///     id="asciicast-0KvTxnfaMRjsvsIKsalS611Ta"
-    ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
-    ///     async data-autoplay="true" data-rows="14">
-    /// </script>
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Scenario`]: gherkin::Scenario
-    pub fn filter_run_with_additional_cli<CustomCli, F>(
-        self,
-        input: I,
-        filter: F,
-    ) -> (CustomCli, impl Future<Output = Wr>)
-    where
-        CustomCli: StructOptInternal,
-        F: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> bool
-            + 'static,
-    {
-        let cli::Compose { left, right } = cli::Compose::<
-            CustomCli,
-            cli::Opts<P::CLI, R::CLI, Wr::CLI>,
-        >::from_args();
-        (left, self.filter_run_with_cli(input, filter, right))
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter with provided CLI options.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    async fn filter_run_with_cli<F>(
+    pub async fn filter_run_with_cli<F>(
         self,
+        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
         input: I,
         filter: F,
-        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
     ) -> Wr
     where
         F: Fn(
@@ -1145,14 +1064,13 @@ where
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
-    pub fn run_and_exit_with_additional_cli<CustomCli>(
+    pub async fn run_and_exit_with_cli(
         self,
+        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
         input: I,
-    ) -> (CustomCli, impl Future<Output = ()>)
-    where
-        CustomCli: StructOptInternal,
-    {
-        self.filter_run_and_exit_with_additional_cli(input, |_, _, _| true)
+    ) {
+        self.filter_run_and_exit_with_cli(cli, input, |_, _, _| true)
+            .await
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -1253,6 +1171,7 @@ where
     /// #
     /// # use async_trait::async_trait;
     /// # use cucumber::{WorldInit, cli};
+    /// # use structopt::StructOpt as _;
     /// #
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
@@ -1267,12 +1186,17 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let (_cli, cucumber) = MyWorld::cucumber()
-    ///     .filter_run_and_exit_with_additional_cli::<cli::Empty, _>(
+    /// let  (_custom, cli) =
+    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
+    ///         .unpack();
+    ///
+    /// MyWorld::cucumber()
+    ///     .filter_run_and_exit_with_cli(
+    ///         cli,
     ///         "tests/features/readme",
     ///         |_, _, sc| sc.tags.iter().any(|t| t == "cat"),
-    ///     );
-    /// cucumber.await;
+    ///     )
+    ///     .await;
     /// # };
     /// #
     /// # futures::executor::block_on(fut);
@@ -1302,31 +1226,21 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: crate::Step
-    pub fn filter_run_and_exit_with_additional_cli<CustomCli, F>(
+    pub async fn filter_run_and_exit_with_cli<Filter>(
         self,
+        cli: cli::Opts<P::CLI, R::CLI, Wr::CLI>,
         input: I,
-        filter: F,
-    ) -> (CustomCli, impl Future<Output = ()>)
-    where
-        CustomCli: StructOptInternal,
-        F: Fn(
+        filter: Filter,
+    ) where
+        Filter: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> bool
             + 'static,
     {
-        let cli::Compose { left, right } = cli::Compose::<
-            CustomCli,
-            cli::Opts<P::CLI, R::CLI, Wr::CLI>,
-        >::from_args();
-
-        let f = async {
-            self.filter_run_with_cli(input, filter, right)
-                .await
-                .panic_with_diagnostic_message();
-        };
-
-        (left, f)
+        self.filter_run_with_cli(cli, input, filter)
+            .await
+            .panic_with_diagnostic_message();
     }
 }

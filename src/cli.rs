@@ -96,3 +96,15 @@ where
     #[structopt(flatten)]
     pub right: R,
 }
+
+impl<L, R> Compose<L, R>
+where
+    L: StructOpt,
+    R: StructOpt,
+{
+    /// Unpacks [`Compose`] into underlying `CLI`s.
+    pub fn unpack(self) -> (L, R) {
+        let Compose { left, right } = self;
+        (left, right)
+    }
+}

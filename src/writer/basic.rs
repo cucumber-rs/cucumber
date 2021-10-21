@@ -317,10 +317,12 @@ impl Basic {
             sc.position.line,
             sc.position.col,
             coerce_error(info),
-            format_str_with_indent(
-                world.map(|w| format!("{:#?}", w)).as_deref(),
-                self.indent.saturating_sub(3) + 3,
-            ),
+            world
+                .map(|w| format_str_with_indent(
+                    format!("{:#?}", w),
+                    self.indent.saturating_sub(3) + 3,
+                ))
+                .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
     }
@@ -404,7 +406,7 @@ impl Basic {
                     .as_ref()
                     .and_then(|doc| cli.verbose.then(
                         || format_str_with_indent(
-                            doc.as_str(),
+                            doc,
                             self.indent.saturating_sub(3) + 3,
                         )
                     ))
@@ -447,7 +449,7 @@ impl Basic {
             .and_then(|doc| {
                 cli.verbose.then(|| {
                     format_str_with_indent(
-                        doc.as_str(),
+                        doc,
                         self.indent.saturating_sub(3) + 3,
                     )
                 })
@@ -488,7 +490,7 @@ impl Basic {
             step.docstring
                 .as_ref()
                 .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
-                    doc.as_str(),
+                    doc,
                     self.indent.saturating_sub(3) + 3,
                 )))
                 .unwrap_or_default(),
@@ -546,7 +548,7 @@ impl Basic {
             step.docstring
                 .as_ref()
                 .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
-                    doc.as_str(),
+                    doc,
                     self.indent.saturating_sub(3) + 3,
                 )))
                 .unwrap_or_default(),
@@ -561,13 +563,15 @@ impl Basic {
             step.position.line,
             step.position.col,
             format_str_with_indent(
-                format!("{}", err).as_str(),
+                format!("{}", err),
                 self.indent.saturating_sub(3) + 3
             ),
-            format_str_with_indent(
-                world.map(|w| format!("{:#?}", w)).as_deref(),
-                self.indent.saturating_sub(3) + 3
-            ),
+            world
+                .map(|w| format_str_with_indent(
+                    format!("{:#?}", w),
+                    self.indent.saturating_sub(3) + 3,
+                ))
+                .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -641,7 +645,7 @@ impl Basic {
                     .as_ref()
                     .and_then(|doc| cli.verbose.then(
                         || format_str_with_indent(
-                            doc.as_str(),
+                            doc,
                             self.indent.saturating_sub(3) + 3,
                         )
                     ))
@@ -685,7 +689,7 @@ impl Basic {
             .and_then(|doc| {
                 cli.verbose.then(|| {
                     format_str_with_indent(
-                        doc.as_str(),
+                        doc,
                         self.indent.saturating_sub(3) + 3,
                     )
                 })
@@ -727,7 +731,7 @@ impl Basic {
             step.docstring
                 .as_ref()
                 .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
-                    doc.as_str(),
+                    doc,
                     self.indent.saturating_sub(3) + 3,
                 )))
                 .unwrap_or_default(),
@@ -786,7 +790,7 @@ impl Basic {
             step.docstring
                 .as_ref()
                 .and_then(|doc| cli.verbose.then(|| format_str_with_indent(
-                    doc.as_str(),
+                    doc,
                     self.indent.saturating_sub(3) + 3,
                 )))
                 .unwrap_or_default(),
@@ -801,13 +805,15 @@ impl Basic {
             step.position.line,
             step.position.col,
             format_str_with_indent(
-                format!("{}", err).as_str(),
+                format!("{}", err),
                 self.indent.saturating_sub(3) + 3,
             ),
-            format_str_with_indent(
-                world.map(|w| format!("{:#?}", w)).as_deref(),
-                self.indent.saturating_sub(3) + 3,
-            ),
+            world
+                .map(|w| format_str_with_indent(
+                    format!("{:#?}", w),
+                    self.indent.saturating_sub(3) + 3,
+                ))
+                .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
@@ -834,13 +840,9 @@ pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
 
 /// Formats the given [`str`] by adding `indent`s to each line to prettify
 /// the output.
-fn format_str_with_indent<'s, I>(str: I, indent: usize) -> String
-where
-    I: Into<Option<&'s str>>,
-{
+fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
     let str = str
-        .into()
-        .unwrap_or_default()
+        .as_ref()
         .lines()
         .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");

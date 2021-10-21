@@ -46,7 +46,7 @@ cargo.doc:
 ifeq ($(clean),yes)
 	@rm -rf target/doc/
 endif
-	cargo doc $(if $(call eq,$(crate),),--workspace,-p $(crate)) \
+	cargo +stable doc $(if $(call eq,$(crate),),--workspace,-p $(crate)) \
 		--all-features \
 		$(if $(call eq,$(private),no),,--document-private-items) \
 		$(if $(call eq,$(open),no),,--open)
@@ -82,7 +82,8 @@ cargo.lint:
 #	make test.cargo [crate=<crate-name>]
 
 test.cargo:
-	cargo test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features
+	cargo +stable test $(if $(call eq,$(crate),),--workspace,-p $(crate)) \
+		--all-features
 
 
 # Run Rust tests of Book.
@@ -91,7 +92,7 @@ test.cargo:
 #	make test.book
 
 test.book:
-	cargo test --manifest-path book/tests/Cargo.toml
+	cargo +stable test --manifest-path book/tests/Cargo.toml
 
 
 
