@@ -14,7 +14,6 @@ use std::{
     borrow::Cow,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::Arc,
     vec,
 };
 
@@ -42,7 +41,10 @@ pub struct Basic {
 
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
 #[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
 #[allow(missing_debug_implementations)]
 #[derive(StructOpt)]
@@ -116,7 +118,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             } else {
                 let path = match get_path() {
                     Ok(path) => path,
-                    Err(e) => return vec![Err(Arc::new(e).into())],
+                    Err(e) => return vec![Err(e.into())],
                 };
 
                 if path.is_file() {
@@ -141,7 +143,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .into_iter()
                 .map(|f| match f {
                     Ok(f) => f.expand_examples().map_err(ParseError::from),
-                    Err(e) => Err(Arc::new(e).into()),
+                    Err(e) => Err(e.into()),
                 })
                 .collect()
         };

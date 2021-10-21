@@ -54,7 +54,10 @@ pub struct Basic {
 
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
 #[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
 pub struct CLI {
@@ -107,7 +110,7 @@ impl<W: World + Debug> Writer<W> for Basic {
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
-        cli: Self::CLI,
+        cli: &Self::CLI,
     ) {
         use event::{Cucumber, Feature};
 

@@ -363,10 +363,10 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 
             if events.is_finished() {
                 writer
-                    .handle_event(Ok(event::Cucumber::feature_finished(
-                        Arc::clone(&f),
+                    .handle_event(
+                        Ok(event::Cucumber::feature_finished(Arc::clone(&f))),
                         cli,
-                    )))
+                    )
                     .await;
                 return Some(Arc::clone(&f));
             }

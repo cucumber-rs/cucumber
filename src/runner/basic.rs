@@ -144,7 +144,10 @@ pub struct Basic<
 
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(not(doc), allow(missing_docs))]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
 #[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
 pub struct CLI {
