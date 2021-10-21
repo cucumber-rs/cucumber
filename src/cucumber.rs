@@ -1146,7 +1146,7 @@ where
         input: I,
     ) {
         self.filter_run_and_exit_with_cli(cli, input, |_, _, _| true)
-            .await
+            .await;
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
