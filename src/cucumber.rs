@@ -705,6 +705,45 @@ where
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter with provided CLI options.
     ///
+    /// This method exists not to hijack console and give users an ability to
+    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::{cli, WorldInit};
+    /// # use structopt::StructOpt as _;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// let (_custom, cli) =
+    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
+    ///         .into_inner();
+    ///
+    /// MyWorld::cucumber()
+    ///     .filter_run_with_cli(cli, "tests/features/readme", |_, _, sc| {
+    ///         sc.tags.iter().any(|t| t == "cat")
+    ///     })
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
+    ///
     /// [`Scenario`]: gherkin::Scenario
     pub async fn filter_run_with_cli<F>(
         self,
@@ -1051,15 +1090,52 @@ where
         self.filter_run_and_exit(input, |_, _, _| true).await;
     }
 
-    /// Runs [`Cucumber`].
+    /// Runs [`Cucumber`] with provided [`cli::Opts`].
     ///
     /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
     /// produces events handled by a [`Writer`].
     ///
+    /// This method exists not to hijack console and give users an ability to
+    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
+    ///
     /// # Panics
     ///
-    /// Returned [`Future`] panics if encountered errors while parsing
-    /// [`Feature`]s or at least one [`Step`] [`Failed`].
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] [`Failed`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use std::convert::Infallible;
+    /// #
+    /// # use async_trait::async_trait;
+    /// # use cucumber::{cli, WorldInit};
+    /// # use structopt::StructOpt as _;
+    /// #
+    /// # #[derive(Debug, WorldInit)]
+    /// # struct MyWorld;
+    /// #
+    /// # #[async_trait(?Send)]
+    /// # impl cucumber::World for MyWorld {
+    /// #     type Error = Infallible;
+    /// #
+    /// #     async fn new() -> Result<Self, Self::Error> {
+    /// #         Ok(Self)
+    /// #     }
+    /// # }
+    /// #
+    /// # let fut = async {
+    /// let (_custom, cli) =
+    ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
+    ///         .into_inner();
+    ///
+    /// MyWorld::cucumber()
+    ///     .run_and_exit_with_cli(cli, "tests/features/readme")
+    ///     .await;
+    /// # };
+    /// #
+    /// # futures::executor::block_on(fut);
+    /// ```
     ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Feature`]: gherkin::Feature
@@ -1153,15 +1229,15 @@ where
             .panic_with_diagnostic_message();
     }
 
-    /// Runs [`Cucumber`] with [`Scenario`]s filter and additional CLI options.
+    /// Runs [`Cucumber`] with [`Scenario`]s filter and provided [`cli::Opts`].
     ///
-    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
-    /// produces events handled by a [`Writer`].
+    /// This method exists not to hijack console and give users an ability to
+    /// compose custom `CLI` options with [`cli::Opts`] using [`cli::Compose`].
     ///
     /// # Panics
     ///
-    /// Returned [`Future`] panics if encountered errors while parsing
-    /// [`Feature`]s or at least one [`Step`] [`Failed`].
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] [`Failed`].
     ///
     /// # Example
     ///
@@ -1186,9 +1262,9 @@ where
     /// # }
     /// #
     /// # let fut = async {
-    /// let  (_custom, cli) =
+    /// let (_custom, cli) =
     ///     cli::Compose::<cli::Empty, cli::Opts<_, _, _>>::from_args()
-    ///         .unpack();
+    ///         .into_inner();
     ///
     /// MyWorld::cucumber()
     ///     .filter_run_and_exit_with_cli(

@@ -39,6 +39,7 @@ pub struct Basic {
     language: Option<Cow<'static, str>>,
 }
 
+todo_or_die::issue_closed!("TeXitoi", "structopt", 333);
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(

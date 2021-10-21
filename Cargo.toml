@@ -44,6 +44,7 @@ once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5"
 sealed = "0.3"
 structopt = "0.3.25"
+todo-or-die = { version = "0.1.2", features = ["github"] }
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.10", path = "./codegen", optional = true }

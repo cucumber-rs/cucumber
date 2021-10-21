@@ -60,6 +60,7 @@ where
     pub writer: Writer,
 }
 
+todo_or_die::issue_closed!("TeXitoi", "structopt", 333);
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(
@@ -75,6 +76,7 @@ pub struct Empty {
     skipped: (),
 }
 
+todo_or_die::issue_closed!("TeXitoi", "structopt", 333);
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(
@@ -103,7 +105,7 @@ where
     R: StructOpt,
 {
     /// Unpacks [`Compose`] into underlying `CLI`s.
-    pub fn unpack(self) -> (L, R) {
+    pub fn into_inner(self) -> (L, R) {
         let Compose { left, right } = self;
         (left, right)
     }
