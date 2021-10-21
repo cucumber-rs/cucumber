@@ -382,5 +382,57 @@ World::cucumber()
 
 
 
+## CLI options
+
+`Cucumber` provides several options that can be passed to on the command-line.
+
+Pass the `--help` option to print out all the available configuration options:
+
+```
+cargo test --test <test-name> -- --help
+```
+
+Default output is:
+
+```
+cucumber 0.10.0
+Run the tests, pet a dog!
+
+USAGE:
+    cucumber [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+        --verbose    Outputs Step's Doc String, if present
+
+OPTIONS:
+    -c, --colors <auto|always|never>    Indicates, whether output should be colored or not [default: auto]
+    -f, --features <glob>               Feature-files glob pattern
+        --concurrent <int>              Number of concurrent scenarios
+    -n, --name <regex>                  Regex to select scenarios from [aliases: scenario-name]
+    -t, --tags <tagexpr>                Regex to select scenarios from [aliases: scenario-tags]
+```
+
+Example with [tag expressions](https://cucumber.io/docs/cucumber/api/#tag-expressions) for filtering Scenarios:
+
+```
+cargo test --test <test-name> -- --tags='@cat or @dog or @ferris'
+```
+
+> Note: CLI overrides options set in the code. 
+
+
+### Customizing CLI options
+
+All `CLI` options are designed to be composable.
+
+For example all building-block traits have `CLI` associated type: [`Parser::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.CLI), [`Runner::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.CLI) and [`Writer::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.CLI). All of them are composed into a single `CLI`.
+
+In case you want to add completely custom `CLI` options, check out [`Cucumber::run_and_exit_with_cli()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.run_and_exit_with_cli) method. 
+
+
+
+
 [Cucumber]: https://cucumber.io
 [Gherkin]: https://cucumber.io/docs/gherkin

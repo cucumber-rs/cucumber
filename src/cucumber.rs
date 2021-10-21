@@ -627,6 +627,27 @@ where
         self.filter_run(input, |_, _, _| true).await
     }
 
+    /// Runs [`Cucumber`] with provided CLI options.
+    ///
+    /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
+    /// produces events handled by a [`Writer`].
+    ///
+    /// This method exists not to hijack console and give users an ability to
+    /// compose custom `CLI` by providing [`StructOpt`] deriver as first generic
+    /// parameter in [`cli::Opts`].
+    ///
+    /// [`Feature`]: gherkin::Feature
+    pub async fn run_with_cli<Cli>(
+        self,
+        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
+        input: I,
+    ) -> Wr
+    where
+        Cli: StructOpt,
+    {
+        self.filter_run_with_cli(cli, input, |_, _, _| true).await
+    }
+
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
     ///
     /// [`Feature`]s sourced from a [`Parser`] are fed to a [`Runner`], which
