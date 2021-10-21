@@ -121,8 +121,12 @@ fn expand_scenario(
     scenario: gherkin::Scenario,
     path: Option<&PathBuf>,
 ) -> Vec<Result<gherkin::Scenario, ExpandExamplesError>> {
+    /// [`Regex`] matching placeholders [`Examples`] should expand into.
+    ///
+    /// [`Examples`]: gherkin::Examples
+    #[allow(clippy::expect_used)]
     static TEMPLATE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"<(\S+)>").unwrap());
+        Lazy::new(|| Regex::new(r"<(\S+)>").expect("incorrect Regex"));
 
     let (header, vals) = match scenario
         .examples

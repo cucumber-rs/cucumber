@@ -110,7 +110,7 @@ impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an
     /// output in case the given `filter` predicated returns `true`.
     #[must_use]
-    pub fn new(writer: Wr, filter: F) -> Self {
+    pub const fn new(writer: Wr, filter: F) -> Self {
         Self {
             writer,
             filter,

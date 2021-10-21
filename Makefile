@@ -67,7 +67,7 @@ cargo.fmt:
 #	make cargo.lint
 
 cargo.lint:
-	cargo clippy --workspace -- -D clippy::pedantic -D warnings
+	cargo clippy --workspace -- -D warnings
 
 
 

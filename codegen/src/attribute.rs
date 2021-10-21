@@ -67,16 +67,11 @@ impl Step {
             match arg_marked_as_step.len() {
                 0 => Ok(None),
                 1 => {
-                    // Unwrapping is OK here, because
-                    // `arg_marked_as_step.len() == 1`.
-                    let (ident, _) =
-                        parse_fn_arg(arg_marked_as_step.first().unwrap())?;
+                    let (ident, _) = parse_fn_arg(arg_marked_as_step[0])?;
                     Ok(Some(ident.clone()))
                 }
                 _ => Err(syn::Error::new(
-                    // Unwrapping is OK here, because
-                    // `arg_marked_as_step.len() > 1`.
-                    arg_marked_as_step.get(1).unwrap().span(),
+                    arg_marked_as_step[1].span(),
                     "Only 1 step argument is allowed",
                 )),
             }
@@ -255,21 +250,23 @@ impl Step {
                     ::std::borrow::Borrow::borrow(&__cucumber_ctx.step);
             }
         } else {
-            let ty = match ty {
-                syn::Type::Path(p) => p,
-                _ => {
-                    return Err(syn::Error::new(
-                        ty.span(),
-                        "Type path expected",
-                    ))
-                }
+            let ty = if let syn::Type::Path(p) = ty {
+                p
+            } else {
+                return Err(syn::Error::new(ty.span(), "Type path expected"));
             };
 
             let not_found_err = format!("{} not found", ident);
             let parsing_err = format!(
                 "{} can not be parsed to {}",
                 ident,
-                ty.path.segments.last().unwrap().ident
+                ty.path
+                    .segments
+                    .last()
+                    .ok_or_else(|| {
+                        syn::Error::new(ty.path.span(), "Type path expected")
+                    })?
+                    .ident,
             );
 
             quote! {
@@ -349,15 +346,13 @@ impl Parse for AttributeArgument {
                         },
                     )?);
 
-                    Ok(AttributeArgument::Regex(str_lit))
+                    Ok(Self::Regex(str_lit))
                 } else {
                     Err(syn::Error::new(arg.span(), "Expected regex argument"))
                 }
             }
 
-            syn::NestedMeta::Lit(l) => {
-                Ok(AttributeArgument::Literal(to_string_literal(l)?))
-            }
+            syn::NestedMeta::Lit(l) => Ok(Self::Literal(to_string_literal(l)?)),
 
             syn::NestedMeta::Meta(_) => Err(syn::Error::new(
                 arg.span(),
@@ -391,13 +386,11 @@ fn remove_all_attrs_if_needed<'a>(
         .iter_mut()
         .filter_map(|arg| {
             if has_other_step_arguments {
-                if let Some(attr) = find_attr(attr_arg, arg) {
-                    return Some((&*arg, attr));
-                }
-            } else if let Some(attr) = remove_attr(attr_arg, arg) {
-                return Some((&*arg, attr));
+                find_attr(attr_arg, arg)
+            } else {
+                remove_attr(attr_arg, arg)
             }
-            None
+            .map(move |attr| (&*arg, attr))
         })
         .unzip()
 }
@@ -439,8 +432,7 @@ fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
 
         if removed.len() == 1 {
             typed_arg.attrs = other;
-            // Unwrapping is OK here, because `step_idents.len() == 1`.
-            return Some(removed.pop().unwrap());
+            return removed.pop();
         }
         other.append(&mut removed);
         typed_arg.attrs = other;
@@ -462,9 +454,10 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
         }
     };
 
-    let ident = match arg.pat.as_ref() {
-        syn::Pat::Ident(i) => &i.ident,
-        _ => return Err(syn::Error::new(arg.span(), "Expected ident")),
+    let ident = if let syn::Pat::Ident(i) = arg.pat.as_ref() {
+        &i.ident
+    } else {
+        return Err(syn::Error::new(arg.span(), "Expected ident"));
     };
 
     Ok((ident, arg.ty.as_ref()))
@@ -478,18 +471,23 @@ fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
             syn::FnArg::Receiver(_) => None,
         }
         .and_then(|typed_arg| {
-            match typed_arg.ty.as_ref() {
-                syn::Type::Reference(r) => Some(r),
-                _ => None,
+            if let syn::Type::Reference(r) = typed_arg.ty.as_ref() {
+                Some(r)
+            } else {
+                None
             }
             .and_then(|ty_ref| {
-                match ty_ref.elem.as_ref() {
-                    syn::Type::Slice(s) => Some(s),
-                    _ => None,
+                if let syn::Type::Slice(s) = ty_ref.elem.as_ref() {
+                    Some(s)
+                } else {
+                    None
                 }
-                .and_then(|slice| match slice.elem.as_ref() {
-                    syn::Type::Path(ty) => Some(ty),
-                    _ => None,
+                .and_then(|slice| {
+                    if let syn::Type::Path(ty) = slice.elem.as_ref() {
+                        Some(ty)
+                    } else {
+                        None
+                    }
                 })
             })
         })
@@ -505,17 +503,23 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
             syn::FnArg::Typed(a) => Ok(a),
             syn::FnArg::Receiver(_) => Err(first_arg.span()),
         })
-        .and_then(|typed_arg| match typed_arg.ty.as_ref() {
-            syn::Type::Reference(r) => Ok(r),
-            _ => Err(typed_arg.span()),
+        .and_then(|typed_arg| {
+            if let syn::Type::Reference(r) = typed_arg.ty.as_ref() {
+                Ok(r)
+            } else {
+                Err(typed_arg.span())
+            }
         })
         .and_then(|world_ref| match world_ref.mutability {
             Some(_) => Ok(world_ref),
             None => Err(world_ref.span()),
         })
-        .and_then(|world_mut_ref| match world_mut_ref.elem.as_ref() {
-            syn::Type::Path(p) => Ok(p),
-            _ => Err(world_mut_ref.span()),
+        .and_then(|world_mut_ref| {
+            if let syn::Type::Path(p) = world_mut_ref.elem.as_ref() {
+                Ok(p)
+            } else {
+                Err(world_mut_ref.span())
+            }
         })
         .map_err(|span| {
             syn::Error::new(
@@ -530,8 +534,9 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
 /// [`syn::Lit`]: enum@syn::Lit
 /// [`syn::LitStr`]: struct@syn::LitStr
 fn to_string_literal(l: syn::Lit) -> syn::Result<syn::LitStr> {
-    match l {
-        syn::Lit::Str(str) => Ok(str),
-        _ => Err(syn::Error::new(l.span(), "Expected string literal")),
+    if let syn::Lit::Str(str) = l {
+        Ok(str)
+    } else {
+        Err(syn::Error::new(l.span(), "Expected string literal"))
     }
 }

@@ -40,8 +40,19 @@ pub type WithContext<'me, World> =
 ///
 /// Every [`Step`] has to match with exactly 1 [`Regex`].
 pub struct Collection<World> {
+    /// Collection of [Given] [`Step`]s.
+    ///
+    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
     given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+
+    /// Collection of [When] [`Step`]s.
+    ///
+    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
     when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+
+    /// Collection of [Then] [`Step`]s.
+    ///
+    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
     then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 }
 
@@ -247,7 +258,7 @@ impl Hash for HashableRegex {
 }
 
 impl PartialEq for HashableRegex {
-    fn eq(&self, other: &HashableRegex) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.0.as_str() == other.0.as_str()
     }
 }

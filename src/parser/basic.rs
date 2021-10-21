@@ -130,7 +130,9 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                     let walker = GlobWalkerBuilder::new(path, "*.feature")
                         .case_insensitive(true)
                         .build()
-                        .unwrap();
+                        .unwrap_or_else(|e| {
+                            unreachable!("GlobWalkerBuilder panicked: {}", e)
+                        });
                     walk(walker)
                 }
             };
@@ -151,7 +153,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 impl Basic {
     /// Creates a new [`Basic`] [`Parser`].
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { language: None }
     }
 

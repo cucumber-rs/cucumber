@@ -37,7 +37,7 @@ use regex::{CaptureLocations, Regex};
 use structopt::StructOpt;
 
 use crate::{
-    event::{self, HookType},
+    event::{self, HookType, Info},
     feature::Ext as _,
     parser, step, Runner, Step, World,
 };
@@ -321,6 +321,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Sets the given [`Collection`] of [`Step`]s to this [`Runner`].
     ///
     /// [`Collection`]: step::Collection
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn steps(mut self, steps: step::Collection<World>) -> Self {
         self.steps = steps;
@@ -451,7 +452,13 @@ async fn insert_features<W, S, F>(
     while let Some(feat) = features.next().await {
         match feat {
             Ok(f) => into.insert(f, &which_scenario).await,
-            Err(e) => sender.unbounded_send(Err(e)).unwrap(),
+            // If the receiver end is dropped, then no one listens for events
+            // so we can just stop from here.
+            Err(e) => {
+                if sender.unbounded_send(Err(e)).is_err() {
+                    break;
+                }
+            }
         }
     }
 
@@ -631,21 +638,21 @@ where
         let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
         let ok_capt = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
                 event::Cucumber::scenario(f, r, s, e(step, captures))
             }
         };
         let err = |e: fn(_, _, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, captures, w, info| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
+                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
                 event::Cucumber::scenario(f, r, s, e(step, captures, w, info))
             }
         };
@@ -667,9 +674,9 @@ where
         );
 
         self.send(event::Cucumber::scenario(
-            feature.clone(),
+            Arc::clone(&feature),
             rule.clone(),
-            scenario.clone(),
+            Arc::clone(&scenario),
             event::Scenario::Started,
         ));
 
@@ -677,7 +684,7 @@ where
             let before_hook = self
                 .run_before_hook(&feature, rule.as_ref(), &scenario)
                 .await
-                .map_err(|_| None)?;
+                .map_err(|_unit| None)?;
 
             let feature_background = feature
                 .background
@@ -727,14 +734,16 @@ where
             .map_or((), drop);
 
         self.send(event::Cucumber::scenario(
-            feature.clone(),
+            Arc::clone(&feature),
             rule.clone(),
-            scenario.clone(),
+            Arc::clone(&scenario),
             event::Scenario::Finished,
         ));
 
         if let Some(r) = rule {
-            if let Some(f) = self.rule_scenario_finished(feature.clone(), r) {
+            if let Some(f) =
+                self.rule_scenario_finished(Arc::clone(&feature), r)
+            {
                 self.send(f);
             }
         }
@@ -752,19 +761,26 @@ where
         scenario: &Arc<gherkin::Scenario>,
     ) -> Result<Option<W>, ()> {
         let init_world = async {
-            let world_fut =
-                async { W::new().await.expect("failed to initialize World") };
-            AssertUnwindSafe(world_fut)
+            AssertUnwindSafe(W::new())
                 .catch_unwind()
                 .await
+                .map_err(Info::from)
+                .and_then(|r| {
+                    r.map_err(|e| {
+                        coerce_into_info(format!(
+                            "failed to initialize World: {}",
+                            e,
+                        ))
+                    })
+                })
                 .map_err(|info| (info, None))
         };
 
         if let Some(hook) = self.before_hook.as_ref() {
             self.send(event::Cucumber::scenario(
-                feature.clone(),
+                Arc::clone(feature),
                 rule.map(Arc::clone),
-                scenario.clone(),
+                Arc::clone(scenario),
                 event::Scenario::hook_started(HookType::Before),
             ));
 
@@ -777,29 +793,29 @@ where
                 );
                 match AssertUnwindSafe(fut).catch_unwind().await {
                     Ok(()) => Ok(world),
-                    Err(info) => Err((info, Some(world))),
+                    Err(i) => Err((Info::from(i), Some(world))),
                 }
             });
 
             match fut.await {
                 Ok(world) => {
                     self.send(event::Cucumber::scenario(
-                        feature.clone(),
+                        Arc::clone(feature),
                         rule.map(Arc::clone),
-                        scenario.clone(),
+                        Arc::clone(scenario),
                         event::Scenario::hook_passed(HookType::Before),
                     ));
                     Ok(Some(world))
                 }
                 Err((info, world)) => {
                     self.send(event::Cucumber::scenario(
-                        feature.clone(),
+                        Arc::clone(feature),
                         rule.map(Arc::clone),
-                        scenario.clone(),
+                        Arc::clone(scenario),
                         event::Scenario::hook_failed(
                             HookType::Before,
                             world.map(Arc::new),
-                            info.into(),
+                            info,
                         ),
                     ));
                     Err(())
@@ -820,9 +836,9 @@ where
     ) -> Result<Option<W>, ()> {
         if let Some(hook) = self.after_hook.as_ref() {
             self.send(event::Cucumber::scenario(
-                feature.clone(),
+                Arc::clone(feature),
                 rule.map(Arc::clone),
-                scenario.clone(),
+                Arc::clone(scenario),
                 event::Scenario::hook_started(HookType::After),
             ));
 
@@ -842,18 +858,18 @@ where
             match fut.await {
                 Ok(world) => {
                     self.send(event::Cucumber::scenario(
-                        feature.clone(),
+                        Arc::clone(feature),
                         rule.map(Arc::clone),
-                        scenario.clone(),
+                        Arc::clone(scenario),
                         event::Scenario::hook_passed(HookType::After),
                     ));
                     Ok(world)
                 }
                 Err((info, world)) => {
                     self.send(event::Cucumber::scenario(
-                        feature.clone(),
+                        Arc::clone(feature),
                         rule.map(Arc::clone),
-                        scenario.clone(),
+                        Arc::clone(scenario),
                         event::Scenario::hook_failed(
                             HookType::After,
                             world.map(Arc::new),
@@ -877,7 +893,7 @@ where
     /// [`Step`]: gherkin::Step
     async fn run_step<St, Ps, Sk, F>(
         &self,
-        mut world: Option<W>,
+        world: Option<W>,
         step: Arc<gherkin::Step>,
         (started, passed, skipped, failed): (St, Ps, Sk, F),
     ) -> Result<W, Option<W>>
@@ -892,50 +908,58 @@ where
             event::StepError,
         ) -> event::Cucumber<W>,
     {
-        self.send(started(step.clone()));
+        self.send(started(Arc::clone(&step)));
 
         let run = async {
             let (step_fn, captures, ctx) = match self.collection.find(&step) {
                 Ok(Some(f)) => f,
-                Ok(None) => return Ok(None),
+                Ok(None) => return Ok((None, world)),
                 Err(e) => {
-                    return Err((event::StepError::AmbiguousMatch(e), None));
+                    let e = event::StepError::AmbiguousMatch(e);
+                    return Err((e, None, world));
                 }
             };
 
-            if world.is_none() {
-                let w_fut = async {
-                    W::new().await.expect("failed to initialize World")
-                };
-                world = match AssertUnwindSafe(w_fut).catch_unwind().await {
-                    Ok(w) => Some(w),
-                    Err(e) => {
-                        return Err((event::StepError::Panic(e.into()), None))
+            let mut world = if let Some(w) = world {
+                w
+            } else {
+                match AssertUnwindSafe(W::new()).catch_unwind().await {
+                    Ok(Ok(w)) => w,
+                    Ok(Err(e)) => {
+                        let e = event::StepError::Panic(coerce_into_info(
+                            format!("failed to initialize World: {}", e),
+                        ));
+                        return Err((e, None, None));
                     }
-                };
-            }
+                    Err(e) => {
+                        let e = event::StepError::Panic(e.into());
+                        return Err((e, None, None));
+                    }
+                }
+            };
 
-            match AssertUnwindSafe(step_fn(world.as_mut().unwrap(), ctx))
+            match AssertUnwindSafe(step_fn(&mut world, ctx))
                 .catch_unwind()
                 .await
             {
-                Ok(()) => Ok(Some(captures)),
+                Ok(()) => Ok((Some(captures), Some(world))),
                 Err(e) => {
-                    Err((event::StepError::Panic(e.into()), Some(captures)))
+                    let e = event::StepError::Panic(e.into());
+                    Err((e, Some(captures), Some(world)))
                 }
             }
         };
 
         match run.await {
-            Ok(Some(captures)) => {
+            Ok((Some(captures), Some(world))) => {
                 self.send(passed(step, captures));
-                Ok(world.unwrap())
+                Ok(world)
             }
-            Ok(None) => {
+            Ok((_, world)) => {
                 self.send(skipped(step));
                 Err(world)
             }
-            Err((err, captures)) => {
+            Err((err, captures, world)) => {
                 self.send(failed(step, captures, world.map(Arc::new), err));
                 Err(None)
             }
@@ -955,7 +979,7 @@ where
     ) -> Option<event::Cucumber<W>> {
         let finished_scenarios = self
             .rule_scenarios_count
-            .get(&(feature.path.clone(), rule.clone()))
+            .get(&(feature.path.clone(), Arc::clone(&rule)))
             .unwrap_or_else(|| panic!("No Rule {}", rule.name))
             .fetch_add(1, Ordering::SeqCst)
             + 1;
@@ -1006,10 +1030,10 @@ where
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
-        for feature in runnable.iter().map(|(f, ..)| f.clone()).dedup() {
+        for feature in runnable.iter().map(|(f, ..)| Arc::clone(f)).dedup() {
             let _ = self
                 .features_scenarios_count
-                .entry(feature.clone())
+                .entry(Arc::clone(&feature))
                 .or_insert_with(|| {
                     started_features.push(feature);
                     0.into()
@@ -1019,12 +1043,12 @@ where
         let mut started_rules = Vec::new();
         for (feature, rule) in runnable
             .iter()
-            .filter_map(|(f, r, _)| r.clone().map(|r| (f.clone(), r)))
+            .filter_map(|(f, r, _)| r.clone().map(|r| (Arc::clone(f), r)))
             .dedup()
         {
             let _ = self
                 .rule_scenarios_count
-                .entry((feature.path.clone(), rule.clone()))
+                .entry((feature.path.clone(), Arc::clone(&rule)))
                 .or_insert_with(|| {
                     started_rules.push((feature, rule));
                     0.into()
@@ -1068,15 +1092,21 @@ where
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send(&self, event: event::Cucumber<W>) {
-        self.sender.unbounded_send(Ok(event)).unwrap();
+        // If the receiver end is dropped, then no one listens for events
+        // so we can just ignore it.
+        drop(self.sender.unbounded_send(Ok(event)));
     }
 
     /// Notifies with the given [`Cucumber`] events.
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send_all(&self, events: impl Iterator<Item = event::Cucumber<W>>) {
-        for event in events {
-            self.send(event);
+        for ev in events {
+            // If the receiver end is dropped, then no one listens for events
+            // so we can just stop from here.
+            if self.sender.unbounded_send(Ok(ev)).is_err() {
+                break;
+            }
         }
     }
 }
@@ -1209,4 +1239,9 @@ impl Features {
     fn is_finished(&self) -> bool {
         self.finished.load(Ordering::SeqCst)
     }
+}
+
+/// Coerces the given `value` into a type-erased [`Info`].
+fn coerce_into_info<T: std::any::Any + Send + 'static>(val: T) -> Info {
+    Arc::new(val)
 }

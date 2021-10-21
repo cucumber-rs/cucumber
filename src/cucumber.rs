@@ -50,10 +50,23 @@ use crate::{
 /// [`WorldInit::cucumber()`]: crate::WorldInit::cucumber()
 /// [`WorldInit::run()`]: crate::WorldInit::run()
 pub struct Cucumber<W, P, I, R, Wr> {
+    /// [`Parser`] sourcing [`Feature`]s for execution.
+    ///
+    /// [`Feature`]: gherkin::Feature
     parser: P,
+
+    /// [`Runner`] executing [`Scenario`]s and producing [`event`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     runner: R,
+
+    /// [`Writer`] outputting [`event`]s to some output.
     writer: Wr,
+
+    /// Type of the [`World`] this [`Cucumber`] run on.
     _world: PhantomData<W>,
+
+    /// Type of the input consumed by [`Cucumber::parser`].
     _parser_input: PhantomData<I>,
 }
 
@@ -63,7 +76,7 @@ impl<W> Cucumber<W, (), (), (), ()> {
     /// Use [`Cucumber::with_parser()`], [`Cucumber::with_runner()`] and
     /// [`Cucumber::with_writer()`] to be able to [`Cucumber::run()`] it.
     #[must_use]
-    pub fn custom() -> Self {
+    pub const fn custom() -> Self {
         Self {
             parser: (),
             runner: (),

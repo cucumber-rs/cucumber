@@ -52,7 +52,7 @@ impl Stats {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn total(&self) -> usize {
+    pub const fn total(&self) -> usize {
         self.passed + self.skipped + self.failed
     }
 }
@@ -253,13 +253,15 @@ impl<Writer> Summarized<Writer> {
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;
-                let _ =
-                    self.handled_scenarios.insert(scenario.clone(), Skipped);
+                let _ = self
+                    .handled_scenarios
+                    .insert(Arc::clone(scenario), Skipped);
             }
             Step::Failed(..) => {
                 self.steps.failed += 1;
                 self.scenarios.failed += 1;
-                let _ = self.handled_scenarios.insert(scenario.clone(), Failed);
+                let _ =
+                    self.handled_scenarios.insert(Arc::clone(scenario), Failed);
             }
         }
     }
@@ -294,7 +296,7 @@ impl<Writer> Summarized<Writer> {
                         self.scenarios.failed += 1;
                         let _ = self
                             .handled_scenarios
-                            .insert(scenario.clone(), Indicator::Failed);
+                            .insert(Arc::clone(scenario), Indicator::Failed);
                     }
                 }
                 self.failed_hooks += 1;
@@ -319,6 +321,8 @@ impl<Writer> Summarized<Writer> {
     }
 }
 
+// We better keep this here, as it's related to summarization only.
+#[allow(clippy::multiple_inherent_impl)]
 impl Styles {
     /// Generates a formatted summary [`String`].
     #[must_use]
@@ -368,7 +372,7 @@ impl Styles {
             hook_errors
         )
         .trim_end_matches('\n')
-        .to_string()
+        .to_owned()
     }
 
     /// Formats [`Stats`] for a terminal output.
