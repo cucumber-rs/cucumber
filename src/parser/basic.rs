@@ -12,6 +12,7 @@
 
 use std::{
     borrow::Cow,
+    fmt,
     path::{Path, PathBuf},
     str::FromStr,
     vec,
@@ -27,6 +28,20 @@ use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
 
+// Workaround for overwritten doc comments:
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(doc, doc = "CLI options of [`Basic`] [`Parser`].")]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
+#[derive(Debug, StructOpt)]
+pub struct Cli {
+    /// `.feature` files glob pattern.
+    #[structopt(long, short, name = "glob")]
+    pub features: Option<Walker>,
+}
+
 /// Default [`Parser`].
 ///
 /// As there is no async runtime-agnostic way to interact with IO, this
@@ -39,57 +54,29 @@ pub struct Basic {
     language: Option<Cow<'static, str>>,
 }
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
-#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
-#[allow(missing_debug_implementations)]
-#[derive(StructOpt)]
-pub struct CLI {
-    /// Feature-files glob pattern.
-    #[structopt(long, short, name = "glob")]
-    pub features: Option<Walker>,
-}
-
-/// [`GlobWalker`] wrapper with [`FromStr`] impl.
-#[allow(missing_debug_implementations)]
-pub struct Walker(GlobWalker);
-
-impl FromStr for Walker {
-    type Err = globwalk::GlobError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        globwalk::glob(s).map(Walker)
-    }
-}
-
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type CLI = CLI;
+    type Cli = Cli;
 
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I, cli: Self::CLI) -> Self::Output {
+    fn parse(self, path: I, cli: Self::Cli) -> Self::Output {
         let walk = |walker: GlobWalker| {
             walker
                 .filter_map(Result::ok)
-                .filter(|entry| {
-                    entry
-                        .path()
+                .filter(|file| {
+                    file.path()
                         .extension()
                         .map(|ext| ext == "feature")
                         .unwrap_or_default()
                 })
-                .map(|entry| {
+                .map(|file| {
                     let env = self
                         .language
                         .as_ref()
                         .and_then(|l| GherkinEnv::new(l).ok())
                         .unwrap_or_default();
-                    gherkin::Feature::parse_path(entry.path(), env)
+                    gherkin::Feature::parse_path(file.path(), env)
                 })
                 .collect::<Vec<_>>()
         };
@@ -184,3 +171,20 @@ impl Basic {
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,
 );
+
+/// Wrapper over [`GlobWalker`] with a [`FromStr`] impl.
+pub struct Walker(GlobWalker);
+
+impl fmt::Debug for Walker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Walker").finish_non_exhaustive()
+    }
+}
+
+impl FromStr for Walker {
+    type Err = globwalk::GlobError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        globwalk::glob(s).map(Self)
+    }
+}

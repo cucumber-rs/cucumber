@@ -12,8 +12,6 @@
 //!
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference
 
-pub mod basic;
-
 use std::sync::Arc;
 
 use derive_more::{Display, Error};
@@ -25,21 +23,25 @@ use crate::feature::ExpandExamplesError;
 #[doc(inline)]
 pub use self::basic::Basic;
 
+pub mod basic;
+
 /// Source of parsed [`Feature`]s.
 ///
 /// [`Feature`]: gherkin::Feature
 pub trait Parser<I> {
-    /// [`StructOpt`] deriver for CLI options of this [`Parser`]. In case no
-    /// options present, use [`cli::Empty`].
+    /// CLI options of this [`Parser`]. In case no options should be introduced,
+    /// just use [`cli::Empty`].
     ///
     /// All CLI options from [`Parser`], [`Runner`] and [`Writer`] will be
-    /// merged together, so overlapping arguments will cause runtime panic.
+    /// merged together, so overlapping arguments will cause a runtime panic.
     ///
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Runner`]: crate::Runner
-    /// [`StructOpt`]: structopt::StructOpt
     /// [`Writer`]: crate::Writer
-    type CLI: StructOptInternal + 'static;
+    // We do use `StructOptInternal` here only because `StructOpt::from_args()`
+    // requires exactly this trait bound. We don't touch any `StructOptInternal`
+    // details being a subject of instability.
+    type Cli: StructOptInternal + 'static;
 
     /// Output [`Stream`] of parsed [`Feature`]s.
     ///
@@ -49,7 +51,7 @@ pub trait Parser<I> {
     /// Parses the given `input` into a [`Stream`] of [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn parse(self, input: I, cli: Self::CLI) -> Self::Output;
+    fn parse(self, input: I, cli: Self::Cli) -> Self::Output;
 }
 
 /// Result of parsing [Gherkin] files.

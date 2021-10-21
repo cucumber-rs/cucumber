@@ -25,8 +25,8 @@ use regex::Regex;
 use structopt::StructOpt;
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, ArbitraryWriter,
-    FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    ArbitraryWriter, cli, event, FailureWriter, parser, Parser, runner, Runner,
+    ScenarioType, step, Step, tag::Ext as _, World, writer, Writer,
     WriterExt as _,
 };
 
@@ -639,7 +639,7 @@ where
     /// [`Feature`]: gherkin::Feature
     pub async fn run_with_cli<Cli>(
         self,
-        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::Cli, R::CLI, Wr::CLI>,
         input: I,
     ) -> Wr
     where
@@ -717,7 +717,7 @@ where
             + 'static,
     {
         self.filter_run_with_cli(
-            cli::Opts::<cli::Empty, P::CLI, R::CLI, Wr::CLI>::from_args(),
+            cli::Opts::<cli::Empty, P::Cli, R::CLI, Wr::CLI>::from_args(),
             input,
             filter,
         )
@@ -769,7 +769,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     pub async fn filter_run_with_cli<Cli, F>(
         self,
-        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::Cli, R::CLI, Wr::CLI>,
         input: I,
         filter: F,
     ) -> Wr
@@ -1167,7 +1167,7 @@ where
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit_with_cli<Cli>(
         self,
-        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::Cli, R::CLI, Wr::CLI>,
         input: I,
     ) where
         Cli: StructOpt,
@@ -1332,7 +1332,7 @@ where
     /// [`Step`]: crate::Step
     pub async fn filter_run_and_exit_with_cli<Cli, Filter>(
         self,
-        cli: cli::Opts<Cli, P::CLI, R::CLI, Wr::CLI>,
+        cli: cli::Opts<Cli, P::Cli, R::CLI, Wr::CLI>,
         input: I,
         filter: Filter,
     ) where

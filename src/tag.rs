@@ -24,10 +24,10 @@ pub trait Ext {
 impl Ext for TagOperation {
     fn eval(&self, tags: &[String]) -> bool {
         match self {
-            TagOperation::And(l, r) => l.eval(tags) & r.eval(tags),
-            TagOperation::Or(l, r) => l.eval(tags) | r.eval(tags),
-            TagOperation::Not(tag) => !tag.eval(tags),
-            TagOperation::Tag(t) => tags.iter().any(|tag| tag == t),
+            Self::And(l, r) => l.eval(tags) & r.eval(tags),
+            Self::Or(l, r) => l.eval(tags) | r.eval(tags),
+            Self::Not(tag) => !tag.eval(tags),
+            Self::Tag(t) => tags.iter().any(|tag| tag == t),
         }
     }
 }
