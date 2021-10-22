@@ -20,6 +20,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use console::Term;
 use itertools::Itertools as _;
 use regex::CaptureLocations;
@@ -110,6 +111,7 @@ impl<W: World + Debug> Writer<W> for Basic {
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
+        _: DateTime<Utc>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};

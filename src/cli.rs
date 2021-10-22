@@ -107,6 +107,7 @@ wraps another [`Writer`].
 
 ```rust
 # use async_trait::async_trait;
+# use chrono::{DateTime, Utc};
 # use cucumber::{
 #     cli, event, parser, ArbitraryWriter, FailureWriter, World, Writer,
 # };
@@ -131,11 +132,12 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
+        at: DateTime<Utc>,
         cli: &Self::Cli,
     ) {
         // Some custom logic including `cli.left.custom_option`.
 
-        self.0.handle_event(ev, &cli.right).await;
+        self.0.handle_event(ev, at, &cli.right).await;
     }
 }
 

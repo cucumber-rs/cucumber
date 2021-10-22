@@ -23,6 +23,7 @@ use std::{
     },
 };
 
+use chrono::{DateTime, Utc};
 use futures::{
     channel::mpsc,
     future::{self, Either, LocalBoxFuture},
@@ -385,8 +386,10 @@ where
 {
     type Cli = Cli;
 
-    type EventStream =
-        LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
+    type EventStream = LocalBoxStream<
+        'static,
+        (parser::Result<event::Cucumber<W>>, DateTime<Utc>),
+    >;
 
     fn run<S>(self, features: S, cli: Cli) -> Self::EventStream
     where
@@ -441,7 +444,10 @@ async fn insert_features<W, S, F>(
     into: Features,
     features: S,
     which_scenario: F,
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<(
+        parser::Result<event::Cucumber<W>>,
+        DateTime<Utc>,
+    )>,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     F: Fn(
@@ -458,7 +464,7 @@ async fn insert_features<W, S, F>(
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
             Err(e) => {
-                if sender.unbounded_send(Err(e)).is_err() {
+                if sender.unbounded_send((Err(e), Utc::now())).is_err() {
                     break;
                 }
             }
@@ -475,7 +481,10 @@ async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<(
+        parser::Result<event::Cucumber<W>>,
+        DateTime<Utc>,
+    )>,
     before_hook: Option<Before>,
     after_hook: Option<After>,
 ) where
@@ -583,7 +592,10 @@ struct Executor<W, Before, After> {
     /// Sender for notifying state of [`Feature`]s completion.
     ///
     /// [`Feature`]: gherkin::Feature
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<(
+        parser::Result<event::Cucumber<W>>,
+        DateTime<Utc>,
+    )>,
 }
 
 impl<W: World, Before, After> Executor<W, Before, After>
@@ -608,7 +620,10 @@ where
         collection: step::Collection<W>,
         before_hook: Option<Before>,
         after_hook: Option<After>,
-        sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+        sender: mpsc::UnboundedSender<(
+            parser::Result<event::Cucumber<W>>,
+            DateTime<Utc>,
+        )>,
     ) -> Self {
         Self {
             features_scenarios_count: HashMap::new(),
@@ -1097,7 +1112,7 @@ where
     fn send(&self, event: event::Cucumber<W>) {
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
-        drop(self.sender.unbounded_send(Ok(event)));
+        drop(self.sender.unbounded_send((Ok(event), Utc::now())));
     }
 
     /// Notifies with the given [`Cucumber`] events.
@@ -1107,7 +1122,7 @@ where
         for ev in events {
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
-            if self.sender.unbounded_send(Ok(ev)).is_err() {
+            if self.sender.unbounded_send((Ok(ev), Utc::now())).is_err() {
                 break;
             }
         }

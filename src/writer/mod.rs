@@ -20,6 +20,7 @@ pub mod summarized;
 pub mod term;
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use sealed::sealed;
 use structopt::StructOptInternal;
 
@@ -63,6 +64,7 @@ pub trait Writer<World> {
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
+        at: DateTime<Utc>,
         cli: &Self::Cli,
     );
 }

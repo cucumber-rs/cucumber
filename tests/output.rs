@@ -1,6 +1,7 @@
 use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use cucumber::{
     cli, event, given, parser, step, then, when, WorldInit, Writer,
 };
@@ -41,6 +42,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
+        _: DateTime<Utc>,
         _: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};

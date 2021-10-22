@@ -17,6 +17,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use derive_more::Deref;
 
 use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
@@ -64,6 +65,7 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
+        at: DateTime<Utc>,
         cli: &Self::Cli,
     ) {
         use event::{
@@ -95,7 +97,7 @@ where
             _ => ev,
         };
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(ev, at, cli).await;
     }
 }
 

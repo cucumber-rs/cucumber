@@ -13,6 +13,7 @@
 use std::{array, borrow::Cow, collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use derive_more::Deref;
 use itertools::Itertools as _;
 
@@ -146,6 +147,7 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
+        at: DateTime<Utc>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
@@ -168,7 +170,7 @@ where
             Ok(Cucumber::Started) => {}
         };
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(ev, at, cli).await;
 
         if finished {
             self.writer.write(Styles::new().summary(self)).await;

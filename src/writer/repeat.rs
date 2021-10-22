@@ -13,6 +13,7 @@
 use std::mem;
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use derive_more::Deref;
 
 use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
@@ -35,7 +36,7 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     filter: F,
 
     /// Buffer of collected events for re-outputting.
-    events: Vec<parser::Result<event::Cucumber<W>>>,
+    events: Vec<(parser::Result<event::Cucumber<W>>, DateTime<Utc>)>,
 }
 
 /// Alias for a [`fn`] predicate deciding whether an event should be
@@ -54,19 +55,20 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
+        at: DateTime<Utc>,
         cli: &Self::Cli,
     ) {
         if (self.filter)(&ev) {
-            self.events.push(ev.clone());
+            self.events.push((ev.clone(), at));
         }
 
         let is_finished = matches!(ev, Ok(event::Cucumber::Finished));
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(ev, at, cli).await;
 
         if is_finished {
-            for ev in mem::take(&mut self.events) {
-                self.writer.handle_event(ev, cli).await;
+            for (ev, at) in mem::take(&mut self.events) {
+                self.writer.handle_event(ev, at, cli).await;
             }
         }
     }

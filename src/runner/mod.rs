@@ -16,6 +16,7 @@
 
 pub mod basic;
 
+use chrono::{DateTime, Utc};
 use futures::Stream;
 use structopt::StructOptInternal;
 
@@ -75,8 +76,10 @@ pub trait Runner<World> {
     // details being a subject of instability.
     type Cli: StructOptInternal;
 
-    /// Output events [`Stream`].
-    type EventStream: Stream<Item = parser::Result<event::Cucumber<World>>>;
+    /// Output events [`Stream`] paired with [`DateTime`] when they happen.
+    type EventStream: Stream<
+        Item = (parser::Result<event::Cucumber<World>>, DateTime<Utc>),
+    >;
 
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into
     /// a [`Stream`] of executed [`Cucumber`] events.
