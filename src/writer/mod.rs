@@ -106,47 +106,6 @@ pub trait Failure<World>: Writer<World> {
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     fn hook_errors(&self) -> usize;
-
-    /// Panics with diagnostic message in case [`execution_has_failed`][1].
-    ///
-    /// Default message looks like:
-    /// `1 step failed, 2 parsing errors, 3 hook errors`.
-    ///
-    /// [1]: Self::execution_has_failed()
-    fn panic_with_diagnostic_message(&self) {
-        if self.execution_has_failed() {
-            let mut msg = Vec::with_capacity(3);
-
-            let failed_steps = self.failed_steps();
-            if failed_steps > 0 {
-                msg.push(format!(
-                    "{} step{} failed",
-                    failed_steps,
-                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            let parsing_errors = self.parsing_errors();
-            if parsing_errors > 0 {
-                msg.push(format!(
-                    "{} parsing error{}",
-                    parsing_errors,
-                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            let hook_errors = self.hook_errors();
-            if hook_errors > 0 {
-                msg.push(format!(
-                    "{} hook error{}",
-                    hook_errors,
-                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
-                ));
-            }
-
-            panic!("{}", msg.join(", "));
-        }
-    }
 }
 
 /// Extension of [`Writer`] allowing its normalization and summarization.

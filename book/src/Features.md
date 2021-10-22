@@ -384,7 +384,7 @@ World::cucumber()
 
 ## CLI options
 
-`Cucumber` provides several options that can be passed to on the command-line.
+`Cucumber` provides several options that can be passed to the command-line.
 
 Pass the `--help` option to print out all the available configuration options:
 
@@ -429,7 +429,7 @@ All `CLI` options are designed to be composable.
 
 For example all building-block traits have `CLI` associated type: [`Parser::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli), [`Runner::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli) and [`Writer::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli). All of them are composed into a single `CLI`.
 
-In case you want to add completely custom `CLI` options, check out [`Cucumber::run_and_exit_with_cli()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.run_and_exit_with_cli) method. 
+In case you want to add completely custom `CLI` options, check out [`Cucumber::with_cli()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli) method. 
 
 
 

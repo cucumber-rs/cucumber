@@ -702,10 +702,7 @@ where
     /// }
     ///
     /// let cli = cli::Opts::<_, _, _, Cli>::from_args();
-    /// let time = cli
-    ///     .custom
-    ///     .before_time
-    ///     .unwrap_or_default();
+    /// let time = cli.custom.before_time.unwrap_or_default();
     ///
     /// MyWorld::cucumber()
     ///     .before(move |_, _, _, _| time::sleep(time).boxed_local())
@@ -733,6 +730,35 @@ where
     ///     src="https://asciinema.org/a/0KvTxnfaMRjsvsIKsalS611Ta.js"
     ///     async data-autoplay="true" data-rows="14">
     /// </script>
+    ///
+    /// Also now executing `--help` will output `--before-time`
+    ///
+    /// ```text
+    /// $ cargo test --test <test-name> -- --help
+    /// cucumber 0.10.0
+    /// Run the tests, pet a dog!
+    ///
+    /// USAGE:
+    ///     cucumber [FLAGS] [OPTIONS]
+    ///
+    /// FLAGS:
+    ///     -h, --help       Prints help information
+    ///     -V, --version    Prints version information
+    ///         --verbose    Outputs Step's Doc String, if present
+    ///
+    /// OPTIONS:
+    ///     -c, --colors <auto|always|never>    Indicates, whether output should
+    ///                                         be colored or not
+    ///                                         [default: auto]
+    ///         --before-time <before-time>     Time to wait in before hook
+    ///     -f, --features <glob>               `.feature` files glob pattern
+    ///         --concurrent <int>              Number of concurrent scenarios
+    ///     -n, --name <regex>                  Regex to filter scenarios with
+    ///                                         [aliases: scenario-name]
+    ///     -t, --tags <tagexpr>                Tag expression to filter
+    ///                                         scenarios with
+    ///                                         [aliases: scenario-tags]
+    /// ```
     ///
     /// [`Feature`]: gherkin::Feature
     pub fn with_cli<CustomCli>(
@@ -1280,8 +1306,38 @@ where
             ) -> bool
             + 'static,
     {
-        self.filter_run(input, filter)
-            .await
-            .panic_with_diagnostic_message();
+        let writer = self.filter_run(input, filter).await;
+        if writer.execution_has_failed() {
+            let mut msg = Vec::with_capacity(3);
+
+            let failed_steps = writer.failed_steps();
+            if failed_steps > 0 {
+                msg.push(format!(
+                    "{} step{} failed",
+                    failed_steps,
+                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
+            let parsing_errors = writer.parsing_errors();
+            if parsing_errors > 0 {
+                msg.push(format!(
+                    "{} parsing error{}",
+                    parsing_errors,
+                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
+            let hook_errors = writer.hook_errors();
+            if hook_errors > 0 {
+                msg.push(format!(
+                    "{} hook error{}",
+                    hook_errors,
+                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
+                ));
+            }
+
+            panic!("{}", msg.join(", "));
+        }
     }
 }
