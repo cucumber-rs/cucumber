@@ -107,7 +107,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
             self.queue.remove(&feature_to_remove);
         }
 
-        if let Some(at) = self.queue.finished {
+        if let Some(at) = self.queue.finished_at {
             self.writer
                 .handle_event(Ok(Cucumber::Finished), at, cli)
                 .await;
@@ -159,9 +159,6 @@ where
 /// [`next()`]: std::iter::Iterator::next()
 #[derive(Debug)]
 struct Queue<K: Eq + Hash, V> {
-    /// Indicator whether this [`Queue`] started emitting values.
-    started_emitted: bool,
-
     /// Underlying FIFO queue of values.
     queue: LinkedHashMap<K, V>,
 
@@ -169,23 +166,26 @@ struct Queue<K: Eq + Hash, V> {
     ///
     /// This value corresponds to the [`DateTime`] of the `Started` event for
     /// item, this [`Queue`] is representing.
-    started: DateTime<Utc>,
+    started_at: DateTime<Utc>,
+
+    /// Indicator whether this [`Queue`] started emitting values.
+    started_emitted: bool,
 
     /// [`DateTime`] when [`Queue`] finished emitting values.
     ///
     /// This value corresponds to the [`DateTime`] of the `Finished` event for
     /// item, this [`Queue`] is representing.
-    finished: Option<DateTime<Utc>>,
+    finished_at: Option<DateTime<Utc>>,
 }
 
 impl<K: Eq + Hash, V> Queue<K, V> {
     /// Creates a new empty normalization [`Queue`].
     fn new(started: DateTime<Utc>) -> Self {
         Self {
-            started_emitted: false,
             queue: LinkedHashMap::new(),
-            started,
-            finished: None,
+            started_at: started,
+            started_emitted: false,
+            finished_at: None,
         }
     }
 
@@ -201,12 +201,12 @@ impl<K: Eq + Hash, V> Queue<K, V> {
 
     /// Marks this [`Queue`] as finished.
     fn finished(&mut self, at: DateTime<Utc>) {
-        self.finished = Some(at);
+        self.finished_at = Some(at);
     }
 
     /// Checks whether this [`Queue`] has been finished.
     fn is_finished(&self) -> bool {
-        self.finished.is_some()
+        self.finished_at.is_some()
     }
 
     /// Removes the given `key` from this [`Queue`].
@@ -370,7 +370,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
                 writer
                     .handle_event(
                         Ok(event::Cucumber::feature_started(Arc::clone(&f))),
-                        events.started,
+                        events.started_at,
                         cli,
                     )
                     .await;
@@ -383,7 +383,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
                 events.remove(&scenario_or_rule_to_remove);
             }
 
-            if let Some(at) = events.finished {
+            if let Some(at) = events.finished_at {
                 writer
                     .handle_event(
                         Ok(event::Cucumber::feature_finished(Arc::clone(&f))),
@@ -554,7 +554,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
                         Arc::clone(&feature),
                         Arc::clone(&rule),
                     )),
-                    self.started,
+                    self.started_at,
                     cli,
                 )
                 .await;
@@ -576,7 +576,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
             }
         }
 
-        if let Some(at) = self.finished {
+        if let Some(at) = self.finished_at {
             writer
                 .handle_event(
                     Ok(event::Cucumber::rule_finished(

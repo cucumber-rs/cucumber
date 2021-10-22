@@ -76,7 +76,7 @@ pub trait Runner<World> {
     // details being a subject of instability.
     type Cli: StructOptInternal;
 
-    /// Output events [`Stream`] paired with [`DateTime`] when they happen.
+    /// Output events [`Stream`] paired with [`DateTime`] when they happened.
     type EventStream: Stream<
         Item = (parser::Result<event::Cucumber<World>>, DateTime<Utc>),
     >;
