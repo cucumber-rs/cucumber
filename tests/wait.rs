@@ -1,15 +1,12 @@
 use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber::{cli, given, then, when, WorldInit};
+use cucumber::{given, then, when, WorldInit};
 use futures::FutureExt as _;
-use structopt::StructOpt as _;
 use tokio::time;
 
 #[tokio::main]
 async fn main() {
-    let cli = cli::Opts::<cli::Empty, _, _, _>::from_args();
-
     let res = World::cucumber()
         .before(|_, _, _, w| {
             async move {
@@ -21,7 +18,7 @@ async fn main() {
         .after(|_, _, _, _| {
             time::sleep(Duration::from_millis(10)).boxed_local()
         })
-        .run_and_exit_with_cli(cli, "tests/features/wait");
+        .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
         .catch_unwind()

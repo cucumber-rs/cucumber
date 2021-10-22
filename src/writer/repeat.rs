@@ -49,12 +49,12 @@ where
     Wr: Writer<W>,
     F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
 {
-    type CLI = Wr::CLI;
+    type Cli = Wr::Cli;
 
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
-        cli: &Self::CLI,
+        cli: &Self::Cli,
     ) {
         if (self.filter)(&ev) {
             self.events.push(ev.clone());

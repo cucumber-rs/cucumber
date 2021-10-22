@@ -395,7 +395,7 @@ cargo test --test <test-name> -- --help
 Default output is:
 
 ```
-cucumber 0.11.0
+cucumber 0.10.0
 Run the tests, pet a dog!
 
 USAGE:
@@ -408,10 +408,10 @@ FLAGS:
 
 OPTIONS:
     -c, --colors <auto|always|never>    Indicates, whether output should be colored or not [default: auto]
-    -f, --features <glob>               Feature-files glob pattern
+    -f, --features <glob>               `.feature` files glob pattern
         --concurrent <int>              Number of concurrent scenarios
-    -n, --name <regex>                  Regex to select scenarios from [aliases: scenario-name]
-    -t, --tags <tagexpr>                Regex to select scenarios from [aliases: scenario-tags]
+    -n, --name <regex>                  Regex to filter scenarios with [aliases: scenario-name]
+    -t, --tags <tagexpr>                Tag expression to filter scenarios with [aliases: scenario-tags]
 ```
 
 Example with [tag expressions](https://cucumber.io/docs/cucumber/api/#tag-expressions) for filtering Scenarios:
@@ -427,7 +427,7 @@ cargo test --test <test-name> -- --tags='@cat or @dog or @ferris'
 
 All `CLI` options are designed to be composable.
 
-For example all building-block traits have `CLI` associated type: [`Parser::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.CLI), [`Runner::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.CLI) and [`Writer::CLI`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.CLI). All of them are composed into a single `CLI`.
+For example all building-block traits have `CLI` associated type: [`Parser::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli), [`Runner::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli) and [`Writer::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli). All of them are composed into a single `CLI`.
 
 In case you want to add completely custom `CLI` options, check out [`Cucumber::run_and_exit_with_cli()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.run_and_exit_with_cli) method. 
 

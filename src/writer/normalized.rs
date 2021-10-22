@@ -60,12 +60,12 @@ impl<W: World, Writer> Normalized<W, Writer> {
 
 #[async_trait(?Send)]
 impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
-    type CLI = Wr::CLI;
+    type Cli = Wr::Cli;
 
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
-        cli: &Self::CLI,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 
@@ -255,7 +255,7 @@ trait Emitter<World> {
         self,
         path: Self::EmittedPath,
         writer: &mut W,
-        cli: &W::CLI,
+        cli: &W::Cli,
     ) -> Option<Self::Emitted>;
 }
 
@@ -342,7 +342,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
         self,
         _: (),
         writer: &mut W,
-        cli: &W::CLI,
+        cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         if let Some((f, events)) = self.current_item() {
             if !events.is_started_emitted() {
@@ -484,7 +484,7 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
         self,
         feature: Self::EmittedPath,
         writer: &mut W,
-        cli: &W::CLI,
+        cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         match self.current_item()? {
             Either::Left((rule, events)) => events
@@ -521,7 +521,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         self,
         (feature, rule): Self::EmittedPath,
         writer: &mut W,
-        cli: &W::CLI,
+        cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         if !self.is_started_emitted() {
             writer
@@ -599,7 +599,7 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         self,
         (feature, rule, scenario): Self::EmittedPath,
         writer: &mut W,
-        cli: &W::CLI,
+        cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         while let Some(ev) = self.current_item() {
             let should_be_removed = matches!(ev, event::Scenario::Finished);

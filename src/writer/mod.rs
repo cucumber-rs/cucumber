@@ -42,17 +42,20 @@ pub use self::{
 /// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
 #[async_trait(?Send)]
 pub trait Writer<World> {
-    /// [`StructOpt`] deriver for CLI options of this [`Writer`]. In case no
-    /// options present, use [`cli::Empty`].
+    /// CLI options of this [`Writer`]. In case no options should be introduced,
+    /// just use [`cli::Empty`].
     ///
     /// All CLI options from [`Parser`], [`Runner`] and [`Writer`] will be
-    /// merged together, so overlapping arguments will cause runtime panic.
+    /// merged together, so overlapping arguments will cause a runtime panic.
     ///
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Parser`]: crate::Parser
     /// [`Runner`]: crate::Runner
     /// [`StructOpt`]: structopt::StructOpt
-    type CLI: StructOptInternal;
+    // We do use `StructOptInternal` here only because `StructOpt::from_args()`
+    // requires exactly this trait bound. We don't touch any `StructOptInternal`
+    // details being a subject of instability.
+    type Cli: StructOptInternal;
 
     /// Handles the given [`Cucumber`] event.
     ///
@@ -60,7 +63,7 @@ pub trait Writer<World> {
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
-        cli: &Self::CLI,
+        cli: &Self::Cli,
     );
 }
 

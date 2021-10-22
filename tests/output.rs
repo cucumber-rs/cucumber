@@ -36,12 +36,12 @@ struct DebugWriter(String);
 
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
-    type CLI = cli::Empty;
+    type Cli = cli::Empty;
 
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
-        _: &Self::CLI,
+        _: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
 

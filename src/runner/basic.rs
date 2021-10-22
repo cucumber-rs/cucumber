@@ -148,9 +148,9 @@ pub struct Basic<
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
+#[cfg_attr(doc, doc = "CLI options of [`Basic`] [`Runner`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
-pub struct CLI {
+pub struct Cli {
     /// Number of concurrent scenarios.
     #[structopt(long, name = "int")]
     pub concurrent: Option<usize>,
@@ -383,12 +383,12 @@ where
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
-    type CLI = CLI;
+    type Cli = Cli;
 
     type EventStream =
         LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
 
-    fn run<S>(self, features: S, cli: CLI) -> Self::EventStream
+    fn run<S>(self, features: S, cli: Cli) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {

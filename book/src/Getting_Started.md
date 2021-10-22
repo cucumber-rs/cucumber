@@ -9,7 +9,7 @@ Add this to your `Cargo.toml`:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber = "0.11"
+cucumber = "0.10"
 futures = "0.3"
 
 [[test]]
@@ -434,7 +434,7 @@ For that switch `futures` for `tokio` in dependencies:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber = "0.11"
+cucumber = "0.10"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]

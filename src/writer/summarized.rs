@@ -141,12 +141,12 @@ where
     W: World,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
-    type CLI = Wr::CLI;
+    type Cli = Wr::Cli;
 
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
-        cli: &Self::CLI,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 

@@ -98,6 +98,7 @@ mod derive;
 
 use proc_macro::TokenStream;
 
+/// Expands `given`, `when` and `then` proc-macro attributes.
 macro_rules! step_attribute {
     ($name:ident) => {
         /// Attribute to auto-wire the test to the [`World`] implementer.
@@ -195,6 +196,8 @@ macro_rules! step_attribute {
     };
 }
 
+/// Expands `WorldInit` derive proc-macro and `given`, `when`, `then` proc-macro
+/// attributes.
 macro_rules! steps {
     ($($name:ident),*) => {
         /// Derive macro for tests auto-wiring.

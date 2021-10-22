@@ -58,9 +58,9 @@ pub struct Basic {
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[cfg_attr(doc, doc = "CLI options of [`Basic`].")]
+#[cfg_attr(doc, doc = "CLI options of [`Basic`] [`Writer`].")]
 #[derive(Clone, Copy, Debug, StructOpt)]
-pub struct CLI {
+pub struct Cli {
     /// Outputs Step's Doc String, if present.
     #[structopt(long)]
     pub verbose: bool,
@@ -104,13 +104,13 @@ impl FromStr for Colors {
 
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
-    type CLI = CLI;
+    type Cli = Cli;
 
     #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<W>>,
-        cli: &Self::CLI,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};
 
@@ -219,7 +219,7 @@ impl Basic {
         feat: &gherkin::Feature,
         rule: &gherkin::Rule,
         ev: event::Rule<W>,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         use event::Rule;
 
@@ -263,7 +263,7 @@ impl Basic {
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
         ev: &event::Scenario<W>,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         use event::{Hook, Scenario};
 
@@ -357,7 +357,7 @@ impl Basic {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         ev: &event::Step<W>,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         use event::Step;
 
@@ -394,7 +394,7 @@ impl Basic {
     fn step_started(
         &mut self,
         step: &gherkin::Step,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.indent += 4;
         if self.styles.is_present {
@@ -431,7 +431,7 @@ impl Basic {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
@@ -479,7 +479,7 @@ impl Basic {
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.write_line(&self.styles.skipped(format!(
@@ -519,7 +519,7 @@ impl Basic {
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
         err: &event::StepError,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
@@ -595,7 +595,7 @@ impl Basic {
         feat: &gherkin::Feature,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         use event::Step;
 
@@ -633,7 +633,7 @@ impl Basic {
     fn bg_step_started(
         &mut self,
         step: &gherkin::Step,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.indent += 4;
         if self.styles.is_present {
@@ -671,7 +671,7 @@ impl Basic {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
@@ -720,7 +720,7 @@ impl Basic {
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.write_line(&self.styles.skipped(format!(
@@ -761,7 +761,7 @@ impl Basic {
         captures: Option<&CaptureLocations>,
         world: Option<&W>,
         err: &event::StepError,
-        cli: CLI,
+        cli: Cli,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 

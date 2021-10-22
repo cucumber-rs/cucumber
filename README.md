@@ -44,7 +44,7 @@ struct World {
     capacity: usize,
 }
 
-#[async_trait(? Send)]
+#[async_trait(?Send)]
 impl cucumber::World for World {
     type Error = Infallible;
 
