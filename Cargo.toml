@@ -50,6 +50,7 @@ cucumber-codegen = { version = "0.10", path = "./codegen", optional = true }
 inventory = { version = "0.1.10", optional = true }
 
 [dev-dependencies]
+humantime = "2.1"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
