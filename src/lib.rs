@@ -108,7 +108,6 @@ pub mod tag;
 pub mod writer;
 
 #[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub mod codegen;
 
 use std::error::Error as StdError;
@@ -118,11 +117,9 @@ use async_trait::async_trait;
 pub use gherkin;
 
 #[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 #[doc(inline)]
 pub use self::codegen::WorldInit;
 #[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 #[doc(inline)]
 pub use cucumber_codegen::{given, then, when, WorldInit};
 

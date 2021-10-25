@@ -1,8 +1,8 @@
 [package]
 name = "cucumber-codegen"
 version = "0.10.0" # should be the same as main crate version
-edition = "2018"
-resolver = "2"
+edition = "2021"
+rust-version = "1.56"
 description = "Code generation for `cucumber` crate."
 license = "MIT OR Apache-2.0"
 authors = [
@@ -31,7 +31,6 @@ syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
-futures = "0.3"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]

@@ -104,15 +104,15 @@ impl<World> Cucumber<World> {
         scenario: Arc<gherkin::Scenario>,
         event: Scenario<World>,
     ) -> Self {
-        #[allow(clippy::option_if_let_else)] // use of moved value: `event`
-        if let Some(r) = rule {
-            Self::Feature(
-                feat,
-                Feature::Rule(r, Rule::Scenario(scenario, event)),
-            )
-        } else {
-            Self::Feature(feat, Feature::Scenario(scenario, event))
-        }
+        Self::Feature(
+            feat,
+            #[allow(clippy::option_if_let_else)] // use of moved value: `event`
+            if let Some(r) = rule {
+                Feature::Rule(r, Rule::Scenario(scenario, event))
+            } else {
+                Feature::Scenario(scenario, event)
+            },
+        )
     }
 }
 

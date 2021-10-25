@@ -12,6 +12,8 @@
 //!
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference
 
+pub mod basic;
+
 use std::sync::Arc;
 
 use derive_more::{Display, Error};
@@ -22,8 +24,6 @@ use crate::feature::ExpandExamplesError;
 
 #[doc(inline)]
 pub use self::basic::Basic;
-
-pub mod basic;
 
 /// Source of parsed [`Feature`]s.
 ///

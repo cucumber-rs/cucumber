@@ -384,16 +384,14 @@ World::cucumber()
 
 ## CLI options
 
-`Cucumber` provides several options that can be passed to the command-line.
+Library provides several options that can be passed to the command-line.
 
-Pass the `--help` option to print out all the available configuration options:
-
-```
+Use `--help` flag to print out all the available options:
+```shell
 cargo test --test <test-name> -- --help
 ```
 
 Default output is:
-
 ```
 cucumber 0.10.0
 Run the tests, pet a dog!
@@ -404,32 +402,31 @@ USAGE:
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
-        --verbose    Outputs Step's Doc String, if present
+    -v, --verbose    Increased verbosity of an output: additionally outputs step's doc string (if present)
 
 OPTIONS:
-    -c, --colors <auto|always|never>    Indicates, whether output should be colored or not [default: auto]
-    -f, --features <glob>               `.feature` files glob pattern
-        --concurrent <int>              Number of concurrent scenarios
-    -n, --name <regex>                  Regex to filter scenarios with [aliases: scenario-name]
-    -t, --tags <tagexpr>                Tag expression to filter scenarios with [aliases: scenario-tags]
+        --color <auto|always|never>    Coloring policy for a console output [default: auto]
+    -i, --input <glob>                 Glob pattern to look for feature files with. By default, looks for `*.feature`s
+                                       in the path configured tests runner
+    -c, --concurrency <int>            Number of scenarios to run concurrently. If not specified, uses the value
+                                       configured in tests runner, or 64 by default
+    -n, --name <regex>                 Regex to filter scenarios by their name [aliases: scenario-name]
+    -t, --tags <tagexpr>               Tag expression to filter scenarios by [aliases: scenario-tags]
 ```
 
-Example with [tag expressions](https://cucumber.io/docs/cucumber/api/#tag-expressions) for filtering Scenarios:
-
-```
+Example with [tag expressions](https://cucumber.io/docs/cucumber/api#tag-expressions) for filtering `Scenario`s:
+```shell
 cargo test --test <test-name> -- --tags='@cat or @dog or @ferris'
 ```
 
-> Note: CLI overrides options set in the code. 
+> Note: CLI overrides any configurations set in the code. 
 
 
 ### Customizing CLI options
 
-All `CLI` options are designed to be composable.
+CLI options are designed to be composable from the one provided by [`Parser::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli), [`Runner::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli) and [`Writer::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli).
 
-For example all building-block traits have `CLI` associated type: [`Parser::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli), [`Runner::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli) and [`Writer::Cli`](https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli). All of them are composed into a single `CLI`.
-
-In case you want to add completely custom `CLI` options, check out [`Cucumber::with_cli()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli) method. 
+You may also extend CLI options with custom ones, if you have such a need for running your tests. See a [`cli::Opts` example](https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html#example) for more details.
 
 
 

@@ -30,15 +30,16 @@ use super::{Error as ParseError, Parser};
 
 // Workaround for overwritten doc comments:
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "CLI options of [`Basic`] [`Parser`].")]
+#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Parser`].")]
 #[cfg_attr(
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
 #[derive(Debug, StructOpt)]
 pub struct Cli {
-    /// `.feature` files glob pattern.
-    #[structopt(long, short, name = "glob")]
+    /// Glob pattern to look for feature files with. By default, looks for
+    /// `*.feature`s in the path configured tests runner.
+    #[structopt(long = "input", short = "i", name = "glob")]
     pub features: Option<Walker>,
 }
 
@@ -172,7 +173,7 @@ pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,
 );
 
-/// Wrapper over [`GlobWalker`] with a [`FromStr`] impl.
+/// Wrapper over [`GlobWalker`] implementing a [`FromStr`].
 pub struct Walker(GlobWalker);
 
 impl fmt::Debug for Walker {

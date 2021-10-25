@@ -33,6 +33,52 @@ use crate::{
     ArbitraryWriter, World, Writer,
 };
 
+// Workaround for overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Writer`].")]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
+#[derive(Clone, Copy, Debug, StructOpt)]
+pub struct Cli {
+    /// Increased verbosity of an output: additionally outputs step's doc
+    /// string (if present).
+    #[structopt(long, short)]
+    pub verbose: bool,
+
+    /// Coloring policy for a console output.
+    #[structopt(long, name = "auto|always|never", default_value = "auto")]
+    pub color: Coloring,
+}
+
+/// Possible policies of a [`console`] output coloring.
+#[derive(Clone, Copy, Debug)]
+pub enum Coloring {
+    /// Letting [`console::colors_enabled()`] to decide, whether output should
+    /// be colored.
+    Auto,
+
+    /// Forcing of a colored output.
+    Always,
+
+    /// Forcing of a non-colored output.
+    Never,
+}
+
+impl FromStr for Coloring {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "auto" => Ok(Self::Auto),
+            "always" => Ok(Self::Always),
+            "never" => Ok(Self::Never),
+            _ => Err("possible options: auto, always, never"),
+        }
+    }
+}
+
 /// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
 /// default).
 ///
@@ -53,56 +99,6 @@ pub struct Basic {
     lines_to_clear: usize,
 }
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
-#[cfg_attr(doc, doc = "CLI options of [`Basic`] [`Writer`].")]
-#[derive(Clone, Copy, Debug, StructOpt)]
-pub struct Cli {
-    /// Outputs Step's Doc String, if present.
-    #[structopt(long)]
-    pub verbose: bool,
-
-    /// Indicates, whether output should be colored or not.
-    #[structopt(
-        long,
-        short,
-        name = "auto|always|never",
-        default_value = "auto"
-    )]
-    pub colors: Colors,
-}
-
-/// Indicates, whether output should be colored or not.
-#[derive(Clone, Copy, Debug)]
-pub enum Colors {
-    /// Lets [`console::colors_enabled()`] to decide, whether output should be
-    /// colored or not.
-    Auto,
-
-    /// Forces colored output.
-    Always,
-
-    /// Forces basic output.
-    Never,
-}
-
-impl FromStr for Colors {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
-            "auto" => Ok(Self::Auto),
-            "always" => Ok(Self::Always),
-            "never" => Ok(Self::Never),
-            _ => Err("possible options: auto, always, never"),
-        }
-    }
-}
-
 #[async_trait(?Send)]
 impl<W: World + Debug> Writer<W> for Basic {
     type Cli = Cli;
@@ -116,10 +112,10 @@ impl<W: World + Debug> Writer<W> for Basic {
     ) {
         use event::{Cucumber, Feature};
 
-        match cli.colors {
-            Colors::Always => self.styles.is_present = true,
-            Colors::Never => self.styles.is_present = false,
-            Colors::Auto => {}
+        match cli.color {
+            Coloring::Always => self.styles.is_present = true,
+            Coloring::Never => self.styles.is_present = false,
+            Coloring::Auto => {}
         };
 
         match ev {
@@ -566,7 +562,7 @@ impl Basic {
             step.position.col,
             format_str_with_indent(
                 format!("{}", err),
-                self.indent.saturating_sub(3) + 3
+                self.indent.saturating_sub(3) + 3,
             ),
             world
                 .map(|w| format_str_with_indent(
