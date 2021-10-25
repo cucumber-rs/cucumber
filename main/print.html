@@ -952,6 +952,41 @@ Whatever happens in a <code>Before</code> hook is invisible to people reading <c
     .run_and_exit(&quot;tests/features/book&quot;);
 <span class="boring">}
 </span></code></pre></pre>
+<h2 id="cli-options"><a class="header" href="#cli-options">CLI options</a></h2>
+<p>Library provides several options that can be passed to the command-line.</p>
+<p>Use <code>--help</code> flag to print out all the available options:</p>
+<pre><code class="language-shell">cargo test --test &lt;test-name&gt; -- --help
+</code></pre>
+<p>Default output is:</p>
+<pre><code>cucumber 0.10.0
+Run the tests, pet a dog!
+
+USAGE:
+    cucumber [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+    -v, --verbose    Increased verbosity of an output: additionally outputs step's doc string (if present)
+
+OPTIONS:
+        --color &lt;auto|always|never&gt;    Coloring policy for a console output [default: auto]
+    -i, --input &lt;glob&gt;                 Glob pattern to look for feature files with. By default, looks for `*.feature`s
+                                       in the path configured tests runner
+    -c, --concurrency &lt;int&gt;            Number of scenarios to run concurrently. If not specified, uses the value
+                                       configured in tests runner, or 64 by default
+    -n, --name &lt;regex&gt;                 Regex to filter scenarios by their name [aliases: scenario-name]
+    -t, --tags &lt;tagexpr&gt;               Tag expression to filter scenarios by [aliases: scenario-tags]
+</code></pre>
+<p>Example with <a href="https://cucumber.io/docs/cucumber/api#tag-expressions">tag expressions</a> for filtering <code>Scenario</code>s:</p>
+<pre><code class="language-shell">cargo test --test &lt;test-name&gt; -- --tags='@cat or @dog or @ferris'
+</code></pre>
+<blockquote>
+<p>Note: CLI overrides any configurations set in the code. </p>
+</blockquote>
+<h3 id="customizing-cli-options"><a class="header" href="#customizing-cli-options">Customizing CLI options</a></h3>
+<p>CLI options are designed to be composable from the one provided by <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli"><code>Parser::Cli</code></a>, <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli"><code>Runner::Cli</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli"><code>Writer::Cli</code></a>.</p>
+<p>You may also extend CLI options with custom ones, if you have such a need for running your tests. See a <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html#example"><code>cli::Opts</code> example</a> for more details.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test-modules-organization"><a class="header" href="#test-modules-organization">Test Modules Organization</a></h1>
 <p>You can have all of your step definitions in one file, or in multiple files. When you start with your project, all your step definitions will probably be in one file. As your project grows, you should split your step definitions into meaningful groups in different files. This will make your project more logically organized and easier to maintain.</p>
 <h2 id="grouping-step-definitions"><a class="header" href="#grouping-step-definitions">Grouping step definitions</a></h2>
