@@ -59,7 +59,13 @@ where
     ) -> bool,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
-    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
+    type Cli = Wr::Cli;
+
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<W>>,
+        cli: &Self::Cli,
+    ) {
         use event::{
             Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
         };
@@ -89,7 +95,7 @@ where
             _ => ev,
         };
 
-        self.writer.handle_event(ev).await;
+        self.writer.handle_event(ev, cli).await;
     }
 }
 

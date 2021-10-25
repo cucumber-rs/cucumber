@@ -141,7 +141,13 @@ where
     W: World,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
 {
-    async fn handle_event(&mut self, ev: parser::Result<event::Cucumber<W>>) {
+    type Cli = Wr::Cli;
+
+    async fn handle_event(
+        &mut self,
+        ev: parser::Result<event::Cucumber<W>>,
+        cli: &Self::Cli,
+    ) {
         use event::{Cucumber, Feature, Rule};
 
         let mut finished = false;
@@ -162,7 +168,7 @@ where
             Ok(Cucumber::Started) => {}
         };
 
-        self.writer.handle_event(ev).await;
+        self.writer.handle_event(ev, cli).await;
 
         if finished {
             self.writer.write(Styles::new().summary(self)).await;

@@ -32,7 +32,6 @@ macros = ["cucumber-codegen", "inventory"]
 [dependencies]
 async-trait = "0.1.40"
 atty = "0.2.14"
-clap = { version = "=3.0.0-beta.5", features = ["derive"] }
 console = "0.15"
 derive_more = { version = "0.99.16", features = ["deref", "deref_mut", "display", "error", "from"], default_features = false }
 either = "1.6"
@@ -44,12 +43,14 @@ linked-hash-map = "0.5.3"
 once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5"
 sealed = "0.3"
+structopt = "0.3.25"
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.10", path = "./codegen", optional = true }
 inventory = { version = "0.1.10", optional = true }
 
 [dev-dependencies]
+humantime = "2.1"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]

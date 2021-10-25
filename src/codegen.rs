@@ -13,11 +13,12 @@
 use std::{fmt::Debug, path::Path};
 
 use async_trait::async_trait;
+
+use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
+
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
 pub use regex::Regex;
-
-use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
 /// [`World`] extension with auto-wiring capabilities.
 #[async_trait(?Send)]

@@ -1,23 +1,36 @@
 use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber::{given, then, when, WorldInit};
+use cucumber::{cli, given, then, when, WorldInit};
 use futures::FutureExt as _;
+use structopt::StructOpt;
 use tokio::time;
+
+#[derive(StructOpt)]
+struct CustomCli {
+    /// Additional time to wait in before and after hooks.
+    #[structopt(
+        long,
+        default_value = "10ms",
+        parse(try_from_str = humantime::parse_duration)
+    )]
+    pause: Duration,
+}
 
 #[tokio::main]
 async fn main() {
+    let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
+
     let res = World::cucumber()
-        .before(|_, _, _, w| {
+        .before(move |_, _, _, w| {
             async move {
                 w.0 = 0;
-                time::sleep(Duration::from_millis(10)).await;
+                time::sleep(cli.custom.pause).await;
             }
             .boxed_local()
         })
-        .after(|_, _, _, _| {
-            time::sleep(Duration::from_millis(10)).boxed_local()
-        })
+        .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
+        .with_cli(cli)
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)

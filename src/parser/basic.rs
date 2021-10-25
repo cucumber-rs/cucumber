@@ -12,18 +12,36 @@
 
 use std::{
     borrow::Cow,
+    fmt,
     path::{Path, PathBuf},
+    str::FromStr,
     vec,
 };
 
 use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
-use globwalk::GlobWalkerBuilder;
+use globwalk::{GlobWalker, GlobWalkerBuilder};
+use structopt::StructOpt;
 
 use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
+
+// Workaround for overwritten doc comments:
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Parser`].")]
+#[cfg_attr(
+    not(doc),
+    allow(missing_docs, clippy::missing_docs_in_private_items)
+)]
+#[derive(Debug, StructOpt)]
+pub struct Cli {
+    /// Glob pattern to look for feature files with. By default, looks for
+    /// `*.feature`s in the path configured tests runner.
+    #[structopt(long = "input", short = "i", name = "glob")]
+    pub features: Option<Walker>,
+}
 
 /// Default [`Parser`].
 ///
@@ -38,56 +56,75 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
+    type Cli = Cli;
+
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I) -> Self::Output {
-        let features = || {
-            let path = path.as_ref();
-            let path = match path.canonicalize().or_else(|_| {
-                let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                buf.push(
-                    path.strip_prefix("/")
-                        .or_else(|_| path.strip_prefix("./"))
-                        .unwrap_or(path),
-                );
-                buf.as_path().canonicalize()
-            }) {
-                Ok(p) => p,
-                Err(err) => {
-                    return vec![Err(gherkin::ParseFileError::Reading {
-                        path: path.to_path_buf(),
-                        source: err,
-                    }
-                    .into())];
-                }
-            };
+    fn parse(self, path: I, cli: Self::Cli) -> Self::Output {
+        let walk = |walker: GlobWalker| {
+            walker
+                .filter_map(Result::ok)
+                .filter(|file| {
+                    file.path()
+                        .extension()
+                        .map(|ext| ext == "feature")
+                        .unwrap_or_default()
+                })
+                .map(|file| {
+                    let env = self
+                        .language
+                        .as_ref()
+                        .and_then(|l| GherkinEnv::new(l).ok())
+                        .unwrap_or_default();
+                    gherkin::Feature::parse_path(file.path(), env)
+                })
+                .collect::<Vec<_>>()
+        };
 
-            let features = if path.is_file() {
-                let env = self
-                    .language
-                    .as_ref()
-                    .and_then(|l| GherkinEnv::new(l).ok())
-                    .unwrap_or_default();
-                vec![gherkin::Feature::parse_path(path, env)]
+        let get_path = || {
+            let path = path.as_ref();
+            path.canonicalize()
+                .or_else(|_| {
+                    let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                    buf.push(
+                        path.strip_prefix("/")
+                            .or_else(|_| path.strip_prefix("./"))
+                            .unwrap_or(path),
+                    );
+                    buf.as_path().canonicalize()
+                })
+                .map_err(|e| gherkin::ParseFileError::Reading {
+                    path: path.to_path_buf(),
+                    source: e,
+                })
+        };
+
+        let features = || {
+            let features = if let Some(walker) = cli.features {
+                walk(walker.0)
             } else {
-                let walker = GlobWalkerBuilder::new(path, "*.feature")
-                    .case_insensitive(true)
-                    .build()
-                    .unwrap_or_else(|e| {
-                        unreachable!("GlobWalkerBuilder panicked: {}", e)
-                    });
-                walker
-                    .filter_map(Result::ok)
-                    .map(|entry| {
-                        let env = self
-                            .language
-                            .as_ref()
-                            .and_then(|l| GherkinEnv::new(l).ok())
-                            .unwrap_or_default();
-                        gherkin::Feature::parse_path(entry.path(), env)
-                    })
-                    .collect::<Vec<_>>()
+                let path = match get_path() {
+                    Ok(path) => path,
+                    Err(e) => return vec![Err(e.into())],
+                };
+
+                if path.is_file() {
+                    let env = self
+                        .language
+                        .as_ref()
+                        .and_then(|l| GherkinEnv::new(l).ok())
+                        .unwrap_or_default();
+                    vec![gherkin::Feature::parse_path(path, env)]
+                } else {
+                    let walker = GlobWalkerBuilder::new(path, "*.feature")
+                        .case_insensitive(true)
+                        .build()
+                        .unwrap_or_else(|e| {
+                            unreachable!("GlobWalkerBuilder panicked: {}", e)
+                        });
+                    walk(walker)
+                }
             };
 
             features
@@ -135,3 +172,20 @@ impl Basic {
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,
 );
+
+/// Wrapper over [`GlobWalker`] implementing a [`FromStr`].
+pub struct Walker(GlobWalker);
+
+impl fmt::Debug for Walker {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Walker").finish_non_exhaustive()
+    }
+}
+
+impl FromStr for Walker {
+    type Err = globwalk::GlobError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        globwalk::glob(s).map(Self)
+    }
+}

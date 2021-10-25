@@ -34,12 +34,28 @@ use futures::{
 };
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
+use structopt::StructOpt;
 
 use crate::{
     event::{self, HookType, Info},
     feature::Ext as _,
     parser, step, Runner, Step, World,
 };
+
+// Workaround for overwritten doc-comments.
+// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
+#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Runner`].")]
+#[cfg_attr(
+    not(doc),
+    allow(clippy::missing_docs_in_private_items, missing_docs)
+)]
+#[derive(Clone, Copy, Debug, StructOpt)]
+pub struct Cli {
+    /// Number of scenarios to run concurrently. If not specified, uses the
+    /// value configured in tests runner, or 64 by default.
+    #[structopt(long, short, name = "int")]
+    pub concurrency: Option<usize>,
+}
 
 /// Type determining whether [`Scenario`]s should run concurrently or
 /// sequentially.
@@ -368,10 +384,12 @@ where
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
+    type Cli = Cli;
+
     type EventStream =
         LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
 
-    fn run<S>(self, features: S) -> Self::EventStream
+    fn run<S>(self, features: S, cli: Cli) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
@@ -394,7 +412,7 @@ where
         );
         let execute = execute(
             buffer,
-            max_concurrent_scenarios,
+            cli.concurrency.or(max_concurrent_scenarios),
             steps,
             sender,
             before_hook,
