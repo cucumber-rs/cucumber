@@ -1,8 +1,7 @@
 [package]
 name = "cucumber-book-tests"
 version = "0.0.0"
-edition = "2018"
-resolver = "2"
+edition = "2021"
 authors = [
     "Brendan Molloy <brendan@bbqsrc.net>",
     "Ilya Solovyiov <ilya.solovyiov@gmail.com>",

@@ -97,35 +97,18 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub mod cli;
-mod cucumber;
-pub mod event;
-pub mod feature;
-pub mod parser;
-pub mod runner;
-pub mod step;
-pub mod tag;
-pub mod writer;
-
-#[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
-pub mod codegen;
-
 use std::error::Error as StdError;
 
 use async_trait::async_trait;
-
 pub use gherkin;
 
 #[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
-#[doc(inline)]
-pub use self::codegen::WorldInit;
-#[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 #[doc(inline)]
 pub use cucumber_codegen::{given, then, when, WorldInit};
 
+#[cfg(feature = "macros")]
+#[doc(inline)]
+pub use self::codegen::WorldInit;
 #[doc(inline)]
 pub use self::{
     cucumber::Cucumber,
@@ -137,6 +120,19 @@ pub use self::{
         Failure as FailureWriter, Writer,
     },
 };
+
+pub mod cli;
+mod cucumber;
+pub mod event;
+pub mod feature;
+pub mod parser;
+pub mod runner;
+pub mod step;
+pub mod tag;
+pub mod writer;
+
+#[cfg(feature = "macros")]
+pub mod codegen;
 
 /// Represents a shared user-defined state for a [Cucumber] run.
 /// It lives on per-[scenario][0] basis.
