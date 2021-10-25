@@ -93,11 +93,13 @@
     variant_size_differences
 )]
 
+use proc_macro::TokenStream;
+
 mod attribute;
 mod derive;
 
-use proc_macro::TokenStream;
-
+/// Helper macro for generating public shims for [`macro@given`], [`macro@when`]
+/// and [`macro@then`] attributes.
 macro_rules! step_attribute {
     ($name:ident) => {
         /// Attribute to auto-wire the test to the [`World`] implementer.
@@ -195,6 +197,9 @@ macro_rules! step_attribute {
     };
 }
 
+/// Helper macro for generating public shim of [`macro@WorldInit`] deriving
+/// macro consistently with the ones of [`macro@given`], [`macro@when`] and
+/// [`macro@then`] attributes.
 macro_rules! steps {
     ($($name:ident),*) => {
         /// Derive macro for tests auto-wiring.
