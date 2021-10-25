@@ -7,30 +7,29 @@ use structopt::StructOpt;
 use tokio::time;
 
 #[derive(StructOpt)]
-struct Cli {
-    /// Time to wait in before and after hooks.
+struct CustomCli {
+    /// Additional time to wait in before and after hooks.
     #[structopt(
         long,
         default_value = "10ms",
         parse(try_from_str = humantime::parse_duration)
     )]
-    time: Duration,
+    pause: Duration,
 }
 
 #[tokio::main]
 async fn main() {
-    let cli = cli::Opts::<_, _, _, Cli>::from_args();
+    let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
 
-    let time = cli.custom.time;
     let res = World::cucumber()
         .before(move |_, _, _, w| {
             async move {
                 w.0 = 0;
-                time::sleep(time).await;
+                time::sleep(cli.custom.pause).await;
             }
             .boxed_local()
         })
-        .after(move |_, _, _, _| time::sleep(time).boxed_local())
+        .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
         .with_cli(cli)
         .run_and_exit("tests/features/wait");
 

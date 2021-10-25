@@ -104,6 +104,7 @@ pub mod feature;
 pub mod parser;
 pub mod runner;
 pub mod step;
+pub mod tag;
 pub mod writer;
 
 #[cfg(feature = "macros")]

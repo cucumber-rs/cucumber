@@ -39,8 +39,8 @@ use crate::{
 /// provide [`Step`]s with [`WorldInit::collection()`] or by hand with
 /// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
 ///
-/// In case you want custom [`Parser`], [`Runner`] or [`Writer`] or
-/// some other finer control,  use [`Cucumber::custom()`] or
+/// In case you want a custom [`Parser`], [`Runner`] or [`Writer`], or some
+/// other finer control, use [`Cucumber::custom()`] or
 /// [`Cucumber::with_parser()`], [`Cucumber::with_runner()`] and
 /// [`Cucumber::with_writer()`] to construct your dream [Cucumber] executor!
 ///
@@ -48,13 +48,13 @@ use crate::{
 /// [`WorldInit::collection()`]: crate::WorldInit::collection()
 /// [`WorldInit::cucumber()`]: crate::WorldInit::cucumber()
 /// [`WorldInit::run()`]: crate::WorldInit::run()
-pub struct Cucumber<W, P, I, R, Wr, CCli = cli::Empty>
+pub struct Cucumber<W, P, I, R, Wr, Cli = cli::Empty>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    CCli: StructOpt,
+    Cli: StructOpt,
 {
     /// [`Parser`] sourcing [`Feature`]s for execution.
     ///
@@ -69,8 +69,11 @@ where
     /// [`Writer`] outputting [`event`]s to some output.
     writer: Wr,
 
-    /// `CLI` options.
-    cli: OptionalCli<P::Cli, R::Cli, Wr::Cli, CCli>,
+    /// CLI options this [`Cucumber`] has been run with.
+    ///
+    /// If empty, then will be parsed from a command line.
+    #[allow(clippy::type_complexity)] // not really
+    cli: Option<cli::Opts<P::Cli, R::Cli, Wr::Cli, Cli>>,
 
     /// Type of the [`World`] this [`Cucumber`] run on.
     _world: PhantomData<W>,
@@ -79,18 +82,16 @@ where
     _parser_input: PhantomData<I>,
 }
 
-/// Type alias for [`Option`]`<`[`cli::Opts`]`>`.
-type OptionalCli<P, R, Wr, C> = Option<cli::Opts<P, R, Wr, C>>;
-
-impl<W, P, I, R, Wr, CCli> Cucumber<W, P, I, R, Wr, CCli>
+impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    CCli: StructOpt,
+    Cli: StructOpt,
 {
-    /// Creates custom [`Cucumber`] executor.
+    /// Creates a custom [`Cucumber`] executor with the provided [`Parser`],
+    /// [`Runner`] and [`Writer`].
     #[must_use]
     pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
         Self {
@@ -108,7 +109,7 @@ where
     pub fn with_parser<NewP, NewI>(
         self,
         parser: NewP,
-    ) -> Cucumber<W, NewP, NewI, R, Wr, CCli>
+    ) -> Cucumber<W, NewP, NewI, R, Wr, Cli>
     where
         NewP: Parser<NewI>,
     {
@@ -128,7 +129,7 @@ where
     pub fn with_runner<NewR>(
         self,
         runner: NewR,
-    ) -> Cucumber<W, P, I, NewR, Wr, CCli>
+    ) -> Cucumber<W, P, I, NewR, Wr, Cli>
     where
         NewR: Runner<W>,
     {
@@ -148,7 +149,7 @@ where
     pub fn with_writer<NewWr>(
         self,
         writer: NewWr,
-    ) -> Cucumber<W, P, I, R, NewWr, CCli>
+    ) -> Cucumber<W, P, I, R, NewWr, Cli>
     where
         NewWr: Writer<W>,
     {
@@ -174,12 +175,11 @@ where
     ///     async data-autoplay="true" data-rows="17">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Skipped`] steps at the end:
+    /// Adjust [`Cucumber`] to re-output all the [`Skipped`] steps at the end:
     /// ```rust
     /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
-    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -214,7 +214,7 @@ where
     #[must_use]
     pub fn repeat_skipped(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, CCli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -234,7 +234,6 @@ where
     /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
-    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -264,12 +263,11 @@ where
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps at the end:
+    /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps at the end:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
-    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -313,7 +311,7 @@ where
     #[must_use]
     pub fn repeat_failed(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, CCli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -324,7 +322,7 @@ where
         }
     }
 
-    /// Re-output steps by the given `filter` predicate.
+    /// Re-outputs steps by the given `filter` predicate.
     ///
     /// # Example
     ///
@@ -363,13 +361,12 @@ where
     ///     async data-autoplay="true" data-rows="21">
     /// </script>
     ///
-    /// Adjust [`Cucumber`] to re-output all [`Failed`] steps ta the end by
+    /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps ta the end by
     /// providing a custom `filter` predicate:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
     /// # use async_trait::async_trait;
-    /// # use futures::FutureExt as _;
     /// # use cucumber::WorldInit;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -435,7 +432,7 @@ where
     pub fn repeat_if<F>(
         self,
         filter: F,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, CCli>
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
         F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
     {
@@ -450,13 +447,13 @@ where
     }
 }
 
-impl<W, P, I, R, Wr, CCli> Cucumber<W, P, I, R, Wr, CCli>
+impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
-    CCli: StructOpt,
+    Cli: StructOpt,
 {
     /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
     /// marked with `@allow_skipped` tag.
@@ -478,7 +475,6 @@ where
     /// #
     /// # use async_trait::async_trait;
     /// # use cucumber::WorldInit;
-    /// # use futures::FutureExt as _;
     /// #
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
@@ -530,7 +526,7 @@ where
     #[must_use]
     pub fn fail_on_skipped(
         self,
-    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr>, CCli> {
+    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr>, Cli> {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -554,7 +550,7 @@ where
     /// </script>
     ///
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
-    /// marked with `@dog` tag:
+    /// marked with a `@dog` tag:
     /// ```rust,should_panic
     /// # use std::convert::Infallible;
     /// #
@@ -624,7 +620,7 @@ where
     pub fn fail_on_skipped_with<Filter>(
         self,
         filter: Filter,
-    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr, Filter>, CCli>
+    ) -> Cucumber<W, P, I, R, writer::FailOnSkipped<Wr, Filter>, Cli>
     where
         Filter: Fn(
             &gherkin::Feature,
@@ -643,13 +639,13 @@ where
     }
 }
 
-impl<W, P, I, R, Wr, CCli> Cucumber<W, P, I, R, Wr, CCli>
+impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    CCli: StructOpt + StructOptInternal,
+    Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
     ///
@@ -661,11 +657,18 @@ where
         self.filter_run(input, |_, _, _| true).await
     }
 
-    /// Provides custom `CLI` options.
+    /// Consumes already parsed [`cli::Opts`].
     ///
-    /// This method exists not to hijack console and give users an ability to
-    /// compose custom `CLI` by providing [`StructOpt`] deriver as last generic
-    /// parameter in [`cli::Opts`].
+    /// This method allows to pre-parse [`cli::Opts`] for custom needs before
+    /// using them inside [`Cucumber`].
+    ///
+    /// Also, any additional custom CLI options may be specified as a
+    /// [`StructOpt`] deriving type, used as the last type parameter of
+    /// [`cli::Opts`].
+    ///
+    /// > ⚠️ __WARNING__: Any CLI options of [`Parser`], [`Runner`], [`Writer`]
+    ///                   or custom ones should not overlap, otherwise
+    ///                   [`cli::Opts`] will fail to parse on startup.
     ///
     /// # Example
     ///
@@ -692,8 +695,8 @@ where
     /// #
     /// # let fut = async {
     /// #[derive(StructOpt)]
-    /// struct Cli {
-    ///     /// Time to wait in before hook.
+    /// struct CustomCli {
+    ///     /// Additional time to wait in a before hook.
     ///     #[structopt(
     ///         long,
     ///         parse(try_from_str = humantime::parse_duration)
@@ -701,7 +704,7 @@ where
     ///     before_time: Option<Duration>,
     /// }
     ///
-    /// let cli = cli::Opts::<_, _, _, Cli>::from_args();
+    /// let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
     /// let time = cli.custom.before_time.unwrap_or_default();
     ///
     /// MyWorld::cucumber()
@@ -731,34 +734,7 @@ where
     ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///
-    /// Also now executing `--help` will output `--before-time`
-    ///
-    /// ```text
-    /// $ cargo test --test <test-name> -- --help
-    /// cucumber 0.10.0
-    /// Run the tests, pet a dog!
-    ///
-    /// USAGE:
-    ///     cucumber [FLAGS] [OPTIONS]
-    ///
-    /// FLAGS:
-    ///     -h, --help       Prints help information
-    ///     -V, --version    Prints version information
-    ///         --verbose    Outputs Step's Doc String, if present
-    ///
-    /// OPTIONS:
-    ///     -c, --colors <auto|always|never>    Indicates, whether output should
-    ///                                         be colored or not
-    ///                                         [default: auto]
-    ///         --before-time <before-time>     Time to wait in before hook
-    ///     -f, --features <glob>               `.feature` files glob pattern
-    ///         --concurrent <int>              Number of concurrent scenarios
-    ///     -n, --name <regex>                  Regex to filter scenarios with
-    ///                                         [aliases: scenario-name]
-    ///     -t, --tags <tagexpr>                Tag expression to filter
-    ///                                         scenarios with
-    ///                                         [aliases: scenario-tags]
-    /// ```
+    /// Also, specifying `--help` flag will describe `--before-time` now.
     ///
     /// [`Feature`]: gherkin::Feature
     pub fn with_cli<CustomCli>(
@@ -774,7 +750,6 @@ where
             writer,
             ..
         } = self;
-
         Cucumber {
             parser,
             runner,
@@ -914,13 +889,13 @@ where
     }
 }
 
-impl<W, P, I, R, Wr, CCli> Debug for Cucumber<W, P, I, R, Wr, CCli>
+impl<W, P, I, R, Wr, Cli> Debug for Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Debug + Parser<I>,
     R: Debug + Runner<W>,
     Wr: Debug + Writer<W>,
-    CCli: StructOpt,
+    Cli: StructOpt,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cucumber")
@@ -985,12 +960,12 @@ where
     }
 }
 
-impl<W, I, R, Wr, CCli> Cucumber<W, parser::Basic, I, R, Wr, CCli>
+impl<W, I, R, Wr, Cli> Cucumber<W, parser::Basic, I, R, Wr, Cli>
 where
     W: World,
     R: Runner<W>,
     Wr: Writer<W>,
-    CCli: StructOpt,
+    Cli: StructOpt,
     I: AsRef<Path>,
 {
     /// Sets the provided language of [`gherkin`] files.
@@ -1007,13 +982,13 @@ where
     }
 }
 
-impl<W, I, P, Wr, F, B, A, CCli>
-    Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr, CCli>
+impl<W, I, P, Wr, F, B, A, Cli>
+    Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     Wr: Writer<W>,
-    CCli: StructOpt,
+    Cli: StructOpt,
     F: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
@@ -1058,7 +1033,7 @@ where
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr, CCli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr, Cli>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -1094,7 +1069,7 @@ where
     pub fn before<Before>(
         self,
         func: Before,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr, CCli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr, Cli>
     where
         Before: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1141,7 +1116,7 @@ where
     pub fn after<After>(
         self,
         func: After,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr, CCli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr, Cli>
     where
         After: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1206,13 +1181,13 @@ where
     }
 }
 
-impl<W, I, P, R, Wr, CCli> Cucumber<W, P, I, R, Wr, CCli>
+impl<W, I, P, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: FailureWriter<W>,
-    CCli: StructOpt + StructOptInternal,
+    Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
     ///

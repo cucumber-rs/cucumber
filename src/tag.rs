@@ -8,15 +8,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`TagOperation`] extension.
+//! Extension of a [`TagOperation`].
 
 use gherkin::tagexpr::TagOperation;
 use sealed::sealed;
 
-/// Helper method to evaluate [`TagOperation`].
+/// Extension of a [`TagOperation`] allowing to evaluate it.
 #[sealed]
 pub trait Ext {
-    /// Evaluates [`TagOperation`].
+    /// Evaluates this [`TagOperation`] for the given `tags`.
+    #[must_use]
     fn eval(&self, tags: &[String]) -> bool;
 }
 
@@ -26,7 +27,7 @@ impl Ext for TagOperation {
         match self {
             Self::And(l, r) => l.eval(tags) & r.eval(tags),
             Self::Or(l, r) => l.eval(tags) | r.eval(tags),
-            Self::Not(tag) => !tag.eval(tags),
+            Self::Not(t) => !t.eval(tags),
             Self::Tag(t) => tags.iter().any(|tag| tag == t),
         }
     }

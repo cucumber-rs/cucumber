@@ -150,7 +150,7 @@ macro_rules! step_attribute {
         /// - To use [`gherkin::Step`], name the argument as `step`,
         ///   **or** mark the argument with a `#[step]` attribute.
         ///
-        /// ```
+        /// ```rust
         /// # use std::convert::Infallible;
         /// #
         /// # use async_trait::async_trait;
@@ -167,7 +167,7 @@ macro_rules! step_attribute {
         /// #         Ok(Self {})
         /// #     }
         /// # }
-        ///
+        /// #
         /// #[given(regex = r"(\S+) is not (\S+)")]
         /// fn test_step(
         ///     w: &mut MyWorld,

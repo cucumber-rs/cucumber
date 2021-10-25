@@ -31,7 +31,6 @@ syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
-futures = "0.3"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
