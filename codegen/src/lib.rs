@@ -93,10 +93,10 @@
     variant_size_differences
 )]
 
-use proc_macro::TokenStream;
-
 mod attribute;
 mod derive;
+
+use proc_macro::TokenStream;
 
 /// Helper macro for generating public shims for [`macro@given`], [`macro@when`]
 /// and [`macro@then`] attributes.
