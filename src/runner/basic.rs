@@ -39,7 +39,7 @@ use structopt::StructOpt;
 use crate::{
     event::{self, HookType, Info},
     feature::Ext as _,
-    parser, step, Runner, Step, World,
+    parser, step, Event, Runner, Step, World,
 };
 
 // Workaround for overwritten doc-comments.
@@ -387,7 +387,7 @@ where
     type Cli = Cli;
 
     type EventStream =
-        LocalBoxStream<'static, parser::Result<event::Cucumber<W>>>;
+        LocalBoxStream<'static, parser::Result<Event<event::Cucumber<W>>>>;
 
     fn run<S>(self, features: S, cli: Cli) -> Self::EventStream
     where
@@ -442,7 +442,7 @@ async fn insert_features<W, S, F>(
     into: Features,
     features: S,
     which_scenario: F,
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     F: Fn(
@@ -476,7 +476,7 @@ async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
     before_hook: Option<Before>,
     after_hook: Option<After>,
 ) where
@@ -584,7 +584,7 @@ struct Executor<W, Before, After> {
     /// Sender for notifying state of [`Feature`]s completion.
     ///
     /// [`Feature`]: gherkin::Feature
-    sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+    sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
 impl<W: World, Before, After> Executor<W, Before, After>
@@ -609,7 +609,9 @@ where
         collection: step::Collection<W>,
         before_hook: Option<Before>,
         after_hook: Option<After>,
-        sender: mpsc::UnboundedSender<parser::Result<event::Cucumber<W>>>,
+        sender: mpsc::UnboundedSender<
+            parser::Result<Event<event::Cucumber<W>>>,
+        >,
     ) -> Self {
         Self {
             features_scenarios_count: HashMap::new(),
@@ -1098,17 +1100,17 @@ where
     fn send(&self, event: event::Cucumber<W>) {
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
-        drop(self.sender.unbounded_send(Ok(event)));
+        drop(self.sender.unbounded_send(Ok(Event::new(event))));
     }
 
     /// Notifies with the given [`Cucumber`] events.
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send_all(&self, events: impl Iterator<Item = event::Cucumber<W>>) {
-        for ev in events {
+        for v in events {
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
-            if self.sender.unbounded_send(Ok(ev)).is_err() {
+            if self.sender.unbounded_send(Ok(Event::new(v))).is_err() {
                 break;
             }
         }

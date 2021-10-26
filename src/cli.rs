@@ -179,7 +179,7 @@ another one:
 ```rust
 # use async_trait::async_trait;
 # use cucumber::{
-#     cli, event, parser, ArbitraryWriter, FailureWriter, World, Writer,
+#     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
 # };
 # use structopt::StructOpt;
 #
@@ -201,7 +201,7 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         // Some custom logic including `cli.left.custom_option`.

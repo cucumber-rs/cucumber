@@ -25,8 +25,9 @@ use regex::Regex;
 use structopt::{StructOpt, StructOptInternal};
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, FailureWriter,
-    Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
+    cli, event, parser, runner, step, tag::Ext as _, writer, Event,
+    FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -387,7 +388,7 @@ where
     ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
     ///
     ///         matches!(
-    ///             ev,
+    ///             ev.as_deref(),
     ///             Ok(Cucumber::Feature(
     ///                 _,
     ///                 Feature::Rule(
@@ -434,7 +435,7 @@ where
         filter: F,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
-        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+        F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Cucumber {
             parser: self.parser,

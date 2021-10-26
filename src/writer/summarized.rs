@@ -17,8 +17,8 @@ use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
-    event, parser, writer::term::Styles, ArbitraryWriter, FailureWriter, World,
-    Writer,
+    event, parser, writer::term::Styles, ArbitraryWriter, Event, FailureWriter,
+    World, Writer,
 };
 
 /// Execution statistics.
@@ -145,13 +145,13 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 
         let mut finished = false;
-        match &ev {
+        match ev.as_deref() {
             Err(_) => self.parsing_errors += 1,
             Ok(Cucumber::Feature(_, ev)) => match ev {
                 Feature::Started => self.features += 1,

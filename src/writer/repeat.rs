@@ -15,7 +15,9 @@ use std::mem;
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
+use crate::{
+    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+};
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
 /// of an output, based on a filter predicated.
@@ -35,32 +37,34 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     filter: F,
 
     /// Buffer of collected events for re-outputting.
-    events: Vec<parser::Result<event::Cucumber<W>>>,
+    events: Vec<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
 /// Alias for a [`fn`] predicate deciding whether an event should be
 /// re-outputted or not.
-pub type FilterEvent<W> = fn(&parser::Result<event::Cucumber<W>>) -> bool;
+pub type FilterEvent<W> =
+    fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
 #[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
     Wr: Writer<W>,
-    F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     type Cli = Wr::Cli;
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         if (self.filter)(&ev) {
             self.events.push(ev.clone());
         }
 
-        let is_finished = matches!(ev, Ok(event::Cucumber::Finished));
+        let is_finished =
+            matches!(ev.as_deref(), Ok(event::Cucumber::Finished));
 
         self.writer.handle_event(ev, cli).await;
 
@@ -78,7 +82,7 @@ where
     W: World,
     Wr: ArbitraryWriter<'val, W, Val>,
     Val: 'val,
-    F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     async fn write(&mut self, val: Val)
     where
@@ -132,7 +136,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev,
+                    ev.as_deref(),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(
@@ -147,7 +151,7 @@ impl<W, Wr> Repeat<W, Wr> {
                             Scenario::Step(_, Step::Skipped)
                                 | Scenario::Background(_, Step::Skipped)
                         )
-                    ))
+                    )),
                 )
             },
             events: Vec::new(),
@@ -167,7 +171,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev,
+                    ev.as_deref(),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(
@@ -184,7 +188,7 @@ impl<W, Wr> Repeat<W, Wr> {
                                 | Scenario::Background(_, Step::Failed(..))
                                 | Scenario::Hook(_, Hook::Failed(..))
                         )
-                    )) | Err(_)
+                    )) | Err(_),
                 )
             },
             events: Vec::new(),

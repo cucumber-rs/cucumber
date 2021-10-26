@@ -19,7 +19,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
+use crate::{
+    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+};
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
@@ -63,7 +65,7 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{
@@ -77,23 +79,27 @@ where
                 Step::Skipped
             };
 
-            Ok(Cucumber::scenario(f, r, sc, Scenario::Step(st, event)))
+            Cucumber::scenario(f, r, sc, Scenario::Step(st, event))
         };
 
-        let ev = match ev {
-            Ok(Cucumber::Feature(
-                f,
-                Feature::Rule(
-                    r,
-                    Rule::Scenario(sc, Scenario::Step(st, Step::Skipped)),
-                ),
-            )) => map_failed(f, Some(r), sc, st),
-            Ok(Cucumber::Feature(
-                f,
-                Feature::Scenario(sc, Scenario::Step(st, Step::Skipped)),
-            )) => map_failed(f, None, sc, st),
-            _ => ev,
-        };
+        let ev = ev.map(|ev| {
+            ev.map(|ev| match ev {
+                Cucumber::Feature(
+                    f,
+                    Feature::Rule(
+                        r,
+                        Rule::Scenario(sc, Scenario::Step(st, Step::Skipped)),
+                    ),
+                ) => map_failed(f, Some(r), sc, st),
+                Cucumber::Feature(
+                    f,
+                    Feature::Scenario(sc, Scenario::Step(st, Step::Skipped)),
+                ) => map_failed(f, None, sc, st),
+                Cucumber::Started
+                | Cucumber::Feature(..)
+                | Cucumber::Finished => ev,
+            })
+        });
 
         self.writer.handle_event(ev, cli).await;
     }

@@ -126,6 +126,7 @@ pub use cucumber_codegen::{given, then, when, WorldInit};
 #[doc(inline)]
 pub use self::{
     cucumber::Cucumber,
+    event::Event,
     parser::Parser,
     runner::{Runner, ScenarioType},
     step::Step,

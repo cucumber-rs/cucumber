@@ -23,7 +23,7 @@ use async_trait::async_trait;
 use sealed::sealed;
 use structopt::StructOptInternal;
 
-use crate::{event, parser, World};
+use crate::{event, parser, Event, World};
 
 #[doc(inline)]
 pub use self::{
@@ -62,7 +62,7 @@ pub trait Writer<World> {
     /// [`Cucumber`]: crate::event::Cucumber
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<World>>,
+        ev: parser::Result<Event<event::Cucumber<World>>>,
         cli: &Self::Cli,
     );
 }
@@ -173,7 +173,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     #[must_use]
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool;
+        F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 }
 
 #[sealed]
@@ -215,7 +215,7 @@ where
 
     fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
     where
-        F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+        F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Repeat::new(self, filter)
     }

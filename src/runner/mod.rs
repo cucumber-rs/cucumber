@@ -19,7 +19,7 @@ pub mod basic;
 use futures::Stream;
 use structopt::StructOptInternal;
 
-use crate::{event, parser};
+use crate::{event, parser, Event};
 
 #[doc(inline)]
 pub use self::basic::{Basic, ScenarioType};
@@ -76,7 +76,9 @@ pub trait Runner<World> {
     type Cli: StructOptInternal;
 
     /// Output events [`Stream`].
-    type EventStream: Stream<Item = parser::Result<event::Cucumber<World>>>;
+    type EventStream: Stream<
+        Item = parser::Result<Event<event::Cucumber<World>>>,
+    >;
 
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into
     /// a [`Stream`] of executed [`Cucumber`] events.
