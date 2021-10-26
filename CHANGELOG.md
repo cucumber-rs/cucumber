@@ -29,6 +29,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Ability to run `Scenario`s concurrently. ([#128])
 - Highlighting of regex capture groups in terminal output with __bold__ style. ([#136])
 - Error on a step matching multiple step functions ([#143]).
+- `timestamps` Cargo feature that enables collecting of timestamps for all the happened events during tests execution (useful for `Writer`s which format requires them) ([#145]).
 
 [#128]: /../../pull/128
 [#136]: /../../pull/136
@@ -36,6 +37,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#142]: /../../pull/142
 [#143]: /../../pull/143
 [#144]: /../../pull/144
+[#145]: /../../pull/145
 
 
 
