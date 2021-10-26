@@ -53,6 +53,35 @@ jobs:
   # Testing #
   ###########
 
+  cargo-feature:
+    name: Cargo feature
+    if: ${{ github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: ['<none>', 'macros', 'timestamps']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo +nightly update -Z minimal-versions
+
+      - run: cargo check -p cucumber --no-default-features
+                   ${{ matrix.feature != '<none>'
+                       && format('--features {0}', matrix.feature)
+                       || '' }}
+
   msrv:
     name: MSRV
     if: ${{ github.ref == 'refs/heads/main'
