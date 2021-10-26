@@ -10,17 +10,15 @@
 
 //! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
-use std::{hash::Hash, sync::Arc};
+use std::{hash::Hash, mem, sync::Arc};
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
-    event::{self, DateTimed},
-    parser, ArbitraryWriter, FailureWriter, World, Writer,
+    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -57,7 +55,7 @@ impl<W: World, Writer> Normalized<W, Writer> {
     pub fn new(writer: Writer) -> Self {
         Self {
             writer,
-            queue: CucumberQueue::new(Utc::now()),
+            queue: CucumberQueue::new(Event::new(())),
         }
     }
 }
@@ -68,8 +66,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<World>>,
-        at: DateTime<Utc>,
+        ev: parser::Result<Event<event::Cucumber<World>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
@@ -78,28 +75,36 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
         // without any normalization.
         // This is done to avoid panic if this `Writer` happens to be wrapped
         // inside `writer::Repeat` or similar.
-        if self.queue.is_finished() {
-            self.writer.handle_event(ev, at, cli).await;
+        if self.queue.is_finished_and_emitted() {
+            self.writer.handle_event(ev, cli).await;
             return;
         }
 
-        match ev {
-            res @ (Err(_) | Ok(Cucumber::Started)) => {
-                self.writer.handle_event(res, at, cli).await;
+        match ev.map(Event::take) {
+            res @ (Err(_) | Ok((Cucumber::Started, _))) => {
+                self.writer
+                    .handle_event(res.map(|(ev, meta)| meta.insert(ev)), cli)
+                    .await;
             }
-            Ok(Cucumber::Finished) => self.queue.finished(at),
-            Ok(Cucumber::Feature(f, ev)) => match ev {
-                Feature::Started => self.queue.new_feature(f, at),
+            Ok((Cucumber::Finished, meta)) => self.queue.finished(meta),
+            Ok((Cucumber::Feature(f, ev), meta)) => match ev {
+                Feature::Started => self.queue.new_feature(f, meta),
                 Feature::Scenario(s, ev) => {
-                    self.queue.insert_scenario_event(&f, None, s, ev, at);
+                    self.queue.insert_scenario_event(&f, None, s, ev, meta);
                 }
-                Feature::Finished => self.queue.feature_finished(&f, at),
+                Feature::Finished => self.queue.feature_finished(&f, meta),
                 Feature::Rule(r, ev) => match ev {
-                    Rule::Started => self.queue.new_rule(&f, r, at),
-                    Rule::Scenario(s, e) => {
-                        self.queue.insert_scenario_event(&f, Some(r), s, e, at);
+                    Rule::Started => self.queue.new_rule(&f, r, meta),
+                    Rule::Scenario(s, ev) => {
+                        self.queue.insert_scenario_event(
+                            &f,
+                            Some(r),
+                            s,
+                            ev,
+                            meta,
+                        );
                     }
-                    Rule::Finished => self.queue.rule_finished(&f, r, at),
+                    Rule::Finished => self.queue.rule_finished(&f, r, meta),
                 },
             },
         }
@@ -110,9 +115,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
             self.queue.remove(&feature_to_remove);
         }
 
-        if let Some(at) = self.queue.finished_at {
+        if let Some(rest) = self.queue.finished_state.take_to_emit() {
             self.writer
-                .handle_event(Ok(Cucumber::Finished), at, cli)
+                .handle_event(Ok(rest.insert(Cucumber::Finished)), cli)
                 .await;
         }
     }
@@ -165,51 +170,66 @@ struct Queue<K: Eq + Hash, V> {
     /// Underlying FIFO queue of values.
     queue: LinkedHashMap<K, V>,
 
-    /// [`DateTime`] when this [`Queue`] was created.
+    /// [`Event`] of [`Queue`] creation.
     ///
-    /// This value corresponds to the [`DateTime`] of the `Started` event for
-    /// item, this [`Queue`] is representing.
-    started_at: DateTime<Utc>,
+    /// If this value is [`Some`], this means `Started` [`Event`] hasn't
+    /// been passed on to the inner [`Writer`] yet.
+    started: Option<Event<()>>,
 
-    /// Indicator whether this [`Queue`] started emitting values.
-    started_emitted: bool,
+    /// [`FinishedState`] of this [`Queue`].
+    finished_state: FinishedState,
+}
 
-    /// [`DateTime`] when [`Queue`] finished emitting values.
+/// Finishing state of the [`Queue`].
+#[derive(Clone, Debug)]
+enum FinishedState {
+    /// `Finished` event hasn't been encountered yet.
+    NotFinished,
+
+    /// `Finished` event encountered, but not passed on to the inner [`Writer`].
     ///
-    /// This value corresponds to the [`DateTime`] of the `Finished` event for
-    /// item, this [`Queue`] is representing.
-    finished_at: Option<DateTime<Utc>>,
+    /// This happens when output is busy outputting some other item.
+    FinishedButNotEmitted(Event<()>),
+
+    /// `Finished` event encountered and passed on to the inner [`Writer`].
+    FinishedAndEmitted,
+}
+
+impl FinishedState {
+    /// If `self` is [`FinishedButNotEmitted`] returns [`Event`], replacing
+    /// `self` with [`FinishedAndEmitted`].
+    ///
+    /// [`FinishedAndEmitted`]: FinishedState::FinishedAndEmitted
+    /// [`FinishedButNotEmitted`]: FinishedState::FinishedButNotEmitted
+    fn take_to_emit(&mut self) -> Option<Event<()>> {
+        let current = mem::replace(self, Self::FinishedAndEmitted);
+        if let Self::FinishedButNotEmitted(ev) = current {
+            Some(ev)
+        } else {
+            *self = current;
+            None
+        }
+    }
 }
 
 impl<K: Eq + Hash, V> Queue<K, V> {
     /// Creates a new empty normalization [`Queue`].
-    fn new(started: DateTime<Utc>) -> Self {
+    fn new(started: Event<()>) -> Self {
         Self {
             queue: LinkedHashMap::new(),
-            started_at: started,
-            started_emitted: false,
-            finished_at: None,
+            started: Some(started),
+            finished_state: FinishedState::NotFinished,
         }
     }
 
-    /// Marks that [`Queue`]'s started event has been emitted.
-    fn started_emitted(&mut self) {
-        self.started_emitted = true;
-    }
-
-    /// Checks whether [`Queue`]'s started event has been emitted.
-    fn is_started_emitted(&self) -> bool {
-        self.started_emitted
-    }
-
     /// Marks this [`Queue`] as finished.
-    fn finished(&mut self, at: DateTime<Utc>) {
-        self.finished_at = Some(at);
+    fn finished(&mut self, meta: Event<()>) {
+        self.finished_state = FinishedState::FinishedButNotEmitted(meta);
     }
 
     /// Checks whether this [`Queue`] has been finished.
-    fn is_finished(&self) -> bool {
-        self.finished_at.is_some()
+    fn is_finished_and_emitted(&self) -> bool {
+        matches!(self.finished_state, FinishedState::FinishedAndEmitted)
     }
 
     /// Removes the given `key` from this [`Queue`].
@@ -283,8 +303,8 @@ impl<World> CucumberQueue<World> {
     /// Inserts a new [`Feature`] on [`event::Feature::Started`].
     ///
     /// [`Feature`]: gherkin::Feature
-    fn new_feature(&mut self, feat: Arc<gherkin::Feature>, at: DateTime<Utc>) {
-        drop(self.queue.insert(feat, FeatureQueue::new(at)));
+    fn new_feature(&mut self, feat: Arc<gherkin::Feature>, meta: Event<()>) {
+        drop(self.queue.insert(feat, FeatureQueue::new(meta)));
     }
 
     /// Marks a [`Feature`] as finished on [`event::Feature::Finished`].
@@ -293,11 +313,11 @@ impl<World> CucumberQueue<World> {
     /// [`Feature`]s holding the output.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn feature_finished(&mut self, feat: &gherkin::Feature, at: DateTime<Utc>) {
+    fn feature_finished(&mut self, feat: &gherkin::Feature, meta: Event<()>) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .finished(at);
+            .finished(meta);
     }
 
     /// Inserts a new [`Rule`] on [`event::Rule::Started`].
@@ -307,12 +327,12 @@ impl<World> CucumberQueue<World> {
         &mut self,
         feat: &gherkin::Feature,
         rule: Arc<gherkin::Rule>,
-        at: DateTime<Utc>,
+        meta: Event<()>,
     ) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .new_rule(rule, at);
+            .new_rule(rule, meta);
     }
 
     /// Marks a [`Rule`] as finished on [`event::Rule::Finished`].
@@ -325,12 +345,12 @@ impl<World> CucumberQueue<World> {
         &mut self,
         feat: &gherkin::Feature,
         rule: Arc<gherkin::Rule>,
-        at: DateTime<Utc>,
+        meta: Event<()>,
     ) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .rule_finished(rule, at);
+            .rule_finished(rule, meta);
     }
 
     /// Inserts a new [`event::Scenario::Started`].
@@ -340,12 +360,12 @@ impl<World> CucumberQueue<World> {
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         event: event::Scenario<World>,
-        at: DateTime<Utc>,
+        meta: Event<()>,
     ) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .insert_scenario_event(rule, scenario, event, at);
+            .insert_scenario_event(rule, scenario, event, meta);
     }
 }
 
@@ -369,15 +389,15 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         if let Some((f, events)) = self.current_item() {
-            if !events.is_started_emitted() {
+            if let Some(meta) = events.started.take() {
                 writer
                     .handle_event(
-                        Ok(event::Cucumber::feature_started(Arc::clone(&f))),
-                        events.started_at,
+                        Ok(meta.insert(event::Cucumber::feature_started(
+                            Arc::clone(&f),
+                        ))),
                         cli,
                     )
                     .await;
-                events.started_emitted();
             }
 
             while let Some(scenario_or_rule_to_remove) =
@@ -386,11 +406,12 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
                 events.remove(&scenario_or_rule_to_remove);
             }
 
-            if let Some(at) = events.finished_at {
+            if let Some(meta) = events.finished_state.take_to_emit() {
                 writer
                     .handle_event(
-                        Ok(event::Cucumber::feature_finished(Arc::clone(&f))),
-                        at,
+                        Ok(meta.insert(event::Cucumber::feature_finished(
+                            Arc::clone(&f),
+                        ))),
                         cli,
                     )
                     .await;
@@ -433,20 +454,22 @@ impl<World> FeatureQueue<World> {
     /// Inserts a new [`Rule`].
     ///
     /// [`Rule`]: gherkin::Rule
-    fn new_rule(&mut self, rule: Arc<gherkin::Rule>, at: DateTime<Utc>) {
+    fn new_rule(&mut self, rule: Arc<gherkin::Rule>, meta: Event<()>) {
         drop(
-            self.queue
-                .insert(Either::Left(rule), Either::Left(RulesQueue::new(at))),
+            self.queue.insert(
+                Either::Left(rule),
+                Either::Left(RulesQueue::new(meta)),
+            ),
         );
     }
 
     /// Marks a [`Rule`] as finished on [`event::Rule::Finished`].
     ///
     /// [`Rule`]: gherkin::Rule
-    fn rule_finished(&mut self, rule: Arc<gherkin::Rule>, at: DateTime<Utc>) {
+    fn rule_finished(&mut self, rule: Arc<gherkin::Rule>, meta: Event<()>) {
         match self.queue.get_mut(&Either::Left(rule)).unwrap() {
             Either::Left(ev) => {
-                ev.finished(at);
+                ev.finished(meta);
             }
             Either::Right(_) => unreachable!(),
         }
@@ -460,7 +483,7 @@ impl<World> FeatureQueue<World> {
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         ev: event::Scenario<World>,
-        at: DateTime<Utc>,
+        meta: Event<()>,
     ) {
         if let Some(rule) = rule {
             match self
@@ -473,7 +496,7 @@ impl<World> FeatureQueue<World> {
                     .entry(scenario)
                     .or_insert_with(ScenariosQueue::new)
                     .0
-                    .push(DateTimed::at(ev, at)),
+                    .push((ev, meta)),
                 Either::Right(_) => unreachable!(),
             }
         } else {
@@ -482,7 +505,7 @@ impl<World> FeatureQueue<World> {
                 .entry(Either::Right(scenario))
                 .or_insert_with(|| Either::Right(ScenariosQueue::new()))
             {
-                Either::Right(events) => events.0.push(DateTimed::at(ev, at)),
+                Either::Right(events) => events.0.push((ev, meta)),
                 Either::Left(_) => unreachable!(),
             }
         }
@@ -550,18 +573,16 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
-        if !self.is_started_emitted() {
+        if let Some(meta) = self.started.take() {
             writer
                 .handle_event(
-                    Ok(event::Cucumber::rule_started(
+                    Ok(meta.insert(event::Cucumber::rule_started(
                         Arc::clone(&feature),
                         Arc::clone(&rule),
-                    )),
-                    self.started_at,
+                    ))),
                     cli,
                 )
                 .await;
-            self.started_emitted();
         }
 
         while let Some((scenario, events)) = self.current_item() {
@@ -579,14 +600,13 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
             }
         }
 
-        if let Some(at) = self.finished_at {
+        if let Some(meta) = self.finished_state.take_to_emit() {
             writer
                 .handle_event(
-                    Ok(event::Cucumber::rule_finished(
+                    Ok(meta.insert(event::Cucumber::rule_finished(
                         feature,
                         Arc::clone(&rule),
-                    )),
-                    at,
+                    ))),
                     cli,
                 )
                 .await;
@@ -601,7 +621,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Debug)]
-struct ScenariosQueue<World>(Vec<DateTimed<event::Scenario<World>>>);
+struct ScenariosQueue<World>(Vec<(event::Scenario<World>, Event<()>)>);
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].
@@ -612,7 +632,7 @@ impl<World> ScenariosQueue<World> {
 
 #[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
-    type Current = DateTimed<event::Scenario<World>>;
+    type Current = (event::Scenario<World>, Event<()>);
     type Emitted = Arc<gherkin::Scenario>;
     type EmittedPath = (
         Arc<gherkin::Feature>,
@@ -630,16 +650,17 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
-        while let Some(DateTimed { inner: ev, at }) = self.current_item() {
+        while let Some((ev, meta)) = self.current_item() {
             let should_be_removed = matches!(ev, event::Scenario::Finished);
 
-            let ev = event::Cucumber::scenario(
+            let ev = meta.insert(event::Cucumber::scenario(
                 Arc::clone(&feature),
                 rule.as_ref().map(Arc::clone),
                 Arc::clone(&scenario),
                 ev,
-            );
-            writer.handle_event(Ok(ev), at, cli).await;
+            ));
+
+            writer.handle_event(Ok(ev), cli).await;
 
             if should_be_removed {
                 return Some(Arc::clone(&scenario));

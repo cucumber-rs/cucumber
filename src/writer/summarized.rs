@@ -13,13 +13,12 @@
 use std::{array, borrow::Cow, collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
-    event, parser, writer::term::Styles, ArbitraryWriter, FailureWriter, World,
-    Writer,
+    event, parser, writer::term::Styles, ArbitraryWriter, Event, FailureWriter,
+    World, Writer,
 };
 
 /// Execution statistics.
@@ -146,14 +145,14 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
-        at: DateTime<Utc>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 
         let mut finished = false;
-        match &ev {
+
+        match ev.as_ref().map(AsRef::as_ref) {
             Err(_) => self.parsing_errors += 1,
             Ok(Cucumber::Feature(_, ev)) => match ev {
                 Feature::Started => self.features += 1,
@@ -170,7 +169,7 @@ where
             Ok(Cucumber::Started) => {}
         };
 
-        self.writer.handle_event(ev, at, cli).await;
+        self.writer.handle_event(ev, cli).await;
 
         if finished {
             self.writer.write(Styles::new().summary(self)).await;

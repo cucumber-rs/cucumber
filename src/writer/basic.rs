@@ -20,7 +20,6 @@ use std::{
 };
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use console::Term;
 use itertools::Itertools as _;
 use regex::CaptureLocations;
@@ -30,7 +29,7 @@ use crate::{
     event::{self, Info},
     parser,
     writer::term::Styles,
-    ArbitraryWriter, World, Writer,
+    ArbitraryWriter, Event, World, Writer,
 };
 
 // Workaround for overwritten doc-comments.
@@ -106,8 +105,7 @@ impl<W: World + Debug> Writer<W> for Basic {
     #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
-        _: DateTime<Utc>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};
@@ -118,7 +116,7 @@ impl<W: World + Debug> Writer<W> for Basic {
             Coloring::Auto => {}
         };
 
-        match ev {
+        match ev.map(Event::into_inner) {
             Err(err) => self.parsing_failed(&err),
             Ok(Cucumber::Started | Cucumber::Finished) => Ok(()),
             Ok(Cucumber::Feature(f, ev)) => match ev {

@@ -13,12 +13,10 @@
 use std::mem;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use derive_more::Deref;
 
 use crate::{
-    event::{self, DateTimed},
-    parser, ArbitraryWriter, FailureWriter, World, Writer,
+    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
@@ -39,39 +37,42 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     filter: F,
 
     /// Buffer of collected events for re-outputting.
-    events: Vec<DateTimed<parser::Result<event::Cucumber<W>>>>,
+    events: Vec<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
 /// Alias for a [`fn`] predicate deciding whether an event should be
 /// re-outputted or not.
-pub type FilterEvent<W> = fn(&parser::Result<event::Cucumber<W>>) -> bool;
+pub type FilterEvent<W> =
+    fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
 #[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
     Wr: Writer<W>,
-    F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     type Cli = Wr::Cli;
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<W>>,
-        at: DateTime<Utc>,
+        ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         if (self.filter)(&ev) {
-            self.events.push(DateTimed::at(ev.clone(), at));
+            self.events.push(ev.clone());
         }
 
-        let is_finished = matches!(ev, Ok(event::Cucumber::Finished));
+        let is_finished = matches!(
+            ev.as_ref().map(AsRef::as_ref),
+            Ok(event::Cucumber::Finished)
+        );
 
-        self.writer.handle_event(ev, at, cli).await;
+        self.writer.handle_event(ev, cli).await;
 
         if is_finished {
-            for DateTimed { inner: ev, at } in mem::take(&mut self.events) {
-                self.writer.handle_event(ev, at, cli).await;
+            for ev in mem::take(&mut self.events) {
+                self.writer.handle_event(ev, cli).await;
             }
         }
     }
@@ -83,7 +84,7 @@ where
     W: World,
     Wr: ArbitraryWriter<'val, W, Val>,
     Val: 'val,
-    F: Fn(&parser::Result<event::Cucumber<W>>) -> bool,
+    F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     async fn write(&mut self, val: Val)
     where
@@ -137,7 +138,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev,
+                    ev.as_ref().map(AsRef::as_ref),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(
@@ -172,7 +173,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev,
+                    ev.as_ref().map(AsRef::as_ref),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(

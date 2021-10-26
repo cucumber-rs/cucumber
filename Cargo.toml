@@ -28,13 +28,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["macros"]
 macros = ["cucumber-codegen", "inventory"]
+event-time = []
 
 [dependencies]
 async-trait = "0.1.40"
 atty = "0.2.14"
-chrono = "0.4.19"
 console = "0.15"
-derive_more = { version = "0.99.16", features = ["deref", "deref_mut", "display", "error", "from"], default_features = false }
+derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from"], default_features = false }
 either = "1.6"
 futures = "0.3.17"
 gherkin = { package = "gherkin_rust", version = "0.10" }

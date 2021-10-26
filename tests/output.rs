@@ -1,9 +1,8 @@
 use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use cucumber::{
-    cli, event, given, parser, step, then, when, WorldInit, Writer,
+    cli, event, given, parser, step, then, when, Event, WorldInit, Writer,
 };
 use itertools::Itertools as _;
 use once_cell::sync::Lazy;
@@ -43,8 +42,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
     #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
-        ev: parser::Result<event::Cucumber<World>>,
-        _: DateTime<Utc>,
+        ev: parser::Result<Event<event::Cucumber<World>>>,
         _: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
@@ -69,7 +67,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
             e
         };
 
-        let ev: Cow<_> = match ev {
+        let ev: Cow<_> = match ev.map(Event::into_inner) {
             Err(_) => "ParsingError".into(),
             Ok(Cucumber::Feature(
                 feat,

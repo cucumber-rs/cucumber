@@ -21,8 +21,10 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
-use chrono::{DateTime, Utc};
-use derive_more::{Display, Error, From};
+#[cfg(feature = "event-time")]
+use std::time::SystemTime;
+
+use derive_more::{AsRef, Display, Error, From};
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -31,30 +33,65 @@ use crate::{step, writer::basic::coerce_error};
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 pub type Info = Arc<dyn Any + Send + 'static>;
 
-/// Value paired with [`DateTime`].
-#[derive(Clone, Copy, Debug)]
-pub struct DateTimed<T> {
-    /// Value itself.
-    pub inner: T,
+/// [`Cucumber`] event paired with additional metadata.
+///
+/// Metadata is configured with cargo features. This is done mainly to give us
+/// ability to add additional fields without introducing breaking changes.
+#[derive(AsRef, Clone, Debug)]
+pub struct Event<T: ?Sized> {
+    /// [`SystemTime`] when [`Event`] happened.
+    #[cfg(feature = "event-time")]
+    pub at: SystemTime,
 
-    /// [`DateTime`] paired with the value.
-    pub at: DateTime<Utc>,
+    /// Inner value.
+    #[as_ref]
+    pub inner: T,
 }
 
-impl<T> DateTimed<T> {
-    /// Creates a new [`DateTimed`] with [`Utc::now()`] [`DateTime`].
+impl<T> Event<T> {
+    /// Creates a new [`Event`].
+    // False positive: SystemTime::now() isn't const
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub fn now(inner: T) -> Self {
+    pub fn new(inner: T) -> Self {
         Self {
+            #[cfg(feature = "event-time")]
+            at: SystemTime::now(),
             inner,
-            at: Utc::now(),
         }
     }
 
-    /// Creates a new [`DateTimed`] with provided [`DateTime`].
+    /// Returns [`Event::inner`].
+    // False positive: `constant functions cannot evaluate destructors`
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub const fn at(inner: T, at: DateTime<Utc>) -> Self {
-        Self { inner, at }
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+
+    /// Replaces [`Event::inner`] with `()`, returning the old one.
+    pub fn take(self) -> (T, Event<()>) {
+        self.replace(())
+    }
+
+    /// Replaces [`Event::inner`] with `value`, dropping the old one.
+    #[must_use]
+    pub fn insert<V>(self, value: V) -> Event<V> {
+        self.replace(value).1
+    }
+
+    /// Replaces [`Event::inner`] with `value`, returning the old one.
+    // False positive: `constant functions cannot evaluate destructors`
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn replace<V>(self, value: V) -> (T, Event<V>) {
+        (
+            self.inner,
+            Event {
+                inner: value,
+                #[cfg(feature = "event-time")]
+                at: self.at,
+            },
+        )
     }
 }
 
