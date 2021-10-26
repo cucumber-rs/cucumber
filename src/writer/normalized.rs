@@ -18,7 +18,10 @@ use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
-use crate::{event, parser, ArbitraryWriter, FailureWriter, World, Writer};
+use crate::{
+    event::{self, DateTimed},
+    parser, ArbitraryWriter, FailureWriter, World, Writer,
+};
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
 /// to _order guarantees_ from the [`Runner`] in a normalized readable order.
@@ -470,7 +473,7 @@ impl<World> FeatureQueue<World> {
                     .entry(scenario)
                     .or_insert_with(ScenariosQueue::new)
                     .0
-                    .push((ev, at)),
+                    .push(DateTimed::at(ev, at)),
                 Either::Right(_) => unreachable!(),
             }
         } else {
@@ -479,7 +482,7 @@ impl<World> FeatureQueue<World> {
                 .entry(Either::Right(scenario))
                 .or_insert_with(|| Either::Right(ScenariosQueue::new()))
             {
-                Either::Right(events) => events.0.push((ev, at)),
+                Either::Right(events) => events.0.push(DateTimed::at(ev, at)),
                 Either::Left(_) => unreachable!(),
             }
         }
@@ -598,7 +601,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Debug)]
-struct ScenariosQueue<World>(Vec<(event::Scenario<World>, DateTime<Utc>)>);
+struct ScenariosQueue<World>(Vec<DateTimed<event::Scenario<World>>>);
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].
@@ -609,7 +612,7 @@ impl<World> ScenariosQueue<World> {
 
 #[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
-    type Current = (event::Scenario<World>, DateTime<Utc>);
+    type Current = DateTimed<event::Scenario<World>>;
     type Emitted = Arc<gherkin::Scenario>;
     type EmittedPath = (
         Arc<gherkin::Feature>,
@@ -627,7 +630,7 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
-        while let Some((ev, at)) = self.current_item() {
+        while let Some(DateTimed { inner: ev, at }) = self.current_item() {
             let should_be_removed = matches!(ev, event::Scenario::Finished);
 
             let ev = event::Cucumber::scenario(

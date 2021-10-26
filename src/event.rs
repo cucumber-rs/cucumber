@@ -21,6 +21,7 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
+use chrono::{DateTime, Utc};
 use derive_more::{Display, Error, From};
 
 use crate::{step, writer::basic::coerce_error};
@@ -29,6 +30,33 @@ use crate::{step, writer::basic::coerce_error};
 ///
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 pub type Info = Arc<dyn Any + Send + 'static>;
+
+/// Value paired with [`DateTime`].
+#[derive(Clone, Copy, Debug)]
+pub struct DateTimed<T> {
+    /// Value itself.
+    pub inner: T,
+
+    /// [`DateTime`] paired with the value.
+    pub at: DateTime<Utc>,
+}
+
+impl<T> DateTimed<T> {
+    /// Creates a new [`DateTimed`] with [`Utc::now()`] [`DateTime`].
+    #[must_use]
+    pub fn now(inner: T) -> Self {
+        Self {
+            inner,
+            at: Utc::now(),
+        }
+    }
+
+    /// Creates a new [`DateTimed`] with provided [`DateTime`].
+    #[must_use]
+    pub const fn at(inner: T, at: DateTime<Utc>) -> Self {
+        Self { inner, at }
+    }
+}
 
 /// Top-level [Cucumber] run event.
 ///

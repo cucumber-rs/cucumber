@@ -16,11 +16,13 @@
 
 pub mod basic;
 
-use chrono::{DateTime, Utc};
 use futures::Stream;
 use structopt::StructOptInternal;
 
-use crate::{event, parser};
+use crate::{
+    event::{self, DateTimed},
+    parser,
+};
 
 #[doc(inline)]
 pub use self::basic::{Basic, ScenarioType};
@@ -77,8 +79,10 @@ pub trait Runner<World> {
     type Cli: StructOptInternal;
 
     /// Output events [`Stream`] paired with a [`DateTime`] when they happened.
+    ///
+    /// [`DateTime`]: chrono::DateTime
     type EventStream: Stream<
-        Item = (parser::Result<event::Cucumber<World>>, DateTime<Utc>),
+        Item = DateTimed<parser::Result<event::Cucumber<World>>>,
     >;
 
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into

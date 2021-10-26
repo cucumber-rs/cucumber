@@ -882,8 +882,8 @@ where
 
         let events_stream = runner.run(filtered, runner_cli);
         futures::pin_mut!(events_stream);
-        while let Some((ev, at)) = events_stream.next().await {
-            writer.handle_event(ev, at, &writer_cli).await;
+        while let Some(ev) = events_stream.next().await {
+            writer.handle_event(ev.inner, ev.at, &writer_cli).await;
         }
         writer
     }

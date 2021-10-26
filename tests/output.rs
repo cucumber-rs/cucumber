@@ -27,6 +27,7 @@ fn ambiguous(_w: &mut World) {}
 impl cucumber::World for World {
     type Error = Infallible;
 
+    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn new() -> Result<Self, Self::Error> {
         Ok(World::default())
     }
@@ -39,6 +40,7 @@ struct DebugWriter(String);
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     type Cli = cli::Empty;
 
+    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         ev: parser::Result<event::Cucumber<World>>,
