@@ -63,10 +63,8 @@ where
             self.events.push(ev.clone());
         }
 
-        let is_finished = matches!(
-            ev.as_ref().map(AsRef::as_ref),
-            Ok(event::Cucumber::Finished)
-        );
+        let is_finished =
+            matches!(ev.as_deref(), Ok(event::Cucumber::Finished));
 
         self.writer.handle_event(ev, cli).await;
 
@@ -138,7 +136,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev.as_ref().map(AsRef::as_ref),
+                    ev.as_deref(),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(
@@ -153,7 +151,7 @@ impl<W, Wr> Repeat<W, Wr> {
                             Scenario::Step(_, Step::Skipped)
                                 | Scenario::Background(_, Step::Skipped)
                         )
-                    ))
+                    )),
                 )
             },
             events: Vec::new(),
@@ -173,7 +171,7 @@ impl<W, Wr> Repeat<W, Wr> {
             writer,
             filter: |ev| {
                 matches!(
-                    ev.as_ref().map(AsRef::as_ref),
+                    ev.as_deref(),
                     Ok(Cucumber::Feature(
                         _,
                         Feature::Rule(
@@ -190,7 +188,7 @@ impl<W, Wr> Repeat<W, Wr> {
                                 | Scenario::Background(_, Step::Failed(..))
                                 | Scenario::Hook(_, Hook::Failed(..))
                         )
-                    )) | Err(_)
+                    )) | Err(_),
                 )
             },
             events: Vec::new(),

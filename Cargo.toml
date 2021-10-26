@@ -27,8 +27,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["macros"]
+# Enables step attributes and auto-wiring.
 macros = ["cucumber-codegen", "inventory"]
-event-time = []
+# Enables timestamps collecting for all events.
+timestamps = []
 
 [dependencies]
 async-trait = "0.1.40"

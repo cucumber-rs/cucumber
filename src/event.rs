@@ -21,10 +21,10 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
-#[cfg(feature = "event-time")]
+#[cfg(feature = "timestamps")]
 use std::time::SystemTime;
 
-use derive_more::{AsRef, Display, Error, From};
+use derive_more::{AsRef, Deref, DerefMut, Display, Error, From};
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -33,66 +33,85 @@ use crate::{step, writer::basic::coerce_error};
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 pub type Info = Arc<dyn Any + Send + 'static>;
 
-/// [`Cucumber`] event paired with additional metadata.
+/// Arbitrary event, optionally paired with additional metadata.
 ///
-/// Metadata is configured with cargo features. This is done mainly to give us
-/// ability to add additional fields without introducing breaking changes.
-#[derive(AsRef, Clone, Debug)]
+/// Any metadata is added by enabling the correspondent library feature:
+/// - `timestamps`: adds time of when this [`Event`] has happened.
+#[derive(AsRef, Clone, Copy, Debug, Deref, DerefMut)]
 #[non_exhaustive]
 pub struct Event<T: ?Sized> {
-    /// [`SystemTime`] when [`Event`] happened.
-    #[cfg(feature = "event-time")]
+    /// [`SystemTime`] when this [`Event`] has happened.
+    #[cfg(feature = "timestamps")]
     pub at: SystemTime,
 
-    /// Inner value.
+    /// Actual value of this [`Event`].
     #[as_ref]
-    pub inner: T,
+    #[deref]
+    #[deref_mut]
+    pub value: T,
 }
 
 impl<T> Event<T> {
-    /// Creates a new [`Event`].
-    // False positive: SystemTime::now() isn't const
-    #[allow(clippy::missing_const_for_fn)]
+    /// Creates a new [`Event`] out of the given `value`.
     #[must_use]
-    pub fn new(inner: T) -> Self {
+    pub fn new(value: T) -> Self {
         Self {
-            #[cfg(feature = "event-time")]
+            #[cfg(feature = "timestamps")]
             at: SystemTime::now(),
-            inner,
+            value,
         }
     }
 
-    /// Returns [`Event::inner`].
-    // False positive: `constant functions cannot evaluate destructors`
-    #[allow(clippy::missing_const_for_fn)]
+    /// Unwraps the inner [`Event::value`] loosing all the attached metadata.
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn into_inner(self) -> T {
-        self.inner
+        self.value
     }
 
-    /// Replaces [`Event::inner`] with `()`, returning the old one.
-    pub fn take(self) -> (T, Event<()>) {
+    /// Splits this [`Event`] to the inner [`Event::value`] and its detached
+    /// metadata.
+    #[must_use]
+    pub fn split(self) -> (T, Metadata) {
         self.replace(())
     }
 
-    /// Replaces [`Event::inner`] with `value`, dropping the old one.
+    /// Replaces the inner [`Event::value`] with the given one, dropping the old
+    /// one in place.
     #[must_use]
     pub fn insert<V>(self, value: V) -> Event<V> {
         self.replace(value).1
     }
 
-    /// Replaces [`Event::inner`] with `value`, returning the old one.
-    // False positive: `constant functions cannot evaluate destructors`
-    #[allow(clippy::missing_const_for_fn)]
+    /// Maps the inner [`Event::value`] with the given function.
+    #[must_use]
+    pub fn map<V>(self, f: impl FnOnce(T) -> V) -> Event<V> {
+        let (val, meta) = self.split();
+        meta.insert(f(val))
+    }
+
+    /// Replaces the inner [`Event::value`] with the given one, returning the
+    /// old one along.
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
+    #[must_use]
     pub fn replace<V>(self, value: V) -> (T, Event<V>) {
-        (
-            self.inner,
-            Event {
-                inner: value,
-                #[cfg(feature = "event-time")]
-                at: self.at,
-            },
-        )
+        let event = Event {
+            #[cfg(feature = "timestamps")]
+            at: self.at,
+            value,
+        };
+        (self.value, event)
+    }
+}
+
+/// Shortcut for a detached metadata of an arbitrary [`Event`].
+pub type Metadata = Event<()>;
+
+impl Metadata {
+    /// Wraps the given `value` with this [`Event`] metadata.
+    #[must_use]
+    pub fn wrap<V>(self, value: V) -> Event<V> {
+        self.replace(value).1
     }
 }
 

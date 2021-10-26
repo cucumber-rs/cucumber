@@ -388,7 +388,7 @@ where
     ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
     ///
     ///         matches!(
-    ///             ev.as_ref().map(AsRef::as_ref),
+    ///             ev.as_deref(),
     ///             Ok(Cucumber::Feature(
     ///                 _,
     ///                 Feature::Rule(

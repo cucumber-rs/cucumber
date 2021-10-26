@@ -1107,10 +1107,10 @@ where
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send_all(&self, events: impl Iterator<Item = event::Cucumber<W>>) {
-        for ev in events {
+        for v in events {
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
-            if self.sender.unbounded_send(Ok(Event::new(ev))).is_err() {
+            if self.sender.unbounded_send(Ok(Event::new(v))).is_err() {
                 break;
             }
         }

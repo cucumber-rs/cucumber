@@ -83,9 +83,7 @@ where
         };
 
         let ev = ev.map(|ev| {
-            let (ev, meta) = ev.take();
-
-            let ev = match ev {
+            ev.map(|ev| match ev {
                 Cucumber::Feature(
                     f,
                     Feature::Rule(
@@ -100,9 +98,7 @@ where
                 Cucumber::Started
                 | Cucumber::Feature(..)
                 | Cucumber::Finished => ev,
-            };
-
-            meta.insert(ev)
+            })
         });
 
         self.writer.handle_event(ev, cli).await;
