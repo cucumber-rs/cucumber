@@ -151,7 +151,6 @@ where
         use event::{Cucumber, Feature, Rule};
 
         let mut finished = false;
-
         match ev.as_ref().map(AsRef::as_ref) {
             Err(_) => self.parsing_errors += 1,
             Ok(Cucumber::Feature(_, ev)) => match ev {

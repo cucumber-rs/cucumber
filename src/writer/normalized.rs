@@ -115,9 +115,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
             self.queue.remove(&feature_to_remove);
         }
 
-        if let Some(rest) = self.queue.finished_state.take_to_emit() {
+        if let Some(meta) = self.queue.finished_state.take_to_emit() {
             self.writer
-                .handle_event(Ok(rest.insert(Cucumber::Finished)), cli)
+                .handle_event(Ok(meta.insert(Cucumber::Finished)), cli)
                 .await;
         }
     }
@@ -659,7 +659,6 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
                 Arc::clone(&scenario),
                 ev,
             ));
-
             writer.handle_event(Ok(ev), cli).await;
 
             if should_be_removed {

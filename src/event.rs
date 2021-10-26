@@ -38,6 +38,7 @@ pub type Info = Arc<dyn Any + Send + 'static>;
 /// Metadata is configured with cargo features. This is done mainly to give us
 /// ability to add additional fields without introducing breaking changes.
 #[derive(AsRef, Clone, Debug)]
+#[non_exhaustive]
 pub struct Event<T: ?Sized> {
     /// [`SystemTime`] when [`Event`] happened.
     #[cfg(feature = "event-time")]
