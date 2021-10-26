@@ -81,6 +81,8 @@ jobs:
                    ${{ matrix.feature != '<none>'
                        && format('--features {0}', matrix.feature)
                        || '' }}
+        env:
+          RUSTFLAGS: -D warnings
 
   msrv:
     name: MSRV
@@ -235,15 +237,15 @@ jobs:
           toolchain: stable
 
       - name: Publish `cucumber-codegen` crate
-        run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
-        working-directory: ./codegen
+        run: cargo publish -p cucumber-codegen
+                           --token ${{ secrets.CRATESIO_TOKEN }}
 
       - name: Wait crates.io index is updated
         run: sleep 120
 
       - name: Publish `cucumber` crate
-        run: cargo publish --token ${{ secrets.CRATESIO_TOKEN }}
-        working-directory: ./
+        run: cargo publish -p cucumber
+                           --token ${{ secrets.CRATESIO_TOKEN }}
 
 
 

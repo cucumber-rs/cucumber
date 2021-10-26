@@ -6,10 +6,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.10.0] · 2021-??-??
+## [0.10.0] · 2021-10-26
 [0.10.0]: /../../tree/v0.10.0
 
-[Diff](/../../compare/v0.9.0...v0.10.0)
+[Diff](/../../compare/v0.9.0...v0.10.0) | [Milestone](/../../milestone/2)
 
 ### BC Breaks
 
