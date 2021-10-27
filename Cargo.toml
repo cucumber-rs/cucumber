@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2021"
 rust-version = "1.56"
 description = """\
@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -59,9 +59,6 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 [[test]]
 name = "wait"
 harness = false
-
-[[test]]
-name = "output"
 
 [workspace]
 members = ["codegen"]
