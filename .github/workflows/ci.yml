@@ -190,7 +190,14 @@ jobs:
 
   release-github:
     name: Release on GitHub
-    needs: ["clippy", "rustfmt", "rustdoc", "test", "test-book"]
+    needs:
+      - cargo-feature
+      - clippy
+      - msrv
+      - rustdoc
+      - rustfmt
+      - test
+      - test-book
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
