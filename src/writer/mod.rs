@@ -19,6 +19,9 @@ pub mod repeat;
 pub mod summarized;
 pub mod term;
 
+#[cfg(feature = "junit")]
+pub mod junit;
+
 use async_trait::async_trait;
 use sealed::sealed;
 use structopt::StructOptInternal;
@@ -30,6 +33,10 @@ pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
     repeat::Repeat, summarized::Summarized,
 };
+
+#[cfg(feature = "junit")]
+#[doc(inline)]
+pub use self::junit::JUnit;
 
 /// Writer of [`Cucumber`] events to some output.
 ///
