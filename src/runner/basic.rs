@@ -1138,6 +1138,18 @@ struct Features {
     /// Storage itself.
     scenarios: Arc<Mutex<Scenarios>>,
 
+    /// In case there are [`Serial`] [`Scenario`]s in [`Feature`] all other
+    /// [`Concurrent`] [`Scenario`]s will be inserted after this value.
+    ///
+    /// This is done to execute them closely to one another, so the
+    /// output wouldn't hang on executing other Concurrent Scenarios.
+    ///
+    /// [`Concurrent`]: ScenarioType::Concurrent
+    /// [`Feature`]: gherkin::Feature
+    /// [`Serial`]: ScenarioType::Serial
+    /// [`Scenario`]: gherkin::Scenario
+    insert_concurrent_scenarios_from: Arc<AtomicUsize>,
+
     /// Indicates whether all parsed [`Feature`]s are sorted and stored.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -1162,7 +1174,7 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
-        let local = feature
+        let (local_serial, local_concurrent): (Vec<_>, Vec<_>) = feature
             .scenarios
             .iter()
             .map(|s| (&feature, None, s))
@@ -1179,27 +1191,43 @@ impl Features {
                     Arc::new(s.clone()),
                 )
             })
-            .into_group_map_by(|(f, r, s)| {
+            .partition(|(f, r, s)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
+                    == ScenarioType::Serial
             });
 
         let mut scenarios = self.scenarios.lock().await;
-        if local.get(&ScenarioType::Serial).is_none() {
+        if local_serial.is_empty() {
             // If there are no Serial Scenarios we just extending already
             // existing Concurrent Scenarios.
-            for (which, values) in local {
-                scenarios.entry(which).or_default().extend(values);
-            }
+            scenarios
+                .entry(ScenarioType::Concurrent)
+                .or_default()
+                .extend(local_concurrent);
         } else {
-            // If there are Serial Scenarios we insert all Serial and Concurrent
-            // Scenarios in front.
+            // If there are Serial Scenarios we insert all Concurrent Scenarios
+            // after `self.insert_concurrent_scenarios_from` and increment it
+            // by number of Concurrent Scenarios.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
-            for (which, mut values) in local {
-                let old = mem::take(scenarios.entry(which).or_default());
-                values.extend(old);
-                scenarios.entry(which).or_default().extend(values);
-            }
+            let split_at = self
+                .insert_concurrent_scenarios_from
+                .fetch_add(local_concurrent.len(), Ordering::SeqCst);
+
+            let mut old_concurrent = mem::take(
+                scenarios.entry(ScenarioType::Concurrent).or_default(),
+            );
+            let last_concurrent = old_concurrent.split_off(split_at);
+            let current_concurrent_scenarios =
+                scenarios.entry(ScenarioType::Concurrent).or_default();
+            current_concurrent_scenarios.extend(old_concurrent);
+            current_concurrent_scenarios.extend(local_concurrent);
+            current_concurrent_scenarios.extend(last_concurrent);
+
+            scenarios
+                .entry(ScenarioType::Serial)
+                .or_default()
+                .extend(local_serial);
         }
     }
 
@@ -1219,15 +1247,24 @@ impl Features {
             .get_mut(&ScenarioType::Serial)
             .and_then(|s| s.pop().map(|s| vec![s]))
             .or_else(|| {
-                scenarios.get_mut(&ScenarioType::Concurrent).and_then(|s| {
-                    (!s.is_empty()).then(|| {
-                        let end = cmp::min(
-                            s.len(),
-                            max_concurrent_scenarios.unwrap_or(s.len()),
-                        );
-                        s.drain(0..end).collect()
-                    })
-                })
+                let concurrent = scenarios
+                    .get_mut(&ScenarioType::Concurrent)
+                    .and_then(|s| {
+                        (!s.is_empty()).then(|| {
+                            let end = cmp::min(
+                                s.len(),
+                                max_concurrent_scenarios.unwrap_or(s.len()),
+                            );
+                            s.drain(0..end).collect()
+                        })
+                    });
+
+                let _ = self.insert_concurrent_scenarios_from.fetch_sub(
+                    concurrent.as_ref().map(Vec::len).unwrap_or_default(),
+                    Ordering::SeqCst,
+                );
+
+                concurrent
             })
             .unwrap_or_default()
     }
