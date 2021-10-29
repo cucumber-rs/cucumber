@@ -1217,7 +1217,7 @@ impl Features {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
             .get_mut(&ScenarioType::Serial)
-            .and_then(|s| s.pop().map(|s| vec![s]))
+            .and_then(|s| (!s.is_empty()).then(|| vec![s.remove(0)]))
             .or_else(|| {
                 scenarios.get_mut(&ScenarioType::Concurrent).and_then(|s| {
                     (!s.is_empty()).then(|| {
