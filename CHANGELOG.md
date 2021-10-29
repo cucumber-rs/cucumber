@@ -6,14 +6,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.10.1] · ???
+## [0.10.1] · 2021-10-??
 [0.10.1]: /../../tree/v0.10.1
 
 [Diff](/../../compare/v0.10.0...v0.10.1) | [Milestone](/../../milestone/4)
 
 ### Fixed
 
-- Get `Serial` `Scenario`s from the front of the queue in `runner::Basic` ([#146])
+- Console output hanging because of executing wrong `Concurrent` `Scenario`s. ([#146])
 
 [#146]: /../../pull/146
 
