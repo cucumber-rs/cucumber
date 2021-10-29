@@ -925,7 +925,7 @@ where
         Cucumber::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Basic::new().normalized().summarized(),
+            writer::Basic::default().normalized().summarized(),
         )
     }
 }

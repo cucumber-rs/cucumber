@@ -63,6 +63,7 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 name = "wait"
+required-features = ["junit"]
 harness = false
 
 [workspace]

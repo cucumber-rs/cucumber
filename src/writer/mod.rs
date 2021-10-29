@@ -17,7 +17,7 @@ pub mod fail_on_skipped;
 pub mod normalized;
 pub mod repeat;
 pub mod summarized;
-pub mod term;
+pub mod out;
 
 #[cfg(feature = "junit")]
 pub mod junit;

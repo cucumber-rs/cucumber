@@ -10,7 +10,7 @@
 
 //! Tools for terminal output.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, io};
 
 use console::Style;
 
@@ -112,3 +112,73 @@ impl Styles {
         }
     }
 }
+
+/// Trait for objects that write `&str`.
+pub trait WriteStr: io::Write {
+    /// Write `&str` into this writer.
+    ///
+    /// # Errors
+    ///
+    /// If writer failed to write `&str`.
+    fn write_str(&mut self, str: impl AsRef<str>) -> io::Result<()> {
+        self.write(str.as_ref().as_bytes()).map(drop)
+    }
+
+    /// Writes `str` and adds a newline.
+    ///
+    /// # Errors
+    ///
+    /// If underlying [`WriteStr::write_str()`] errors.
+    fn write_line(&mut self, str: impl AsRef<str>) -> io::Result<()> {
+        self.write_str(str.as_ref())
+            .and_then(|_| self.write_str("\n"))
+            .map(drop)
+    }
+
+    /// Writes special sequence that moves cursor up.
+    ///
+    /// # Errors
+    ///
+    /// If underlying [`WriteStr::write_str()`] errors.
+    fn move_cursor_up(&mut self, n: usize) -> io::Result<()> {
+        (n > 0)
+            .then(|| self.write_str(format!("\x1b[{}A", n)))
+            .unwrap_or(Ok(()))
+    }
+
+    /// Writes special sequence that moves cursor down.
+    ///
+    /// # Errors
+    ///
+    /// If underlying [`WriteStr::write_str()`] errors.
+    fn move_cursor_down(&mut self, n: usize) -> io::Result<()> {
+        (n > 0)
+            .then(|| self.write_str(format!("\x1b[{}B", n)))
+            .unwrap_or(Ok(()))
+    }
+
+    /// Writes special sequence that clears last `n` lines.
+    ///
+    /// # Errors
+    ///
+    /// If underlying [`WriteStr::write_str()`] errors.
+    fn clear_last_lines(&mut self, n: usize) -> io::Result<()> {
+        self.move_cursor_up(n)?;
+        for _ in 0..n {
+            self.clear_line()?;
+            self.move_cursor_down(1)?;
+        }
+        self.move_cursor_up(n)
+    }
+
+    /// Writes special sequence that clears last line.
+    ///
+    /// # Errors
+    ///
+    /// If underlying [`WriteStr::write_str()`] errors.
+    fn clear_line(&mut self) -> io::Result<()> {
+        self.write_str("\r\x1b[2K")
+    }
+}
+
+impl<T: io::Write> WriteStr for T {}
