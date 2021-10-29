@@ -6,6 +6,18 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.10.1] · 2021-10-29
+[0.10.1]: /../../tree/v0.10.1/codegen
+
+[Milestone](/../../milestone/4)
+
+### Version bump only
+
+See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0.10.1/CHANGELOG.md).
+
+
+
+
 ## [0.10.0] · 2021-10-26
 [0.10.0]: /../../tree/v0.10.0/codegen
 
