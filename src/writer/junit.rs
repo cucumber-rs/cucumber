@@ -189,9 +189,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 self.scenario_started_at = Some(meta.at);
                 self.events.push(Scenario::Started);
             }
-            ev
-            @
-            (Scenario::Hook(..)
+            ev @ (Scenario::Hook(..)
             | Scenario::Background(..)
             | Scenario::Step(..)) => {
                 self.events.push(ev);
