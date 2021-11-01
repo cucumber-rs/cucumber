@@ -5,8 +5,9 @@
 use std::{fmt::Debug, io, mem, path::Path, time::SystemTime};
 
 use async_trait::async_trait;
+use chrono::Duration;
 use junit_report::{
-    Duration, Report, TestCase, TestCaseBuilder, TestSuite, TestSuiteBuilder,
+    Report, TestCase, TestCaseBuilder, TestSuite, TestSuiteBuilder,
 };
 
 use crate::{
