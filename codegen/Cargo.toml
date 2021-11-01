@@ -37,3 +37,8 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 name = "example"
 path = "tests/example.rs"
 harness = false
+
+[[test]]
+name = "two-worlds"
+path = "tests/two_worlds.rs"
+harness = false
