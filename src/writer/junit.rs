@@ -9,7 +9,11 @@ use junit_report::{
 
 use crate::{
     cli, event, parser,
-    writer::{self, basic::Coloring, out::WriteStr},
+    writer::{
+        self,
+        basic::Coloring,
+        out::{WritableString, WriteStr},
+    },
     Event, World, Writer,
 };
 
@@ -158,13 +162,13 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     .unwrap_or_else(|| {
                         panic!(
                             "No events for Scenario \"{}\"\n\
-                         Consider wrapping Writer in writer::Normalized",
+                             Consider wrapping Writer in writer::Normalized",
                             sc.name,
                         )
                     });
 
                 let mut basic_wr = writer::Basic::new(
-                    WriteString(String::new()),
+                    WritableString(String::new()),
                     Coloring::Never,
                     false,
                 );
@@ -172,10 +176,10 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     .iter()
                     .map(|ev| {
                         basic_wr.scenario(feat, sc, ev)?;
-                        Ok(std::mem::take(&mut (*basic_wr).0))
+                        Ok(std::mem::take(&mut **basic_wr))
                     })
                     .collect::<io::Result<String>>()
-                    .unwrap();
+                    .unwrap_or_else(|e| panic!("Failed to write: {}", e));
 
                 let started_at =
                     self.scenario_started_at.take().unwrap_or_else(|| {
@@ -188,8 +192,8 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 let dur = Duration::from_std(
                     meta.at.duration_since(started_at).unwrap_or_else(|e| {
                         panic!(
-                            "Failed to compute Duration between \
-                             {:?} and {:?}: {}",
+                            "Failed to compute Duration between {:?} and {:?}: \
+                             {}",
                             meta.at, started_at, e,
                         )
                     }),
@@ -259,18 +263,5 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     .add_testcase(case);
             }
         }
-    }
-}
-
-struct WriteString(String);
-
-impl io::Write for WriteString {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.push_str(std::str::from_utf8(buf).unwrap());
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
     }
 }

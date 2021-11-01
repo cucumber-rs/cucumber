@@ -38,7 +38,7 @@ timestamps = []
 async-trait = "0.1.40"
 atty = "0.2.14"
 console = "0.15"
-derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from"], default_features = false }
+derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
 either = "1.6"
 futures = "0.3.17"
 gherkin = { package = "gherkin_rust", version = "0.10" }

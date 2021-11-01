@@ -10,9 +10,10 @@
 
 //! Tools for terminal output.
 
-use std::{borrow::Cow, io};
+use std::{borrow::Cow, io, str::from_utf8};
 
 use console::Style;
+use derive_more::{Deref, DerefMut, From, Into};
 
 /// [`Style`]s for terminal output.
 #[derive(Debug)]
@@ -182,3 +183,33 @@ pub trait WriteStr: io::Write {
 }
 
 impl<T: io::Write> WriteStr for T {}
+
+/// [`String`] wrapper with [`io::Write`] implementation.
+#[derive(
+    Clone,
+    Debug,
+    Deref,
+    DerefMut,
+    Eq,
+    From,
+    Hash,
+    Into,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub struct WritableString(pub String);
+
+impl io::Write for WritableString {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.push_str(
+            from_utf8(buf)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+        );
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
