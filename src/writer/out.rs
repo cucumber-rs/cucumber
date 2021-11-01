@@ -114,7 +114,7 @@ impl Styles {
     }
 }
 
-/// Trait for objects that write `&str`.
+/// Helper methods for [`io::Write`] implementors.
 pub trait WriteStr: io::Write {
     /// Write `&str` into this writer.
     ///

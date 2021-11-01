@@ -922,7 +922,7 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        Cucumber::custom(
+        Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
             writer::Basic::default().normalized().summarized(),

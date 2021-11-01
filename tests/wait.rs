@@ -1,9 +1,7 @@
-use std::{
-    convert::Infallible, fs::File, panic::AssertUnwindSafe, time::Duration,
-};
+use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber::{cli, given, then, when, writer, WorldInit, WriterExt as _};
+use cucumber::{cli, given, then, when, WorldInit};
 use futures::FutureExt as _;
 use structopt::StructOpt;
 use tokio::time;
@@ -17,25 +15,13 @@ struct CustomCli {
         parse(try_from_str = humantime::parse_duration)
     )]
     pause: Duration,
-
-    /// TODO
-    #[structopt(long)]
-    format: Option<String>,
-
-    /// TODO
-    #[structopt(short = "Z")]
-    z: Option<String>,
-
-    /// TODO
-    #[structopt(long)]
-    show_output: bool,
 }
 
 #[tokio::main]
 async fn main() {
     let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
 
-    let _res = World::cucumber()
+    let res = World::cucumber()
         .before(move |_, _, _, w| {
             async move {
                 w.0 = 0;
@@ -45,20 +31,15 @@ async fn main() {
         })
         .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
         .with_cli(cli)
-        .with_writer(
-            writer::JUnit::new(File::create("./wait.xml").unwrap())
-                .normalized(),
-        )
-        .run("tests/features/wait")
-        .await;
+        .run_and_exit("tests/features/wait");
 
-    // let err = AssertUnwindSafe(res)
-    //     .catch_unwind()
-    //     .await
-    //     .expect_err("should err");
-    // let err = err.downcast_ref::<String>().unwrap();
-    //
-    // assert_eq!(err, "2 steps failed, 1 parsing error");
+    let err = AssertUnwindSafe(res)
+        .catch_unwind()
+        .await
+        .expect_err("should err");
+    let err = err.downcast_ref::<String>().unwrap();
+
+    assert_eq!(err, "2 steps failed, 1 parsing error");
 }
 
 #[given(regex = r"(\d+) secs?")]

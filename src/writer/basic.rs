@@ -77,11 +77,15 @@ impl FromStr for Coloring {
     }
 }
 
-/// Default [`Writer`] implementation outputting to [`Term`]inal (STDOUT by
-/// default).
+/// Default [`Writer`] implementation outputting to [`io::Write`] implementor
+/// ([`io::Stdout`] by default).
 ///
 /// Pretty-prints with colors if terminal was successfully detected, otherwise
 /// has simple output. Useful for running tests with CI tools.
+///
+/// For correct work should be wrapped into [`writer::Summarized`].
+///
+/// [`writer::Summarized`]: crate::writer::Summarized
 #[derive(Debug, Deref, DerefMut)]
 pub struct Basic<Out: WriteStr = io::Stdout> {
     /// Terminal to write the output into.
@@ -150,7 +154,7 @@ where
         'val: 'async_trait,
     {
         self.write_line(val.as_ref())
-            .unwrap_or_else(|e| panic!("Failed to write into terminal: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to write: {}", e));
     }
 }
 
@@ -189,7 +193,7 @@ impl<Out: WriteStr> Basic<Out> {
         }
     }
 
-    /// Clears last `n` lines if terminal is present.
+    /// Clears last `n` lines if [`Coloring`] is enabled.
     fn clear_last_lines_if_term_present(&mut self) -> io::Result<()> {
         if self.styles.is_present && self.lines_to_clear > 0 {
             let lines = self.lines_to_clear;
@@ -210,7 +214,7 @@ impl<Out: WriteStr> Basic<Out> {
             .write_line(&self.styles.err(format!("Failed to parse: {}", error)))
     }
 
-    /// Outputs [started] [`Feature`] to STDOUT.
+    /// Outputs [started] [`Feature`] to `Out`.
     ///
     /// [started]: event::Feature::Started
     /// [`Feature`]: gherkin::Feature
@@ -226,7 +230,7 @@ impl<Out: WriteStr> Basic<Out> {
         )
     }
 
-    /// Outputs [`Rule`] [started]/[scenario]/[finished] event to STDOUT.
+    /// Outputs [`Rule`] [started]/[scenario]/[finished] event to `Out`.
     ///
     /// [finished]: event::Rule::Finished
     /// [scenario]: event::Rule::Scenario
@@ -254,7 +258,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Rule`] to STDOUT.
+    /// Outputs [started] [`Rule`] to `Out`.
     ///
     /// [started]: event::Rule::Started
     /// [`Rule`]: gherkin::Rule
@@ -272,7 +276,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [`Scenario`] [started]/[background]/[step] event to STDOUT.
+    /// Outputs [`Scenario`] [started]/[background]/[step] event to `Out`.
     ///
     /// [background]: event::Scenario::Background
     /// [started]: event::Scenario::Started
@@ -311,7 +315,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [failed] [`Scenario`]'s hook to STDOUT.
+    /// Outputs [failed] [`Scenario`]'s hook to `Out`.
     ///
     /// [failed]: event::Hook::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -346,7 +350,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [started] [`Scenario`] to STDOUT.
+    /// Outputs [started] [`Scenario`] to `Out`.
     ///
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: gherkin::Scenario
@@ -364,7 +368,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [`Step`] [started]/[passed]/[skipped]/[failed] event to STDOUT.
+    /// Outputs [`Step`] [started]/[passed]/[skipped]/[failed] event to `Out`.
     ///
     /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
@@ -399,9 +403,9 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Step`] to STDOUT.
+    /// Outputs [started] [`Step`] to `Out`.
     ///
-    /// This [`Step`] is printed only if terminal is present and gets
+    /// This [`Step`] is printed only if [`Coloring`] is enabled and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
     /// [failed]: event::Step::Failed
@@ -440,7 +444,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [passed] [`Step`] to STDOUT.
+    /// Outputs [passed] [`Step`] to `Out`.
     ///
     /// [passed]: event::Step::Passed
     /// [`Step`]: gherkin::Step
@@ -487,7 +491,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [skipped] [`Step`] to STDOUT.
+    /// Outputs [skipped] [`Step`] to `Out`.
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
@@ -523,7 +527,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [failed] [`Step`] to STDOUT.
+    /// Outputs [failed] [`Step`] to `Out`.
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
@@ -596,7 +600,7 @@ impl<Out: WriteStr> Basic<Out> {
     }
 
     /// Outputs [`Background`] [`Step`] [started]/[passed]/[skipped]/[failed]
-    /// event to STDOUT.
+    /// event to `Out`.
     ///
     /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
@@ -632,9 +636,9 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Background`] [`Step`] to STDOUT.
+    /// Outputs [started] [`Background`] [`Step`] to `Out`.
     ///
-    /// This [`Step`] is printed only if terminal is present and gets
+    /// This [`Step`] is printed only if [`Coloring`] is enabled and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
     /// [failed]: event::Step::Failed
@@ -674,7 +678,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [passed] [`Background`] [`Step`] to STDOUT.
+    /// Outputs [passed] [`Background`] [`Step`] to `Out`.
     ///
     /// [passed]: event::Step::Passed
     /// [`Background`]: gherkin::Background
@@ -722,7 +726,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [skipped] [`Background`] [`Step`] to STDOUT.
+    /// Outputs [skipped] [`Background`] [`Step`] to `Out`.
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Background`]: gherkin::Background
@@ -759,7 +763,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [failed] [`Background`] [`Step`] to STDOUT.
+    /// Outputs [failed] [`Background`] [`Step`] to `Out`.
     ///
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background

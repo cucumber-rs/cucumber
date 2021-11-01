@@ -14,13 +14,12 @@
 
 pub mod basic;
 pub mod fail_on_skipped;
-pub mod normalized;
-pub mod repeat;
-pub mod summarized;
-pub mod out;
-
 #[cfg(feature = "junit")]
 pub mod junit;
+pub mod normalized;
+pub mod out;
+pub mod repeat;
+pub mod summarized;
 
 use async_trait::async_trait;
 use sealed::sealed;
@@ -28,15 +27,14 @@ use structopt::StructOptInternal;
 
 use crate::{event, parser, Event, World};
 
+#[cfg(feature = "junit")]
+#[doc(inline)]
+pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
     repeat::Repeat, summarized::Summarized,
 };
-
-#[cfg(feature = "junit")]
-#[doc(inline)]
-pub use self::junit::JUnit;
 
 /// Writer of [`Cucumber`] events to some output.
 ///
