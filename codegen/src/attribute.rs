@@ -113,6 +113,12 @@ impl Step {
         } else {
             quote! {}
         };
+        let unwrapping = match func.sig.output {
+            syn::ReturnType::Default => quote! {},
+            syn::ReturnType::Type(_, _) => {
+                quote! { .unwrap_or_else(|e| panic!("{}", e)) }
+            }
+        };
         let step_caller = quote! {
             {
                 #[automatically_derived]
@@ -122,7 +128,8 @@ impl Step {
                 ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
-                        #func_name(__cucumber_world, #func_args)#awaiting;
+                        let _ = #func_name(__cucumber_world, #func_args)
+                            #awaiting #unwrapping;
                     };
                     ::std::boxed::Box::pin(f)
                 }

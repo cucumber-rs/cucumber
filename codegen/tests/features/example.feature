@@ -14,3 +14,11 @@ Feature: Example feature
 
   Scenario: An example sync scenario
     Given foo is sync 0
+
+  Scenario: Steps that return results
+    When I write "abc" to "myfile"
+    Then the file "myfile" should contain "abc"
+
+  Scenario: Steps that return results and fail
+    When I write "abc" to "myfile"
+    Then the file "not-here" should contain "abc"
