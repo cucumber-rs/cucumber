@@ -1,12 +1,14 @@
 #![allow(unused)]
 
+use std::iter;
+
 use nom::{
     branch::alt,
     bytes::complete::{escaped, tag, take_while, take_while1},
     character::complete::{digit1, one_of},
     combinator::{cut, flat_map, map, verify},
     error::{ErrorKind, ParseError},
-    multi::{many0, many1, separated_list1},
+    multi::{many0, many1, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
     IResult, Parser,
 };
@@ -204,22 +206,38 @@ fn alternative(input: Span) -> IResult<Span, Alternative, Error> {
     alt((
         map(optional, Alternative::Optional),
         map(
-            verify(escaped_special_chars(take_while1(is_text)), |s: &Span| {
-                !s.is_empty()
-            }),
+            escaped_special_chars(take_while(is_text)),
             Alternative::Text,
         ),
     ))(input)
 }
 
 fn alternation(input: Span) -> IResult<Span, Alternation, Error> {
-    map(
-        verify(
-            separated_list1(tag("/"), many1(alternative)),
-            |v: &[_]| v.len() > 1,
-        ),
-        Alternation,
-    )(input)
+    use nom::Err::Failure;
+
+    let not_empty = |alt: &Alternative| {
+        if let Alternative::Text(text) = alt {
+            !text.is_empty()
+        } else {
+            true
+        }
+    };
+
+    let (rest, (head, head_rest, _, tail)) = tuple((
+        alternative,
+        many0(verify(alternative, not_empty)),
+        tag("/"),
+        separated_list0(tag("/"), many1(verify(alternative, not_empty))),
+    ))(input)?;
+
+    if not_empty(&head) && !tail.is_empty() {
+        let alt = iter::once(iter::once(head).chain(head_rest).collect())
+            .chain(tail)
+            .collect();
+        Ok((rest, Alternation(alt)))
+    } else {
+        Err(Failure(Error::EmptyAlternation(rest)))
+    }
 }
 
 fn single_expr(input: Span) -> IResult<Span, SingleExpr, Error> {
@@ -228,7 +246,7 @@ fn single_expr(input: Span) -> IResult<Span, SingleExpr, Error> {
         map(optional, SingleExpr::Optional),
         map(parameter, SingleExpr::Parameter),
         map(
-            verify(escaped_special_chars(take_while1(is_text)), |s: &Span| {
+            verify(escaped_special_chars(take_while(is_text)), |s: &Span| {
                 !s.is_empty()
             }),
             SingleExpr::Text,
@@ -243,6 +261,7 @@ fn expr(input: Span) -> IResult<Span, Expr, Error> {
 
 #[derive(Debug)]
 enum Error<'a> {
+    EmptyAlternation(Span<'a>),
     EmptyOptional(Span<'a>),
     ParameterInOptional(Span<'a>),
     OptionCanBeSimplified(Span<'a>),
@@ -265,11 +284,11 @@ impl<'a> ParseError<Span<'a>> for Error<'a> {
 
 #[cfg(test)]
 mod spec {
-    use super::{expr, optional, Span};
+    use super::{alternation, expr, Span};
 
     #[test]
     fn par() {
-        let res = expr(Span::new(r"test ((r)r{s}){}"));
+        let res = expr(Span::new(r"three (exceptionally\) {string\} mice"));
         dbg!(res);
     }
 }
@@ -277,7 +296,21 @@ mod spec {
 // errors
 // - [ ] empty alternation
 // - [ ] alternation that contains only optional
+// - [ ] alternation inside of optional
 // - [x] optional can be simplified
 // - [x] optional that contain parameters
 // - [x] empty optional
 // - [ ] escaped non-reserved char
+
+// to solve
+// - "({int})" returns wrong error
+// - figure out how to error in cases of
+//   - special chars in parameter: {(string)}
+//   - unbalanced parens: three (exceptionally\) {string\} mice
+
+// spec and test-data difference
+// - matching/does-not-allow-alternation-with-empty-alternative-by-adjacent
+//   "three (brown)/black mice" should be legal
+// - matching/does-not-allow-nested-optional
+//   parser/optional-containing-nested-optional.
+//   So which is it?
