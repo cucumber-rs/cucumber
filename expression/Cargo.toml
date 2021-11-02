@@ -1,0 +1,22 @@
+[package]
+name = "cucumber-expression"
+version = "0.10.1" # should be the same as main crate version
+edition = "2021"
+rust-version = "1.56"
+description = "Cucumber expression parser."
+license = "MIT OR Apache-2.0"
+authors = [
+    "Ilya Solovyiov <ilya.solovyiov@gmail.com>",
+    "Kai Ren <tyranron@gmail.com>",
+]
+documentation = "https://docs.rs/cucumber-expression"
+homepage = "https://github.com/cucumber-rs/cucumber/tree/main/expression"
+repository = "https://github.com/cucumber-rs/cucumber"
+readme = "README.md"
+categories = ["asynchronous", "development-tools::testing"]
+keywords = ["cucumber", "codegen", "macros"]
+exclude = ["/tests/"]
+
+[dependencies]
+nom = "7.0"
+nom_locate = "4.0"
