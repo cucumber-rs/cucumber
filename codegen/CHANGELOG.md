@@ -6,6 +6,20 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.10.2] · 2021-11-03
+[0.10.2]: /../../tree/v0.10.2/codegen
+
+[Milestone](/../../milestone/5)
+
+### Added
+
+- World's type name to the generated `WorldInit` machinery to omit conflicts for different types in the same module. ([#150])
+
+[#150]: /../../pull/150
+
+
+
+
 ## [0.10.1] · 2021-10-29
 [0.10.1]: /../../tree/v0.10.1/codegen
 
