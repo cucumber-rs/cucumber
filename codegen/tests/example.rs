@@ -64,7 +64,7 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
     w.foo += 1;
 }
 
-#[when(regex = r#"^I write "(\S+)" to `(\S+)`$"#)]
+#[when(regex = r#"^I write "(\S+)" to `([^`\s]+)`$"#)]
 fn test_return_result_write(
     w: &mut MyWorld,
     what: String,
@@ -75,7 +75,7 @@ fn test_return_result_write(
     fs::write(path, what)
 }
 
-#[then(regex = r#"^the file `(\S+)` should contain "(\S+)"$"#)]
+#[then(regex = r#"^the file `([^`\s]+)` should contain "(\S+)"$"#)]
 fn test_return_result_read(
     w: &mut MyWorld,
     filename: String,
