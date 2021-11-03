@@ -31,6 +31,19 @@ enum Option<'s> {
 struct Optional<'s>(Vec<Option<'s>>);
 
 impl<'s> Optional<'s> {
+    fn first_span(&self) -> Span<'s> {
+        if let Some(f) = self.0.first() {
+            match f {
+                Option::Optional(opt) => opt.first_span(),
+                Option::Text(text) => *text,
+            }
+        } else {
+            panic!("");
+        }
+    }
+}
+
+impl<'s> Optional<'s> {
     fn can_be_simplified(&self) -> std::option::Option<Span<'s>> {
         if self.0.len() == 1 {
             if let Some(Option::Optional(nested_opt)) = self.0.last() {
@@ -54,6 +67,21 @@ enum Alternative<'s> {
 
 #[derive(Debug)]
 struct Alternation<'s>(Vec<Vec<Alternative<'s>>>);
+
+impl<'s> Alternation<'s> {
+    fn contains_only_optional(&self) -> std::option::Option<Error<'s>> {
+        for alt in &self.0 {
+            if alt.len() == 1 {
+                if let Some(Alternative::Optional(opt)) = alt.last() {
+                    return Some(Error::OnlyOptionalInAlternation(
+                        opt.first_span(),
+                    ));
+                }
+            }
+        }
+        None
+    }
+}
 
 #[derive(Debug)]
 enum SingleExpr<'s> {
@@ -315,10 +343,13 @@ fn alternation(input: Span) -> IResult<Span, Alternation, Error> {
     ))(input)?;
 
     if not_empty(&head) && !tail.is_empty() {
-        let alt = iter::once(iter::once(head).chain(head_rest).collect())
-            .chain(tail)
-            .collect();
-        Ok((rest, Alternation(alt)))
+        let alt = Alternation(
+            iter::once(iter::once(head).chain(head_rest).collect())
+                .chain(tail)
+                .collect(),
+        );
+        alt.contains_only_optional()
+            .map_or(Ok((rest, alt)), |e| Err(e.failure()))
     } else {
         Err(Err::Failure(Error::EmptyAlternation(rest)))
     }
@@ -356,6 +387,7 @@ enum Error<'a> {
     UnfinishedOptional(Span<'a>),
     UnescapedReservedCharacter(Span<'a>),
     EscapedNonReservedCharacter(Span<'a>),
+    OnlyOptionalInAlternation(Span<'a>),
     Nom(Span<'a>, ErrorKind),
 }
 
@@ -385,14 +417,14 @@ mod spec {
 
     #[test]
     fn par() {
-        let res = expr(Span::new(r"(\\n)"));
+        let res = expr(Span::new(r"s/(s)"));
         dbg!(res);
     }
 }
 
 // errors
 // - [x] empty alternation
-// - [ ] alternation that contains only optional
+// - [x] alternation that contains only optional
 // - [x] alternation inside of optional
 // - [x] optional can be simplified
 // - [x] optional that contain parameters
