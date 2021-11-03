@@ -329,6 +329,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span></code></pre></pre>
 <p>If you run the test now, you'll see that all steps are accounted for and the test succeeds:</p>
 <script id="asciicast-fHuIXkWrIk1AOFFqF0MYmY0m0" src="https://asciinema.org/a/fHuIXkWrIk1AOFFqF0MYmY0m0.js" async data-autoplay="true" data-rows="16"></script>
+<p>In addition to assertions, you can also return a <code>Result&lt;()&gt;</code> from your step function. Returning <code>Err</code> will cause the step to fail. This lets you use the <code>?</code> operator for more concise step implementations just like in <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">unit tests</a>.</p>
 <p>If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from <code>true</code> to <code>false</code> temporarily:</p>
 <pre><pre class="playground"><code class="language-rust should_panic"><span class="boring">use std::convert::Infallible;
 </span><span class="boring">
