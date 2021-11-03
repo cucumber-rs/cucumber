@@ -39,6 +39,6 @@ path = "tests/example.rs"
 harness = false
 
 [[test]]
-name = "two-worlds"
+name = "two_worlds"
 path = "tests/two_worlds.rs"
 harness = false

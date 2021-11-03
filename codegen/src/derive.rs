@@ -38,12 +38,12 @@ pub(crate) fn world_init(
 /// Generates [`syn::Ident`]s of generic types for private trait impl.
 ///
 /// [`syn::Ident`]: struct@syn::Ident
-fn step_types(steps: &[&str], ident: &syn::Ident) -> Vec<syn::Ident> {
+fn step_types(steps: &[&str], world: &syn::Ident) -> Vec<syn::Ident> {
     steps
         .iter()
         .map(|step| {
             let step = to_pascal_case(step);
-            format_ident!("Cucumber{}{}", step, ident)
+            format_ident!("Cucumber{}{}", step, world)
         })
         .collect()
 }

@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Fix multiple `WorldInit` derivers conflicting implementation in single module. ([#150])
+- Multiple `WorldInit` derivers conflicting implementations in a single module. ([#150])
 
 [#150]: /../../pull/150
 
