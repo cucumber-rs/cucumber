@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+mod combinators;
+
 use std::{iter, ops::RangeFrom};
 
 use nom::{
@@ -13,6 +15,8 @@ use nom::{
     Err, IResult, Parser,
 };
 use nom_locate::LocatedSpan;
+
+use self::combinators::escaped0;
 
 type Span<'s> = LocatedSpan<&'s str>;
 
@@ -95,97 +99,6 @@ enum SingleExpr<'s> {
 #[derive(Debug)]
 struct Expr<'s>(Vec<SingleExpr<'s>>);
 
-use nom::{
-    AsChar, InputIter, InputLength, InputTake, InputTakeAtPosition, Offset,
-    Slice,
-};
-
-/// Doesn't return if normal parser didn't consume anything.
-fn escaped0<'a, Input: 'a, Error, F, G, O1, O2>(
-    mut normal: F,
-    control_char: char,
-    mut escapable: G,
-) -> impl FnMut(Input) -> IResult<Input, Input, Error>
-where
-    Input: Clone
-        + Offset
-        + InputLength
-        + InputTake
-        + InputTakeAtPosition
-        + Slice<RangeFrom<usize>>
-        + InputIter,
-    <Input as InputIter>::Item: AsChar,
-    F: Parser<Input, O1, Error>,
-    G: Parser<Input, O2, Error>,
-    Error: ParseError<Input>,
-{
-    move |input: Input| {
-        let mut i = input.clone();
-        let mut consumed_nothing = false;
-
-        while i.input_len() > 0 {
-            let current_len = i.input_len();
-
-            match (normal.parse(i.clone()), consumed_nothing) {
-                (Ok((i2, _)), false) => {
-                    // return if we consumed everything or if the normal parser
-                    // does not consume anything
-                    if i2.input_len() == 0 {
-                        return Ok((input.slice(input.input_len()..), input));
-                    } else if i2.input_len() == current_len {
-                        consumed_nothing = true;
-                        // let index = input.offset(&i2);
-                        // return Ok(input.take_split(index));
-                    }
-                    i = i2;
-                }
-                (Ok(..), true) | (Err(Err::Error(_)), _) => {
-                    // unwrap() should be safe here since index < $i.input_len()
-                    if i.iter_elements().next().unwrap().as_char()
-                        == control_char
-                    {
-                        let next = control_char.len_utf8();
-                        if next >= i.input_len() {
-                            return Err(Err::Error(Error::from_error_kind(
-                                input,
-                                ErrorKind::Escaped,
-                            )));
-                        }
-                        match escapable.parse(i.slice(next..)) {
-                            Ok((i2, _)) => {
-                                if i2.input_len() == 0 {
-                                    return Ok((
-                                        input.slice(input.input_len()..),
-                                        input,
-                                    ));
-                                }
-                                consumed_nothing = false;
-                                i = i2;
-                            }
-                            Err(e) => {
-                                return Err(Err::Error(
-                                    Error::from_error_kind(
-                                        i.slice(next..),
-                                        ErrorKind::Escaped,
-                                    ),
-                                ));
-                            }
-                        }
-                    } else {
-                        let index = input.offset(&i);
-                        return Ok(input.take_split(index));
-                    }
-                }
-                (Err(e), _) => {
-                    return Err(e);
-                }
-            }
-        }
-
-        Ok((input.slice(input.input_len()..), input))
-    }
-}
-
 fn escaped_special_chars0<'a, F, O1>(
     normal: F,
 ) -> impl FnMut(Span<'a>) -> IResult<Span<'a>, Span<'a>, Error<'a>>
@@ -193,7 +106,7 @@ where
     F: nom::Parser<Span<'a>, O1, Error<'a>>,
 {
     map_err(escaped0(normal, '\\', one_of(SPECIAL_CHARS)), |e| {
-        if let Err::Error(Error::Nom(span, ErrorKind::Escaped)) = e {
+        if let Err::Error(Error::Other(span, ErrorKind::Escaped)) = e {
             Error::EscapedNonReservedCharacter(span).failure()
         } else {
             e
@@ -284,7 +197,7 @@ fn optional(input: Span) -> IResult<Span, Optional, Error> {
     let (input, opening_paren) = tag("(")(input)?;
     let (input, optional) = and_then(
         map_err(map(many1(option), Optional), |err| {
-            if let Err::Error(Error::Nom(span, ErrorKind::Many1)) = err {
+            if let Err::Error(Error::Other(span, ErrorKind::Many1)) = err {
                 match span.chars().next() {
                     Some('{') if peek(parameter)(span).is_ok() => {
                         Error::ParameterInOptional(span)
@@ -325,8 +238,6 @@ fn alternative(input: Span) -> IResult<Span, Alternative, Error> {
 }
 
 fn alternation(input: Span) -> IResult<Span, Alternation, Error> {
-    // TODO: error on (s)/s (while s(s)/s is correct)
-
     let not_empty = |alt: &Alternative| {
         if let Alternative::Text(text) = alt {
             !text.is_empty()
@@ -388,7 +299,7 @@ enum Error<'a> {
     UnescapedReservedCharacter(Span<'a>),
     EscapedNonReservedCharacter(Span<'a>),
     OnlyOptionalInAlternation(Span<'a>),
-    Nom(Span<'a>, ErrorKind),
+    Other(Span<'a>, ErrorKind),
 }
 
 impl<'a> Error<'a> {
@@ -399,11 +310,11 @@ impl<'a> Error<'a> {
 
 impl<'a> ParseError<Span<'a>> for Error<'a> {
     fn from_error_kind(input: Span<'a>, kind: ErrorKind) -> Self {
-        Self::Nom(input, kind)
+        Self::Other(input, kind)
     }
 
     fn append(input: Span<'a>, kind: ErrorKind, other: Self) -> Self {
-        if let Self::Nom(..) = other {
+        if let Self::Other(..) = other {
             Self::from_error_kind(input, kind)
         } else {
             other
