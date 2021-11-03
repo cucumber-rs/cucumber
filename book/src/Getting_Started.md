@@ -218,9 +218,7 @@ If you run the test now, you'll see that all steps are accounted for and the tes
 
 <script id="asciicast-fHuIXkWrIk1AOFFqF0MYmY0m0" src="https://asciinema.org/a/fHuIXkWrIk1AOFFqF0MYmY0m0.js" async data-autoplay="true" data-rows="16"></script>
 
-In addition to assertions, you can also return a `Result` from your step
-implemenation. Returning `Err` will cause the step to fail. This lets you use
-the `?` operator for more concise step implementations.
+In addition to assertions, you can also return a `Result<()>` from your step function. Returning `Err` will cause the step to fail. This lets you use the `?` operator for more concise step implementations just like in [unit tests](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-).
 
 If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from `true` to `false` temporarily:
 ```rust,should_panic

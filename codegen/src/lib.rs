@@ -187,9 +187,10 @@ macro_rules! step_attribute {
         ///
         /// # Return Value
         ///
-        /// A function may return a Result. Returning Err will cause the step to
-        /// fail.
+        /// A function may return a [`Result`]`<(), Err>`. `Err` is expected to
+        /// implement [`Display`] and returning it will cause the step to fail.
         ///
+        /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
         /// [`gherkin::Step`]: https://bit.ly/3j42hcd
         /// [`World`]: https://bit.ly/3j0aWw7

@@ -9,7 +9,7 @@ use tokio::time;
 #[derive(Debug, WorldInit)]
 pub struct MyWorld {
     foo: i32,
-    working: TempDir,
+    dir: TempDir,
 }
 
 #[async_trait(?Send)]
@@ -19,7 +19,7 @@ impl World for MyWorld {
     async fn new() -> Result<Self, Self::Error> {
         Ok(Self {
             foo: 0,
-            working: TempDir::new()?,
+            dir: TempDir::new()?,
         })
     }
 }
@@ -70,7 +70,7 @@ fn test_return_result_write(
     what: String,
     filename: String,
 ) -> io::Result<()> {
-    let mut path = w.working.path().to_path_buf();
+    let mut path = w.dir.path().to_path_buf();
     path.push(filename);
     fs::write(path, what)
 }
@@ -81,7 +81,7 @@ fn test_return_result_read(
     filename: String,
     what: String,
 ) -> io::Result<()> {
-    let mut path = w.working.path().to_path_buf();
+    let mut path = w.dir.path().to_path_buf();
     path.push(filename);
     assert_eq!(what, fs::read_to_string(path)?);
     Ok(())

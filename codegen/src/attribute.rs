@@ -108,17 +108,12 @@ impl Step {
         let step_matcher = self.attr_arg.regex_literal().value();
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
-        let awaiting = if func.sig.asyncness.is_some() {
-            quote! { .await }
-        } else {
-            quote! {}
-        };
-        let unwrapping = match func.sig.output {
-            syn::ReturnType::Default => quote! {},
-            syn::ReturnType::Type(_, _) => {
-                quote! { .unwrap_or_else(|e| panic!("{}", e)) }
-            }
-        };
+        let awaiting =
+            func.sig.asyncness.map_or(quote! {}, |_| quote! { .await });
+        let unwrapping = self
+            .returns_unit()
+            .then(|| quote! {})
+            .unwrap_or(quote! { .unwrap_or_else(|e| panic!("{}", e)) });
         let step_caller = quote! {
             {
                 #[automatically_derived]
@@ -159,6 +154,21 @@ impl Step {
                 }
             );
         })
+    }
+
+    /// Indicates whether [`fn`] return type is `()`.
+    fn returns_unit(&self) -> bool {
+        match self.func.sig.output {
+            syn::ReturnType::Default => true,
+            syn::ReturnType::Type(_, ref ty) => {
+                if let syn::Type::Tuple(syn::TypeTuple { elems, .. }) =
+                    ty.as_ref()
+                {
+                    return elems.is_empty();
+                }
+                false
+            }
+        }
     }
 
     /// Generates code that prepares function's arguments basing on
@@ -348,7 +358,7 @@ impl Parse for AttributeArgument {
                         |e| {
                             syn::Error::new(
                                 str_lit.span(),
-                                format!("Invalid regex: {}", e.to_string()),
+                                format!("Invalid regex: {}", e),
                             )
                         },
                     )?);
