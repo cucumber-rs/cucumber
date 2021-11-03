@@ -109,7 +109,7 @@ where
                                 consumed_nothing = false;
                                 i = i2;
                             }
-                            Err(e) => {
+                            Err(_) => {
                                 return Err(Err::Error(
                                     Error::from_error_kind(
                                         i,
