@@ -1,17 +1,48 @@
-use std::{iter, ops::RangeFrom};
+use std::ops::RangeFrom;
 
 use nom::{
-    branch::alt,
-    bytes::complete::{tag, take_while},
-    character::complete::one_of,
-    combinator::{map, peek, verify},
     error::{ErrorKind, ParseError},
-    multi::{many0, many1, separated_list0},
-    sequence::tuple,
     AsChar, Err, IResult, InputIter, InputLength, InputTake,
     InputTakeAtPosition, Offset, Parser, Slice,
 };
-use nom_locate::LocatedSpan;
+
+/// Applies `map` to `parser` [`IResult`].
+///
+/// Intended to use like [`verify()`], but with ability to map error.
+///
+/// [`verify()`]: nom::combinator::verify()
+pub(crate) fn and_then<I, O1, O2, E: ParseError<I>, F, H>(
+    mut parser: F,
+    map: H,
+) -> impl FnMut(I) -> IResult<I, O2, E>
+where
+    F: Parser<I, O1, E>,
+    H: Fn(O1) -> Result<O2, Err<E>>,
+{
+    move |input: I| {
+        parser
+            .parse(input)
+            .and_then(|(rest, parsed)| map(parsed).map(|ok| (rest, ok)))
+    }
+}
+
+/// Applies `map` to `parser` [`IResult`] in case it errored.
+///
+/// Can be used to converted to harden [`Error`] to [`Failure`].
+///
+/// [`Error`]: nom::Err::Error
+/// [`Failure`]: nom::Err::Failure
+/// [`verify()`]: nom::combinator::verify()
+pub(crate) fn map_err<I, O1, E: ParseError<I>, F, G>(
+    mut parser: F,
+    map: G,
+) -> impl FnMut(I) -> IResult<I, O1, E>
+where
+    F: Parser<I, O1, E>,
+    G: FnOnce(Err<E>) -> Err<E> + Copy,
+{
+    move |input: I| parser.parse(input).map_err(map)
+}
 
 /// Differences from [`escaped()`]:
 /// 1. If `normal` matched empty sequence, tries to matched escaped;
@@ -20,7 +51,7 @@ use nom_locate::LocatedSpan;
 /// 3. Errors with [`ErrorKind::Escaped`] if `control_char` was followed by a
 ///    non-`escapable` `Input`.
 ///
-/// [`escaped()`]: nom::bytes::complete::escaped
+/// [`escaped()`]: nom::bytes::complete::escaped()
 pub(crate) fn escaped0<'a, Input: 'a, Error, F, G, O1, O2>(
     mut normal: F,
     control_char: char,
@@ -113,6 +144,13 @@ mod escaped0_spec {
 
     use super::escaped0;
 
+    /// Type used to compare behaviour of [`escaped`] and [`escaped0`].
+    ///
+    /// Tuple is constructed from following parsers results:
+    /// - [`escaped0`]`(`[`digit0`]`, '\\', `[`one_of`]`(r#""n\"#))`
+    /// - [`escaped0`]`(`[`digit1`]`, '\\', `[`one_of`]`(r#""n\"#))`
+    /// - [`escaped`]`(`[`digit0`]`, '\\', `[`one_of`]`(r#""n\"#))`
+    /// - [`escaped`]`(`[`digit1`]`, '\\', `[`one_of`]`(r#""n\"#))`
     type TestResult<'s> = (
         IResult<&'s str, &'s str>,
         IResult<&'s str, &'s str>,
@@ -120,6 +158,7 @@ mod escaped0_spec {
         IResult<&'s str, &'s str>,
     );
 
+    /// Produces [`TestResult`] from `input`.
     fn get_result(input: &str) -> TestResult {
         (
             escaped0(digit0, '\\', one_of(r#""n\"#))(input),

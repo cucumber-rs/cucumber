@@ -2,7 +2,7 @@
 
 mod combinators;
 
-use std::{iter, ops::RangeFrom};
+use std::iter;
 
 use nom::{
     branch::alt,
@@ -16,7 +16,7 @@ use nom::{
 };
 use nom_locate::LocatedSpan;
 
-use self::combinators::escaped0;
+use self::combinators::{and_then, escaped0, map_err};
 
 type Span<'s> = LocatedSpan<&'s str>;
 
@@ -112,32 +112,6 @@ where
             e
         }
     })
-}
-
-fn and_then<I, O1, O2, E: ParseError<I>, F, H>(
-    mut parser: F,
-    map_ok: H,
-) -> impl FnMut(I) -> IResult<I, O2, E>
-where
-    F: Parser<I, O1, E>,
-    H: Fn(O1) -> Result<O2, Err<E>>,
-{
-    move |input: I| {
-        parser
-            .parse(input)
-            .and_then(|(rest, parsed)| map_ok(parsed).map(|ok| (rest, ok)))
-    }
-}
-
-fn map_err<I, O1, E: ParseError<I>, F, G>(
-    mut parser: F,
-    map_err: G,
-) -> impl FnMut(I) -> IResult<I, O1, E>
-where
-    F: Parser<I, O1, E>,
-    G: FnOnce(Err<E>) -> Err<E> + Copy,
-{
-    move |input: I| parser.parse(input).map_err(map_err)
 }
 
 fn or_space(f: impl Fn(char) -> bool) -> impl Fn(char) -> bool {
