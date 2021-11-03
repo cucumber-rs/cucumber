@@ -458,6 +458,7 @@ mod spec {
                 parameter(Spanned::new("{before(nest)}")).expect_err("error"),
                 parameter(Spanned::new("{(nest)after}")).expect_err("error"),
                 parameter(Spanned::new("{bef(nest)aft}")).expect_err("error"),
+                parameter(Spanned::new("{bef(n(e)s(t))aft}")).expect_err("error"),
             ];
 
             match err {
@@ -466,11 +467,13 @@ mod spec {
                 Err::Failure(Error::OptionalInParameter(e2)),
                 Err::Failure(Error::OptionalInParameter(e3)),
                 Err::Failure(Error::OptionalInParameter(e4)),
+                Err::Failure(Error::OptionalInParameter(e5)),
                 ] => {
                     assert_eq!(*e1, "(nest)");
                     assert_eq!(*e2, "(nest)");
                     assert_eq!(*e3, "(nest)");
                     assert_eq!(*e4, "(nest)");
+                    assert_eq!(*e5, "(n(e)s(t))");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
