@@ -1,6 +1,6 @@
 [package]
 name = "cucumber-codegen"
-version = "0.10.1" # should be the same as main crate version
+version = "0.10.2" # should be the same as main crate version
 edition = "2021"
 rust-version = "1.56"
 description = "Code generation for `cucumber` crate."
@@ -38,4 +38,9 @@ tempfile = "3.2"
 [[test]]
 name = "example"
 path = "tests/example.rs"
+harness = false
+
+[[test]]
+name = "two_worlds"
+path = "tests/two_worlds.rs"
 harness = false
