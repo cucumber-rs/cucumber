@@ -6,11 +6,11 @@ use nom::{
     branch::alt,
     bytes::complete::{escaped, tag, take_while, take_while1},
     character::complete::{digit1, one_of},
-    combinator::{cut, flat_map, map, verify},
+    combinator::{cut, flat_map, map, peek, verify},
     error::{ErrorKind, ParseError},
     multi::{many0, many1, separated_list0, separated_list1},
     sequence::{delimited, preceded, tuple},
-    IResult, Parser,
+    Err, IResult, Parser,
 };
 use nom_locate::LocatedSpan;
 
@@ -67,14 +67,96 @@ struct Expr<'s>(Vec<SingleExpr<'s>>);
 
 const SPECIAL_CHARS: &str = r#"{}()\/ "#;
 
-fn escaped_special_chars<'a, Error, F, O1>(
+/// Doesn't return if normal parser didn't consume anything.
+fn escaped0<'a, Error, F, G, O1, O2>(
+    mut normal: F,
+    control_char: char,
+    mut escapable: G,
+) -> impl FnMut(Span<'a>) -> IResult<Span<'a>, Span<'a>, Error>
+where
+    F: Parser<Span<'a>, O1, Error>,
+    G: Parser<Span<'a>, O2, Error>,
+    Error: ParseError<Span<'a>>,
+{
+    use nom::{
+        AsChar, Err, InputIter, InputLength, InputTake, InputTakeAtPosition,
+        Offset, Slice,
+    };
+
+    move |input: Span<'a>| {
+        let mut i = input;
+        let mut consumed_nothing = false;
+
+        while i.input_len() > 0 {
+            let current_len = i.input_len();
+
+            match (normal.parse(i), consumed_nothing) {
+                (Ok((i2, _)), false) => {
+                    // return if we consumed everything or if the normal parser
+                    // does not consume anything
+                    if i2.input_len() == 0 {
+                        return Ok((input.slice(input.input_len()..), input));
+                    } else if i2.input_len() == current_len {
+                        consumed_nothing = true;
+                        // let index = input.offset(&i2);
+                        // return Ok(input.take_split(index));
+                    }
+                    i = i2;
+                }
+                (Ok(..), true) | (Err(Err::Error(_)), _) => {
+                    // unwrap() should be safe here since index < $i.input_len()
+                    if i.iter_elements().next().unwrap().as_char()
+                        == control_char
+                    {
+                        let next = control_char.len_utf8();
+                        if next >= i.input_len() {
+                            return Err(Err::Error(Error::from_error_kind(
+                                input,
+                                ErrorKind::Escaped,
+                            )));
+                        }
+                        match escapable.parse(i.slice(next..)) {
+                            Ok((i2, _)) => {
+                                if i2.input_len() == 0 {
+                                    return Ok((
+                                        input.slice(input.input_len()..),
+                                        input,
+                                    ));
+                                }
+                                consumed_nothing = false;
+                                i = i2;
+                            }
+                            Err(e) => return Err(e),
+                        }
+                    } else {
+                        let index = input.offset(&i);
+                        // if index == 0 {
+                        //     return Err(Err::Error(Error::from_error_kind(
+                        //         input,
+                        //         ErrorKind::Escaped,
+                        //     )));
+                        // }
+                        return Ok(input.take_split(index));
+                    }
+                }
+                (Err(e), _) => {
+                    return Err(e);
+                }
+            }
+        }
+
+        Ok((input.slice(input.input_len()..), input))
+    }
+}
+
+fn escaped_special_chars0<'a, Error, F, O1>(
     mut normal: F,
 ) -> impl FnMut(Span<'a>) -> IResult<Span<'a>, Span<'a>, Error>
 where
     F: nom::Parser<Span<'a>, O1, Error>,
     Error: nom::error::ParseError<Span<'a>>,
 {
-    escaped(normal, '\\', one_of(SPECIAL_CHARS))
+    escaped0(normal, '\\', one_of(SPECIAL_CHARS))
 }
 
 fn and_then<I, O1, O2, E: ParseError<I>, F, H>(
@@ -83,7 +165,7 @@ fn and_then<I, O1, O2, E: ParseError<I>, F, H>(
 ) -> impl FnMut(I) -> IResult<I, O2, E>
 where
     F: Parser<I, O1, E>,
-    H: Fn(O1) -> Result<O2, nom::Err<E>>,
+    H: Fn(O1) -> Result<O2, Err<E>>,
 {
     move |input: I| {
         parser
@@ -98,25 +180,17 @@ fn map_err<I, O1, E: ParseError<I>, F, G>(
 ) -> impl FnMut(I) -> IResult<I, O1, E>
 where
     F: Parser<I, O1, E>,
-    G: FnOnce(nom::Err<E>) -> nom::Err<E> + Copy,
+    G: FnOnce(Err<E>) -> Err<E> + Copy,
 {
     move |input: I| parser.parse(input).map_err(map_err)
 }
 
-fn map_res<I, O1, O2, E: ParseError<I>, F, G, H>(
-    mut parser: F,
-    map_ok: H,
-    map_err: G,
-) -> impl FnMut(I) -> IResult<I, O2, E>
-where
-    F: Parser<I, O1, E>,
-    G: Fn(nom::Err<E>) -> nom::Err<E>,
-    H: Fn(O1) -> Result<O2, nom::Err<E>>,
-{
-    move |input: I| match parser.parse(input) {
-        Ok((rest, parsed)) => map_ok(parsed).map(|ok| (rest, ok)),
-        Err(e) => Err(map_err(e)),
-    }
+fn is_first_char_special(input: Span) -> bool {
+    input
+        .chars()
+        .next()
+        .map(|c| SPECIAL_CHARS.contains(c))
+        .unwrap_or_default()
 }
 
 fn or_space(f: impl Fn(char) -> bool) -> impl Fn(char) -> bool {
@@ -131,45 +205,43 @@ fn is_name(c: char) -> bool {
     !SPECIAL_CHARS.contains(c) || c == ' '
 }
 
-fn is_right_boundary(c: char) -> bool {
-    matches!(c, ' ' | '{' | '$')
-}
-
-fn is_left_boundary(c: char) -> bool {
-    matches!(c, ' ' | '}' | '^')
-}
-
 fn parameter(input: Span) -> IResult<Span, Parameter, Error> {
-    map(
-        delimited(
-            tag("{"),
-            escaped_special_chars(take_while(is_name)),
-            tag("}"),
-        ),
-        Parameter,
-    )(input)
+    let (input, opening_brace) = tag("{")(input)?;
+    let (input, par_name) = escaped_special_chars0(take_while(is_name))(input)?;
+    let (input, _) = map_err(tag("}"), |e| {
+        if is_first_char_special(input) {
+            Error::UnescapedSpecialCharacter(input).failure()
+        } else {
+            Error::UnfinishedParameter(opening_brace).failure()
+        }
+    })(input)?;
+
+    Ok((input, Parameter(par_name)))
 }
 
 fn option<'s>(input: Span<'s>) -> IResult<Span<'s>, Option<'s>, Error<'s>> {
-    use nom::Err::Failure;
-
     alt((
         map(optional, Option::Optional),
         map(
             flat_map(
                 verify(
-                    escaped_special_chars(take_while(or_space(|c| {
+                    escaped_special_chars0(take_while(or_space(|c| {
                         is_text(c) && c != ')'
                     }))),
                     |s: &Span| !s.is_empty(),
                 ),
                 |parsed: Span<'s>| {
                     move |rest: Span<'s>| {
-                        if let Some('{') = rest.chars().next() {
-                            Err(Failure(Error::ParameterInOptional(rest)))
-                        } else {
-                            Ok((rest, parsed))
-                        }
+                        // match rest.chars().next() {
+                        //     Some('{') if peek(parameter)(input).is_ok() => {
+                        //         Err(Error::ParameterInOptional(rest).failure())
+                        //     }
+                        //     Some('/') => {
+                        //         Err(Error::AlternationInOptional(rest).failure())
+                        //     }
+                        //     _ => Ok((rest, parsed))
+                        // }
+                        Ok((rest, parsed))
                     }
                 },
             ),
@@ -179,41 +251,65 @@ fn option<'s>(input: Span<'s>) -> IResult<Span<'s>, Option<'s>, Error<'s>> {
 }
 
 fn optional(input: Span) -> IResult<Span, Optional, Error> {
-    use nom::Err::Failure;
-
-    delimited(
-        tag("("),
-        and_then(
-            map_err(map(many1(option), Optional), |err| {
-                if let nom::Err::Error(Error::Nom(span, ErrorKind::Many1)) = err
-                {
-                    Failure(Error::EmptyOptional(span))
-                } else {
-                    err
+    let (input, opening_paren) = tag("(")(input)?;
+    let (input, optional) = and_then(
+        map_err(map(many1(option), Optional), |err| {
+            if let Err::Error(Error::Nom(span, ErrorKind::Many1)) = err {
+                match span.chars().next() {
+                    Some('{') if peek(parameter)(span).is_ok() => {
+                        Error::ParameterInOptional(span).failure()
+                    }
+                    Some('/') => {
+                        Error::AlternationInOptional(span).failure()
+                    }
+                    Some(c) if SPECIAL_CHARS.contains(c) => {
+                        Error::UnescapedSpecialCharacter(span).failure()
+                    }
+                    _ => Error::EmptyOptional(span).failure()
                 }
-            }),
-            |opt| {
-                opt.can_be_simplified().map_or(Ok(opt), |sp| {
-                    Err(Failure(Error::OptionCanBeSimplified(sp)))
-                })
-            },
-        ),
-        tag(")"),
-    )(input)
+            } else {
+                err
+            }
+        }),
+        |opt| {
+            opt.can_be_simplified().map_or(Ok(opt), |sp| {
+                Err(Err::Failure(Error::OptionCanBeSimplified(sp)))
+            })
+        },
+    )(input)?;
+    let (input, closing_paren) = map_err(tag(")"), |e| {
+        if let Err::Error(Error::Nom(sp, ErrorKind::Tag)) = e {
+            match sp.chars().next() {
+                Some('{') if peek(parameter)(input).is_ok() => {
+                    return Error::ParameterInOptional(sp).failure();
+                }
+                Some('/') => {
+                    return Error::AlternationInOptional(sp).failure();
+                }
+                Some(c) if SPECIAL_CHARS.contains(c) => {
+                    return Err::Failure(Error::UnescapedSpecialCharacter(sp));
+                }
+                _ => {}
+            }
+        }
+        Error::UnfinishedOptional(opening_paren).failure()
+    })(input)?;
+
+    Ok((input, optional))
 }
 
 fn alternative(input: Span) -> IResult<Span, Alternative, Error> {
     alt((
         map(optional, Alternative::Optional),
         map(
-            escaped_special_chars(take_while(is_text)),
+            escaped_special_chars0(take_while(is_text)),
             Alternative::Text,
         ),
     ))(input)
 }
 
 fn alternation(input: Span) -> IResult<Span, Alternation, Error> {
-    use nom::Err::Failure;
+    // TODO: error on (s)/s (while s(s)/s is correct)
 
     let not_empty = |alt: &Alternative| {
         if let Alternative::Text(text) = alt {
@@ -236,7 +332,7 @@ fn alternation(input: Span) -> IResult<Span, Alternation, Error> {
             .collect();
         Ok((rest, Alternation(alt)))
     } else {
-        Err(Failure(Error::EmptyAlternation(rest)))
+        Err(Err::Failure(Error::EmptyAlternation(rest)))
     }
 }
 
@@ -246,7 +342,7 @@ fn single_expr(input: Span) -> IResult<Span, SingleExpr, Error> {
         map(optional, SingleExpr::Optional),
         map(parameter, SingleExpr::Parameter),
         map(
-            verify(escaped_special_chars(take_while(is_text)), |s: &Span| {
+            verify(escaped_special_chars0(take_while(is_text)), |s: &Span| {
                 !s.is_empty()
             }),
             SingleExpr::Text,
@@ -264,8 +360,18 @@ enum Error<'a> {
     EmptyAlternation(Span<'a>),
     EmptyOptional(Span<'a>),
     ParameterInOptional(Span<'a>),
+    AlternationInOptional(Span<'a>),
     OptionCanBeSimplified(Span<'a>),
+    UnfinishedParameter(Span<'a>),
+    UnfinishedOptional(Span<'a>),
+    UnescapedSpecialCharacter(Span<'a>),
     Nom(Span<'a>, ErrorKind),
+}
+
+impl<'a> Error<'a> {
+    fn failure(self) -> Err<Self> {
+        Err::Failure(self)
+    }
 }
 
 impl<'a> ParseError<Span<'a>> for Error<'a> {
@@ -284,33 +390,31 @@ impl<'a> ParseError<Span<'a>> for Error<'a> {
 
 #[cfg(test)]
 mod spec {
-    use super::{alternation, expr, Span};
+    use super::*;
 
     #[test]
     fn par() {
-        let res = expr(Span::new(r"three (exceptionally\) {string\} mice"));
+        let res = expr(Span::new(r"({int})"));
         dbg!(res);
     }
 }
 
 // errors
-// - [ ] empty alternation
+// - [x] empty alternation
 // - [ ] alternation that contains only optional
-// - [ ] alternation inside of optional
+// - [x] alternation inside of optional
 // - [x] optional can be simplified
 // - [x] optional that contain parameters
 // - [x] empty optional
 // - [ ] escaped non-reserved char
 
 // to solve
-// - "({int})" returns wrong error
-// - figure out how to error in cases of
-//   - special chars in parameter: {(string)}
-//   - unbalanced parens: three (exceptionally\) {string\} mice
+// - [x] "({int})" returns wrong error
+// - [x] figure out how to error in cases of
+//   - [x] special chars in parameter: {(string)}
+//   - [x] unbalanced parens: three (exceptionally\) {string\} mice
 
 // spec and test-data difference
-// - matching/does-not-allow-alternation-with-empty-alternative-by-adjacent
-//   "three (brown)/black mice" should be legal
 // - matching/does-not-allow-nested-optional
 //   parser/optional-containing-nested-optional.
 //   So which is it?
