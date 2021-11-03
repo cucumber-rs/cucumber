@@ -2,7 +2,7 @@ use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
 use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
-use futures::FutureExt;
+use futures::FutureExt as _;
 use tempfile::TempDir;
 use tokio::time;
 
@@ -64,7 +64,7 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
     w.foo += 1;
 }
 
-#[when(regex = r#"I write "(\S+?)" to "(\S+?)""#)]
+#[when(regex = r#"^I write "(\S+)" to `(\S+)`$"#)]
 fn test_return_result_write(
     w: &mut MyWorld,
     what: String,
@@ -75,7 +75,7 @@ fn test_return_result_write(
     fs::write(path, what)
 }
 
-#[then(regex = r#"the file "(\S+?)" should contain "(\S+?)""#)]
+#[then(regex = r#"^the file `(\S+)` should contain "(\S+)"$"#)]
 fn test_return_result_read(
     w: &mut MyWorld,
     filename: String,
@@ -83,7 +83,9 @@ fn test_return_result_read(
 ) -> io::Result<()> {
     let mut path = w.dir.path().to_path_buf();
     path.push(filename);
+
     assert_eq!(what, fs::read_to_string(path)?);
+
     Ok(())
 }
 

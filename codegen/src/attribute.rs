@@ -108,12 +108,9 @@ impl Step {
         let step_matcher = self.attr_arg.regex_literal().value();
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
-        let awaiting =
-            func.sig.asyncness.map_or(quote! {}, |_| quote! { .await });
-        let unwrapping = self
-            .returns_unit()
-            .then(|| quote! {})
-            .unwrap_or(quote! { .unwrap_or_else(|e| panic!("{}", e)) });
+        let awaiting = func.sig.asyncness.map(|_| quote! { .await });
+        let unwrapping = (!self.returns_unit())
+            .then(|| quote! { .unwrap_or_else(|e| panic!("{}", e)) });
         let step_caller = quote! {
             {
                 #[automatically_derived]
@@ -123,8 +120,11 @@ impl Step {
                 ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
-                        let _ = #func_name(__cucumber_world, #func_args)
-                            #awaiting #unwrapping;
+                        ::std::mem::drop(
+                            #func_name(__cucumber_world, #func_args)
+                                #awaiting
+                                #unwrapping,
+                        );
                     };
                     ::std::boxed::Box::pin(f)
                 }
@@ -156,17 +156,16 @@ impl Step {
         })
     }
 
-    /// Indicates whether [`fn`] return type is `()`.
+    /// Indicates whether this [`Step::func`] return type is `()`.
     fn returns_unit(&self) -> bool {
-        match self.func.sig.output {
+        match &self.func.sig.output {
             syn::ReturnType::Default => true,
-            syn::ReturnType::Type(_, ref ty) => {
-                if let syn::Type::Tuple(syn::TypeTuple { elems, .. }) =
-                    ty.as_ref()
-                {
-                    return elems.is_empty();
+            syn::ReturnType::Type(_, ty) => {
+                if let syn::Type::Tuple(syn::TypeTuple { elems, .. }) = &**ty {
+                    elems.is_empty()
+                } else {
+                    false
                 }
-                false
             }
         }
     }

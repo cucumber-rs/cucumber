@@ -185,10 +185,11 @@ macro_rules! step_attribute {
         /// # }
         /// ```
         ///
-        /// # Return Value
+        /// # Return value
         ///
-        /// A function may return a [`Result`]`<(), Err>`. `Err` is expected to
-        /// implement [`Display`] and returning it will cause the step to fail.
+        /// A function may also return a [`Result`], which [`Err`] is expected
+        /// to implement [`Display`], so returning it will cause the step to
+        /// fail.
         ///
         /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
