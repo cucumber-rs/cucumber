@@ -17,7 +17,7 @@ use crate::{
         Alternation, Alternative, Expression, Optional, Parameter, SingleExpr,
         Spanned,
     },
-    combinator::{and_then, escaped0, map_err},
+    combinator::{escaped0, map_err},
 };
 
 /// Reserved characters that require special handling.
@@ -187,6 +187,7 @@ fn parameter<'s>(
 ///
 /// ## Irrecoverable [`Failure`]s
 ///
+/// - [`AlternationInOptional`]
 /// - [`EmptyOptional`]
 /// - [`NestedOptional`]
 /// - [`ParameterInOptional`]
@@ -195,6 +196,7 @@ fn parameter<'s>(
 ///
 /// [`Error`]: Err::Error
 /// [`Failure`]: Err::Failure
+/// [`AlternationInOptional`]: Error::AlternationInOptional
 /// [`EmptyOptional`]: Error::EmptyOptional
 /// [`NestedOptional`]: Error::NestedOptional
 /// [`ParameterInOptional`]: Error::ParameterInOptional
@@ -229,6 +231,9 @@ fn optional<'s>(
                 }
                 return Error::UnescapedReservedCharacter(input.take(1))
                     .failure();
+            }
+            Some('/') => {
+                return Error::AlternationInOptional(input.take(1)).failure();
             }
             Some(c) if RESERVED_CHARS.contains(c) => {
                 return Error::UnescapedReservedCharacter(input.take(1))
@@ -311,18 +316,27 @@ fn expr(input: Spanned) -> IResult<Spanned, Expression, Error> {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error<'a> {
+    // Parameter
     NestedParameter(Spanned<'a>),
-    NestedOptional(Spanned<'a>),
     OptionalInParameter(Spanned<'a>),
+    UnfinishedParameter(Spanned<'a>),
+
+    // Optional
+    NestedOptional(Spanned<'a>),
     ParameterInOptional(Spanned<'a>),
-    EmptyAlternation(Spanned<'a>),
     EmptyOptional(Spanned<'a>),
     AlternationInOptional(Spanned<'a>),
-    UnfinishedParameter(Spanned<'a>),
     UnfinishedOptional(Spanned<'a>),
+
+    // Alternation
+    EmptyAlternation(Spanned<'a>),
+    OnlyOptionalInAlternation(Spanned<'a>),
+
+    // General escaping
     UnescapedReservedCharacter(Spanned<'a>),
     EscapedNonReservedCharacter(Spanned<'a>),
-    OnlyOptionalInAlternation(Spanned<'a>),
+
+    // nom
     Other(Spanned<'a>, ErrorKind),
 }
 
@@ -349,13 +363,6 @@ impl<'a> ParseError<Spanned<'a>> for Error<'a> {
 #[cfg(test)]
 mod spec {
     use super::{optional, parameter, Err, Error, ErrorKind, IResult, Spanned};
-
-    fn eq(left: impl AsRef<str>, right: impl AsRef<str>) {
-        assert_eq!(
-            left.as_ref().replace(' ', "").replace('\n', ""),
-            right.as_ref().replace(' ', "").replace('\n', "")
-        );
-    }
 
     fn unwrap_parser<'s, T>(par: IResult<Spanned<'s>, T, Error<'s>>) -> T {
         let (rest, par) = par.expect("ok");
@@ -633,12 +640,37 @@ mod spec {
         }
 
         #[test]
+        fn fails_on_alternation() {
+            let err = [
+                optional(Spanned::new("(/)")).expect_err("error"),
+                optional(Spanned::new("(bef/)")).expect_err("error"),
+                optional(Spanned::new("(/aft)")).expect_err("error"),
+                optional(Spanned::new("(bef/aft)")).expect_err("error"),
+            ];
+
+            match err {
+                #[rustfmt::skip]
+                [
+                Err::Failure(Error::AlternationInOptional(e1)),
+                Err::Failure(Error::AlternationInOptional(e2)),
+                Err::Failure(Error::AlternationInOptional(e3)),
+                Err::Failure(Error::AlternationInOptional(e4)),
+                ] => {
+                    assert_eq!(*e1, "/");
+                    assert_eq!(*e2, "/");
+                    assert_eq!(*e3, "/");
+                    assert_eq!(*e4, "/");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
         fn fails_on_unescaped_reserved_char() {
             let err = [
                 optional(Spanned::new("({opt)")).expect_err("error"),
                 optional(Spanned::new("({n{e}st})")).expect_err("error"),
                 optional(Spanned::new("((nest)")).expect_err("error"),
-                optional(Spanned::new("(l/r)")).expect_err("error"),
             ];
 
             match err {
@@ -647,12 +679,10 @@ mod spec {
                 Err::Failure(Error::UnescapedReservedCharacter(e1)),
                 Err::Failure(Error::UnescapedReservedCharacter(e2)),
                 Err::Failure(Error::UnescapedReservedCharacter(e3)),
-                Err::Failure(Error::UnescapedReservedCharacter(e4)),
                 ] => {
                     assert_eq!(*e1, "{");
                     assert_eq!(*e2, "{");
                     assert_eq!(*e3, "(");
-                    assert_eq!(*e4, "/");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
