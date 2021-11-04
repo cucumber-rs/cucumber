@@ -59,15 +59,11 @@ where
 {
     map_err(escaped0(normal, '\\', one_of(RESERVED_CHARS)), |e| {
         if let Err::Error(Error::Other(span, ErrorKind::Escaped)) = e {
-            Error::EscapedNonReservedCharacter(span).failure()
+            Error::EscapedNonReservedCharacter(span.take(1)).failure()
         } else {
             e
         }
     })
-}
-
-fn or_space(f: impl Fn(char) -> bool) -> impl Fn(char) -> bool {
-    move |c| c == ' ' || f(c)
 }
 
 fn is_text(c: char) -> bool {
@@ -102,6 +98,7 @@ fn is_text(c: char) -> bool {
 ///
 /// ## Irrecoverable [`Failure`]s
 ///
+/// - [`EscapedNonReservedCharacter`]
 /// - [`NestedParameter`]
 /// - [`OptionalInParameter`]
 /// - [`UnescapedReservedCharacter`]
@@ -109,6 +106,7 @@ fn is_text(c: char) -> bool {
 ///
 /// [`Error`]: Err::Error
 /// [`Failure`]: Err::Failure
+/// [`EscapedNonReservedCharacter`]: Error::EscapedNonReservedCharacter
 /// [`NestedParameter`]: Error::NestedParameter
 /// [`OptionalInParameter`]: Error::OptionalInParameter
 /// [`UnescapedReservedCharacter`]: Error::UnescapedReservedCharacter
@@ -167,7 +165,7 @@ fn parameter<'s>(
 /// text     := any character except '(' | ')' | '{' | '/'
 /// ```
 ///
-/// Note: `{`, `}`, `(`, `/` still can be used if escaped with `\`
+/// Note: `(`, `)`, `{`, `/` still can be used if escaped with `\`.
 ///
 /// # Example
 ///
@@ -189,6 +187,7 @@ fn parameter<'s>(
 ///
 /// - [`AlternationInOptional`]
 /// - [`EmptyOptional`]
+/// - [`EscapedNonReservedCharacter`]
 /// - [`NestedOptional`]
 /// - [`ParameterInOptional`]
 /// - [`UnescapedReservedCharacter`]
@@ -198,6 +197,7 @@ fn parameter<'s>(
 /// [`Failure`]: Err::Failure
 /// [`AlternationInOptional`]: Error::AlternationInOptional
 /// [`EmptyOptional`]: Error::EmptyOptional
+/// [`EscapedNonReservedCharacter`]: Error::EscapedNonReservedCharacter
 /// [`NestedOptional`]: Error::NestedOptional
 /// [`ParameterInOptional`]: Error::ParameterInOptional
 /// [`UnescapedReservedCharacter`]: Error::UnescapedReservedCharacter
@@ -255,7 +255,37 @@ fn optional<'s>(
     Ok((input, Optional(opt)))
 }
 
+/// # Syntax
+///
+/// ```text
+/// alternative := optional | text*
+/// text        := any character except ' ' | '(' | '{' | '/'
+/// ```
+///
+/// Note: ` `, `(`, `{`, `/` still can be used if escaped with `\`.
+///
+/// # Example
+///
+/// ```text
+/// text
+/// escaped\ whitespace
+/// no-need-to-escape)}
+/// 🦀
+/// (optional)
+/// ```
+///
+/// Note: empty string is matched too.
+///
+/// # Errors
+///
+/// ## Irrecoverable [`Failure`]s
+///
+/// Any [`Failure`] of [`optional()`].
+///
+/// [`Failure`]: Err::Failure
 fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
+    let is_text = |c| !" ({\\/".contains(c);
+
     alt((
         map(optional, Alternative::Optional),
         map(
@@ -265,6 +295,15 @@ fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
     ))(input)
 }
 
+/// # Example
+///
+/// ```text
+/// left/right
+/// left(opt)/(opt)right
+/// escaped\ /text
+/// no-need-to-escape)}/text
+/// 🦀/⚙️
+/// ```
 fn alternation(input: Spanned) -> IResult<Spanned, Alternation, Error> {
     let not_empty = |alt: &Alternative| {
         if let Alternative::Text(text) = alt {
@@ -362,7 +401,10 @@ impl<'a> ParseError<Spanned<'a>> for Error<'a> {
 
 #[cfg(test)]
 mod spec {
-    use super::{optional, parameter, Err, Error, ErrorKind, IResult, Spanned};
+    use super::{
+        alternative, optional, parameter, Alternative, Err, Error, ErrorKind,
+        IResult, Spanned,
+    };
 
     fn unwrap_parser<'s, T>(par: IResult<Spanned<'s>, T, Error<'s>>) -> T {
         let (rest, par) = par.expect("ok");
@@ -423,6 +465,18 @@ mod spec {
                 parameter(span),
                 Err(Err::Error(Error::Other(span, ErrorKind::Tag))),
             );
+        }
+
+        #[test]
+        fn fails_on_escaped_non_reserved() {
+            let err = parameter(Spanned::new("{\\r}")).unwrap_err();
+
+            match err {
+                Err::Failure(Error::EscapedNonReservedCharacter(e)) => {
+                    assert_eq!(*e, "\\");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
         }
 
         #[test]
@@ -581,7 +635,19 @@ mod spec {
 
             match err {
                 Err::Failure(Error::EmptyOptional(e)) => {
-                    assert_eq!(*e, "");
+                    assert_eq!(*e, "\\");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_escaped_non_reserved() {
+            let err = optional(Spanned::new("(\\r)")).unwrap_err();
+
+            match err {
+                Err::Failure(Error::EscapedNonReservedCharacter(e)) => {
+                    assert_eq!(*e, "\\");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
@@ -703,6 +769,128 @@ mod spec {
                 ] => {
                     assert_eq!(*e1, "(");
                     assert_eq!(*e2, "(");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+    }
+
+    mod alternative {
+        use super::{
+            alternative, unwrap_parser, Alternative, Err, Error, Spanned,
+        };
+
+        #[test]
+        fn empty() {
+            match unwrap_parser(alternative(Spanned::new(""))) {
+                Alternative::Text(t) => assert_eq!(*t, ""),
+                Alternative::Optional(_) => {
+                    panic!("expected Alternative::Text")
+                }
+            }
+        }
+
+        #[allow(clippy::non_ascii_literal)]
+        #[test]
+        fn text() {
+            match (
+                unwrap_parser(alternative(Spanned::new("string"))),
+                unwrap_parser(alternative(Spanned::new("🦀"))),
+            ) {
+                (Alternative::Text(t1), Alternative::Text(t2)) => {
+                    assert_eq!(*t1, "string");
+                    assert_eq!(*t2, "🦀");
+                }
+                _ => {
+                    panic!("expected Alternative::Text")
+                }
+            }
+        }
+
+        #[test]
+        fn escaped_spaces() {
+            match (
+                unwrap_parser(alternative(Spanned::new("bef\\ "))),
+                unwrap_parser(alternative(Spanned::new("\\ aft"))),
+                unwrap_parser(alternative(Spanned::new("bef\\ aft"))),
+            ) {
+                (
+                    Alternative::Text(t1),
+                    Alternative::Text(t2),
+                    Alternative::Text(t3),
+                ) => {
+                    assert_eq!(*t1, "bef\\ ");
+                    assert_eq!(*t2, "\\ aft");
+                    assert_eq!(*t3, "bef\\ aft");
+                }
+                _ => {
+                    panic!("expected Alternative::Text")
+                }
+            }
+        }
+
+        #[test]
+        fn optional() {
+            match unwrap_parser(alternative(Spanned::new("(opt)"))) {
+                Alternative::Optional(t) => {
+                    assert_eq!(**t, "opt");
+                }
+                _ => {
+                    panic!("expected Alternative::Optional")
+                }
+            }
+        }
+
+        #[test]
+        fn not_captures_unescaped_whitespace() {
+            match alternative(Spanned::new("text ")) {
+                Ok((rest, matched)) => {
+                    assert_eq!(*rest, " ");
+
+                    match matched {
+                        Alternative::Text(t) => assert_eq!(*t, "text"),
+                        Alternative::Optional(_) => {
+                            panic!("expected Alternative::Text")
+                        }
+                    }
+                }
+                Err(..) => panic!("expected ok"),
+            }
+        }
+
+        #[test]
+        fn fails_on_unfinished_optional() {
+            let err = (
+                alternative(Spanned::new("(")).unwrap_err(),
+                alternative(Spanned::new("(opt")).unwrap_err(),
+            );
+
+            match err {
+                (
+                    Err::Failure(Error::UnfinishedOptional(e1)),
+                    Err::Failure(Error::UnfinishedOptional(e2)),
+                ) => {
+                    assert_eq!(*e1, "(");
+                    assert_eq!(*e2, "(");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_escaped_non_reserved() {
+            let err = (
+                alternative(Spanned::new("(\\r)")).unwrap_err(),
+                alternative(Spanned::new("\\r")).unwrap_err(),
+            );
+
+            match err {
+                (
+                    Err::Failure(Error::EscapedNonReservedCharacter(e1)),
+                    Err::Failure(Error::EscapedNonReservedCharacter(e2)),
+                ) => {
+                    assert_eq!(*e1, "\\");
+                    assert_eq!(*e2, "\\");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }

@@ -18,7 +18,9 @@ pub enum SingleExpr<'s> {
 }
 
 #[derive(AsRef, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
-pub struct Alternation<'s>(pub Vec<Vec<Alternative<'s>>>);
+pub struct Alternation<'s>(pub Vec<SingleAlternation<'s>>);
+
+pub type SingleAlternation<'s> = Vec<Alternative<'s>>;
 
 impl<'s> Alternation<'s> {
     pub(crate) fn contains_only_optional(&self) -> Option<Error<'s>> {

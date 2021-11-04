@@ -275,4 +275,26 @@ mod escaped0_spec {
             ),
         );
     }
+
+    #[test]
+    fn errors_on_control_char() {
+        assert_eq!(
+            get_result("\\"),
+            (
+                Err(Err::Error(Error {
+                    input: "\\",
+                    code: ErrorKind::Escaped
+                })),
+                Err(Err::Error(Error {
+                    input: "\\",
+                    code: ErrorKind::Escaped
+                })),
+                Ok(("\\", "")),
+                Err(Err::Error(Error {
+                    input: "\\",
+                    code: ErrorKind::Escaped
+                }))
+            ),
+        );
+    }
 }
