@@ -1,12 +1,12 @@
-use std::{iter, ops::RangeFrom};
+use std::ops::RangeFrom;
 
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while, take_while1},
+    bytes::complete::{tag, take_while},
     character::complete::one_of,
     combinator::{map, peek, verify},
     error::{ErrorKind, ParseError},
-    multi::{many0, many1, separated_list0, separated_list1},
+    multi::{many0, many1, separated_list1},
     sequence::tuple,
     AsChar, Err, FindToken, IResult, InputIter, InputLength, InputTake,
     InputTakeAtPosition, Offset, Parser, Slice,
@@ -17,13 +17,13 @@ use crate::{
         Alternation, Alternative, Expression, Optional, Parameter, SingleExpr,
         Spanned,
     },
-    combinator::{and_then, escaped0, map_err},
+    combinator::{escaped0, map_err},
 };
 
 /// Reserved characters that require special handling.
-const RESERVED_CHARS: &str = r#"{}()\/ "#;
+pub const RESERVED_CHARS: &str = r#"{}()\/ "#;
 
-/// Matches `normal` and escaped with `\` [`RESERVED_CHARS`].
+/// Matches `normal` and [`RESERVED_CHARS`] escaped with `\`.
 ///
 /// Uses [`escaped0`] under the hood.
 ///
@@ -35,13 +35,13 @@ const RESERVED_CHARS: &str = r#"{}()\/ "#;
 ///
 /// ## Irrecoverable [`Failure`]
 ///
-/// - If `normal` parser fails.
-/// - [`EscapedNonReservedCharacter`] if non-reserved character was escaped.
+/// - If `normal` parser fails
+/// - [`EscapedNonReservedCharacter`]
 ///
 /// [`Error`]: Err::Error
 /// [`EscapedNonReservedCharacter`]: Error::EscapedNonReservedCharacter
 /// [`Failure`]: Err::Failure
-fn escaped_reserved_chars0<'a, Input: 'a, F, O1>(
+pub fn escaped_reserved_chars0<'a, Input: 'a, F, O1>(
     normal: F,
 ) -> impl FnMut(Input) -> IResult<Input, Input, Error<'a>>
 where
@@ -64,10 +64,6 @@ where
             e
         }
     })
-}
-
-fn is_text(c: char) -> bool {
-    !RESERVED_CHARS.contains(c) || matches!(c, '}' | ')')
 }
 
 /// # Syntax
@@ -111,7 +107,7 @@ fn is_text(c: char) -> bool {
 /// [`OptionalInParameter`]: Error::OptionalInParameter
 /// [`UnescapedReservedCharacter`]: Error::UnescapedReservedCharacter
 /// [`UnfinishedParameter`]: Error::UnfinishedParameter
-fn parameter<'s>(
+pub fn parameter<'s>(
     input: Spanned<'s>,
 ) -> IResult<Spanned<'s>, Parameter<'s>, Error<'s>> {
     let is_name = |c| !"{}(\\/".contains(c);
@@ -161,8 +157,8 @@ fn parameter<'s>(
 /// # Syntax
 ///
 /// ```text
-/// optional := '(' text+ ')'
-/// text     := any character except '(' | ')' | '{' | '/'
+/// optional         := '(' text_in_optional+ ')'
+/// text_in_optional := any character except '(' | ')' | '{' | '/'
 /// ```
 ///
 /// Note: `(`, `)`, `{`, `/` still can be used if escaped with `\`.
@@ -202,11 +198,12 @@ fn parameter<'s>(
 /// [`ParameterInOptional`]: Error::ParameterInOptional
 /// [`UnescapedReservedCharacter`]: Error::UnescapedReservedCharacter
 /// [`UnfinishedOptional`]: Error::UnfinishedOptional
-fn optional<'s>(
+pub fn optional<'s>(
     input: Spanned<'s>,
 ) -> IResult<Spanned<'s>, Optional<'s>, Error<'s>> {
     let is_text = |c| !"(){\\/".contains(c);
 
+    let original_input = input;
     let fail = |input: Spanned<'s>, opening_brace| {
         match input.chars().next() {
             Some('(') => {
@@ -249,7 +246,7 @@ fn optional<'s>(
     let (input, _) = map_err(tag(")"), |_| fail(input, opening_paren))(input)?;
 
     if opt.is_empty() {
-        return Err(Err::Failure(Error::EmptyOptional(opt)));
+        return Err(Err::Failure(Error::EmptyOptional(original_input.take(2))));
     }
 
     Ok((input, Optional(opt)))
@@ -274,8 +271,6 @@ fn optional<'s>(
 /// (optional)
 /// ```
 ///
-/// Note: empty string is matched too.
-///
 /// # Errors
 ///
 /// ## Irrecoverable [`Failure`]s
@@ -283,7 +278,7 @@ fn optional<'s>(
 /// Any [`Failure`] of [`optional()`].
 ///
 /// [`Failure`]: Err::Failure
-fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
+pub fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
     let is_text = |c| !" ({\\/".contains(c);
 
     alt((
@@ -302,10 +297,7 @@ fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
 /// ```text
 /// alternation             := single_alternation (`/` single_alternation)+
 /// single_alternation      := ((text+ optional*) | (optional+ text+))+
-/// text_without_whitespace := any character except ' ' | '(' | '{' | '/'
 /// ```
-///
-/// Note: ` `, `(`, `{`, `/` still can be used if escaped with `\`.
 ///
 /// # Example
 ///
@@ -333,7 +325,7 @@ fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
 /// [`Failure`]: Err::Failure
 /// [`EmptyAlternation`]: Error::EmptyAlternation
 /// [`OnlyOptionalInAlternation`]: Error::OnlyOptionalInAlternation
-fn alternation(input: Spanned) -> IResult<Spanned, Alternation, Error> {
+pub fn alternation(input: Spanned) -> IResult<Spanned, Alternation, Error> {
     let (rest, alt) = match separated_list1(tag("/"), many1(alternative))(input)
     {
         Ok((rest, alt)) => {
@@ -361,7 +353,42 @@ fn alternation(input: Spanned) -> IResult<Spanned, Alternation, Error> {
         .unwrap_or(Ok((rest, alt)))
 }
 
-fn single_expr(input: Spanned) -> IResult<Spanned, SingleExpr, Error> {
+/// # Syntax
+///
+/// ```text
+/// single_expression := alternation
+///                      | optional
+///                      | parameter
+///                      | text_without_whitespace*
+///                      | whitespace
+/// ```
+///
+/// # Example
+///
+/// ```text
+/// text(opt)/text
+/// (opt)
+/// {string}
+/// text
+/// ```
+///
+/// Note: empty string is matched too.
+///
+/// # Errors
+///
+/// ## Irrecoverable [`Failure`]s
+///
+/// Any [`Failure`] of [`alternation()`], [`optional()`] or [`parameter()`].
+///
+/// [`Error`]: Err::Error
+/// [`Failure`]: Err::Failure
+/// [`EmptyAlternation`]: Error::EmptyAlternation
+/// [`OnlyOptionalInAlternation`]: Error::OnlyOptionalInAlternation
+pub fn single_expression(
+    input: Spanned,
+) -> IResult<Spanned, SingleExpr, Error> {
+    let is_text = |c| !" ({\\/".contains(c);
+
     alt((
         map(alternation, SingleExpr::Alternation),
         map(optional, SingleExpr::Optional),
@@ -377,8 +404,35 @@ fn single_expr(input: Spanned) -> IResult<Spanned, SingleExpr, Error> {
     ))(input)
 }
 
-fn expr(input: Spanned) -> IResult<Spanned, Expression, Error> {
-    map(many0(single_expr), Expression)(input)
+/// # Syntax
+///
+/// ```text
+/// expression := single_expression*
+/// ```
+///
+/// # Example
+///
+/// ```text
+/// text(opt)/text
+/// (opt)
+/// {string}
+/// text
+/// ```
+///
+/// Note: empty string is matched too.
+///
+/// # Errors
+///
+/// ## Irrecoverable [`Failure`]s
+///
+/// Any [`Failure`] of [`alternation()`], [`optional()`] or [`parameter()`].
+///
+/// [`Error`]: Err::Error
+/// [`Failure`]: Err::Failure
+/// [`EmptyAlternation`]: Error::EmptyAlternation
+/// [`OnlyOptionalInAlternation`]: Error::OnlyOptionalInAlternation
+pub fn expression(input: Spanned) -> IResult<Spanned, Expression, Error> {
+    map(many0(single_expression), Expression)(input)
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -430,8 +484,8 @@ impl<'a> ParseError<Spanned<'a>> for Error<'a> {
 #[cfg(test)]
 mod spec {
     use super::{
-        alternation, alternative, optional, parameter, Alternative, Err, Error,
-        ErrorKind, IResult, Spanned,
+        alternation, alternative, expression, optional, parameter, Alternative,
+        Err, Error, ErrorKind, IResult, Spanned,
     };
 
     fn eq(left: impl AsRef<str>, right: impl AsRef<str>) {
@@ -449,7 +503,7 @@ mod spec {
     }
 
     fn unwrap_parser<'s, T>(par: IResult<Spanned<'s>, T, Error<'s>>) -> T {
-        let (rest, par) = par.expect("ok");
+        let (rest, par) = par.unwrap();
         assert_eq!(*rest, "");
         par
     }
@@ -677,7 +731,7 @@ mod spec {
 
             match err {
                 Err::Failure(Error::EmptyOptional(e)) => {
-                    assert_eq!(*e, "");
+                    assert_eq!(*e, "()");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
@@ -1246,6 +1300,408 @@ mod spec {
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
+        }
+    }
+
+    // all test examples from: https://bit.ly/3q6m53v
+    mod expression {
+        use super::{eq, expression, unwrap_parser, Err, Error, Spanned};
+
+        #[test]
+        fn allows_escaped_optional_parameter_types() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new("\\({int})")))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Text (
+                            LocatedSpan {
+                                offset: 0,
+                                line: 1,
+                                fragment: "\\(",
+                                extra: ()
+                            }
+                        ),
+                        Parameter (
+                            Parameter (
+                                LocatedSpan {
+                                    offset: 3,
+                                    line: 1,
+                                    fragment: "int",
+                                    extra: ()
+                                }
+                            )
+                        ),
+                        Text (
+                            LocatedSpan {
+                                offset: 7,
+                                line: 1,
+                                fragment: ")",
+                                extra: ()
+                            }
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn allows_parameter_type_in_alternation() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new("a/i{int}n/y")))
+            );
+            eq(
+                ast,
+                r#"Expression(
+                    [
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 0,
+                                                line: 1,
+                                                fragment: "a",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 2,
+                                                line: 1,
+                                                fragment: "i",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        ),
+                        Parameter (
+                            Parameter (
+                                LocatedSpan {
+                                    offset: 4,
+                                    line: 1,
+                                    fragment: "int",
+                                    extra: ()
+                                }
+                            )
+                        ),
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 8,
+                                                line: 1,
+                                                fragment: "n",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 10,
+                                                line: 1,
+                                                fragment: "y",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn does_allow_parameter_adjacent_to_alternation() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new("{int}st/nd/rd/th")))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Parameter (
+                            Parameter (
+                                LocatedSpan {
+                                    offset: 1,
+                                    line: 1,
+                                    fragment: "int",
+                                    extra: ()
+                                }
+                            )
+                        ),
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 5,
+                                                line: 1,
+                                                fragment:
+                                                "st",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 8,
+                                                line: 1,
+                                                fragment: "nd",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 11,
+                                                line: 1,
+                                                fragment: "rd",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 14,
+                                                line: 1,
+                                                fragment: "th",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn does_not_allow_alternation_in_optional() {
+            match expression(Spanned::new("three( brown/black) mice"))
+                .unwrap_err()
+            {
+                Err::Failure(Error::AlternationInOptional(s)) => {
+                    assert_eq!(*s, "/")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[rustfmt::skip]
+        #[test]
+        fn does_not_allow_alternation_with_empty_alternative_by_adjacent_left_parameter() {
+            match expression(Spanned::new("{int}/x")).unwrap_err() {
+                Err::Failure(Error::EmptyAlternation(s)) => {
+                    assert_eq!(*s, "/")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[rustfmt::skip]
+        #[test]
+        fn does_not_allow_alternation_with_empty_alternative_by_adjacent_optional() {
+            match expression(Spanned::new("three (brown)/black mice")).unwrap_err() {
+                Err::Failure(Error::OnlyOptionalInAlternation(s)) => {
+                    assert_eq!(*s, "(brown)/black")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[rustfmt::skip]
+        #[test]
+        fn does_not_allow_alternation_with_empty_alternative_by_adjacent_right_parameter() {
+            match expression(Spanned::new("x/{int}")).unwrap_err() {
+                Err::Failure(Error::EmptyAlternation(s)) => {
+                    assert_eq!(*s, "/")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_alternation_with_empty_alternative() {
+            match expression(Spanned::new("three brown//black mice"))
+                .unwrap_err()
+            {
+                Err::Failure(Error::EmptyAlternation(s)) => {
+                    assert_eq!(*s, "/")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_empty_optional() {
+            match expression(Spanned::new("three () mice")).unwrap_err() {
+                Err::Failure(Error::EmptyOptional(s)) => {
+                    assert_eq!(*s, "()")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_nested_optional() {
+            match expression(Spanned::new("(a(b))")).unwrap_err() {
+                Err::Failure(Error::NestedOptional(s)) => {
+                    assert_eq!(*s, "(b)")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_optional_parameter_types() {
+            match expression(Spanned::new("({int})")).unwrap_err() {
+                Err::Failure(Error::ParameterInOptional(s)) => {
+                    assert_eq!(*s, "{int}")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_parameter_name_with_reserved_characters() {
+            match expression(Spanned::new("{(string)}")).unwrap_err() {
+                Err::Failure(Error::OptionalInParameter(s)) => {
+                    assert_eq!(*s, "(string)")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_unfinished_parenthesis_1() {
+            match expression(Spanned::new(
+                "three (exceptionally\\) {string\\} mice",
+            ))
+            .unwrap_err()
+            {
+                Err::Failure(Error::UnescapedReservedCharacter(s)) => {
+                    assert_eq!(*s, "{")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_unfinished_parenthesis_2() {
+            match expression(Spanned::new(
+                "three (exceptionally\\) {string} mice",
+            ))
+            .unwrap_err()
+            {
+                Err::Failure(Error::ParameterInOptional(s)) => {
+                    assert_eq!(*s, "{string}")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn does_not_allow_unfinished_parenthesis_3() {
+            match expression(Spanned::new(
+                "three ((exceptionally\\) strong) mice",
+            ))
+            .unwrap_err()
+            {
+                Err::Failure(Error::UnescapedReservedCharacter(s)) => {
+                    assert_eq!(*s, "(")
+                }
+                e => panic!("wrong error: {:?}", e),
+            }
+        }
+
+        #[test]
+        fn matches_alternation() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new(
+                    "mice/rats and rats\\/mice"
+                )))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 0,
+                                                line: 1,
+                                                fragment: "mice",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 5,
+                                                line: 1,
+                                                fragment: "rats",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        ),
+                        Space,
+                        Text (
+                            LocatedSpan {
+                                offset: 10,
+                                line: 1,
+                                fragment: "and",
+                                extra: ()
+                            }
+                        ),
+                        Space,
+                        Text (
+                            LocatedSpan {
+                                offset: 14,
+                                line: 1,
+                                fragment: "rats\\/mice",
+                                extra: ()
+                            }
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn empty() {
+            let ast =
+                format!("{:?}", unwrap_parser(expression(Spanned::new(""))));
+            eq(ast, r#"Expression([])"#);
         }
     }
 }

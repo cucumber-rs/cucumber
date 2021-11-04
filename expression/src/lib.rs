@@ -1,6 +1,6 @@
 mod ast;
 mod combinator;
-mod parse;
+pub mod parse;
 
 #[doc(inline)]
 pub use self::{
