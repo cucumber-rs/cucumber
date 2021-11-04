@@ -91,6 +91,7 @@ fn is_text(c: char) -> bool {
 /// {with spaces}
 /// {escaped \/\{\(}
 /// {no need to escape )}
+/// {🦀}
 /// ```
 ///
 /// # Errors
@@ -129,17 +130,22 @@ fn parameter<'s>(
                     return Error::NestedParameter(input.take(par.0.len() + 2))
                         .failure();
                 }
-                return Error::UnescapedReservedCharacter(input.take(1)).failure();
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
             }
             Some('(') => {
                 if let Ok((_, opt)) = peek(optional)(input) {
-                    return Error::OptionalInParameter(input.take(opt.span_len()))
-                        .failure();
+                    return Error::OptionalInParameter(
+                        input.take(opt.span_len()),
+                    )
+                    .failure();
                 }
-                return Error::UnescapedReservedCharacter(input.take(1)).failure();
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
             }
             Some(c) if RESERVED_CHARS.contains(c) => {
-                return Error::UnescapedReservedCharacter(input.take(1)).failure();
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
             }
             _ => {}
         }
@@ -314,7 +320,7 @@ mod spec {
 
     mod parameter {
         use super::{
-            eq, parameter, Err, Error, ErrorKind, IResult, Parameter, Spanned,
+            parameter, Err, Error, ErrorKind, IResult, Parameter, Spanned,
         };
 
         fn unwrap_parameter<'s>(
@@ -327,91 +333,47 @@ mod spec {
 
         #[test]
         fn empty() {
-            eq(
-                format!(
-                    "{:?}",
-                    unwrap_parameter(parameter(Spanned::new("{}")))
-                ),
-                r#"Parameter (
-                LocatedSpan {
-                    offset: 1,
-                    line: 1,
-                    fragment: "",
-                    extra: ()
-                }
-            )"#,
-            );
+            assert_eq!(*unwrap_parameter(parameter(Spanned::new("{}"))).0, "");
         }
 
         #[test]
         fn named() {
-            eq(
-                format!(
-                    "{:?}",
-                    unwrap_parameter(parameter(Spanned::new("{string}")))
-                ),
-                r#"Parameter (
-                LocatedSpan {
-                    offset: 1,
-                    line: 1,
-                    fragment: "string",
-                    extra: ()
-                }
-            )"#,
+            assert_eq!(
+                *unwrap_parameter(parameter(Spanned::new("{string}"))).0,
+                "string",
             );
         }
 
         #[test]
         fn named_with_spaces() {
-            eq(
-                format!(
-                    "{:?}",
-                    unwrap_parameter(parameter(Spanned::new("{with space}")))
-                ),
-                r#"Parameter (
-                LocatedSpan {
-                    offset: 1,
-                    line: 1,
-                    fragment: "with space",
-                    extra: ()
-                }
-            )"#,
+            assert_eq!(
+                *unwrap_parameter(parameter(Spanned::new("{with space}"))).0,
+                "with space",
             );
         }
 
         #[test]
         fn named_with_escaped() {
-            eq(
-                format!(
-                    "{:?}",
-                    unwrap_parameter(parameter(Spanned::new("{with \\{}")))
-                ),
-                r#"Parameter (
-                LocatedSpan {
-                    offset: 1,
-                    line: 1,
-                    fragment: "with \\{",
-                    extra: ()
-                }
-            )"#,
+            assert_eq!(
+                *unwrap_parameter(parameter(Spanned::new("{with \\{}"))).0,
+                "with \\{",
             );
         }
 
         #[test]
         fn named_with_closing_brace() {
-            eq(
-                format!(
-                    "{:?}",
-                    unwrap_parameter(parameter(Spanned::new("{with )}")))
-                ),
-                r#"Parameter (
-                LocatedSpan {
-                    offset: 1,
-                    line: 1,
-                    fragment: "with )",
-                    extra: ()
-                }
-            )"#,
+            assert_eq!(
+                *unwrap_parameter(parameter(Spanned::new("{with )}"))).0,
+                "with )",
+            );
+        }
+
+        #[allow(clippy::non_ascii_literal)]
+        #[test]
+        fn named_with_emoji() {
+            assert_eq!(
+                *unwrap_parameter(parameter(Spanned::new("{🦀}"))).0,
+                "🦀",
             );
         }
 
@@ -436,12 +398,8 @@ mod spec {
             ];
 
             match err {
-                [
-                    Err::Failure(Error::NestedParameter(e1)),
-                    Err::Failure(Error::NestedParameter(e2)),
-                    Err::Failure(Error::NestedParameter(e3)),
-                    Err::Failure(Error::NestedParameter(e4)),
-                ] => {
+                [Err::Failure(Error::NestedParameter(e1)), Err::Failure(Error::NestedParameter(e2)), Err::Failure(Error::NestedParameter(e3)), Err::Failure(Error::NestedParameter(e4))] =>
+                {
                     assert_eq!(*e1, "{nest}");
                     assert_eq!(*e2, "{nest}");
                     assert_eq!(*e3, "{nest}");
@@ -458,17 +416,13 @@ mod spec {
                 parameter(Spanned::new("{before(nest)}")).expect_err("error"),
                 parameter(Spanned::new("{(nest)after}")).expect_err("error"),
                 parameter(Spanned::new("{bef(nest)aft}")).expect_err("error"),
-                parameter(Spanned::new("{bef(n(e)s(t))aft}")).expect_err("error"),
+                parameter(Spanned::new("{bef(n(e)s(t))aft}"))
+                    .expect_err("error"),
             ];
 
             match err {
-                [
-                Err::Failure(Error::OptionalInParameter(e1)),
-                Err::Failure(Error::OptionalInParameter(e2)),
-                Err::Failure(Error::OptionalInParameter(e3)),
-                Err::Failure(Error::OptionalInParameter(e4)),
-                Err::Failure(Error::OptionalInParameter(e5)),
-                ] => {
+                [Err::Failure(Error::OptionalInParameter(e1)), Err::Failure(Error::OptionalInParameter(e2)), Err::Failure(Error::OptionalInParameter(e3)), Err::Failure(Error::OptionalInParameter(e4)), Err::Failure(Error::OptionalInParameter(e5))] =>
+                {
                     assert_eq!(*e1, "(nest)");
                     assert_eq!(*e2, "(nest)");
                     assert_eq!(*e3, "(nest)");
@@ -488,11 +442,8 @@ mod spec {
             ];
 
             match err {
-                [
-                Err::Failure(Error::UnescapedReservedCharacter(e1)),
-                Err::Failure(Error::UnescapedReservedCharacter(e2)),
-                Err::Failure(Error::UnescapedReservedCharacter(e3)),
-                ] => {
+                [Err::Failure(Error::UnescapedReservedCharacter(e1)), Err::Failure(Error::UnescapedReservedCharacter(e2)), Err::Failure(Error::UnescapedReservedCharacter(e3))] =>
+                {
                     assert_eq!(*e1, "(");
                     assert_eq!(*e2, "{");
                     assert_eq!(*e3, "/");
@@ -509,10 +460,8 @@ mod spec {
             ];
 
             match err {
-                [
-                Err::Failure(Error::UnfinishedParameter(e1)),
-                Err::Failure(Error::UnfinishedParameter(e2)),
-                ] => {
+                [Err::Failure(Error::UnfinishedParameter(e1)), Err::Failure(Error::UnfinishedParameter(e2))] =>
+                {
                     assert_eq!(*e1, "{");
                     assert_eq!(*e2, "{");
                 }

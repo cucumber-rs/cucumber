@@ -51,9 +51,10 @@ impl<'s> Optional<'s> {
             .iter()
             .map(|opt| match opt {
                 Option::Optional(opt) => opt.span_len(),
-                Option::Text(text) => text.len() + 2,
+                Option::Text(text) => text.len(),
             })
             .sum::<usize>()
+            + 2
     }
 
     pub(crate) fn first_span(&self) -> Spanned<'s> {
