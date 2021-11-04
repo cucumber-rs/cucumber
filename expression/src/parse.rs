@@ -14,8 +14,8 @@ use nom::{
 
 use crate::{
     ast::{
-        Alternation, Alternative, Expression, Option, Optional, Parameter,
-        SingleExpr, Spanned,
+        Alternation, Alternative, Expression, Optional, Parameter, SingleExpr,
+        Spanned,
     },
     combinator::{and_then, escaped0, map_err},
 };
@@ -78,7 +78,7 @@ fn is_text(c: char) -> bool {
 ///
 /// ```text
 /// parameter := '{' name* '}'
-/// name      := character except '{' | '}' | '(' | '/'
+/// name      := any character except '{' | '}' | '(' | '/'
 /// ```
 ///
 /// Note: `{`, `}`, `(`, `/` still can be used if escaped with `\`
@@ -136,7 +136,7 @@ fn parameter<'s>(
             Some('(') => {
                 if let Ok((_, opt)) = peek(optional)(input) {
                     return Error::OptionalInParameter(
-                        input.take(opt.span_len()),
+                        input.take(opt.len() + 2),
                     )
                     .failure();
                 }
@@ -160,53 +160,94 @@ fn parameter<'s>(
     Ok((input, Parameter(par_name)))
 }
 
-fn option(input: Spanned) -> IResult<Spanned, Option, Error> {
-    alt((
-        map(optional, Option::Optional),
-        map(
-            verify(
-                escaped_reserved_chars0(take_while(or_space(|c| {
-                    is_text(c) && c != ')'
-                }))),
-                |s: &Spanned| !s.is_empty(),
-            ),
-            Option::Text,
-        ),
-    ))(input)
-}
+/// # Syntax
+///
+/// ```text
+/// optional := '(' text+ ')'
+/// text     := any character except '(' | ')' | '{' | '/'
+/// ```
+///
+/// Note: `{`, `}`, `(`, `/` still can be used if escaped with `\`
+///
+/// # Example
+///
+/// ```text
+/// (name)
+/// (with spaces)
+/// (escaped \/\{\()
+/// (no need to escape })
+/// (🦀)
+/// ```
+///
+/// # Errors
+///
+/// ## Recoverable [`Error`]s
+///
+/// - If `input` doesn't start with `(`
+///
+/// ## Irrecoverable [`Failure`]s
+///
+/// - [`EmptyOptional`]
+/// - [`NestedOptional`]
+/// - [`ParameterInOptional`]
+/// - [`UnescapedReservedCharacter`]
+/// - [`UnfinishedOptional`]
+///
+/// [`Error`]: Err::Error
+/// [`Failure`]: Err::Failure
+/// [`EmptyOptional`]: Error::EmptyOptional
+/// [`NestedOptional`]: Error::NestedOptional
+/// [`ParameterInOptional`]: Error::ParameterInOptional
+/// [`UnescapedReservedCharacter`]: Error::UnescapedReservedCharacter
+/// [`UnfinishedOptional`]: Error::UnfinishedOptional
+fn optional<'s>(
+    input: Spanned<'s>,
+) -> IResult<Spanned<'s>, Optional<'s>, Error<'s>> {
+    let is_text = |c| !"(){\\/".contains(c);
 
-fn optional(input: Spanned) -> IResult<Spanned, Optional, Error> {
-    let (input, opening_paren) = tag("(")(input)?;
-    let (input, optional) = and_then(
-        map_err(map(many1(option), Optional), |err| {
-            if let Err::Error(Error::Other(span, ErrorKind::Many1)) = err {
-                match span.chars().next() {
-                    Some('{') if peek(parameter)(span).is_ok() => {
-                        Error::ParameterInOptional(span)
-                    }
-                    Some('/') => Error::AlternationInOptional(span),
-                    Some(')') => Error::EmptyOptional(span),
-                    Some(c) if RESERVED_CHARS.contains(c) => {
-                        Error::UnescapedReservedCharacter(span)
-                    }
-                    _ => Error::EmptyOptional(span),
+    let fail = |input: Spanned<'s>, opening_brace| {
+        match input.chars().next() {
+            Some('(') => {
+                if let Ok((_, (opt, ..))) = peek(tuple((
+                    optional,
+                    escaped_reserved_chars0(take_while(is_text)),
+                    tag(")"),
+                )))(input)
+                {
+                    return Error::NestedOptional(input.take(opt.0.len() + 2))
+                        .failure();
                 }
-                .failure()
-            } else {
-                err
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
             }
-        }),
-        |opt| {
-            opt.can_be_simplified().map_or(Ok(opt), |sp| {
-                Err(Err::Failure(Error::OptionCanBeSimplified(sp)))
-            })
-        },
-    )(input)?;
-    let (input, _) = map_err(tag(")"), |_| {
-        Error::UnfinishedOptional(opening_paren).failure()
-    })(input)?;
+            Some('{') => {
+                if let Ok((_, par)) = peek(parameter)(input) {
+                    return Error::ParameterInOptional(
+                        input.take(par.len() + 2),
+                    )
+                    .failure();
+                }
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
+            }
+            Some(c) if RESERVED_CHARS.contains(c) => {
+                return Error::UnescapedReservedCharacter(input.take(1))
+                    .failure();
+            }
+            _ => {}
+        }
+        Error::UnfinishedOptional(opening_brace).failure()
+    };
 
-    Ok((input, optional))
+    let (input, opening_paren) = tag("(")(input)?;
+    let (input, opt) = escaped_reserved_chars0(take_while(is_text))(input)?;
+    let (input, _) = map_err(tag(")"), |_| fail(input, opening_paren))(input)?;
+
+    if opt.is_empty() {
+        return Err(Err::Failure(Error::EmptyOptional(opt)));
+    }
+
+    Ok((input, Optional(opt)))
 }
 
 fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
@@ -271,12 +312,12 @@ fn expr(input: Spanned) -> IResult<Spanned, Expression, Error> {
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error<'a> {
     NestedParameter(Spanned<'a>),
+    NestedOptional(Spanned<'a>),
     OptionalInParameter(Spanned<'a>),
+    ParameterInOptional(Spanned<'a>),
     EmptyAlternation(Spanned<'a>),
     EmptyOptional(Spanned<'a>),
-    ParameterInOptional(Spanned<'a>),
     AlternationInOptional(Spanned<'a>),
-    OptionCanBeSimplified(Spanned<'a>),
     UnfinishedParameter(Spanned<'a>),
     UnfinishedOptional(Spanned<'a>),
     UnescapedReservedCharacter(Spanned<'a>),
@@ -307,9 +348,7 @@ impl<'a> ParseError<Spanned<'a>> for Error<'a> {
 
 #[cfg(test)]
 mod spec {
-    use super::{
-        parameter, Err, Error, ErrorKind, IResult, Parameter, Spanned,
-    };
+    use super::{optional, parameter, Err, Error, ErrorKind, IResult, Spanned};
 
     fn eq(left: impl AsRef<str>, right: impl AsRef<str>) {
         assert_eq!(
@@ -318,28 +357,24 @@ mod spec {
         );
     }
 
-    mod parameter {
-        use super::{
-            parameter, Err, Error, ErrorKind, IResult, Parameter, Spanned,
-        };
+    fn unwrap_parser<'s, T>(par: IResult<Spanned<'s>, T, Error<'s>>) -> T {
+        let (rest, par) = par.expect("ok");
+        assert_eq!(*rest, "");
+        par
+    }
 
-        fn unwrap_parameter<'s>(
-            par: IResult<Spanned<'s>, Parameter<'s>, Error<'s>>,
-        ) -> Parameter<'s> {
-            let (rest, par) = par.expect("ok");
-            assert_eq!(*rest, "");
-            par
-        }
+    mod parameter {
+        use super::{parameter, unwrap_parser, Err, Error, ErrorKind, Spanned};
 
         #[test]
         fn empty() {
-            assert_eq!(*unwrap_parameter(parameter(Spanned::new("{}"))).0, "");
+            assert_eq!(**unwrap_parser(parameter(Spanned::new("{}"))), "");
         }
 
         #[test]
         fn named() {
             assert_eq!(
-                *unwrap_parameter(parameter(Spanned::new("{string}"))).0,
+                **unwrap_parser(parameter(Spanned::new("{string}"))),
                 "string",
             );
         }
@@ -347,7 +382,7 @@ mod spec {
         #[test]
         fn named_with_spaces() {
             assert_eq!(
-                *unwrap_parameter(parameter(Spanned::new("{with space}"))).0,
+                **unwrap_parser(parameter(Spanned::new("{with space}"))),
                 "with space",
             );
         }
@@ -355,15 +390,15 @@ mod spec {
         #[test]
         fn named_with_escaped() {
             assert_eq!(
-                *unwrap_parameter(parameter(Spanned::new("{with \\{}"))).0,
+                **unwrap_parser(parameter(Spanned::new("{with \\{}"))),
                 "with \\{",
             );
         }
 
         #[test]
-        fn named_with_closing_brace() {
+        fn named_with_closing_paren() {
             assert_eq!(
-                *unwrap_parameter(parameter(Spanned::new("{with )}"))).0,
+                **unwrap_parser(parameter(Spanned::new("{with )}"))),
                 "with )",
             );
         }
@@ -371,17 +406,12 @@ mod spec {
         #[allow(clippy::non_ascii_literal)]
         #[test]
         fn named_with_emoji() {
-            assert_eq!(
-                *unwrap_parameter(parameter(Spanned::new("{🦀}"))).0,
-                "🦀",
-            );
+            assert_eq!(**unwrap_parser(parameter(Spanned::new("{🦀}"))), "🦀",);
         }
 
-        /// - [`UnfinishedParameter`]
         #[test]
         fn errors_on_empty() {
             let span = Spanned::new("");
-
             assert_eq!(
                 parameter(span),
                 Err(Err::Error(Error::Other(span, ErrorKind::Tag))),
@@ -398,8 +428,13 @@ mod spec {
             ];
 
             match err {
-                [Err::Failure(Error::NestedParameter(e1)), Err::Failure(Error::NestedParameter(e2)), Err::Failure(Error::NestedParameter(e3)), Err::Failure(Error::NestedParameter(e4))] =>
-                {
+                #[rustfmt::skip]
+                [
+                    Err::Failure(Error::NestedParameter(e1)),
+                    Err::Failure(Error::NestedParameter(e2)),
+                    Err::Failure(Error::NestedParameter(e3)),
+                    Err::Failure(Error::NestedParameter(e4)),
+                ] => {
                     assert_eq!(*e1, "{nest}");
                     assert_eq!(*e2, "{nest}");
                     assert_eq!(*e3, "{nest}");
@@ -416,18 +451,20 @@ mod spec {
                 parameter(Spanned::new("{before(nest)}")).expect_err("error"),
                 parameter(Spanned::new("{(nest)after}")).expect_err("error"),
                 parameter(Spanned::new("{bef(nest)aft}")).expect_err("error"),
-                parameter(Spanned::new("{bef(n(e)s(t))aft}"))
-                    .expect_err("error"),
             ];
 
             match err {
-                [Err::Failure(Error::OptionalInParameter(e1)), Err::Failure(Error::OptionalInParameter(e2)), Err::Failure(Error::OptionalInParameter(e3)), Err::Failure(Error::OptionalInParameter(e4)), Err::Failure(Error::OptionalInParameter(e5))] =>
-                {
+                #[rustfmt::skip]
+                [
+                    Err::Failure(Error::OptionalInParameter(e1)),
+                    Err::Failure(Error::OptionalInParameter(e2)),
+                    Err::Failure(Error::OptionalInParameter(e3)),
+                    Err::Failure(Error::OptionalInParameter(e4)),
+                ] => {
                     assert_eq!(*e1, "(nest)");
                     assert_eq!(*e2, "(nest)");
                     assert_eq!(*e3, "(nest)");
                     assert_eq!(*e4, "(nest)");
-                    assert_eq!(*e5, "(n(e)s(t))");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
@@ -437,16 +474,23 @@ mod spec {
         fn fails_on_unescaped_reserved_char() {
             let err = [
                 parameter(Spanned::new("{(opt}")).expect_err("error"),
+                parameter(Spanned::new("{(n(e)st)}")).expect_err("error"),
                 parameter(Spanned::new("{{nest}")).expect_err("error"),
                 parameter(Spanned::new("{l/r}")).expect_err("error"),
             ];
 
             match err {
-                [Err::Failure(Error::UnescapedReservedCharacter(e1)), Err::Failure(Error::UnescapedReservedCharacter(e2)), Err::Failure(Error::UnescapedReservedCharacter(e3))] =>
-                {
+                #[rustfmt::skip]
+                [
+                    Err::Failure(Error::UnescapedReservedCharacter(e1)),
+                    Err::Failure(Error::UnescapedReservedCharacter(e2)),
+                    Err::Failure(Error::UnescapedReservedCharacter(e3)),
+                    Err::Failure(Error::UnescapedReservedCharacter(e4)),
+                ] => {
                     assert_eq!(*e1, "(");
-                    assert_eq!(*e2, "{");
-                    assert_eq!(*e3, "/");
+                    assert_eq!(*e2, "(");
+                    assert_eq!(*e3, "{");
+                    assert_eq!(*e4, "/");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
@@ -460,10 +504,175 @@ mod spec {
             ];
 
             match err {
-                [Err::Failure(Error::UnfinishedParameter(e1)), Err::Failure(Error::UnfinishedParameter(e2))] =>
-                {
+                #[rustfmt::skip]
+                [
+                    Err::Failure(Error::UnfinishedParameter(e1)),
+                    Err::Failure(Error::UnfinishedParameter(e2))
+                ] => {
                     assert_eq!(*e1, "{");
                     assert_eq!(*e2, "{");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+    }
+
+    mod optional {
+        use super::{optional, unwrap_parser, Err, Error, ErrorKind, Spanned};
+
+        #[test]
+        fn basic() {
+            assert_eq!(
+                **unwrap_parser(optional(Spanned::new("(string)"))),
+                "string",
+            );
+        }
+
+        #[test]
+        fn with_spaces() {
+            assert_eq!(
+                **unwrap_parser(optional(Spanned::new("(with space)"))),
+                "with space",
+            );
+        }
+
+        #[test]
+        fn with_escaped() {
+            assert_eq!(
+                **unwrap_parser(optional(Spanned::new("(with \\{)"))),
+                "with \\{",
+            );
+        }
+
+        #[test]
+        fn with_closing_brace() {
+            assert_eq!(
+                **unwrap_parser(optional(Spanned::new("(with })"))),
+                "with }",
+            );
+        }
+
+        #[allow(clippy::non_ascii_literal)]
+        #[test]
+        fn with_emoji() {
+            assert_eq!(**unwrap_parser(optional(Spanned::new("(🦀)"))), "🦀");
+        }
+
+        #[test]
+        fn errors_on_empty() {
+            let span = Spanned::new("");
+
+            assert_eq!(
+                optional(span),
+                Err(Err::Error(Error::Other(span, ErrorKind::Tag))),
+            );
+        }
+
+        #[test]
+        fn fails_on_empty() {
+            let err = optional(Spanned::new("()")).unwrap_err();
+
+            match err {
+                Err::Failure(Error::EmptyOptional(e)) => {
+                    assert_eq!(*e, "");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_nested() {
+            let err = [
+                optional(Spanned::new("((nest))")).expect_err("error"),
+                optional(Spanned::new("(before(nest))")).expect_err("error"),
+                optional(Spanned::new("((nest)after)")).expect_err("error"),
+                optional(Spanned::new("(bef(nest)aft)")).expect_err("error"),
+            ];
+
+            match err {
+                #[rustfmt::skip]
+                [
+                Err::Failure(Error::NestedOptional(e1)),
+                Err::Failure(Error::NestedOptional(e2)),
+                Err::Failure(Error::NestedOptional(e3)),
+                Err::Failure(Error::NestedOptional(e4)),
+                ] => {
+                    assert_eq!(*e1, "(nest)");
+                    assert_eq!(*e2, "(nest)");
+                    assert_eq!(*e3, "(nest)");
+                    assert_eq!(*e4, "(nest)");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_parameter() {
+            let err = [
+                optional(Spanned::new("({nest})")).expect_err("error"),
+                optional(Spanned::new("(before{nest})")).expect_err("error"),
+                optional(Spanned::new("({nest}after)")).expect_err("error"),
+                optional(Spanned::new("(bef{nest}aft)")).expect_err("error"),
+            ];
+
+            match err {
+                #[rustfmt::skip]
+                [
+                Err::Failure(Error::ParameterInOptional(e1)),
+                Err::Failure(Error::ParameterInOptional(e2)),
+                Err::Failure(Error::ParameterInOptional(e3)),
+                Err::Failure(Error::ParameterInOptional(e4)),
+                ] => {
+                    assert_eq!(*e1, "{nest}");
+                    assert_eq!(*e2, "{nest}");
+                    assert_eq!(*e3, "{nest}");
+                    assert_eq!(*e4, "{nest}");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_unescaped_reserved_char() {
+            let err = [
+                optional(Spanned::new("({opt)")).expect_err("error"),
+                optional(Spanned::new("({n{e}st})")).expect_err("error"),
+                optional(Spanned::new("((nest)")).expect_err("error"),
+                optional(Spanned::new("(l/r)")).expect_err("error"),
+            ];
+
+            match err {
+                #[rustfmt::skip]
+                [
+                Err::Failure(Error::UnescapedReservedCharacter(e1)),
+                Err::Failure(Error::UnescapedReservedCharacter(e2)),
+                Err::Failure(Error::UnescapedReservedCharacter(e3)),
+                Err::Failure(Error::UnescapedReservedCharacter(e4)),
+                ] => {
+                    assert_eq!(*e1, "{");
+                    assert_eq!(*e2, "{");
+                    assert_eq!(*e3, "(");
+                    assert_eq!(*e4, "/");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_unfinished() {
+            let err = [
+                optional(Spanned::new("(")).expect_err("error"),
+                optional(Spanned::new("(name ")).expect_err("error"),
+            ];
+
+            match err {
+                #[rustfmt::skip]
+                [
+                Err::Failure(Error::UnfinishedOptional(e1)),
+                Err::Failure(Error::UnfinishedOptional(e2))
+                ] => {
+                    assert_eq!(*e1, "(");
+                    assert_eq!(*e2, "(");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
