@@ -2,11 +2,11 @@ use std::{iter, ops::RangeFrom};
 
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while},
+    bytes::complete::{tag, take_while, take_while1},
     character::complete::one_of,
     combinator::{map, peek, verify},
     error::{ErrorKind, ParseError},
-    multi::{many0, many1, separated_list0},
+    multi::{many0, many1, separated_list0, separated_list1},
     sequence::tuple,
     AsChar, Err, FindToken, IResult, InputIter, InputLength, InputTake,
     InputTakeAtPosition, Offset, Parser, Slice,
@@ -17,7 +17,7 @@ use crate::{
         Alternation, Alternative, Expression, Optional, Parameter, SingleExpr,
         Spanned,
     },
-    combinator::{escaped0, map_err},
+    combinator::{and_then, escaped0, map_err},
 };
 
 /// Reserved characters that require special handling.
@@ -258,8 +258,8 @@ fn optional<'s>(
 /// # Syntax
 ///
 /// ```text
-/// alternative := optional | text*
-/// text        := any character except ' ' | '(' | '{' | '/'
+/// alternative             := optional | text+
+/// text_without_whitespace := any character except ' ' | '(' | '{' | '/'
 /// ```
 ///
 /// Note: ` `, `(`, `{`, `/` still can be used if escaped with `\`.
@@ -289,12 +289,24 @@ fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
     alt((
         map(optional, Alternative::Optional),
         map(
-            escaped_reserved_chars0(take_while(is_text)),
+            verify(escaped_reserved_chars0(take_while(is_text)), |p| {
+                !p.is_empty()
+            }),
             Alternative::Text,
         ),
     ))(input)
 }
 
+/// # Syntax
+///
+/// ```text
+/// alternation             := single_alternation (`/` single_alternation)+
+/// single_alternation      := ((text+ optional*) | (optional+ text+))+
+/// text_without_whitespace := any character except ' ' | '(' | '{' | '/'
+/// ```
+///
+/// Note: ` `, `(`, `{`, `/` still can be used if escaped with `\`.
+///
 /// # Example
 ///
 /// ```text
@@ -304,33 +316,49 @@ fn alternative(input: Spanned) -> IResult<Spanned, Alternative, Error> {
 /// no-need-to-escape)}/text
 /// 🦀/⚙️
 /// ```
+///
+/// # Errors
+///
+/// ## Recoverable [`Error`]s
+///
+/// - If `input` doesn't have `/`
+///
+/// ## Irrecoverable [`Failure`]s
+///
+/// - Any [`Failure`] of [`optional()`]
+/// - [`EmptyAlternation`]
+/// - [`OnlyOptionalInAlternation`]
+///
+/// [`Error`]: Err::Error
+/// [`Failure`]: Err::Failure
+/// [`EmptyAlternation`]: Error::EmptyAlternation
+/// [`OnlyOptionalInAlternation`]: Error::OnlyOptionalInAlternation
 fn alternation(input: Spanned) -> IResult<Spanned, Alternation, Error> {
-    let not_empty = |alt: &Alternative| {
-        if let Alternative::Text(text) = alt {
-            !text.is_empty()
-        } else {
-            true
+    let (rest, alt) = match separated_list1(tag("/"), many1(alternative))(input)
+    {
+        Ok((rest, alt)) => {
+            if let Ok((_, slash)) = peek::<_, _, Error, _>(tag("/"))(rest) {
+                Err(Error::EmptyAlternation(slash).failure())
+            } else if alt.len() == 1 {
+                Err(Err::Error(Error::Other(rest, ErrorKind::Tag)))
+            } else {
+                Ok((rest, Alternation(alt)))
+            }
         }
-    };
+        Err(Err::Error(Error::Other(sp, ErrorKind::Many1)))
+            if peek::<_, _, Error, _>(tag("/"))(sp).is_ok() =>
+        {
+            Err(Error::EmptyAlternation(sp.take(1)).failure())
+        }
+        Err(e) => Err(e),
+    }?;
 
-    let (rest, (head, head_rest, _, tail)) = tuple((
-        alternative,
-        many0(verify(alternative, not_empty)),
-        tag("/"),
-        separated_list0(tag("/"), many1(verify(alternative, not_empty))),
-    ))(input)?;
-
-    if not_empty(&head) && !tail.is_empty() {
-        let alt = Alternation(
-            iter::once(iter::once(head).chain(head_rest).collect())
-                .chain(tail)
-                .collect(),
-        );
-        alt.contains_only_optional()
-            .map_or(Ok((rest, alt)), |e| Err(e.failure()))
-    } else {
-        Err(Err::Failure(Error::EmptyAlternation(rest)))
-    }
+    alt.contains_only_optional()
+        .then(|| {
+            Err(Error::OnlyOptionalInAlternation(input.take(alt.span_len()))
+                .failure())
+        })
+        .unwrap_or(Ok((rest, alt)))
 }
 
 fn single_expr(input: Spanned) -> IResult<Spanned, SingleExpr, Error> {
@@ -402,9 +430,23 @@ impl<'a> ParseError<Spanned<'a>> for Error<'a> {
 #[cfg(test)]
 mod spec {
     use super::{
-        alternative, optional, parameter, Alternative, Err, Error, ErrorKind,
-        IResult, Spanned,
+        alternation, alternative, optional, parameter, Alternative, Err, Error,
+        ErrorKind, IResult, Spanned,
     };
+
+    fn eq(left: impl AsRef<str>, right: impl AsRef<str>) {
+        assert_eq!(
+            left.as_ref()
+                .replace(' ', "")
+                .replace('\n', "")
+                .replace('\t', ""),
+            right
+                .as_ref()
+                .replace(' ', "")
+                .replace('\n', "")
+                .replace('\t', ""),
+        );
+    }
 
     fn unwrap_parser<'s, T>(par: IResult<Spanned<'s>, T, Error<'s>>) -> T {
         let (rest, par) = par.expect("ok");
@@ -635,7 +677,7 @@ mod spec {
 
             match err {
                 Err::Failure(Error::EmptyOptional(e)) => {
-                    assert_eq!(*e, "\\");
+                    assert_eq!(*e, "");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }
@@ -777,18 +819,9 @@ mod spec {
 
     mod alternative {
         use super::{
-            alternative, unwrap_parser, Alternative, Err, Error, Spanned,
+            alternative, unwrap_parser, Alternative, Err, Error, ErrorKind,
+            Spanned,
         };
-
-        #[test]
-        fn empty() {
-            match unwrap_parser(alternative(Spanned::new(""))) {
-                Alternative::Text(t) => assert_eq!(*t, ""),
-                Alternative::Optional(_) => {
-                    panic!("expected Alternative::Text")
-                }
-            }
-        }
 
         #[allow(clippy::non_ascii_literal)]
         #[test]
@@ -859,6 +892,14 @@ mod spec {
         }
 
         #[test]
+        fn errors_on_empty() {
+            match alternative(Spanned::new("")).unwrap_err() {
+                Err::Error(Error::Other(_, ErrorKind::Alt)) => {}
+                e => panic!("wrong error"),
+            }
+        }
+
+        #[test]
         fn fails_on_unfinished_optional() {
             let err = (
                 alternative(Spanned::new("(")).unwrap_err(),
@@ -891,6 +932,317 @@ mod spec {
                 ) => {
                     assert_eq!(*e1, "\\");
                     assert_eq!(*e2, "\\");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+    }
+
+    mod alternation {
+        use super::{
+            alternation, eq, unwrap_parser, Err, Error, ErrorKind, Spanned,
+        };
+
+        #[allow(clippy::non_ascii_literal)]
+        #[test]
+        fn basic() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(alternation(Spanned::new("l/🦀")))
+            );
+
+            eq(
+                ast,
+                r#"Alternation (
+                    [
+                        [
+                            Text (
+                                LocatedSpan {
+                                    offset: 0,
+                                    line: 1,
+                                    fragment: "l",
+                                    extra: ()
+                                }
+                            )
+                        ],
+                        [
+                            Text (
+                                LocatedSpan {
+                                    offset: 2,
+                                    line: 1,
+                                    fragment: "🦀",
+                                    extra: ()
+                                }
+                            )
+                        ]
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn with_optionals() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(alternation(Spanned::new(
+                    "l(opt)/(opt)r/l(opt)r"
+                ))),
+            );
+
+            eq(
+                ast,
+                r#"Alternation (
+                    [
+                        [
+                            Text (
+                                LocatedSpan {
+                                    offset: 0,
+                                    line: 1,
+                                    fragment: "l",
+                                    extra: ()
+                                }
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 2,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            )
+                        ],
+                        [
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 8,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Text (
+                                LocatedSpan {
+                                    offset: 12,
+                                    line: 1,
+                                    fragment: "r",
+                                    extra: ()
+                                }
+                            )
+                        ],
+                        [
+                            Text (
+                                LocatedSpan {
+                                    offset: 14,
+                                    line: 1,
+                                    fragment: "l",
+                                    extra: ()
+                                }
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 16,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Text (
+                                LocatedSpan {
+                                    offset: 20,
+                                    line: 1,
+                                    fragment: "r",
+                                    extra: ()
+                                }
+                            )
+                        ]
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn with_more_optionals() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(alternation(Spanned::new(
+                    "l(opt)(opt)/(opt)(opt)r/(opt)m(opt)"
+                ))),
+            );
+
+            eq(
+                ast,
+                r#"Alternation (
+                    [
+                        [
+                            Text (
+                                LocatedSpan {
+                                    offset: 0,
+                                    line: 1,
+                                    fragment: "l",
+                                    extra: ()
+                                }
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 2,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 7,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            )
+                        ],
+                        [
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 13,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 18,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Text (
+                                LocatedSpan {
+                                    offset: 22,
+                                    line: 1,
+                                    fragment: "r",
+                                    extra: ()
+                                }
+                            )
+                        ],
+                        [
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 25,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            ),
+                            Text (
+                                LocatedSpan {
+                                    offset: 29,
+                                    line: 1,
+                                    fragment: "m",
+                                    extra: ()
+                                }
+                            ),
+                            Optional (
+                                Optional (
+                                    LocatedSpan {
+                                        offset: 31,
+                                        line: 1,
+                                        fragment: "opt",
+                                        extra: ()
+                                    }
+                                )
+                            )
+                        ]
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn errors_without_slash() {
+            match (
+                alternation(Spanned::new("")).unwrap_err(),
+                alternation(Spanned::new("{par}")).unwrap_err(),
+                alternation(Spanned::new("text")).unwrap_err(),
+                alternation(Spanned::new("(opt)")).unwrap_err(),
+            ) {
+                (
+                    Err::Error(Error::Other(_, ErrorKind::Many1)),
+                    Err::Error(Error::Other(_, ErrorKind::Many1)),
+                    Err::Error(Error::Other(_, ErrorKind::Tag)),
+                    Err::Error(Error::Other(_, ErrorKind::Tag)),
+                ) => {}
+                _ => panic!("wrong err"),
+            }
+        }
+
+        #[test]
+        fn fails_on_empty_alternation() {
+            let err = (
+                alternation(Spanned::new("/")).unwrap_err(),
+                alternation(Spanned::new("l/")).unwrap_err(),
+                alternation(Spanned::new("/r")).unwrap_err(),
+                alternation(Spanned::new("l/m/")).unwrap_err(),
+                alternation(Spanned::new("l//r")).unwrap_err(),
+                alternation(Spanned::new("/m/r")).unwrap_err(),
+            );
+
+            match err {
+                (
+                    Err::Failure(Error::EmptyAlternation(e1)),
+                    Err::Failure(Error::EmptyAlternation(e2)),
+                    Err::Failure(Error::EmptyAlternation(e3)),
+                    Err::Failure(Error::EmptyAlternation(e4)),
+                    Err::Failure(Error::EmptyAlternation(e5)),
+                    Err::Failure(Error::EmptyAlternation(e6)),
+                ) => {
+                    assert_eq!(*e1, "/");
+                    assert_eq!(*e2, "/");
+                    assert_eq!(*e3, "/");
+                    assert_eq!(*e4, "/");
+                    assert_eq!(*e5, "/");
+                    assert_eq!(*e6, "/");
+                }
+                _ => panic!("wrong error: {:?}", err),
+            }
+        }
+
+        #[test]
+        fn fails_on_only_optional() {
+            let err = (
+                alternation(Spanned::new("text/(opt)")).unwrap_err(),
+                alternation(Spanned::new("text/(opt)(opt)")).unwrap_err(),
+                alternation(Spanned::new("(opt)/text")).unwrap_err(),
+                alternation(Spanned::new("(opt)/(opt)")).unwrap_err(),
+            );
+
+            match err {
+                (
+                    Err::Failure(Error::OnlyOptionalInAlternation(e1)),
+                    Err::Failure(Error::OnlyOptionalInAlternation(e2)),
+                    Err::Failure(Error::OnlyOptionalInAlternation(e3)),
+                    Err::Failure(Error::OnlyOptionalInAlternation(e4)),
+                ) => {
+                    assert_eq!(*e1, "text/(opt)");
+                    assert_eq!(*e2, "text/(opt)(opt)");
+                    assert_eq!(*e3, "(opt)/text");
+                    assert_eq!(*e4, "(opt)/(opt)");
                 }
                 _ => panic!("wrong error: {:?}", err),
             }

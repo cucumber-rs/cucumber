@@ -23,15 +23,29 @@ pub struct Alternation<'s>(pub Vec<SingleAlternation<'s>>);
 pub type SingleAlternation<'s> = Vec<Alternative<'s>>;
 
 impl<'s> Alternation<'s> {
-    pub(crate) fn contains_only_optional(&self) -> Option<Error<'s>> {
-        for alt in &self.0 {
-            if alt.len() == 1 {
-                if let Some(Alternative::Optional(opt)) = alt.last() {
-                    return Some(Error::OnlyOptionalInAlternation(**opt));
-                }
+    pub(crate) fn span_len(&self) -> usize {
+        self.0
+            .iter()
+            .flatten()
+            .map(|alt| match alt {
+                Alternative::Text(t) => t.len(),
+                Alternative::Optional(opt) => opt.len() + 2,
+            })
+            .sum::<usize>()
+            + self.len()
+            - 1
+    }
+
+    pub(crate) fn contains_only_optional(&self) -> bool {
+        for single_alt in &**self {
+            if single_alt
+                .iter()
+                .all(|alt| matches!(alt, Alternative::Optional(_)))
+            {
+                return true;
             }
         }
-        None
+        false
     }
 }
 
