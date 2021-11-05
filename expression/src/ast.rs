@@ -13,9 +13,12 @@
 //! [1]: https://github.com/cucumber/cucumber-expressions#readme
 //! [2]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
+use std::fmt::Display;
+
 use derive_more::{AsRef, Deref, DerefMut};
-use nom::{error::ErrorKind, Err, InputLength};
+use nom::{error::ErrorKind, AsChar, Err, InputIter, InputLength};
 use nom_locate::LocatedSpan;
+use regex::Regex;
 
 use crate::{parse, Error};
 
@@ -55,7 +58,7 @@ impl<'s> Expression<Spanned<'s>> {
     /// # Errors
     ///
     /// See [`Error`] for more details.
-    pub fn parse<I: AsRef<str>>(
+    pub fn parse<I: AsRef<str> + ?Sized>(
         input: &'s I,
     ) -> Result<Self, Error<Spanned<'s>>> {
         Self::try_from(input.as_ref())

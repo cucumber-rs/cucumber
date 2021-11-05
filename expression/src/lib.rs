@@ -95,6 +95,7 @@
 
 mod ast;
 mod combinator;
+mod expansion;
 pub mod parse;
 
 #[doc(inline)]

@@ -2241,6 +2241,16 @@ mod spec {
         }
 
         #[test]
+        fn err_on_single_slash() {
+            match expression(Spanned::new("\\")).unwrap_err() {
+                Err::Failure(Error::EscapedNonReservedCharacter(_)) => {}
+                e @ (Err::Incomplete(_) | Err::Error(_) | Err::Failure(_)) => {
+                    panic!("wrong err: {}", e)
+                }
+            }
+        }
+
+        #[test]
         fn empty() {
             let ast =
                 format!("{:?}", unwrap_parser(expression(Spanned::new(""))));
