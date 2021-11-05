@@ -6,7 +6,7 @@
 [![Rust 1.56+](https://img.shields.io/badge/rustc-1.56+-lightgray.svg "Rust 1.56+")](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance)
 
-- [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/codegen/CHANGELOG.md)
+- [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/expression/CHANGELOG.md)
 
 Parser for [`cucumber expression`].
 
