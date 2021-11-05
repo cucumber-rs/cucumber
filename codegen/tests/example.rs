@@ -1,20 +1,26 @@
-use std::{convert::Infallible, time::Duration};
+use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use cucumber::{gherkin::Step, given, when, World, WorldInit};
+use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
+use futures::FutureExt as _;
+use tempfile::TempDir;
 use tokio::time;
 
 #[derive(Debug, WorldInit)]
 pub struct MyWorld {
     foo: i32,
+    dir: TempDir,
 }
 
 #[async_trait(?Send)]
 impl World for MyWorld {
-    type Error = Infallible;
+    type Error = io::Error;
 
     async fn new() -> Result<Self, Self::Error> {
-        Ok(Self { foo: 0 })
+        Ok(Self {
+            foo: 0,
+            dir: TempDir::new()?,
+        })
     }
 }
 
@@ -58,11 +64,43 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
     w.foo += 1;
 }
 
+#[when(regex = r#"^I write "(\S+)" to `([^`\s]+)`$"#)]
+fn test_return_result_write(
+    w: &mut MyWorld,
+    what: String,
+    filename: String,
+) -> io::Result<()> {
+    let mut path = w.dir.path().to_path_buf();
+    path.push(filename);
+    fs::write(path, what)
+}
+
+#[then(regex = r#"^the file `([^`\s]+)` should contain "(\S+)"$"#)]
+fn test_return_result_read(
+    w: &mut MyWorld,
+    filename: String,
+    what: String,
+) -> io::Result<()> {
+    let mut path = w.dir.path().to_path_buf();
+    path.push(filename);
+
+    assert_eq!(what, fs::read_to_string(path)?);
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
-    MyWorld::cucumber()
+    let res = MyWorld::cucumber()
         .max_concurrent_scenarios(None)
         .fail_on_skipped()
-        .run_and_exit("./tests/features")
-        .await;
+        .run_and_exit("./tests/features");
+
+    let err = AssertUnwindSafe(res)
+        .catch_unwind()
+        .await
+        .expect_err("should err");
+    let err = err.downcast_ref::<String>().unwrap();
+
+    assert_eq!(err, "1 step failed");
 }

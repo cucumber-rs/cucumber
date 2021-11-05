@@ -108,11 +108,9 @@ impl Step {
         let step_matcher = self.attr_arg.regex_literal().value();
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
-        let awaiting = if func.sig.asyncness.is_some() {
-            quote! { .await }
-        } else {
-            quote! {}
-        };
+        let awaiting = func.sig.asyncness.map(|_| quote! { .await });
+        let unwrapping = (!self.returns_unit())
+            .then(|| quote! { .unwrap_or_else(|e| panic!("{}", e)) });
         let step_caller = quote! {
             {
                 #[automatically_derived]
@@ -122,7 +120,11 @@ impl Step {
                 ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
-                        #func_name(__cucumber_world, #func_args)#awaiting;
+                        ::std::mem::drop(
+                            #func_name(__cucumber_world, #func_args)
+                                #awaiting
+                                #unwrapping,
+                        );
                     };
                     ::std::boxed::Box::pin(f)
                 }
@@ -152,6 +154,20 @@ impl Step {
                 }
             );
         })
+    }
+
+    /// Indicates whether this [`Step::func`] return type is `()`.
+    fn returns_unit(&self) -> bool {
+        match &self.func.sig.output {
+            syn::ReturnType::Default => true,
+            syn::ReturnType::Type(_, ty) => {
+                if let syn::Type::Tuple(syn::TypeTuple { elems, .. }) = &**ty {
+                    elems.is_empty()
+                } else {
+                    false
+                }
+            }
+        }
     }
 
     /// Generates code that prepares function's arguments basing on
@@ -341,7 +357,7 @@ impl Parse for AttributeArgument {
                         |e| {
                             syn::Error::new(
                                 str_lit.span(),
-                                format!("Invalid regex: {}", e.to_string()),
+                                format!("Invalid regex: {}", e),
                             )
                         },
                     )?);

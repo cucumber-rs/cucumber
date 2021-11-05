@@ -6,6 +6,34 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.11.0] · 2021-??-??
+[0.11.0]: /../../tree/v0.11.0
+
+[Diff](/../../compare/v0.10.2...v0.11.0) | [Milestone](/../../milestone/3)
+
+### Added
+
+- Ability for step functions to return `Result`. ([#151])
+
+[#151]: /../../pull/151
+
+
+
+
+## [0.10.2] · 2021-11-03
+[0.10.2]: /../../tree/v0.10.2
+
+[Diff](/../../compare/v0.10.1...v0.10.2) | [Milestone](/../../milestone/5)
+
+### Fixed
+
+- Multiple `WorldInit` derivers conflicting implementations in a single module. ([#150])
+
+[#150]: /../../pull/150
+
+
+
+
 ## [0.10.1] · 2021-10-29
 [0.10.1]: /../../tree/v0.10.1
 

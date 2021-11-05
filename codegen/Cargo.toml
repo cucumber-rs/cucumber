@@ -1,6 +1,6 @@
 [package]
 name = "cucumber-codegen"
-version = "0.10.1" # should be the same as main crate version
+version = "0.11.0-dev" # should be the same as main crate version
 edition = "2021"
 rust-version = "1.56"
 description = "Code generation for `cucumber` crate."
@@ -31,9 +31,16 @@ syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
+futures = "0.3.17"
+tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 name = "example"
 path = "tests/example.rs"
+harness = false
+
+[[test]]
+name = "two_worlds"
+path = "tests/two_worlds.rs"
 harness = false
