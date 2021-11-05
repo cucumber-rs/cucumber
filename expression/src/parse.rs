@@ -1,5 +1,6 @@
 use std::ops::RangeFrom;
 
+use derive_more::{Display, Error};
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
@@ -435,30 +436,135 @@ pub fn expression(input: Spanned) -> IResult<Spanned, Expression, Error> {
     map(many0(single_expression), Expression)(input)
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Display, Eq, Error, PartialEq)]
 pub enum Error<'a> {
-    // Parameter
-    NestedParameter(Spanned<'a>),
-    OptionalInParameter(Spanned<'a>),
-    UnfinishedParameter(Spanned<'a>),
+    #[display(
+        fmt = "\
+        {}\n\
+        A parameter may not contain an other parameter.\n\
+        If you did not mean to use an optional type you can use '\\{{' to \
+        escape the '{{'. For more complicated expressions consider using a \
+        regular expression instead.",
+        _0
+    )]
+    NestedParameter(#[error(not(source))] Spanned<'a>),
 
-    // Optional
-    NestedOptional(Spanned<'a>),
-    ParameterInOptional(Spanned<'a>),
-    EmptyOptional(Spanned<'a>),
-    AlternationInOptional(Spanned<'a>),
-    UnfinishedOptional(Spanned<'a>),
+    #[display(
+        fmt = "\
+        {}\n\
+        A parameter may not contain an optional type.\n\
+        If you did not mean to use an parameter type you can use '\\(' to \
+        escape the '('.",
+        _0
+    )]
+    OptionalInParameter(#[error(not(source))] Spanned<'a>),
 
-    // Alternation
-    EmptyAlternation(Spanned<'a>),
-    OnlyOptionalInAlternation(Spanned<'a>),
+    #[display(
+        fmt = "\
+        {}\n\
+        The '{{' does not have a matching '}}'.\n\
+        If you did not intend to use a parameter you can use '\\{{' to escape \
+        the '{{'.",
+        _0
+    )]
+    UnfinishedParameter(#[error(not(source))] Spanned<'a>),
 
-    // General escaping
-    UnescapedReservedCharacter(Spanned<'a>),
-    EscapedNonReservedCharacter(Spanned<'a>),
+    #[display(
+        fmt = "\
+        {}\n\
+        An optional may not contain an other optional.\n\
+        If you did not mean to use an optional type you can use '\\(' to \
+        escape the '('. For more complicated expressions consider using a \
+        regular expression instead.",
+        _0
+    )]
+    NestedOptional(#[error(not(source))] Spanned<'a>),
 
-    // nom
-    Other(Spanned<'a>, ErrorKind),
+    #[display(
+        fmt = "\
+        {}\n\
+        An optional may not contain a parameter type.\n\
+        If you did not mean to use an parameter type you can use '\\{{' to \
+        escape the '{{'.",
+        _0
+    )]
+    ParameterInOptional(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        An optional must contain some text.\n\
+        If you did not mean to use an optional you can use '\\(' to escape the \
+        '('.",
+        _0
+    )]
+    EmptyOptional(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        An alternation can not be used inside an optional.\n\
+        You can use '\\/' to escape the '/'.",
+        _0
+    )]
+    AlternationInOptional(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        The '(' does not have a matching ')'.\n\
+        If you did not intend to use an optional you can use '\\(' to escape \
+        the '('.",
+        _0
+    )]
+    UnfinishedOptional(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        Alternative may not be empty.\n\
+        If you did not mean to use an alternative you can use '\\/' to escape \
+        the '/'.",
+        _0
+    )]
+    EmptyAlternation(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        Alternative may not be empty.\n\
+        If you did not mean to use an alternative you can use '\\/' to escape \
+        the '/'.",
+        _0
+    )]
+    OnlyOptionalInAlternation(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        Unescaped reserved character.\n\
+        You can use an '\\' to escape it.",
+        _0
+    )]
+    UnescapedReservedCharacter(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        Only the characters '{{', '}}', '(', ')', '\\', '/' and whitespace can \
+        be escaped.\n\
+        If you did mean to use an '\\' you can use '\\\\' to escape it.",
+        _0
+    )]
+    EscapedNonReservedCharacter(#[error(not(source))] Spanned<'a>),
+
+    #[display(
+        fmt = "\
+        {}\n\
+        Unknown parsing error.",
+        _0
+    )]
+    Other(#[error(not(source))] Spanned<'a>, ErrorKind),
 }
 
 impl<'a> Error<'a> {
@@ -1691,6 +1797,258 @@ mod spec {
                                 fragment: "rats\\/mice",
                                 extra: ()
                             }
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn matches_anonymous_parameter_type() {
+            let ast =
+                format!("{:?}", unwrap_parser(expression(Spanned::new("{}"))));
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Parameter (
+                            Parameter (
+                                LocatedSpan {
+                                    offset: 1,
+                                    line: 1,
+                                    fragment: "",
+                                    extra: ()
+                                }
+                            )
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn matches_doubly_escaped_parenthesis() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new(
+                    "three \\(exceptionally) \\{string} mice"
+                )))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Text (
+                            LocatedSpan {
+                                offset: 0,
+                                line: 1,
+                                fragment: "three",
+                                extra: ()
+                            }
+                        ),
+                        Space,
+                        Text (
+                            LocatedSpan {
+                                offset: 6,
+                                line: 1,
+                                fragment: "\\(exceptionally)",
+                                extra: ()
+                            }
+                        ),
+                        Space,
+                        Text (
+                            LocatedSpan {
+                                offset: 23,
+                                line: 1,
+                                fragment: "\\{string}",
+                                extra: ()
+                            }
+                        ),
+                        Space,
+                        Text (
+                            LocatedSpan {
+                                offset: 33,
+                                line: 1,
+                                fragment: "mice",
+                                extra: ()
+                            }
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn matches_doubly_escaped_slash() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new("12\\\\/2020")))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 0,
+                                                line: 1,
+                                                fragment: "12\\\\",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 5,
+                                                line: 1,
+                                                fragment: "2020",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn matches_optional_before_alternation() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new(
+                    "three (brown )mice/rats"
+                )))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Text (
+                            LocatedSpan {
+                                offset: 0,
+                                line: 1,
+                                fragment: "three",
+                                extra: ()
+                            }
+                        ),
+                        Space,
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Optional (
+                                            Optional (
+                                                LocatedSpan {
+                                                    offset: 7,
+                                                    line: 1,
+                                                    fragment: "brown",
+                                                    extra: ()
+                                                }
+                                            )
+                                        ),
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 14,
+                                                line: 1,
+                                                fragment: "mice",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 19,
+                                                line: 1,
+                                                fragment: "rats",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
+                        )
+                    ]
+                )"#,
+            );
+        }
+
+        #[test]
+        fn matches_optional_in_alternation() {
+            let ast = format!(
+                "{:?}",
+                unwrap_parser(expression(Spanned::new(
+                    "{int} rat(s)/mouse/mice"
+                )))
+            );
+            eq(
+                ast,
+                r#"Expression (
+                    [
+                        Parameter (
+                            Parameter (
+                                LocatedSpan {
+                                    offset: 1,
+                                    line: 1,
+                                    fragment: "int",
+                                    extra: ()
+                                }
+                            )
+                        ),
+                        Space,
+                        Alternation (
+                            Alternation (
+                                [
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 6,
+                                                line: 1,
+                                                fragment: "rat",
+                                                extra: ()
+                                            }
+                                        ),
+                                        Optional (
+                                            Optional (
+                                                LocatedSpan {
+                                                    offset: 10,
+                                                    line: 1,
+                                                    fragment: "s",
+                                                    extra: ()
+                                                }
+                                            )
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 13,
+                                                line: 1,
+                                                fragment: "mouse",
+                                                extra: ()
+                                            }
+                                        )
+                                    ],
+                                    [
+                                        Text (
+                                            LocatedSpan {
+                                                offset: 19,
+                                                line: 1,
+                                                fragment: "mice",
+                                                extra: ()
+                                            }
+                                        )
+                                    ]
+                                ]
+                            )
                         )
                     ]
                 )"#,
