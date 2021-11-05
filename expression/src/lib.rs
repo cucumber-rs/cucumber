@@ -12,7 +12,7 @@
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
     html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
 )]
-// #![doc = include_str!("../README.md")]
+#![doc = include_str!("../README.md")]
 #![deny(
     macro_use_extern_crate,
     nonstandard_style,
@@ -92,10 +92,6 @@
     unused_results,
     variant_size_differences
 )]
-
-//! [Cucumber expression][1] parser.
-//!
-//! [1]: https://github.com/cucumber/cucumber-expressions#readme
 
 mod ast;
 mod combinator;
