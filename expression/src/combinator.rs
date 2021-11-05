@@ -18,7 +18,7 @@ use nom::{
     InputTakeAtPosition, Offset, Parser, Slice,
 };
 
-/// Applies `map` to `parser` [`IResult`] in case it errored.
+/// Applies `map` to `parser`s [`IResult`] in case it errored.
 ///
 /// Can be used to harden [`Error`] to [`Failure`].
 ///
