@@ -1,3 +1,15 @@
+// Copyright (c) 2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                     Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                     Kai Ren <tyranron@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Helper parser combinators.
+
 use std::ops::RangeFrom;
 
 use nom::{
@@ -5,26 +17,6 @@ use nom::{
     AsChar, Err, IResult, InputIter, InputLength, InputTake,
     InputTakeAtPosition, Offset, Parser, Slice,
 };
-
-/// Applies `map` to `parser` [`IResult`].
-///
-/// Intended to use like [`verify()`], but with ability to map error.
-///
-/// [`verify()`]: nom::combinator::verify()
-pub(crate) fn and_then<I, O1, O2, E: ParseError<I>, F, H>(
-    mut parser: F,
-    map: H,
-) -> impl FnMut(I) -> IResult<I, O2, E>
-where
-    F: Parser<I, O1, E>,
-    H: Fn(O1) -> Result<O2, Err<E>>,
-{
-    move |input: I| {
-        parser
-            .parse(input)
-            .and_then(|(rest, parsed)| map(parsed).map(|ok| (rest, ok)))
-    }
-}
 
 /// Applies `map` to `parser` [`IResult`] in case it errored.
 ///
@@ -39,9 +31,9 @@ pub(crate) fn map_err<I, O1, E: ParseError<I>, F, G>(
 ) -> impl FnMut(I) -> IResult<I, O1, E>
 where
     F: Parser<I, O1, E>,
-    G: FnOnce(Err<E>) -> Err<E> + Copy,
+    G: Fn(Err<E>) -> Err<E>,
 {
-    move |input: I| parser.parse(input).map_err(map)
+    move |input: I| parser.parse(input).map_err(&map)
 }
 
 /// Differences from [`escaped()`]:
@@ -81,16 +73,24 @@ where
                 (Ok((i2, _)), false) => {
                     if i2.input_len() == 0 {
                         return Ok((input.slice(input.input_len()..), input));
-                    } else if i2.input_len() == current_len {
+                    }
+                    if i2.input_len() == current_len {
                         consumed_nothing = true;
                     }
                     i = i2;
                 }
                 (Ok(..), true) | (Err(Err::Error(_)), _) => {
-                    // unwrap() should be safe here since index < $i.input_len()
-                    if i.iter_elements().next().unwrap().as_char()
-                        == control_char
-                    {
+                    let next_char = i
+                        .iter_elements()
+                        .next()
+                        .ok_or_else(|| {
+                            Err::Error(Error::from_error_kind(
+                                i.clone(),
+                                ErrorKind::Escaped,
+                            ))
+                        })?
+                        .as_char();
+                    if next_char == control_char {
                         let next = control_char.len_utf8();
                         if next >= i.input_len() {
                             return Err(Err::Error(Error::from_error_kind(
@@ -159,7 +159,7 @@ mod escaped0_spec {
     );
 
     /// Produces [`TestResult`] from `input`.
-    fn get_result(input: &str) -> TestResult {
+    fn get_result(input: &str) -> TestResult<'_> {
         (
             escaped0(digit0, '\\', one_of(r#""n\"#))(input),
             escaped0(digit1, '\\', one_of(r#""n\"#))(input),

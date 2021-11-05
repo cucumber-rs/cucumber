@@ -13,7 +13,7 @@ documentation = "https://docs.rs/cucumber-expression"
 homepage = "https://github.com/cucumber-rs/cucumber/tree/main/expression"
 repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
-categories = ["asynchronous", "development-tools::testing"]
+categories = ["development-tools::testing", "parser-implementations"]
 keywords = ["cucumber", "codegen", "macros"]
 exclude = ["/tests/"]
 
