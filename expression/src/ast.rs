@@ -62,7 +62,7 @@ impl<'s> Expression<Spanned<'s>> {
     }
 }
 
-/// Building block of a [`Expression`].
+/// Building block of an [`Expression`].
 ///
 /// See [`parse::single_expression()`] for detailed syntax and examples.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -144,7 +144,7 @@ pub enum Alternative<Input> {
 #[derive(AsRef, Clone, Copy, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct Optional<Input>(pub Input);
 
-/// Allows to match some special `Input` descried by the [`Parameter`] name.
+/// Allows to match some special `Input` descried by a [`Parameter`] name.
 ///
 /// See [`parse::parameter()`] for detailed syntax and examples.
 #[derive(AsRef, Clone, Copy, Debug, Deref, DerefMut, Eq, PartialEq)]

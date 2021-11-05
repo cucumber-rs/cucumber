@@ -20,7 +20,7 @@ use nom::{
 
 /// Applies `map` to `parser` [`IResult`] in case it errored.
 ///
-/// Can be used to converted to harden [`Error`] to [`Failure`].
+/// Can be used to harden [`Error`] to [`Failure`].
 ///
 /// [`Error`]: nom::Err::Error
 /// [`Failure`]: nom::Err::Failure
@@ -38,8 +38,8 @@ where
 
 /// Differences from [`escaped()`]:
 /// 1. If `normal` matched empty sequence, tries to matched escaped;
-/// 2. If after previous step `escapable` didn't match anything, returns empty
-///    sequence;
+/// 2. If `normal` matched empty sequence and then `escapable` didn't match
+///    anything, returns empty sequence;
 /// 3. Errors with [`ErrorKind::Escaped`] if `control_char` was followed by a
 ///    non-`escapable` `Input`.
 ///

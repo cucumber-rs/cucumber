@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Parsers for [Cucumber expression][1] [AST][2] definitions.
+//! [Cucumber expression][1] [AST][2] parsers definitions.
 //!
 //! [1]: https://github.com/cucumber/cucumber-expressions#readme
 //! [2]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
@@ -76,7 +76,9 @@ where
 {
     map_err(escaped0(normal, '\\', one_of(RESERVED_CHARS)), |e| {
         if let Err::Error(Error::Other(span, ErrorKind::Escaped)) = e {
-            Error::EscapedNonReservedCharacter(span.take(1)).failure()
+            let span =
+                (span.input_len() > 0).then(|| span.take(1)).unwrap_or(span);
+            Error::EscapedNonReservedCharacter(span).failure()
         } else {
             e
         }
@@ -86,11 +88,10 @@ where
 /// # Syntax
 ///
 /// ```text
-/// parameter := '{' name* '}'
-/// name      := any character except '{' | '}' | '(' | '/'
+/// parameter       := '{' (name | '\' name_to_escape)* '}'
+/// name            := ^name_to_escape
+/// name_to_escape  := '{' | '}' | '(' | '/' | '\'
 /// ```
-///
-/// Note: `{`, `}`, `(`, `/` still can be used if escaped with `\`
 ///
 /// # Example
 ///
@@ -193,11 +194,10 @@ where
 /// # Syntax
 ///
 /// ```text
-/// optional         := '(' text_in_optional+ ')'
-/// text_in_optional := any character except '(' | ')' | '{' | '/'
+/// optional           := '(' (text_in_optional | '\' optional_to_escape)+ ')'
+/// text_in_optional   := ^optional_to_escape
+/// optional_to_escape := '(' | ')' | '{' | '/' | '\'
 /// ```
-///
-/// Note: `(`, `)`, `{`, `/` still can be used if escaped with `\`.
 ///
 /// # Example
 ///
@@ -251,15 +251,14 @@ where
     Error<Input>: ParseError<Input>,
     for<'s> &'s str: FindToken<<Input as InputIter>::Item>,
 {
-    let is_text = |c| !"(){\\/".contains(c);
+    let is_text_in_optional = |c| !"(){\\/".contains(c);
 
-    let original_input = input.clone();
     let fail = |input: Input, opening_brace| {
         match input.iter_elements().next().map(AsChar::as_char) {
             Some('(') => {
                 if let Ok((_, (opt, ..))) = peek(tuple((
                     optional,
-                    escaped_reserved_chars0(take_while(is_text)),
+                    escaped_reserved_chars0(take_while(is_text_in_optional)),
                     tag(")"),
                 )))(input.clone())
                 {
@@ -293,8 +292,10 @@ where
         Error::UnfinishedOptional(opening_brace).failure()
     };
 
+    let original_input = input.clone();
     let (input, opening_paren) = tag("(")(input)?;
-    let (input, opt) = escaped_reserved_chars0(take_while(is_text))(input)?;
+    let (input, opt) =
+        escaped_reserved_chars0(take_while(is_text_in_optional))(input)?;
     let (input, _) =
         map_err(tag(")"), |_| fail(input.clone(), opening_paren.clone()))(
             input.clone(),
@@ -310,11 +311,12 @@ where
 /// # Syntax
 ///
 /// ```text
-/// alternative             := optional | text+
-/// text_without_whitespace := any character except ' ' | '(' | '{' | '/'
+/// alternative             := optional
+///                            | (text_without_whitespace
+///                               | '\' whitespace_and_special)+
+/// text_without_whitespace := ^whitespace_and_special
+/// whitespace_and_special  := ' ' | '(' | '{' | '/' | '\'
 /// ```
-///
-/// Note: ` `, `(`, `{`, `/` still can be used if escaped with `\`.
 ///
 /// # Example
 ///
@@ -350,14 +352,15 @@ where
     Error<Input>: ParseError<Input>,
     for<'s> &'s str: FindToken<<Input as InputIter>::Item>,
 {
-    let is_text = |c| !" ({\\/".contains(c);
+    let is_text_without_whitespace = |c| !" ({\\/".contains(c);
 
     alt((
         map(optional, Alternative::Optional),
         map(
-            verify(escaped_reserved_chars0(take_while(is_text)), |p| {
-                p.input_len() > 0
-            }),
+            verify(
+                escaped_reserved_chars0(take_while(is_text_without_whitespace)),
+                |p| p.input_len() > 0,
+            ),
             Alternative::Text,
         ),
     ))(input)
@@ -366,8 +369,9 @@ where
 /// # Syntax
 ///
 /// ```text
-/// alternation             := single_alternation (`/` single_alternation)+
-/// single_alternation      := ((text+ optional*) | (optional+ text+))+
+/// alternation        := single_alternation (`/` single_alternation)+
+/// single_alternation := ((text_without_whitespace+ optional*)
+///                         | (optional+ text_without_whitespace+))+
 /// ```
 ///
 /// # Example
@@ -451,7 +455,7 @@ where
 /// single_expression := alternation
 ///                      | optional
 ///                      | parameter
-///                      | text_without_whitespace*
+///                      | text_without_whitespace+
 ///                      | whitespace
 /// ```
 ///
@@ -463,8 +467,6 @@ where
 /// {string}
 /// text
 /// ```
-///
-/// Note: empty string is matched too.
 ///
 /// # Errors
 ///
@@ -493,16 +495,17 @@ where
     Error<Input>: ParseError<Input>,
     for<'s> &'s str: FindToken<<Input as InputIter>::Item>,
 {
-    let is_text = |c| !" ({\\/".contains(c);
+    let is_text_without_whitespace = |c| !" ({\\/".contains(c);
 
     alt((
         map(alternation, SingleExpression::Alternation),
         map(optional, SingleExpression::Optional),
         map(parameter, SingleExpression::Parameter),
         map(
-            verify(escaped_reserved_chars0(take_while(is_text)), |s| {
-                s.input_len() > 0
-            }),
+            verify(
+                escaped_reserved_chars0(take_while(is_text_without_whitespace)),
+                |s| s.input_len() > 0,
+            ),
             SingleExpression::Text,
         ),
         map(tag(" "), |_| SingleExpression::Whitespace),

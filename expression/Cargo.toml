@@ -18,6 +18,6 @@ keywords = ["cucumber", "codegen", "macros"]
 exclude = ["/tests/"]
 
 [dependencies]
-derive_more = "0.99.16"
+derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error"], default_features = false }
 nom = "7.0"
 nom_locate = "4.0"
