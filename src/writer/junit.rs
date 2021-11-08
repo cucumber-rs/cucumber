@@ -22,7 +22,7 @@ use crate::{
 /// [`JUnit`][1] [`Writer`] implementation outputting `XML` to [`io::Write`]
 /// implementor.
 ///
-/// For correct work should be wrapped into [`writer::Summarized`].
+/// For correct work should be wrapped into [`writer::Normalized`].
 ///
 /// [1]: https://llg.cubic.org/docs/junit/
 #[derive(Debug)]
@@ -108,7 +108,7 @@ where
             Ok((Cucumber::Finished, _)) => {
                 self.report
                     .write_xml(&mut self.output)
-                    .unwrap_or_else(|e| panic!("Failed to write XML: {:?}", e));
+                    .unwrap_or_else(|e| panic!("Failed to write XML: {}", e));
             }
         }
     }
@@ -202,9 +202,9 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     .as_mut()
                     .unwrap_or_else(|| {
                         panic!(
-                            "No TestSuit for Feature \"{}\"\n\
+                            "No TestSuit for Scenario \"{}\"\n\
                              Consider wrapping Writer in writer::Normalized",
-                            feat.name,
+                            sc.name,
                         )
                     })
                     .add_testcase(case);
@@ -237,7 +237,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
             .unwrap_or_else(|| {
                 panic!(
                     "No events for Scenario \"{}\"\n\
-                             Consider wrapping Writer in writer::Normalized",
+                     Consider wrapping Writer in writer::Normalized",
                     sc.name,
                 )
             });
@@ -286,7 +286,8 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
             }
             Scenario::Finished => {
                 panic!(
-                    "Duplicated Finished event for Scenario: \"{}\"",
+                    "Duplicated Finished event for Scenario: \"{}\"\n\
+                     Consider wrapping Writer in writer::Normalized",
                     sc.name,
                 );
             }
@@ -304,7 +305,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()
-            .unwrap_or_else(|e| panic!("Failed to write: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to write writer::Basic: {}", e));
 
         case.set_system_out(&output);
 
@@ -334,7 +335,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
         ))
         .unwrap_or_else(|e| {
             panic!(
-                "Failed to covert std::time::Duration to chrono::Duration: {}",
+                "Failed to covert std::time::Duration to time::Duration: {}",
                 e,
             )
         })

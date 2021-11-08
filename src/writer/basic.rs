@@ -83,9 +83,9 @@ impl FromStr for Coloring {
 /// Pretty-prints with colors if terminal was successfully detected, otherwise
 /// has simple output. Useful for running tests with CI tools.
 ///
-/// For correct work should be wrapped into [`writer::Summarized`].
+/// For correct work should be wrapped into [`writer::Normalized`].
 ///
-/// [`writer::Summarized`]: crate::writer::Summarized
+/// [`writer::Normalized`]: crate::writer::Normalized
 #[derive(Debug, Deref, DerefMut)]
 pub struct Basic<Out: WriteStr = io::Stdout> {
     /// Terminal to write the output into.
@@ -196,8 +196,7 @@ impl<Out: WriteStr> Basic<Out> {
     /// Clears last `n` lines if [`Coloring`] is enabled.
     fn clear_last_lines_if_term_present(&mut self) -> io::Result<()> {
         if self.styles.is_present && self.lines_to_clear > 0 {
-            let lines = self.lines_to_clear;
-            self.clear_last_lines(lines)?;
+            self.output.clear_last_lines(self.lines_to_clear)?;
             self.lines_to_clear = 0;
         }
         Ok(())

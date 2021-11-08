@@ -957,7 +957,7 @@ where
     /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
     #[must_use]
     pub fn new() -> Self {
-        Cucumber::default()
+        Self::default()
     }
 }
 
