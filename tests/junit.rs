@@ -21,23 +21,28 @@ async fn step(world: &mut World, secs: u64) {
 #[tokio::main]
 async fn main() {
     let mut file = NamedTempFile::new().unwrap();
-    let _ = World::cucumber()
-        .with_writer(writer::JUnit::new(file.reopen().unwrap()).normalized())
-        .run("tests/features/wait")
-        .await;
+    drop(
+        World::cucumber()
+            .with_writer(
+                writer::JUnit::new(file.reopen().unwrap()).normalized(),
+            )
+            .run("tests/features/wait")
+            .await,
+    );
 
-    let timestamp = Regex::new(r#"time(stamp)?="[^"]+""#).unwrap();
+    let non_deterministic =
+        Regex::new(r#"time(stamp)?="[^"]+"|: [/A-z]+.feature"#).unwrap();
 
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).unwrap();
 
     assert_eq!(
-        timestamp.replace_all(&buffer, ""),
-        timestamp.replace_all(
+        non_deterministic.replace_all(&buffer, ""),
+        non_deterministic.replace_all(
             &fs::read_to_string("tests/xml/correct.xml").unwrap(),
             "",
         )
-    )
+    );
 }
 
 #[derive(Clone, Copy, Debug, WorldInit)]

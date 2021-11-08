@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <testsuites>
   <testsuite id="0" name="Errors" package="testsuite/Errors" tests="1" errors="0" failures="1" hostname="localhost" timestamp="2021-11-08T10:59:25.759933Z" time="0">
-    <testcase name="Feature: /Users/work/Work/cucumber/tests/features/wait/invalid.feature" time="0">
-      <failure type="Parser Error" message="Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature" />
+    <testcase name="Feature: /tests/features/wait/invalid.feature" time="0">
+      <failure type="Parser Error" message="Failed to parse feature: Could not parse feature file: /tests/features/wait/invalid.feature" />
     </testcase>
   </testsuite>
-  <testsuite id="1" name="Feature: Basic: /Users/work/Work/cucumber/tests/features/wait/rule.feature" package="testsuite/Feature: Basic: /Users/work/Work/cucumber/tests/features/wait/rule.feature" tests="2" errors="0" failures="1" hostname="localhost" timestamp="2021-11-08T10:59:25.759327Z" time="7.016512">
-    <testcase name="Scenario: 1 sec: /Users/work/Work/cucumber/tests/features/wait/rule.feature:6:3" time="0">
+  <testsuite id="1" name="Feature: Basic: /tests/features/wait/rule.feature" package="testsuite/Feature: Basic: /tests/features/wait/rule.feature" tests="2" errors="0" failures="1" hostname="localhost" timestamp="2021-11-08T10:59:25.759327Z" time="7.016512">
+    <testcase name="Scenario: 1 sec: /tests/features/wait/rule.feature:6:3" time="0">
       <skipped />
     </testcase>
-    <testcase name="Rule: rule: Scenario: 2 secs: /Users/work/Work/cucumber/tests/features/wait/rule.feature:13:5" time="7.016512">
+    <testcase name="Rule: rule: Scenario: 2 secs: /tests/features/wait/rule.feature:13:5" time="7.016512">
       <failure type="Step Panicked" message="Step panicked. Captured output: Too much!"><![CDATA[  Scenario: 2 secs
    ✔> Given 1 sec
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
-      Step failed: /Users/work/Work/cucumber/tests/features/wait/rule.feature:16:7
-      Captured output: 
+      Step failed: /tests/features/wait/rule.feature:16:7
+      Captured output:
       Step panicked. Captured output: Too much!
       World(
           4,
@@ -24,18 +24,18 @@
 ]]></failure>
     </testcase>
   </testsuite>
-  <testsuite id="2" name="Feature: Basic: /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature" package="testsuite/Feature: Basic: /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature" tests="2" errors="0" failures="1" hostname="localhost" timestamp="2021-11-08T10:59:28.773242Z" time="7.016657">
-    <testcase name="Scenario: 1 sec: /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature:6:3" time="0">
+  <testsuite id="2" name="Feature: Basic: /tests/features/wait/nested/rule.feature" package="testsuite/Feature: Basic: /tests/features/wait/nested/rule.feature" tests="2" errors="0" failures="1" hostname="localhost" timestamp="2021-11-08T10:59:28.773242Z" time="7.016657">
+    <testcase name="Scenario: 1 sec: /tests/features/wait/nested/rule.feature:6:3" time="0">
       <skipped />
     </testcase>
-    <testcase name="Rule: rule: Scenario: 2 secs: /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature:13:5" time="7.016657">
+    <testcase name="Rule: rule: Scenario: 2 secs: /tests/features/wait/nested/rule.feature:13:5" time="7.016657">
       <failure type="Step Panicked" message="Step panicked. Captured output: Too much!"><![CDATA[  Scenario: 2 secs
    ✔> Given 1 sec
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
-      Step failed: /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature:16:7
-      Captured output: 
+      Step failed: /tests/features/wait/nested/rule.feature:16:7
+      Captured output:
       Step panicked. Captured output: Too much!
       World(
           4,
@@ -43,29 +43,29 @@
 ]]></failure>
     </testcase>
   </testsuite>
-  <testsuite id="3" name="Feature: Outline: /Users/work/Work/cucumber/tests/features/wait/outline.feature" package="testsuite/Feature: Outline: /Users/work/Work/cucumber/tests/features/wait/outline.feature" tests="4" errors="0" failures="0" hostname="localhost" timestamp="2021-11-08T10:59:31.783094Z" time="27.041012">
-    <testcase name="Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/outline.feature:12:5" time="6.013973">
+  <testsuite id="3" name="Feature: Outline: /tests/features/wait/outline.feature" package="testsuite/Feature: Outline: /tests/features/wait/outline.feature" tests="4" errors="0" failures="0" hostname="localhost" timestamp="2021-11-08T10:59:31.783094Z" time="27.041012">
+    <testcase name="Scenario: wait: /tests/features/wait/outline.feature:12:5" time="6.013973">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 2 secs
    ✔  When 2 secs
    ✔  Then 2 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/outline.feature:13:5" time="3.009582">
+    <testcase name="Scenario: wait: /tests/features/wait/outline.feature:13:5" time="3.009582">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 1 secs
    ✔  When 1 secs
    ✔  Then 1 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/outline.feature:14:5" time="3.009676">
+    <testcase name="Scenario: wait: /tests/features/wait/outline.feature:14:5" time="3.009676">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 1 secs
    ✔  When 1 secs
    ✔  Then 1 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/outline.feature:15:5" time="15.007781">
+    <testcase name="Scenario: wait: /tests/features/wait/outline.feature:15:5" time="15.007781">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 5 secs
    ✔  When 5 secs
@@ -73,29 +73,29 @@
 ]]></system-out>
     </testcase>
   </testsuite>
-  <testsuite id="4" name="Feature: Rule Outline: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature" package="testsuite/Feature: Rule Outline: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature" tests="4" errors="0" failures="0" hostname="localhost" timestamp="2021-11-08T10:59:31.783097Z" time="27.040873">
-    <testcase name="Rule: To them all: Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature:10:7" time="6.013768">
+  <testsuite id="4" name="Feature: Rule Outline: /tests/features/wait/rule_outline.feature" package="testsuite/Feature: Rule Outline: /tests/features/wait/rule_outline.feature" tests="4" errors="0" failures="0" hostname="localhost" timestamp="2021-11-08T10:59:31.783097Z" time="27.040873">
+    <testcase name="Rule: To them all: Scenario: wait: /tests/features/wait/rule_outline.feature:10:7" time="6.013768">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 2 secs
    ✔  When 2 secs
    ✔  Then 2 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Rule: To them all: Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature:11:7" time="3.009593">
+    <testcase name="Rule: To them all: Scenario: wait: /tests/features/wait/rule_outline.feature:11:7" time="3.009593">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 1 secs
    ✔  When 1 secs
    ✔  Then 1 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Rule: To them all: Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature:12:7" time="3.009765">
+    <testcase name="Rule: To them all: Scenario: wait: /tests/features/wait/rule_outline.feature:12:7" time="3.009765">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 1 secs
    ✔  When 1 secs
    ✔  Then 1 secs
 ]]></system-out>
     </testcase>
-    <testcase name="Rule: To them all: Scenario: wait: /Users/work/Work/cucumber/tests/features/wait/rule_outline.feature:13:7" time="15.007747">
+    <testcase name="Rule: To them all: Scenario: wait: /tests/features/wait/rule_outline.feature:13:7" time="15.007747">
       <system-out><![CDATA[  Scenario Outline: wait
    ✔  Given 5 secs
    ✔  When 5 secs
