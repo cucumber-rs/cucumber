@@ -31,7 +31,8 @@ async fn main() {
     );
 
     let non_deterministic =
-        Regex::new(r#"time(stamp)?="[^"]+"|: [/A-z]+.feature"#).unwrap();
+        Regex::new(r#"time(stamp)?="[^"]+"|: [/A-z]+.feature(:\d+:\d+)?"#)
+            .unwrap();
 
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).unwrap();
