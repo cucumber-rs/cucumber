@@ -1,17 +1,14 @@
-use std::{convert::Infallible, fs, io::Read as _, time::Duration};
+use std::{convert::Infallible, fs, io::Read as _};
 
 use async_trait::async_trait;
 use cucumber::{given, then, when, writer, WorldInit, WriterExt as _};
 use regex::Regex;
 use tempfile::NamedTempFile;
-use tokio::time;
 
 #[given(regex = r"(\d+) secs?")]
 #[when(regex = r"(\d+) secs?")]
 #[then(regex = r"(\d+) secs?")]
-async fn step(world: &mut World, secs: u64) {
-    time::sleep(Duration::from_secs(secs)).await;
-
+fn step(world: &mut World) {
     world.0 += 1;
     if world.0 > 3 {
         panic!("Too much!");
@@ -24,14 +21,17 @@ async fn main() {
     drop(
         World::cucumber()
             .with_writer(
-                writer::JUnit::new(file.reopen().unwrap()).normalized(),
+                writer::JUnit::new(
+                    fs::File::create("tests/xml/correct.xml").unwrap(),
+                )
+                .normalized(),
             )
             .run("tests/features/wait")
             .await,
     );
 
     let non_deterministic = Regex::new(
-        r#"time(stamp)?="[^"]+"|: [/A-z]+.feature(:\d+:\d+)?|:\s?\n"#,
+        r#"time(stamp)?="[^"]+"|: [/A-z]+.feature(:\d+:\d+)?|\s?\n"#,
     )
     .unwrap();
 
