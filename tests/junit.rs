@@ -21,10 +21,7 @@ async fn main() {
     drop(
         World::cucumber()
             .with_writer(
-                writer::JUnit::new(
-                    fs::File::create("tests/xml/correct.xml").unwrap(),
-                )
-                .normalized(),
+                writer::JUnit::new(file.reopen().unwrap()).normalized(),
             )
             .run("tests/features/wait")
             .await,
