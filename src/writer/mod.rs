@@ -14,7 +14,7 @@
 
 pub mod basic;
 pub mod fail_on_skipped;
-#[cfg(feature = "junit")]
+#[cfg(feature = "output-junit")]
 pub mod junit;
 pub mod normalized;
 pub mod out;
@@ -27,7 +27,7 @@ use structopt::StructOptInternal;
 
 use crate::{event, parser, Event, World};
 
-#[cfg(feature = "junit")]
+#[cfg(feature = "output-junit")]
 #[doc(inline)]
 pub use self::junit::JUnit;
 #[doc(inline)]

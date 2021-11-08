@@ -5,9 +5,8 @@
 use std::{fmt::Debug, io, mem, path::Path, time::SystemTime};
 
 use async_trait::async_trait;
-use chrono::Duration;
 use junit_report::{
-    Report, TestCase, TestCaseBuilder, TestSuite, TestSuiteBuilder,
+    Duration, Report, TestCase, TestCaseBuilder, TestSuite, TestSuiteBuilder,
 };
 
 use crate::{
@@ -109,7 +108,7 @@ where
             Ok((Cucumber::Finished, _)) => {
                 self.report
                     .write_xml(&mut self.output)
-                    .unwrap_or_else(|e| panic!("Failed to write XML: {}", e));
+                    .unwrap_or_else(|e| panic!("Failed to write XML: {:?}", e));
             }
         }
     }
@@ -165,7 +164,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
             TestSuiteBuilder::new("Errors")
                 .add_testcase(TestCase::failure(
                     &name,
-                    Duration::zero(),
+                    Duration::ZERO,
                     ty,
                     &format!("{}", err),
                 ))
@@ -325,7 +324,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 sc.name,
             )
         });
-        Duration::from_std(ended.duration_since(started_at).unwrap_or_else(
+        Duration::try_from(ended.duration_since(started_at).unwrap_or_else(
             |e| {
                 panic!(
                     "Failed to compute Duration between {:?} and {:?}: {}",

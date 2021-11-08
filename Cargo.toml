@@ -28,7 +28,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["macros"]
 # Enables writer::JUnit
-junit = ["chrono", "junit-report", "timestamps"]
+output-junit = ["junit-report", "timestamps"]
 # Enables step attributes and auto-wiring.
 macros = ["cucumber-codegen", "inventory"]
 # Enables timestamps collecting for all events.
@@ -51,8 +51,7 @@ sealed = "0.3"
 structopt = "0.3.25"
 
 # "junit" feature dependencies
-chrono = { version = "0.4.19", optional = true }
-junit-report = { version = "0.6.0", optional = true }
+junit-report = { version = "0.7.0", optional = true }
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.10.1", path = "./codegen", optional = true }
@@ -60,10 +59,16 @@ inventory = { version = "0.1.10", optional = true }
 
 [dev-dependencies]
 humantime = "2.1"
+tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
 name = "wait"
+harness = false
+
+[[test]]
+name = "junit"
+required-features = ["output-junit"]
 harness = false
 
 [workspace]
