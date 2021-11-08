@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.10.1"
+version = "0.11.0-dev"
 edition = "2021"
 rust-version = "1.56"
 description = """\
@@ -54,7 +54,7 @@ structopt = "0.3.25"
 junit-report = { version = "0.7.0", optional = true }
 
 # "macros" feature dependencies
-cucumber-codegen = { version = "0.10.1", path = "./codegen", optional = true }
+cucumber-codegen = { version = "0.11.0-dev", path = "./codegen", optional = true }
 inventory = { version = "0.1.10", optional = true }
 
 [dev-dependencies]

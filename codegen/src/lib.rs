@@ -1,6 +1,6 @@
-// Copyright (c) 2020  Brendan Molloy <brendan@bbqsrc.net>,
-//                     Ilya Solovyiov <ilya.solovyiov@gmail.com>,
-//                     Kai Ren <tyranron@gmail.com>
+// Copyright (c) 2020-2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -185,6 +185,13 @@ macro_rules! step_attribute {
         /// # }
         /// ```
         ///
+        /// # Return value
+        ///
+        /// A function may also return a [`Result`], which [`Err`] is expected
+        /// to implement [`Display`], so returning it will cause the step to
+        /// fail.
+        ///
+        /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
         /// [`gherkin::Step`]: https://bit.ly/3j42hcd
         /// [`World`]: https://bit.ly/3j0aWw7
