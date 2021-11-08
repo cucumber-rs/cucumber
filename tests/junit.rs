@@ -31,7 +31,7 @@ async fn main() {
     );
 
     let non_deterministic = Regex::new(
-        r#"time(stamp)?="[^"]+"|: [/A-z]+.feature(:\d+:\d+)?|: ?\n"#,
+        r#"time(stamp)?="[^"]+"|: [/A-z]+.feature(:\d+:\d+)?|:\s?\n"#,
     )
     .unwrap();
 
