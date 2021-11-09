@@ -8,12 +8,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Tools for terminal output.
+//! Tools for writing output.
 
-use std::{borrow::Cow, io, str::from_utf8};
+use std::{borrow::Cow, io, str};
 
 use console::Style;
-use derive_more::{Deref, DerefMut, From, Into};
+use derive_more::{Deref, DerefMut, Display, From, Into};
 
 /// [`Style`]s for terminal output.
 #[derive(Debug)]
@@ -114,55 +114,58 @@ impl Styles {
     }
 }
 
-/// Helper methods for [`io::Write`] implementors.
-pub trait WriteStr: io::Write {
-    /// Write `&str` into this writer.
+/// [`io::Write`] extension for easier manipulation with strings and special
+/// sequences.
+pub trait WriteStrExt: io::Write {
+    /// Writes the given `string` into this writer.
     ///
     /// # Errors
     ///
-    /// If writer failed to write `&str`.
-    fn write_str(&mut self, str: impl AsRef<str>) -> io::Result<()> {
-        self.write(str.as_ref().as_bytes()).map(drop)
+    /// If this writer fails to write the given `string`.
+    fn write_str(&mut self, string: impl AsRef<str>) -> io::Result<()> {
+        self.write(string.as_ref().as_bytes()).map(drop)
     }
 
-    /// Writes `str` and adds a newline.
+    /// Writes the given `string` into this writer followed by a newline.
     ///
     /// # Errors
     ///
-    /// If underlying [`WriteStr::write_str()`] errors.
-    fn write_line(&mut self, str: impl AsRef<str>) -> io::Result<()> {
-        self.write_str(str.as_ref())
+    /// If this writer fails to write the given `string`.
+    fn write_line(&mut self, string: impl AsRef<str>) -> io::Result<()> {
+        self.write_str(string.as_ref())
             .and_then(|_| self.write_str("\n"))
             .map(drop)
     }
 
-    /// Writes special sequence that moves cursor up.
+    /// Writes a special sequence into this writer moving a cursor up on `n`
+    /// positions.
     ///
     /// # Errors
     ///
-    /// If underlying [`WriteStr::write_str()`] errors.
+    /// If this writer fails to write a special sequence.
     fn move_cursor_up(&mut self, n: usize) -> io::Result<()> {
         (n > 0)
             .then(|| self.write_str(format!("\x1b[{}A", n)))
             .unwrap_or(Ok(()))
     }
 
-    /// Writes special sequence that moves cursor down.
+    /// Writes a special sequence into this writer moving a cursor down on `n`
+    /// positions.
     ///
     /// # Errors
     ///
-    /// If underlying [`WriteStr::write_str()`] errors.
+    /// If this writer fails to write a special sequence.
     fn move_cursor_down(&mut self, n: usize) -> io::Result<()> {
         (n > 0)
             .then(|| self.write_str(format!("\x1b[{}B", n)))
             .unwrap_or(Ok(()))
     }
 
-    /// Writes special sequence that clears last `n` lines.
+    /// Writes a special sequence into this writer clearing the last `n` lines.
     ///
     /// # Errors
     ///
-    /// If underlying [`WriteStr::write_str()`] errors.
+    /// If this writer fails to write a special sequence.
     fn clear_last_lines(&mut self, n: usize) -> io::Result<()> {
         self.move_cursor_up(n)?;
         for _ in 0..n {
@@ -172,24 +175,25 @@ pub trait WriteStr: io::Write {
         self.move_cursor_up(n)
     }
 
-    /// Writes special sequence that clears last line.
+    /// Writes a special sequence into this writer clearing the last line.
     ///
     /// # Errors
     ///
-    /// If underlying [`WriteStr::write_str()`] errors.
+    /// If this writer fails to write a special sequence.
     fn clear_line(&mut self) -> io::Result<()> {
         self.write_str("\r\x1b[2K")
     }
 }
 
-impl<T: io::Write> WriteStr for T {}
+impl<T: io::Write + ?Sized> WriteStrExt for T {}
 
-/// [`String`] wrapper with [`io::Write`] implementation.
+/// [`String`] wrapper implementing [`io::Write`].
 #[derive(
     Clone,
     Debug,
     Deref,
     DerefMut,
+    Display,
     Eq,
     From,
     Hash,
@@ -203,7 +207,7 @@ pub struct WritableString(pub String);
 impl io::Write for WritableString {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.push_str(
-            from_utf8(buf)
+            str::from_utf8(buf)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
         );
         Ok(buf.len())

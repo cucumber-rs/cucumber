@@ -1,6 +1,6 @@
-//! [`JUnit`][1] [`Writer`] implementation.
+//! [JUnit XML report][1] [`Writer`] implementation.
 //!
-//! [1]: https://llg.cubic.org/docs/junit/
+//! [1]: https://llg.cubic.org/docs/junit
 
 use std::{fmt::Debug, io, mem, path::Path, time::SystemTime};
 
@@ -14,41 +14,50 @@ use crate::{
     writer::{
         self,
         basic::{coerce_error, Coloring},
-        out::{WritableString, WriteStr},
+        out::WritableString,
+        Ext as _,
     },
     Event, World, Writer,
 };
 
-/// [`JUnit`][1] [`Writer`] implementation outputting `XML` to [`io::Write`]
-/// implementor.
+/// Advice phrase to use in panic messages of incorrect [events][1] ordering.
 ///
-/// For correct work should be wrapped into [`writer::Normalized`].
+/// [1]: event::Scenario
+const WRAP_ADVICE: &str =
+    "Consider wrapping `Writer` into `writer::Normalized`";
+
+/// [JUnit XML report][1] [`Writer`] implementation outputting XML to an
+/// [`io::Write`] implementor.
 ///
-/// [1]: https://llg.cubic.org/docs/junit/
+/// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
+/// will panic in runtime as won't be able to form correct
+/// [JUnit `testsuite`s][1].
+///
+/// [1]: https://llg.cubic.org/docs/junit
 #[derive(Debug)]
-pub struct JUnit<W, Out: WriteStr> {
-    /// [`io::Write`] implementor to output `XML` into.
+pub struct JUnit<W, Out: io::Write> {
+    /// [`io::Write`] implementor to output XML report into.
     output: Out,
 
-    /// [`JUnit`][1] [`Report`].
+    /// [JUnit XML report][1].
     ///
-    /// [1]: https://llg.cubic.org/docs/junit/
+    /// [1]: https://llg.cubic.org/docs/junit
     report: Report,
 
-    /// Current [`JUnit`][1] [`TestSuite`].
+    /// Current [JUnit `testsuite`][1].
     ///
-    /// [1]: https://llg.cubic.org/docs/junit/
+    /// [1]: https://llg.cubic.org/docs/junit
     suit: Option<TestSuite>,
 
-    /// Current [`Scenario`] start [`SystemTime`].
+    /// [`SystemTime`] when the current [`Scenario`] has started.
     ///
     /// [`Scenario`]: gherkin::Scenario
     scenario_started_at: Option<SystemTime>,
 
-    /// Current [`Scenario`] [`events`][1].
+    /// Current [`Scenario`] [events][1].
     ///
-    /// [1]: event::Scenario
     /// [`Scenario`]: gherkin::Scenario
+    /// [1]: event::Scenario
     events: Vec<event::Scenario<W>>,
 }
 
@@ -56,7 +65,7 @@ pub struct JUnit<W, Out: WriteStr> {
 impl<W, Out> Writer<W> for JUnit<W, Out>
 where
     W: World + Debug,
-    Out: WriteStr,
+    Out: io::Write,
 {
     type Cli = cli::Empty;
 
@@ -97,9 +106,8 @@ where
                 Feature::Finished => {
                     let suite = self.suit.take().unwrap_or_else(|| {
                         panic!(
-                            "No TestSuit for Feature \"{}\"\n\
-                             Consider wrapping Writer in writer::Normalized",
-                            feat.name,
+                            "No `TestSuit` for `Feature` \"{}\"\n{}",
+                            feat.name, WRAP_ADVICE,
                         )
                     });
                     self.report.add_testsuite(suite);
@@ -114,9 +122,34 @@ where
     }
 }
 
-impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
-    /// Creates a new [`JUnit`] [`Writer`] outputting `XML` into `Out`.
-    pub fn new(output: Out) -> Self {
+impl<W: Debug, Out: io::Write> JUnit<W, Out> {
+    /// Creates a new normalized [`JUnit`] [`Writer`] outputting XML report into
+    /// the given `output`.
+    #[must_use]
+    pub fn new(output: Out) -> writer::Normalized<W, Self>
+    where
+        W: World,
+    {
+        Self::raw(output).normalized()
+    }
+
+    /// Creates a new raw and unnormalized [`JUnit`] [`Writer`] outputting XML
+    /// report into the given `output`.
+    ///
+    /// # Warning
+    ///
+    /// It may panic in runtime as won't be able to form correct
+    /// [JUnit `testsuite`s][1] from unordered [`Cucumber` events][2].
+    ///
+    /// Use it only if you know what you're doing. Otherwise, consider using
+    /// [`JUnit::new()`] which creates an already [`Normalized`] version of
+    /// [`JUnit`] [`Writer`].
+    ///
+    /// [`Normalized`]: writer::Normalized
+    /// [1]: https://llg.cubic.org/docs/junit
+    /// [2]: crate::event::Cucumber
+    #[must_use]
+    pub fn raw(output: Out) -> Self {
         Self {
             output,
             report: Report::new(),
@@ -126,7 +159,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
         }
     }
 
-    /// Handles [`parser::Error`].
+    /// Handles the given [`parser::Error`].
     fn handle_error(&mut self, err: &parser::Error) {
         let (name, ty) = match err {
             parser::Error::Parsing(err) => {
@@ -134,7 +167,6 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     gherkin::ParseFileError::Reading { path, .. }
                     | gherkin::ParseFileError::Parsing { path, .. } => path,
                 };
-
                 (
                     format!(
                         "Feature{}",
@@ -172,7 +204,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
         );
     }
 
-    /// Handles [`event::Scenario`].
+    /// Handles the given [`event::Scenario`].
     fn handle_scenario_event(
         &mut self,
         feat: &gherkin::Feature,
@@ -188,9 +220,9 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 self.scenario_started_at = Some(meta.at);
                 self.events.push(Scenario::Started);
             }
-            ev @ (Scenario::Hook(..)
+            Scenario::Hook(..)
             | Scenario::Background(..)
-            | Scenario::Step(..)) => {
+            | Scenario::Step(..) => {
                 self.events.push(ev);
             }
             Scenario::Finished => {
@@ -202,9 +234,8 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     .as_mut()
                     .unwrap_or_else(|| {
                         panic!(
-                            "No TestSuit for Scenario \"{}\"\n\
-                             Consider wrapping Writer in writer::Normalized",
-                            sc.name,
+                            "No `TestSuit` for `Scenario` \"{}\"\n{}",
+                            sc.name, WRAP_ADVICE,
                         )
                     })
                     .add_testcase(case);
@@ -212,7 +243,7 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
         }
     }
 
-    /// Return [`TestCase`] on [`event::Scenario::Finished`].
+    /// Forms a [`TestCase`] on [`event::Scenario::Finished`].
     fn test_case(
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -230,15 +261,14 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     ev,
                     Scenario::Hook(
                         HookType::After,
-                        Hook::Passed | Hook::Started
-                    )
+                        Hook::Passed | Hook::Started,
+                    ),
                 )
             })
             .unwrap_or_else(|| {
                 panic!(
-                    "No events for Scenario \"{}\"\n\
-                     Consider wrapping Writer in writer::Normalized",
-                    sc.name,
+                    "No events for `Scenario` \"{}\"\n{}",
+                    sc.name, WRAP_ADVICE,
                 )
             });
 
@@ -280,15 +310,14 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                     &case_name,
                     duration,
                     "Step Panicked",
-                    &format!("{}", e),
+                    &e.to_string(),
                 )
                 .build()
             }
             Scenario::Finished => {
                 panic!(
-                    "Duplicated Finished event for Scenario: \"{}\"\n\
-                     Consider wrapping Writer in writer::Normalized",
-                    sc.name,
+                    "Duplicated `Finished` event for `Scenario`: \"{}\"\n{}",
+                    sc.name, WRAP_ADVICE,
                 );
             }
         };
@@ -305,14 +334,18 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()
-            .unwrap_or_else(|e| panic!("Failed to write writer::Basic: {}", e));
+            .unwrap_or_else(|e| {
+                panic!("Failed to write with `writer::Basic`: {}", e)
+            });
 
         case.set_system_out(&output);
 
         case
     }
 
-    /// Returns [`Duration`] on [`event::Scenario::Finished`].
+    /// Returns [`Scenario`]'s [`Duration`] on [`event::Scenario::Finished`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     fn scenario_duration(
         &mut self,
         ended: SystemTime,
@@ -320,22 +353,21 @@ impl<W: Debug, Out: WriteStr> JUnit<W, Out> {
     ) -> Duration {
         let started_at = self.scenario_started_at.take().unwrap_or_else(|| {
             panic!(
-                "No Started event for Scenario \"{}\"\n\
-                 Consider wrapping Writer in writer::Normalized",
-                sc.name,
+                "No `Started` event for `Scenario` \"{}\"\n{}",
+                sc.name, WRAP_ADVICE,
             )
         });
         Duration::try_from(ended.duration_since(started_at).unwrap_or_else(
             |e| {
                 panic!(
-                    "Failed to compute Duration between {:?} and {:?}: {}",
+                    "Failed to compute duration between {:?} and {:?}: {}",
                     ended, started_at, e,
                 )
             },
         ))
         .unwrap_or_else(|e| {
             panic!(
-                "Failed to covert std::time::Duration to time::Duration: {}",
+                "Cannot covert `std::time::Duration` to `time::Duration`: {}",
                 e,
             )
         })

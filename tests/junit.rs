@@ -20,27 +20,27 @@ async fn main() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
-            .with_writer(
-                writer::JUnit::new(file.reopen().unwrap()).normalized(),
-            )
+            .with_writer(writer::JUnit::new(file.reopen().unwrap()))
             .run("tests/features/wait")
             .await,
     );
 
+    let mut buffer = String::new();
+    file.read_to_string(&mut buffer).unwrap();
+
+    // Required to strip out non-deterministic parts of output, so we could
+    // compare them well.
     let non_deterministic = Regex::new(
         r#"time(stamp)?="[^"]+"|: [\\/:?A-z]+.feature(:\d+:\d+)?|\s?\n"#,
     )
     .unwrap();
 
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer).unwrap();
-
     assert_eq!(
         non_deterministic.replace_all(&buffer, ""),
         non_deterministic.replace_all(
-            &fs::read_to_string("tests/xml/correct.xml").unwrap(),
+            &fs::read_to_string("tests/junit/correct.xml").unwrap(),
             "",
-        )
+        ),
     );
 }
 

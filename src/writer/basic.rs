@@ -27,7 +27,7 @@ use structopt::StructOpt;
 use crate::{
     event::{self, Info},
     parser,
-    writer::out::{Styles, WriteStr},
+    writer::out::{Styles, WriteStrExt as _},
     ArbitraryWriter, Event, World, Writer,
 };
 
@@ -77,18 +77,25 @@ impl FromStr for Coloring {
     }
 }
 
-/// Default [`Writer`] implementation outputting to [`io::Write`] implementor
+/// Default [`Writer`] implementation outputting to an [`io::Write`] implementor
 /// ([`io::Stdout`] by default).
 ///
 /// Pretty-prints with colors if terminal was successfully detected, otherwise
 /// has simple output. Useful for running tests with CI tools.
 ///
-/// For correct work should be wrapped into [`writer::Normalized`].
+/// # Ordering
 ///
+/// It naively and immediately outputs anything it receives from a [`Runner`],
+/// so in case the later executes [`Scenario`]s concurrently, the output will be
+/// mixed and unordered. To output in a readable order, consider to wrap this
+/// [`Basic`] [`Writer`] into a [`writer::Normalized`].
+///
+/// [`Runner`]: crate::runner::Runner
+/// [`Scenario`]: gherkin::Scenario
 /// [`writer::Normalized`]: crate::writer::Normalized
 #[derive(Debug, Deref, DerefMut)]
-pub struct Basic<Out: WriteStr = io::Stdout> {
-    /// Terminal to write the output into.
+pub struct Basic<Out: io::Write = io::Stdout> {
+    /// [`io::Write`] implementor to write the output into.
     #[deref]
     #[deref_mut]
     output: Out,
@@ -103,7 +110,7 @@ pub struct Basic<Out: WriteStr = io::Stdout> {
     lines_to_clear: usize,
 
     /// Increased verbosity of an output: additionally outputs
-    /// [`Step::docstring`][1]'s if present.
+    /// [`Step::docstring`][1]s if present.
     ///
     /// [1]: gherkin::Step::docstring
     verbose: bool,
@@ -113,7 +120,7 @@ pub struct Basic<Out: WriteStr = io::Stdout> {
 impl<W, Out> Writer<W> for Basic<Out>
 where
     W: World + Debug,
-    Out: WriteStr,
+    Out: io::Write,
 {
     type Cli = Cli;
 
@@ -146,7 +153,7 @@ impl<'val, W, Val, Out> ArbitraryWriter<'val, W, Val> for Basic<Out>
 where
     W: World + Debug,
     Val: AsRef<str> + 'val,
-    Out: WriteStr,
+    Out: io::Write,
 {
     #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn write(&mut self, val: Val)
@@ -164,7 +171,7 @@ impl Default for Basic {
     }
 }
 
-impl<Out: WriteStr> Basic<Out> {
+impl<Out: io::Write> Basic<Out> {
     /// Creates a new [`Basic`] [`Writer`].
     #[must_use]
     pub fn new(output: Out, color: Coloring, verbose: bool) -> Self {
@@ -175,13 +182,11 @@ impl<Out: WriteStr> Basic<Out> {
             lines_to_clear: 0,
             verbose: false,
         };
-
         basic.apply_cli(Cli { verbose, color });
-
         basic
     }
 
-    /// Applies [`Cli`] options.
+    /// Applies the given [`Cli`] options to this [`Basic`] [`Writer`].
     pub fn apply_cli(&mut self, cli: Cli) {
         if cli.verbose {
             self.verbose = true;
@@ -213,7 +218,7 @@ impl<Out: WriteStr> Basic<Out> {
             .write_line(&self.styles.err(format!("Failed to parse: {}", error)))
     }
 
-    /// Outputs [started] [`Feature`] to `Out`.
+    /// Outputs the [started] [`Feature`].
     ///
     /// [started]: event::Feature::Started
     /// [`Feature`]: gherkin::Feature
@@ -229,7 +234,7 @@ impl<Out: WriteStr> Basic<Out> {
         )
     }
 
-    /// Outputs [`Rule`] [started]/[scenario]/[finished] event to `Out`.
+    /// Outputs the [`Rule`]'s [started]/[scenario]/[finished] event.
     ///
     /// [finished]: event::Rule::Finished
     /// [scenario]: event::Rule::Scenario
@@ -257,7 +262,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Rule`] to `Out`.
+    /// Outputs the [started] [`Rule`].
     ///
     /// [started]: event::Rule::Started
     /// [`Rule`]: gherkin::Rule
@@ -275,7 +280,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [`Scenario`] [started]/[background]/[step] event to `Out`.
+    /// Outputs the [`Scenario`]'s [started]/[background]/[step] event.
     ///
     /// [background]: event::Scenario::Background
     /// [started]: event::Scenario::Started
@@ -314,7 +319,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [failed] [`Scenario`]'s hook to `Out`.
+    /// Outputs the [failed] [`Scenario`]'s hook.
     ///
     /// [failed]: event::Hook::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -349,7 +354,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [started] [`Scenario`] to `Out`.
+    /// Outputs the [started] [`Scenario`].
     ///
     /// [started]: event::Scenario::Started
     /// [`Scenario`]: gherkin::Scenario
@@ -367,7 +372,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [`Step`] [started]/[passed]/[skipped]/[failed] event to `Out`.
+    /// Outputs the [`Step`]'s [started]/[passed]/[skipped]/[failed] event.
     ///
     /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
@@ -402,9 +407,9 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Step`] to `Out`.
+    /// Outputs the [started] [`Step`].
     ///
-    /// This [`Step`] is printed only if [`Coloring`] is enabled and gets
+    /// The [`Step`] is printed only if [`Coloring`] is enabled and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
     /// [failed]: event::Step::Failed
@@ -443,7 +448,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [passed] [`Step`] to `Out`.
+    /// Outputs the [passed] [`Step`].
     ///
     /// [passed]: event::Step::Passed
     /// [`Step`]: gherkin::Step
@@ -490,7 +495,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [skipped] [`Step`] to `Out`.
+    /// Outputs the [skipped] [`Step`].
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
@@ -526,7 +531,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [failed] [`Step`] to `Out`.
+    /// Outputs the [failed] [`Step`].
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
@@ -598,8 +603,8 @@ impl<Out: WriteStr> Basic<Out> {
         ))
     }
 
-    /// Outputs [`Background`] [`Step`] [started]/[passed]/[skipped]/[failed]
-    /// event to `Out`.
+    /// Outputs the [`Background`] [`Step`]'s
+    /// [started]/[passed]/[skipped]/[failed] event.
     ///
     /// [failed]: event::Step::Failed
     /// [passed]: event::Step::Passed
@@ -635,9 +640,9 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [started] [`Background`] [`Step`] to `Out`.
+    /// Outputs the [started] [`Background`] [`Step`].
     ///
-    /// This [`Step`] is printed only if [`Coloring`] is enabled and gets
+    /// The [`Step`] is printed only if [`Coloring`] is enabled and gets
     /// overwritten by later [passed]/[skipped]/[failed] events.
     ///
     /// [failed]: event::Step::Failed
@@ -677,7 +682,7 @@ impl<Out: WriteStr> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [passed] [`Background`] [`Step`] to `Out`.
+    /// Outputs the [passed] [`Background`] [`Step`].
     ///
     /// [passed]: event::Step::Passed
     /// [`Background`]: gherkin::Background
@@ -725,7 +730,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [skipped] [`Background`] [`Step`] to `Out`.
+    /// Outputs the [skipped] [`Background`] [`Step`].
     ///
     /// [skipped]: event::Step::Skipped
     /// [`Background`]: gherkin::Background
@@ -762,7 +767,7 @@ impl<Out: WriteStr> Basic<Out> {
         )))
     }
 
-    /// Outputs [failed] [`Background`] [`Step`] to `Out`.
+    /// Outputs the [failed] [`Background`] [`Step`].
     ///
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background
