@@ -22,6 +22,7 @@ use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::{GlobWalker, GlobWalkerBuilder};
+use itertools::Itertools as _;
 use structopt::StructOpt;
 
 use crate::feature::Ext as _;
@@ -65,6 +66,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         let walk = |walker: GlobWalker| {
             walker
                 .filter_map(Result::ok)
+                .sorted_by(|l, r| Ord::cmp(l.path(), r.path()))
                 .filter(|file| {
                     file.path()
                         .extension()
