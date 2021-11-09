@@ -17,7 +17,7 @@ use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
-    event, parser, writer::term::Styles, ArbitraryWriter, Event, FailureWriter,
+    event, parser, writer::out::Styles, ArbitraryWriter, Event, FailureWriter,
     World, Writer,
 };
 

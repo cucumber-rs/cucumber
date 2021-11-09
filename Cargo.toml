@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/junit.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -29,6 +29,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["macros"]
 # Enables step attributes and auto-wiring.
 macros = ["cucumber-codegen", "inventory"]
+# Enables support for outputting JUnit XML report.
+output-junit = ["junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
 
@@ -36,7 +38,7 @@ timestamps = []
 async-trait = "0.1.40"
 atty = "0.2.14"
 console = "0.15"
-derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from"], default_features = false }
+derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
 either = "1.6"
 futures = "0.3.17"
 gherkin = { package = "gherkin_rust", version = "0.10" }
@@ -52,9 +54,18 @@ structopt = "0.3.25"
 cucumber-codegen = { version = "0.11.0-dev", path = "./codegen", optional = true }
 inventory = { version = "0.1.10", optional = true }
 
+# "output-junit" feature dependencies
+junit-report = { version = "0.7", optional = true }
+
 [dev-dependencies]
 humantime = "2.1"
+tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
+
+[[test]]
+name = "junit"
+required-features = ["output-junit"]
+harness = false
 
 [[test]]
 name = "wait"

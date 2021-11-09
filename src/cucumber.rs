@@ -922,10 +922,10 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        Cucumber::custom(
+        Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Basic::new().normalized().summarized(),
+            writer::Basic::default().normalized().summarized(),
         )
     }
 }
@@ -957,7 +957,7 @@ where
     /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
     #[must_use]
     pub fn new() -> Self {
-        Cucumber::default()
+        Self::default()
     }
 }
 

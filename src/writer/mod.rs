@@ -14,10 +14,12 @@
 
 pub mod basic;
 pub mod fail_on_skipped;
+#[cfg(feature = "output-junit")]
+pub mod junit;
 pub mod normalized;
+pub mod out;
 pub mod repeat;
 pub mod summarized;
-pub mod term;
 
 use async_trait::async_trait;
 use sealed::sealed;
@@ -25,6 +27,9 @@ use structopt::StructOptInternal;
 
 use crate::{event, parser, Event, World};
 
+#[cfg(feature = "output-junit")]
+#[doc(inline)]
+pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
