@@ -988,6 +988,40 @@ OPTIONS:
 <h3 id="customizing-cli-options"><a class="header" href="#customizing-cli-options">Customizing CLI options</a></h3>
 <p>CLI options are designed to be composable from the one provided by <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli"><code>Parser::Cli</code></a>, <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli"><code>Runner::Cli</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli"><code>Writer::Cli</code></a>.</p>
 <p>You may also extend CLI options with custom ones, if you have such a need for running your tests. See a <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html#example"><code>cli::Opts</code> example</a> for more details.</p>
+<h2 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h2>
+<p>Library provides an ability to output tests result in as <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
+<p>Just enable <code>output-junit</code> library feature in your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">cucumber = { version = &quot;0.11&quot;, features = [&quot;output-junit&quot;] }
+</code></pre>
+<p>And configure <a href="https://cucumber.io">Cucumber</a>'s output to <code>writer::JUnit</code>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::{convert::Infallible, fs, io};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::WorldInit;
+</span>use cucumber::writer;
+
+<span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">struct World;
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl cucumber::World for World {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">        Ok(World)
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[tokio::main]
+</span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
+</span>let file = fs::File::create(dbg!(format!(&quot;{}/target/junit.xml&quot;, env!(&quot;CARGO_MANIFEST_DIR&quot;))))?;
+World::cucumber()
+    .with_writer(writer::JUnit::new(file))
+    .run(&quot;tests/features/book&quot;)
+    .await;
+<span class="boring">Ok(())
+</span><span class="boring">}
+</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="test-modules-organization"><a class="header" href="#test-modules-organization">Test Modules Organization</a></h1>
 <p>You can have all of your step definitions in one file, or in multiple files. When you start with your project, all your step definitions will probably be in one file. As your project grows, you should split your step definitions into meaningful groups in different files. This will make your project more logically organized and easier to maintain.</p>
 <h2 id="grouping-step-definitions"><a class="header" href="#grouping-step-definitions">Grouping step definitions</a></h2>
