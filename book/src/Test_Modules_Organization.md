@@ -19,7 +19,7 @@ Of course, how you group your step definitions is really up to you and your team
 
 ## Avoid duplication
 
-Avoid writing similar step definitions, as they can lead to clutter. While documenting your steps helps, making use of [`regex` and `FromStr`](Features.md#combining-regex-and-fromstr) can do wonders.
+Avoid writing similar step definitions, as they can lead to clutter. While documenting your steps helps, making use of [`regex`/`cucumber-expressions` and `FromStr`](Features.md#combining-regexcucumber-expressions-and-fromstr) can do wonders.
 
 
 

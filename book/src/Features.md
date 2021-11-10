@@ -173,7 +173,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 <script id="asciicast-o1s4mSMYkkVBy4WAsG8lhYtT8" src="https://asciinema.org/a/o1s4mSMYkkVBy4WAsG8lhYtT8.js" async data-autoplay="true" data-rows="18"></script>
 
 
-### Combining `regex` and `FromStr`
+### Combining `regex`/`cucumber-expressions` and `FromStr`
 
 At parsing stage, `<templates>` are replaced by value from cells. That means you can parse table cells into any type, that implements [`FromStr`](https://doc.rust-lang.org/stable/std/str/trait.FromStr.html).
 
@@ -262,7 +262,7 @@ async fn feed_cat(world: &mut AnimalWorld, times: usize) {
     }
 }
 
-#[then(regex = r"^the (\S+) is not hungry$")]
+#[then(expr = "the {word} is not hungry")]
 async fn cat_is_fed(world: &mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 

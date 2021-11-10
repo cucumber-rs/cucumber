@@ -39,7 +39,7 @@ async fn test_non_regex_async(w: &mut MyWorld, #[step] ctx: &Step) {
 }
 
 #[given(regex = r"(\S+) is (\d+)")]
-#[when(regex = r"(\S+) is (\d+)")]
+#[when(expression = r"{word} is {int}")]
 async fn test_regex_async(
     w: &mut MyWorld,
     step: String,
@@ -64,7 +64,7 @@ fn test_regex_sync_slice(w: &mut MyWorld, step: &Step, matches: &[String]) {
     w.foo += 1;
 }
 
-#[when(regex = r#"^I write "(\S+)" to `([^`\s]+)`$"#)]
+#[when(regex = r#"^I write "(\S+)" to '([^'\s]+)'$"#)]
 fn test_return_result_write(
     w: &mut MyWorld,
     what: String,
@@ -75,16 +75,16 @@ fn test_return_result_write(
     fs::write(path, what)
 }
 
-#[then(regex = r#"^the file `([^`\s]+)` should contain "(\S+)"$"#)]
+#[then(expr = "the file {string} should contain {string}")]
 fn test_return_result_read(
     w: &mut MyWorld,
     filename: String,
     what: String,
 ) -> io::Result<()> {
     let mut path = w.dir.path().to_path_buf();
-    path.push(filename);
+    path.push(filename.trim_matches('\''));
 
-    assert_eq!(what, fs::read_to_string(path)?);
+    assert_eq!(what.trim_matches('"'), fs::read_to_string(path)?);
 
     Ok(())
 }

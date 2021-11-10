@@ -115,7 +115,7 @@ macro_rules! step_attribute {
         /// # use std::{convert::Infallible};
         /// #
         /// # use async_trait::async_trait;
-        /// use cucumber::{given, World, WorldInit};
+        /// use cucumber::{given, when, World, WorldInit};
         ///
         /// #[derive(Debug, WorldInit)]
         /// struct MyWorld;
@@ -130,6 +130,7 @@ macro_rules! step_attribute {
         /// }
         ///
         /// #[given(regex = r"(\S+) is (\d+)")]
+        /// #[when(expr = "{word} is {int}")]
         /// fn test(w: &mut MyWorld, param: String, num: i32) {
         ///     assert_eq!(param, "foo");
         ///     assert_eq!(num, 0);
@@ -140,6 +141,22 @@ macro_rules! step_attribute {
         ///     MyWorld::run("./tests/features/doctests.feature").await;
         /// }
         /// ```
+        ///
+        /// # Attributes
+        ///
+        /// - `#[given(regex = "regex")]`
+        ///
+        ///   Uses [`Regex`], which correctness is checked at compile time.
+        ///
+        /// - `#[given(expression = "cucumber-expression")]` or
+        ///   `#[given(expr = "cucumber-expression")]`
+        ///
+        ///   Uses [`cucumber-expressions`][1], which correctness is checked at
+        ///   compile time.
+        ///
+        /// - `#[given("literal")]`
+        ///
+        ///   Matches only **exact** literal.
         ///
         /// # Arguments
         ///
@@ -191,8 +208,10 @@ macro_rules! step_attribute {
         /// to implement [`Display`], so returning it will cause the step to
         /// fail.
         ///
+        /// [1]: cucumber_expressions
         /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
+        /// [`Regex`]: regex::Regex
         /// [`gherkin::Step`]: https://bit.ly/3j42hcd
         /// [`World`]: https://bit.ly/3j0aWw7
         #[proc_macro_attribute]
