@@ -12,6 +12,7 @@
 
 use std::mem;
 
+use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use regex::{self, Regex};
@@ -101,7 +102,7 @@ impl Step {
         let func_name = &func.sig.ident;
 
         let world = parse_world_from_args(&self.func.sig)?;
-        let constructor_method = self.constructor_method();
+        let step_type = self.step_type();
         let (func_args, addon_parsing) =
             self.fn_arguments_and_additional_parsing()?;
 
@@ -129,7 +130,8 @@ impl Step {
                     ::std::boxed::Box::pin(f)
                 }
 
-                #caller_name
+                let f: ::cucumber::Step<#world> = #caller_name;
+                f
             }
         };
 
@@ -138,19 +140,26 @@ impl Step {
 
             #[automatically_derived]
             ::cucumber::codegen::submit!(
-                #![crate = ::cucumber::codegen] {
-                    <#world as ::cucumber::codegen::WorldInventory<
-                        _, _, _,
-                    >>::#constructor_method(
+                {
+                    // SAFETY
+                    // `func` argument is transmuted from `cucumber::Step`.
+                    unsafe { <#world as ::cucumber::codegen::WorldInventory>::
+                    #step_type::new(
                         ::cucumber::step::Location {
-                            path: ::std::convert::From::from(::std::file!()),
+                            path: ::std::file!(),
                             line: ::std::line!(),
                             column: ::std::column!(),
                         },
-                        ::cucumber::codegen::Regex::new(#step_matcher)
-                            .unwrap(),
-                        #step_caller,
-                    )
+                        #step_matcher,
+                        // SAFETY
+                        // As we transmute fn pointer into `StepHack`, which is
+                        // `#[repr(C)]` over `*const ()`, this is safe on
+                        // platforms where fn pointers and data pointers have
+                        // the same sizes. Realistically this is every platform
+                        // supported by Rust.
+                        // https://bit.ly/3ogfQaZ
+                        unsafe { std::mem::transmute(#step_caller) },
+                    ) }
                 }
             );
         })
@@ -238,10 +247,10 @@ impl Step {
         }
     }
 
-    /// Composes a name of the `cucumber::codegen::WorldInventory` method to
-    /// wire this [`Step`] with.
-    fn constructor_method(&self) -> syn::Ident {
-        format_ident!("new_{}", self.attr_name)
+    /// Composes a name of the `cucumber::codegen::WorldInventory` associated
+    /// type to wire this [`Step`] with.
+    fn step_type(&self) -> syn::Ident {
+        format_ident!("{}", to_pascal_case(self.attr_name))
     }
 
     /// Returns [`syn::Ident`] and parsing code of the given function's

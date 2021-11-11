@@ -20,9 +20,10 @@
     rustdoc::broken_intra_doc_links,
     rustdoc::private_intra_doc_links,
     trivial_casts,
-    trivial_numeric_casts
+    trivial_numeric_casts,
+    unsafe_code
 )]
-#![forbid(non_ascii_idents, unsafe_code)]
+#![forbid(non_ascii_idents)]
 #![warn(
     clippy::as_conversions,
     clippy::branches_sharing_code,

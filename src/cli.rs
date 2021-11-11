@@ -64,7 +64,8 @@ and may be extended with custom CLI options additionally.
 #     }
 # }
 #
-# let fut = async {
+# fn main() {
+#   let fut = async {
 #[derive(StructOpt)]
 struct CustomOpts {
     /// Additional time to wait in before hook.
@@ -85,11 +86,12 @@ MyWorld::cucumber()
     .await;
 # };
 #
-# tokio::runtime::Builder::new_current_thread()
-#    .enable_all()
-#    .build()
-#    .unwrap()
-#    .block_on(fut);
+#     tokio::runtime::Builder::new_current_thread()
+#        .enable_all()
+#        .build()
+#        .unwrap()
+#        .block_on(fut);
+# }
 ```
 
 [`Cucumber`]: crate::Cucumber

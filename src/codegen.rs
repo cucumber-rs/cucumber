@@ -22,13 +22,7 @@ pub use regex::Regex;
 
 /// [`World`] extension with auto-wiring capabilities.
 #[async_trait(?Send)]
-pub trait WorldInit<G, W, T>: WorldInventory<G, W, T>
-where
-    Self: Debug,
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-{
+pub trait WorldInit: Debug + WorldInventory {
     /// Returns runner for tests with auto-wired steps marked by [`given`],
     /// [`when`] and [`then`] attributes.
     ///
@@ -39,19 +33,34 @@ where
     fn collection() -> step::Collection<Self> {
         let mut out = step::Collection::new();
 
-        for given in Self::cucumber_given() {
+        for given in inventory::iter::<Self::Given> {
             let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex, fun);
+            out = out.given(
+                Some(loc),
+                Regex::new(regex)
+                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
+                fun,
+            );
         }
 
-        for when in Self::cucumber_when() {
+        for when in inventory::iter::<Self::When> {
             let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex, fun);
+            out = out.when(
+                Some(loc),
+                Regex::new(regex)
+                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
+                fun,
+            );
         }
 
-        for then in Self::cucumber_then() {
+        for then in inventory::iter::<Self::Then> {
             let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex, fun);
+            out = out.then(
+                Some(loc),
+                Regex::new(regex)
+                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
+                fun,
+            );
         }
 
         out
@@ -112,70 +121,24 @@ where
     }
 }
 
-impl<G, W, T, E> WorldInit<G, W, T> for E
-where
-    Self: Debug,
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-    E: WorldInventory<G, W, T>,
-{
-}
+impl<T> WorldInit for T where T: WorldInventory + Debug {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
-pub trait WorldInventory<G, W, T>: World
-where
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-{
-    /// Returns an [`Iterator`] over items with [`given`] attribute.
+pub trait WorldInventory: World {
+    /// Struct [`submit`]ted in [`given`] macro.
     ///
     /// [`given`]: crate::given
-    #[must_use]
-    fn cucumber_given() -> inventory::iter<G> {
-        inventory::iter
-    }
+    type Given: inventory::Collect + StepConstructor<Self>;
 
-    /// Creates a new [`Given`] [`Step`] value. Used by [`given`] attribute.
-    ///
-    /// [`given`]: crate::given
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
-    fn new_given(loc: step::Location, regex: Regex, fun: Step<Self>) -> G {
-        G::new(loc, regex, fun)
-    }
-
-    /// Returns an [`Iterator`] over items with [`when`] attribute.
+    /// Struct [`submit`]ted in [`when`] macro.
     ///
     /// [`when`]: crate::when
-    #[must_use]
-    fn cucumber_when() -> inventory::iter<W> {
-        inventory::iter
-    }
+    type When: inventory::Collect + StepConstructor<Self>;
 
-    /// Creates a new [`When`] [`Step`] value. Used by [`when`] attribute.
-    ///
-    /// [`when`]: crate::when
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
-    fn new_when(loc: step::Location, regex: Regex, fun: Step<Self>) -> W {
-        W::new(loc, regex, fun)
-    }
-
-    /// Returns an [`Iterator`] over items with [`then`] attribute.
+    /// Struct [`submit`]ted in [`then`] macro.
     ///
     /// [`then`]: crate::then
-    #[must_use]
-    fn cucumber_then() -> inventory::iter<T> {
-        inventory::iter
-    }
-
-    /// Creates a new [`Then`] [`Step`] value. Used by [`then`] attribute.
-    ///
-    /// [`then`]: crate::then
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
-    fn new_then(loc: step::Location, regex: Regex, fun: Step<Self>) -> T {
-        T::new(loc, regex, fun)
-    }
+    type Then: inventory::Collect + StepConstructor<Self>;
 }
 
 /// Trait for creating [`Step`]s to be registered by [`given`], [`when`] and
@@ -185,10 +148,21 @@ where
 /// [`when`]: crate::when
 /// [`then`]: crate::then
 pub trait StepConstructor<W> {
-    /// Creates a new [`Step`] with the corresponding [`Regex`].
-    #[must_use]
-    fn new(_: step::Location, _: Regex, _: Step<W>) -> Self;
-
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
-    fn inner(&self) -> (step::Location, Regex, Step<W>);
+    fn inner(&self) -> (step::Location, &'static str, Step<W>);
 }
+
+/// Type used to hack around [`inventory::Collect`] requiring [`Sync`].
+///
+/// # Safety
+///
+/// As the only way to get this type is to [`transmute`] some other type, you
+/// have to be sure, that [`transmute`]d type is [`Sync`].
+///
+/// [`transmute`]: std::mem::transmute
+#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+pub struct SyncHack(*const ());
+
+#[allow(unsafe_code)]
+unsafe impl Sync for SyncHack {}
