@@ -14,6 +14,8 @@
 
 pub mod basic;
 pub mod fail_on_skipped;
+#[cfg(feature = "output-json")]
+pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
 pub mod normalized;
@@ -27,6 +29,9 @@ use structopt::StructOptInternal;
 
 use crate::{event, parser, Event, World};
 
+#[cfg(feature = "output-json")]
+#[doc(inline)]
+pub use self::json::Json;
 #[cfg(feature = "output-junit")]
 #[doc(inline)]
 pub use self::junit::JUnit;
