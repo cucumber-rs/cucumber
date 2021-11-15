@@ -14,9 +14,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Added
 
 - Ability for step functions to return `Result`. ([#151])
-- Arbitrary output for `writer::Basic` ([#147])
-- `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag ([#147])
-- `writer::Json` ([Json schema][0110-2]) behind the `output-json` feature flag ([#159])
+- Arbitrary output for `writer::Basic`. ([#147])
+- `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag. ([#147])
+- `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151

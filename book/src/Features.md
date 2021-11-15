@@ -474,9 +474,9 @@ World::cucumber()
 
 
 
-## JSON schema
+## Cucumber JSON format output
 
-Library provides an ability to output tests result in [JSON schema].
+Library provides an ability to output tests result in a [Cucumber JSON format].
 
 Just enable `output-json` library feature in your `Cargo.toml`:
 ```toml
@@ -518,6 +518,6 @@ World::cucumber()
 
 
 [Cucumber]: https://cucumber.io
+[Cucumber JSON format]: https://github.com/cucumber/cucumber-json-schema
 [Gherkin]: https://cucumber.io/docs/gherkin
-[JSON schema]: https://github.com/cucumber/cucumber-json-schema
 [JUnit XML report]: https://llg.cubic.org/docs/junit

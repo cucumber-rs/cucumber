@@ -61,7 +61,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: ["<none>", "macros", "timestamps", "output-json", "output-junit"]
+        feature:
+          - <none>
+          - macros
+          - timestamps
+          - output-json
+          - output-junit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
