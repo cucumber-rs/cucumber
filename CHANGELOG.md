@@ -17,10 +17,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Arbitrary output for `writer::Basic` ([#147])
 - `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag ([#147])
 - `writer::Json` ([Json schema][0110-2]) behind the `output-json` feature flag ([#159])
+- `writer::Join` to output to multiple terminating `Writer`s ([#160])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
 [#159]: /../../pull/159
+[#160]: /../../pull/160
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
