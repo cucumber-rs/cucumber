@@ -2,13 +2,7 @@
 //!
 //! [1]: https://github.com/cucumber/cucumber-json-schema
 
-// TODO: add failing after hook
-
-use std::{
-    fmt::Debug,
-    io,
-    time::{Duration, SystemTime},
-};
+use std::{fmt::Debug, io, time::SystemTime};
 
 use async_trait::async_trait;
 use inflector::Inflector as _;
@@ -40,10 +34,11 @@ pub struct Json<Out: io::Write> {
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     features: Vec<Feature>,
 
-    /// [`SystemTime`] when the current [`Step`] has started.
+    /// [`SystemTime`] when the current [`Step`]/[`Hook`] has started.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    step_started: Option<SystemTime>,
+    /// [`Hook`]: event::Hook
+    started: Option<SystemTime>,
 }
 
 #[async_trait(?Send)]
@@ -60,7 +55,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
 }
 
 impl<Out: io::Write> Json<Out> {
-    /// Creates a new normalized [`Json`] [`Writer`] outputting XML report into
+    /// Creates a new normalized [`Json`] [`Writer`] outputting JSON report into
     /// the given `output`.
     #[must_use]
     pub fn new<W: Debug + World>(output: Out) -> writer::Normalized<W, Self> {
@@ -87,33 +82,57 @@ impl<Out: io::Write> Json<Out> {
         Self {
             output,
             features: Vec::new(),
-            step_started: None,
+            started: None,
         }
     }
 
+    /// Handles [`event::Cucumber`].
     fn handle_event<W>(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
     ) {
-        use event::{Cucumber, Feature, Rule};
+        use event::{Cucumber, Rule};
 
         match event.map(event::Event::split) {
-            Ok((Cucumber::Feature(f, Feature::Scenario(sc, ev)), meta)) => {
+            Err(parser::Error::Parsing(e)) => {
+                let feature = Feature::parsing_err(&e);
+                self.features.push(feature);
+            }
+            Err(parser::Error::ExampleExpansion(e)) => {
+                let feature = Feature::example_expansion_err(&e);
+                self.features.push(feature);
+            }
+            Ok((
+                Cucumber::Feature(f, event::Feature::Scenario(sc, ev)),
+                meta,
+            )) => {
                 self.handle_scenario_event(&f, None, &sc, ev, meta);
             }
             Ok((
-                Cucumber::Feature(f, Feature::Rule(r, Rule::Scenario(sc, ev))),
+                Cucumber::Feature(
+                    f,
+                    event::Feature::Rule(r, Rule::Scenario(sc, ev)),
+                ),
                 meta,
             )) => {
                 self.handle_scenario_event(&f, Some(&r), &sc, ev, meta);
             }
-            Err(_) => {
-                // add failure
+            Ok((Cucumber::Finished, _)) => {
+                self.output
+                    .write_all(
+                        serde_json::to_string(&self.features)
+                            .unwrap_or_else(|e| {
+                                panic!("Failed to serialize: {}", e)
+                            })
+                            .as_bytes(),
+                    )
+                    .unwrap_or_else(|e| panic!("Failed to write: {}", e));
             }
             _ => {}
         }
     }
 
+    /// Handles [`event::Scenario`].
     fn handle_scenario_event<W>(
         &mut self,
         feature: &gherkin::Feature,
@@ -122,111 +141,157 @@ impl<Out: io::Write> Json<Out> {
         ev: event::Scenario<W>,
         meta: event::Metadata,
     ) {
+        use event::Scenario;
+
         match ev {
-            event::Scenario::Started => {
-                self.get_or_insert_element(feature, rule, scenario, "scenario");
+            Scenario::Hook(ty, ev) => {
+                self.handle_hook_event(feature, rule, scenario, ty, ev, meta);
             }
-            event::Scenario::Hook(_, event::Hook::Started) => {
-                self.step_started = Some(meta.at);
-            }
-            event::Scenario::Hook(ty, ev) => {
-                self.handle_hook_event(feature, scenario, ty, ev, meta);
-            }
-            event::Scenario::Background(_, event::Step::Started) => {
-                self.set_scenario_type(feature, rule, scenario, "background");
-            }
-            event::Scenario::Background(
-                st,
-                ev @ (event::Step::Passed(..)
-                | event::Step::Skipped
-                | event::Step::Failed(..)),
-            ) => {
-                let el = self.get_or_insert_element(
+            Scenario::Background(st, ev) => {
+                self.handle_step_event(
                     feature,
                     rule,
                     scenario,
                     "background",
+                    &st,
+                    ev,
+                    meta,
                 );
-                let duration = meta
-                    .at
-                    .duration_since(self.step_started.take().unwrap())
-                    .unwrap();
-                // TODO: insert 'background', not 'scenario' type
-                el.steps.push(Step::new(&st, &ev, duration));
             }
-            event::Scenario::Step(_, event::Step::Started) => {
-                self.step_started = Some(meta.at);
-                self.set_scenario_type(feature, rule, scenario, "scenario");
+            Scenario::Step(st, ev) => {
+                self.handle_step_event(
+                    feature, rule, scenario, "scenario", &st, ev, meta,
+                );
             }
-            event::Scenario::Step(
-                st,
-                ev @ (event::Step::Passed(..)
-                | event::Step::Skipped
-                | event::Step::Failed(..)),
-            ) => {
-                let el = self
-                    .get_or_insert_element(feature, rule, scenario, "scenario");
-                let duration = meta
-                    .at
-                    .duration_since(self.step_started.take().unwrap())
-                    .unwrap();
-                el.steps.push(Step::new(&st, &ev, duration));
-            }
+            Scenario::Started | Scenario::Finished => {}
         }
     }
 
+    /// Handles [`event::Hook`].
     fn handle_hook_event<W>(
         &mut self,
         feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         hook_ty: event::HookType,
         event: event::Hook<W>,
         meta: event::Metadata,
     ) {
-        match event {
-            event::Hook::Started => {
-                self.step_started = Some(meta.at);
+        use event::{Hook, HookType};
+
+        let mut duration = || {
+            let started = self.started.take().unwrap_or_else(|| {
+                panic!("No Started event for {} Hook", hook_ty)
+            });
+            meta.at
+                .duration_since(started)
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Failed to compute duration between {:?} and {:?}: {}",
+                        meta.at, started, e,
+                    );
+                })
+                .as_nanos()
+        };
+
+        let res = match event {
+            Hook::Started => {
+                self.started = Some(meta.at);
+                return;
             }
-            ev => {
-                let f =
-                    self.features.iter_mut().find(|&f| *f == *feature).unwrap();
-                let el = f
-                    .elements
-                    .iter_mut()
-                    .find(|el| el.name == scenario.name)
-                    .unwrap();
-                let duration = meta
-                    .at
-                    .duration_since(self.step_started.take().unwrap())
-                    .unwrap()
-                    .as_nanos();
-                let res = match ev {
-                    event::Hook::Started => unreachable!(),
-                    event::Hook::Passed => HookResult {
-                        result: StepResult {
-                            status: Status::Passed,
-                            duration,
-                            error_message: None,
-                        },
-                    },
-                    event::Hook::Failed(_, info) => HookResult {
-                        result: StepResult {
-                            status: Status::Failed,
-                            duration,
-                            error_message: Some(
-                                coerce_error(&info).into_owned(),
-                            ),
-                        },
-                    },
-                };
-                match hook_ty {
-                    event::HookType::Before => el.before.push(res),
-                    event::HookType::After => el.after.push(res),
-                }
-            }
+            Hook::Passed => HookResult {
+                result: RunResult {
+                    status: Status::Passed,
+                    duration: duration(),
+                    error_message: None,
+                },
+            },
+            Hook::Failed(_, info) => HookResult {
+                result: RunResult {
+                    status: Status::Failed,
+                    duration: duration(),
+                    error_message: Some(coerce_error(&info).into_owned()),
+                },
+            },
+        };
+
+        let el =
+            self.get_or_insert_element(feature, rule, scenario, "scenario");
+        match hook_ty {
+            HookType::Before => el.before.push(res),
+            HookType::After => el.after.push(res),
         }
     }
 
+    /// Handles [`event::Step`].
+    #[allow(clippy::too_many_arguments)]
+    fn handle_step_event<W>(
+        &mut self,
+        feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
+        scenario: &gherkin::Scenario,
+        ty: &'static str,
+        step: &gherkin::Step,
+        event: event::Step<W>,
+        meta: event::Metadata,
+    ) {
+        let mut duration = || {
+            let started = self.started.take().unwrap_or_else(|| {
+                panic!("No Started event for Step '{}'", step.value)
+            });
+            meta.at
+                .duration_since(started)
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Failed to compute duration between {:?} and {:?}: {}",
+                        meta.at, started, e,
+                    );
+                })
+                .as_nanos()
+        };
+
+        let result = match event {
+            event::Step::Started => {
+                self.started = Some(meta.at);
+                let _ = self.get_or_insert_element(feature, rule, scenario, ty);
+                return;
+            }
+            event::Step::Passed(..) => RunResult {
+                status: Status::Passed,
+                duration: duration(),
+                error_message: None,
+            },
+            event::Step::Failed(_, _, err) => match err {
+                event::StepError::AmbiguousMatch(err) => RunResult {
+                    status: Status::Ambiguous,
+                    duration: duration(),
+                    error_message: Some(format!("{}", err)),
+                },
+                event::StepError::Panic(info) => RunResult {
+                    status: Status::Failed,
+                    duration: duration(),
+                    error_message: Some(coerce_error(&info).into_owned()),
+                },
+            },
+            event::Step::Skipped => RunResult {
+                status: Status::Skipped,
+                duration: duration(),
+                error_message: None,
+            },
+        };
+
+        let el = self.get_or_insert_element(feature, rule, scenario, ty);
+        el.steps.push(Step {
+            keyword: step.keyword.clone(),
+            line: step.position.line,
+            name: step.value.clone(),
+            hidden: false,
+            result,
+        });
+    }
+
+    /// Inserts `scenario`, if not present, then returns a mutable reference to
+    /// the contained value.
     fn get_or_insert_element(
         &mut self,
         feature: &gherkin::Feature,
@@ -234,47 +299,34 @@ impl<Out: io::Write> Json<Out> {
         scenario: &gherkin::Scenario,
         ty: &'static str,
     ) -> &mut Element {
-        let f = self
+        let pos = self
             .features
-            .iter_mut()
-            .find(|&f| *f == *feature)
+            .iter()
+            .position(|f| f == feature)
             .unwrap_or_else(|| {
                 self.features.push(Feature::new(feature));
-                self.features.last_mut().unwrap()
+                self.features.len() - 1
             });
-        f.elements
-            .iter_mut()
-            .find(|el| *el.name == scenario.name && el.r#type == ty)
-            .unwrap_or_else(|| {
-                f.elements.push(Element::new(feature, rule, scenario, ty));
-                f.elements.last_mut().unwrap()
-            })
-    }
-
-    fn set_scenario_type(
-        &mut self,
-        feature: &gherkin::Feature,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
-        ty: &'static str,
-    ) {
-        let f = self
-            .features
-            .iter_mut()
-            .find(|&f| *f == *feature)
-            .unwrap_or_else(|| {
-                self.features.push(Feature::new(feature));
-                self.features.last_mut().unwrap()
-            });
-        let el = f
+        let f = self.features.get_mut(pos).unwrap_or_else(|| unreachable!());
+        let pos = f
             .elements
-            .iter_mut()
-            .find(|&el| *el.name == scenario.name && el.r#type == "scenario")
+            .iter()
+            .position(|el| {
+                el.name
+                    == format!(
+                        "{}{}",
+                        rule.map(|r| format!("{} ", r.name))
+                            .unwrap_or_default(),
+                        scenario.name,
+                    )
+                    && el.line == scenario.position.line
+                    && el.r#type == ty
+            })
             .unwrap_or_else(|| {
                 f.elements.push(Element::new(feature, rule, scenario, ty));
-                f.elements.last_mut().unwrap()
+                f.elements.len() - 1
             });
-        el.r#type = ty;
+        f.elements.get_mut(pos).unwrap_or_else(|| unreachable!())
     }
 }
 
@@ -282,13 +334,13 @@ impl<Out: io::Write> Json<Out> {
 #[derive(Clone, Debug, Serialize)]
 pub struct Tag {
     /// [`Tag`] name.
-    name: String,
+    pub name: String,
 
     /// Line number.
     ///
     /// As [`gherkin`] parser omits this info, line number is taken from
     /// [`gherkin::Feature`] or [`gherkin::Scenario`].
-    line: usize,
+    pub line: usize,
 }
 
 /// [`gherkin::Step`] run status.
@@ -317,103 +369,61 @@ pub enum Status {
     Pending,
 }
 
-/// [`gherkin::Step`] run result.
+/// Run result.
 #[derive(Clone, Debug, Serialize)]
-pub struct StepResult {
-    /// [`gherkin::Step`] [`Status`].
-    status: Status,
+pub struct RunResult {
+    /// [`Status`].
+    pub status: Status,
 
-    /// [`gherkin::Step`] execution time.
+    /// Execution time.
     ///
     /// While nowhere to be documented, `cucumber-jvm` uses nanoseconds.
-    /// Source: https://bit.ly/3onkLXJ
-    duration: u128,
+    /// Source: <https://bit.ly/3onkLXJ>
+    pub duration: u128,
 
     /// Error message.
     ///
     /// Present only if [`Status::Failed`] or [`Status::Ambiguous`].
     #[serde(skip_serializing_if = "Option::is_none")]
-    error_message: Option<String>,
+    pub error_message: Option<String>,
 }
 
 /// [`gherkin::Step`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Step {
-    /// [`gherkin::Step::keyword`] with trailing whitespace.
-    ///
-    /// Source: https://bit.ly/3c2q5tK
-    keyword: String,
+    /// [`gherkin::Step::keyword`].
+    pub keyword: String,
 
     /// [`gherkin::Step`] line number in `.feature` file.
-    line: usize,
+    pub line: usize,
 
-    /// [`gherkin::Step::name`].
-    name: String,
+    /// [`gherkin::Step::value`].
+    pub name: String,
 
     /// Never [`true`] and is here only to fully describe [JSON schema][1].
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     #[serde(skip_serializing_if = "std::ops::Not::not")]
-    hidden: bool,
+    pub hidden: bool,
 
     /// [`gherkin::Step`] run result.
-    result: StepResult,
+    pub result: RunResult,
 }
 
-impl Step {
-    /// Creates a new [`Step`].
-    fn new<W>(
-        step: &gherkin::Step,
-        event: &event::Step<W>,
-        duration: Duration,
-    ) -> Self {
-        Self {
-            keyword: format!("{} ", step.keyword),
-            line: step.position.line,
-            name: step.value.clone(),
-            hidden: false,
-            result: match event {
-                // TODO: maybe we should handle this differently
-                event::Step::Started => panic!(""),
-                event::Step::Passed(..) => StepResult {
-                    status: Status::Passed,
-                    duration: duration.as_nanos(),
-                    error_message: None,
-                },
-                event::Step::Failed(_, _, err) => match err {
-                    event::StepError::AmbiguousMatch(err) => StepResult {
-                        status: Status::Ambiguous,
-                        duration: duration.as_nanos(),
-                        error_message: Some(format!("{}", err)),
-                    },
-                    event::StepError::Panic(info) => StepResult {
-                        status: Status::Failed,
-                        duration: duration.as_micros(),
-                        error_message: Some(coerce_error(info).into_owned()),
-                    },
-                },
-                event::Step::Skipped => StepResult {
-                    status: Status::Skipped,
-                    duration: duration.as_nanos(),
-                    error_message: None,
-                },
-            },
-        }
-    }
-}
-
-/// TODO
+/// [`Before`] or [`After`] run result.
+///
+/// [`Before`]: event::HookType::Before
+/// [`After`]: event::HookType::After
 #[derive(Clone, Debug, Serialize)]
 pub struct HookResult {
-    /// TODO
-    result: StepResult,
+    /// [`Before`] or [`After`] run result.
+    ///
+    /// [`Before`]: event::HookType::Before
+    /// [`After`]: event::HookType::After
+    pub result: RunResult,
 }
 
-/// [`gherkin::Background`] or [`gherkin::Scenario`] maybe prepended with
-/// [`gherkin::Rule::name`]. This is done because [JSON schema][1] doesn't have
-/// [`gherkin::Rule`].
-///
-/// [1]: https://github.com/cucumber/cucumber-json-schema
+/// [`gherkin::Background`] or [`gherkin::Scenario`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Element {
     /// Doesn't appear in the [JSON schema][1], but present in
@@ -421,19 +431,19 @@ pub struct Element {
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: https://github.com/cucumber/cucumber-json-testdata-generator
-    after: Vec<HookResult>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub after: Vec<HookResult>,
 
     /// Doesn't appear in the [JSON schema][1], but present in
     /// [generated test cases][2].
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: https://github.com/cucumber/cucumber-json-testdata-generator
-    before: Vec<HookResult>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub before: Vec<HookResult>,
 
-    /// [`gherkin::Scenario::keyword`] with trailing whitespace.
-    ///
-    /// Source: https://bit.ly/3c2q5tK
-    keyword: String,
+    /// [`gherkin::Scenario::keyword`].
+    pub keyword: String,
 
     /// [`Element`] type.
     ///
@@ -441,25 +451,30 @@ pub struct Element {
     /// constraint only to those values, so maybe a subject to change.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
-    r#type: &'static str,
+    pub r#type: &'static str,
 
     /// [`Element`] identifier. Doesn't have to be unique.
-    id: String,
+    pub id: String,
 
     /// [`gherkin::Scenario`] line number inside `.feature` file.
-    line: usize,
+    pub line: usize,
 
-    /// [`gherkin::Scenario::name`].
-    name: String,
+    /// [`gherkin::Scenario::name`] maybe prepended with
+    /// [`gherkin::Rule::name`]. This is done because [JSON schema][1] doesn't
+    /// have [`gherkin::Rule`].
+    ///
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
+    pub name: String,
 
     /// [`gherkin::Scenario::tags`].
-    tags: Vec<Tag>,
+    pub tags: Vec<Tag>,
 
     /// [`gherkin::Scenario`] [`Step`]s.
-    steps: Vec<Step>,
+    pub steps: Vec<Step>,
 }
 
 impl Element {
+    /// Creates a new [`Element`].
     fn new(
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -469,16 +484,25 @@ impl Element {
         Self {
             after: Vec::new(),
             before: Vec::new(),
-            keyword: format!("{} ", scenario.keyword),
+            keyword: (ty == "background")
+                .then(|| feature.background.as_ref().map(|bg| &bg.keyword))
+                .flatten()
+                .unwrap_or(&scenario.keyword)
+                .clone(),
             r#type: ty,
             id: format!(
                 "{}{}/{}",
-                feature.name,
-                rule.map(|r| format!("/{}", r.name)).unwrap_or_default(),
-                scenario.name,
+                feature.name.to_kebab_case(),
+                rule.map(|r| format!("/{}", r.name.to_kebab_case()))
+                    .unwrap_or_default(),
+                scenario.name.to_kebab_case(),
             ),
             line: scenario.position.line,
-            name: scenario.name.clone(),
+            name: format!(
+                "{}{}",
+                rule.map(|r| format!("{} ", r.name)).unwrap_or_default(),
+                scenario.name.clone()
+            ),
             tags: scenario
                 .tags
                 .iter()
@@ -496,21 +520,19 @@ impl Element {
 #[derive(Clone, Debug, Serialize)]
 pub struct Feature {
     /// [`gherkin::Feature::path`].
-    uri: Option<String>,
+    pub uri: Option<String>,
 
-    /// [`gherkin::Feature::keyword`] with trailing whitespace.
-    ///
-    /// Source: https://bit.ly/3c2q5tK
-    keyword: String,
+    /// [`gherkin::Feature::keyword`].
+    pub keyword: String,
 
     /// [`gherkin::Feature::name`].
-    name: String,
+    pub name: String,
 
     /// [`gherkin::Feature::tags`]
-    tags: Vec<Tag>,
+    pub tags: Vec<Tag>,
 
     /// [`gherkin::Feature`] [`Element`]s.
-    elements: Vec<Element>,
+    pub elements: Vec<Element>,
 }
 
 impl Feature {
@@ -522,7 +544,7 @@ impl Feature {
                 .as_ref()
                 .and_then(|p| p.to_str())
                 .map(str::to_owned),
-            keyword: format!("{} ", feature.keyword),
+            keyword: feature.keyword.clone(),
             name: feature.name.clone(),
             tags: feature
                 .tags
@@ -567,7 +589,7 @@ impl Feature {
                     line: err.pos.line,
                     name: "scenario".to_owned(),
                     hidden: false,
-                    result: StepResult {
+                    result: RunResult {
                         status: Status::Failed,
                         duration: 0,
                         error_message: Some(format!("{}", err)),
@@ -608,7 +630,7 @@ impl Feature {
                     line: 0,
                     name: "scenario".to_owned(),
                     hidden: false,
-                    result: StepResult {
+                    result: RunResult {
                         status: Status::Failed,
                         duration: 0,
                         error_message: Some(format!("{}", err)),

@@ -10,6 +10,7 @@ Feature: Basic
     Then 1 sec
 
   Rule: rule
+    @fail_after
     Scenario: 2 secs
       Given 2 secs
       When 2 secs

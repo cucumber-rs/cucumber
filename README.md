@@ -100,6 +100,7 @@ For more examples check out the Book ([current][1] | [edge][2]).
 
 - `macros` (default): Enables step attributes and auto-wiring.
 - `timestamps`: Enables timestamps collecting for all [Cucumber] events.
+- `output-json` (implies `timestamps`): Enables support for outputting [JSON schema].
 - `output-junit` (implies `timestamps`): Enables support for outputting [JUnit XML report].
 
 
@@ -133,6 +134,7 @@ at your option.
 
 [Cucumber]: https://cucumber.io
 [Gherkin]: https://cucumber.io/docs/gherkin/reference
+[JSON schema]: https://github.com/cucumber/cucumber-json-schema
 [JUnit XML report]: https://llg.cubic.org/docs/junit
 
 [1]: https://cucumber-rs.github.io/cucumber/current

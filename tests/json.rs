@@ -2,7 +2,8 @@ use std::{convert::Infallible, fs, io::Read as _};
 
 use async_trait::async_trait;
 use cucumber::{given, then, when, writer, WorldInit, WriterExt as _};
-use regex::Regex;
+use futures::FutureExt as _;
+use regex::{Regex, RegexBuilder};
 use tempfile::NamedTempFile;
 
 #[given(regex = r"(\d+) secs?")]
@@ -20,6 +21,22 @@ async fn main() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
+            .before(|_, _, sc, _| {
+                async {
+                    if sc.tags.iter().any(|t| t == "fail_before") {
+                        panic!("Tag!");
+                    }
+                }
+                .boxed_local()
+            })
+            .after(|_, _, sc, _| {
+                async {
+                    if sc.tags.iter().any(|t| t == "fail_after") {
+                        panic!("Tag!");
+                    }
+                }
+                .boxed_local()
+            })
             .with_writer(writer::Json::new(file.reopen().unwrap()))
             .run("tests/features/wait")
             .await,
@@ -30,7 +47,7 @@ async fn main() {
 
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
-    let non_deterministic = Regex::new(
+    let non_deterministic = RegexBuilder::new(
         "\"uri\":\\s?\"[^\"]*\"\
              |\"duration\":\\s?\\d+\
              |\"id\":\\s?\"failed[^\"]*\"\
@@ -38,6 +55,8 @@ async fn main() {
              |\n\
              |\\s",
     )
+    .multi_line(true)
+    .build()
     .unwrap();
 
     assert_eq!(
