@@ -46,7 +46,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 9000
+              "duration": 15000
             }
           }
         ],
@@ -68,7 +68,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 25000
+              "duration": 27000
             }
           },
           {
@@ -77,7 +77,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 539000
+              "duration": 564000
             }
           },
           {
@@ -86,7 +86,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 245000
+              "duration": 253000
             }
           }
         ]
@@ -110,7 +110,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 544000
+              "duration": 622000
             }
           }
         ]
@@ -119,17 +119,17 @@
         "after": [
           {
             "result": {
-              "status": "Failed",
-              "duration": 12000,
-              "error_message": "Tag!"
+              "status": "Passed",
+              "duration": 3000
             }
           }
         ],
         "before": [
           {
             "result": {
-              "status": "Passed",
-              "duration": 7000
+              "status": "Failed",
+              "duration": 110000,
+              "error_message": "Tag!"
             }
           }
         ],
@@ -140,64 +140,11 @@
         "name": "rule 2 secs",
         "tags": [
           {
-            "name": "fail_after",
+            "name": "fail_before",
             "line": 14
           }
         ],
-        "steps": [
-          {
-            "keyword": "Given",
-            "line": 15,
-            "name": "2 secs",
-            "result": {
-              "status": "Passed",
-              "duration": 73000
-            }
-          },
-          {
-            "keyword": "When",
-            "line": 16,
-            "name": "2 secs",
-            "result": {
-              "status": "Passed",
-              "duration": 68000
-            }
-          },
-          {
-            "keyword": "Then",
-            "line": 17,
-            "name": "2 secs",
-            "result": {
-              "status": "Failed",
-              "duration": 616000,
-              "error_message": "Too much!"
-            }
-          }
-        ]
-      },
-      {
-        "keyword": "Background",
-        "type": "background",
-        "id": "basic/rule/2-secs",
-        "line": 14,
-        "name": "rule 2 secs",
-        "tags": [
-          {
-            "name": "fail_after",
-            "line": 14
-          }
-        ],
-        "steps": [
-          {
-            "keyword": "Given",
-            "line": 3,
-            "name": "1 sec",
-            "result": {
-              "status": "Passed",
-              "duration": 32000
-            }
-          }
-        ]
+        "steps": []
       }
     ]
   },
@@ -212,7 +159,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 2000
             }
           }
         ],
@@ -220,7 +167,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 9000
+              "duration": 10000
             }
           }
         ],
@@ -242,7 +189,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 38000
+              "duration": 24000
             }
           },
           {
@@ -251,7 +198,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 34000
+              "duration": 22000
             }
           },
           {
@@ -260,7 +207,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 12000
+              "duration": 8000
             }
           }
         ]
@@ -284,7 +231,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 42000
+              "duration": 31000
             }
           }
         ]
@@ -332,8 +279,9 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
-              "duration": 3000
+              "status": "Failed",
+              "duration": 14000,
+              "error_message": "Tag!"
             }
           }
         ],
@@ -354,6 +302,10 @@
           {
             "name": "tag",
             "line": 12
+          },
+          {
+            "name": "fail_after",
+            "line": 12
           }
         ],
         "steps": [
@@ -363,7 +315,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 34000
+              "duration": 82000
             }
           },
           {
@@ -372,7 +324,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 70000
             }
           },
           {
@@ -381,7 +333,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 523000
             }
           }
         ]
@@ -390,8 +342,9 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
-              "duration": 2000
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
             }
           }
         ],
@@ -412,6 +365,10 @@
           {
             "name": "tag",
             "line": 13
+          },
+          {
+            "name": "fail_after",
+            "line": 13
           }
         ],
         "steps": [
@@ -421,7 +378,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 27000
+              "duration": 29000
             }
           },
           {
@@ -439,7 +396,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 25000
+              "duration": 21000
             }
           }
         ]
@@ -448,8 +405,9 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
-              "duration": 3000
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
             }
           }
         ],
@@ -457,7 +415,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 6000
             }
           }
         ],
@@ -470,6 +428,10 @@
           {
             "name": "tag",
             "line": 14
+          },
+          {
+            "name": "fail_after",
+            "line": 14
           }
         ],
         "steps": [
@@ -479,7 +441,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 28000
+              "duration": 32000
             }
           },
           {
@@ -488,7 +450,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 22000
             }
           },
           {
@@ -497,7 +459,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 22000
             }
           }
         ]
@@ -506,8 +468,9 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
-              "duration": 2000
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
             }
           }
         ],
@@ -528,6 +491,10 @@
           {
             "name": "tag",
             "line": 15
+          },
+          {
+            "name": "fail_after",
+            "line": 15
           }
         ],
         "steps": [
@@ -546,7 +513,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 22000
             }
           },
           {
@@ -555,7 +522,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 26000
             }
           }
         ]
@@ -573,7 +540,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 3000
+              "duration": 2000
             }
           }
         ],
@@ -581,7 +548,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 6000
             }
           }
         ],
@@ -598,78 +565,25 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 28000
+              "duration": 29000
             }
           },
           {
             "keyword": "When",
             "line": 6,
-            "name": "2 secs",
-            "result": {
-              "status": "Passed",
-              "duration": 21000
-            }
-          },
-          {
-            "keyword": "Then",
-            "line": 7,
             "name": "2 secs",
             "result": {
               "status": "Passed",
               "duration": 22000
             }
-          }
-        ]
-      },
-      {
-        "after": [
-          {
-            "result": {
-              "status": "Passed",
-              "duration": 2000
-            }
-          }
-        ],
-        "before": [
-          {
-            "result": {
-              "status": "Passed",
-              "duration": 5000
-            }
-          }
-        ],
-        "keyword": "Scenario Outline",
-        "type": "scenario",
-        "id": "rule-outline/to-them-all/wait",
-        "line": 11,
-        "name": "To them all wait",
-        "tags": [],
-        "steps": [
-          {
-            "keyword": "Given",
-            "line": 5,
-            "name": "1 secs",
-            "result": {
-              "status": "Passed",
-              "duration": 27000
-            }
-          },
-          {
-            "keyword": "When",
-            "line": 6,
-            "name": "1 secs",
-            "result": {
-              "status": "Passed",
-              "duration": 21000
-            }
           },
           {
             "keyword": "Then",
             "line": 7,
-            "name": "1 secs",
+            "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 21000
             }
           }
         ]
@@ -694,7 +608,7 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "rule-outline/to-them-all/wait",
-        "line": 12,
+        "line": 11,
         "name": "To them all wait",
         "tags": [],
         "steps": [
@@ -704,7 +618,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 27000
+              "duration": 29000
             }
           },
           {
@@ -713,7 +627,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 22000
             }
           },
           {
@@ -722,7 +636,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 21000
             }
           }
         ]
@@ -740,7 +654,60 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "rule-outline/to-them-all/wait",
+        "line": 12,
+        "name": "To them all wait",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 5,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 6,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 25000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 7,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
             }
           }
         ],
@@ -757,7 +724,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 27000
+              "duration": 29000
             }
           },
           {
@@ -766,7 +733,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 23000
             }
           },
           {

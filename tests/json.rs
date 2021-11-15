@@ -49,11 +49,11 @@ async fn main() {
     // compare them well.
     let non_deterministic = RegexBuilder::new(
         "\"uri\":\\s?\"[^\"]*\"\
-             |\"duration\":\\s?\\d+\
-             |\"id\":\\s?\"failed[^\"]*\"\
-             |\"error_message\":\\s?\"Could[^\"]*\"\
-             |\n\
-             |\\s",
+         |\"duration\":\\s?\\d+\
+         |\"id\":\\s?\"failed[^\"]*\"\
+         |\"error_message\":\\s?\"Could[^\"]*\"\
+         |\n\
+         |\\s",
     )
     .multi_line(true)
     .build()

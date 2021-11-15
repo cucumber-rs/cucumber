@@ -1,6 +1,6 @@
 Feature: Outline
 
-  @tag
+  @tag @fail_after
   Scenario Outline: wait
     Given <wait> secs
     When <wait> secs

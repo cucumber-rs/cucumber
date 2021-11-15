@@ -16,25 +16,26 @@ use crate::{
     Event, World, Writer, WriterExt as _,
 };
 
-/// [JSON schema report][1] [`Writer`] implementation outputting to an
-/// [`io::Write`] implementor.
+/// [JSON schema][1] [`Writer`] implementation outputting to an [`io::Write`]
+/// implementor.
 ///
 /// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form correct
-/// [JSON `testsuite`s][1].
+/// will panic in runtime as won't be able to form correct [JSON schema][1].
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
 #[derive(Clone, Debug)]
 pub struct Json<Out: io::Write> {
-    /// [`io::Write`] implementor to output XML report into.
+    /// [`io::Write`] implementor to output [JSON schema][1] into.
+    ///
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
     output: Out,
 
-    /// Collection of [`Feature`]s to output [JSON report][1] into.
+    /// Collection of [`Feature`]s to output [JSON schema][1] into.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     features: Vec<Feature>,
 
-    /// [`SystemTime`] when the current [`Step`]/[`Hook`] has started.
+    /// [`SystemTime`] when the current [`Hook`]/[`Step`] has started.
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [`Hook`]: event::Hook
@@ -55,8 +56,10 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
 }
 
 impl<Out: io::Write> Json<Out> {
-    /// Creates a new normalized [`Json`] [`Writer`] outputting JSON report into
-    /// the given `output`.
+    /// Creates a new normalized [`Json`] [`Writer`] outputting [JSON schema][1]
+    /// into the given `output`.
+    ///
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
     #[must_use]
     pub fn new<W: Debug + World>(output: Out) -> writer::Normalized<W, Self> {
         Self::raw(output).normalized()
@@ -68,7 +71,7 @@ impl<Out: io::Write> Json<Out> {
     /// # Warning
     ///
     /// It may panic in runtime as won't be able to form correct
-    /// [Json `testsuite`s][1] from unordered [`Cucumber` events][2].
+    /// [JSON schema][1] from unordered [`Cucumber` events][2].
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`Json::new()`] which creates an already [`Normalized`] version of
@@ -299,7 +302,7 @@ impl<Out: io::Write> Json<Out> {
         scenario: &gherkin::Scenario,
         ty: &'static str,
     ) -> &mut Element {
-        let pos = self
+        let f_pos = self
             .features
             .iter()
             .position(|f| f == feature)
@@ -307,8 +310,11 @@ impl<Out: io::Write> Json<Out> {
                 self.features.push(Feature::new(feature));
                 self.features.len() - 1
             });
-        let f = self.features.get_mut(pos).unwrap_or_else(|| unreachable!());
-        let pos = f
+        let f = self
+            .features
+            .get_mut(f_pos)
+            .unwrap_or_else(|| unreachable!());
+        let el_pos = f
             .elements
             .iter()
             .position(|el| {
@@ -326,7 +332,7 @@ impl<Out: io::Write> Json<Out> {
                 f.elements.push(Element::new(feature, rule, scenario, ty));
                 f.elements.len() - 1
             });
-        f.elements.get_mut(pos).unwrap_or_else(|| unreachable!())
+        f.elements.get_mut(el_pos).unwrap_or_else(|| unreachable!())
     }
 }
 
@@ -410,13 +416,13 @@ pub struct Step {
     pub result: RunResult,
 }
 
-/// [`Before`] or [`After`] run result.
+/// [`Before`] or [`After`] hook run result.
 ///
 /// [`Before`]: event::HookType::Before
 /// [`After`]: event::HookType::After
 #[derive(Clone, Debug, Serialize)]
 pub struct HookResult {
-    /// [`Before`] or [`After`] run result.
+    /// [`Before`] or [`After`] hook run result.
     ///
     /// [`Before`]: event::HookType::Before
     /// [`After`]: event::HookType::After
