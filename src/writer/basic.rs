@@ -15,6 +15,7 @@ use std::{
     cmp,
     fmt::{Debug, Display},
     io,
+    marker::PhantomData,
     str::FromStr,
 };
 
@@ -94,7 +95,7 @@ impl FromStr for Coloring {
 /// [`Scenario`]: gherkin::Scenario
 /// [`writer::Normalized`]: crate::writer::Normalized
 #[derive(Debug, Deref, DerefMut)]
-pub struct Basic<Out: io::Write = io::Stdout> {
+pub struct Basic<W, Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to write the output into.
     #[deref]
     #[deref_mut]
@@ -114,10 +115,16 @@ pub struct Basic<Out: io::Write = io::Stdout> {
     ///
     /// [1]: gherkin::Step::docstring
     verbose: bool,
+
+    /// Exists for better type resolving, especially when using with
+    /// [`WriterExt`].
+    ///
+    /// [`WriterExt`]: crate::WriterExt
+    _w: PhantomData<W>,
 }
 
 #[async_trait(?Send)]
-impl<W, Out> Writer<W> for Basic<Out>
+impl<W, Out> Writer<W> for Basic<W, Out>
 where
     W: World + Debug,
     Out: io::Write,
@@ -149,7 +156,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Val, Out> ArbitraryWriter<'val, W, Val> for Basic<Out>
+impl<'val, W, Val, Out> ArbitraryWriter<'val, W, Val> for Basic<W, Out>
 where
     W: World + Debug,
     Val: AsRef<str> + 'val,
@@ -165,13 +172,13 @@ where
     }
 }
 
-impl Default for Basic {
+impl<W: Debug> Default for Basic<W> {
     fn default() -> Self {
         Self::new(io::stdout(), Coloring::Auto, false)
     }
 }
 
-impl<Out: io::Write> Basic<Out> {
+impl<W: Debug, Out: io::Write> Basic<W, Out> {
     /// Creates a new [`Basic`] [`Writer`].
     #[must_use]
     pub fn new(output: Out, color: Coloring, verbose: bool) -> Self {
@@ -181,6 +188,7 @@ impl<Out: io::Write> Basic<Out> {
             indent: 0,
             lines_to_clear: 0,
             verbose: false,
+            _w: PhantomData,
         };
         basic.apply_cli(Cli { verbose, color });
         basic
@@ -240,7 +248,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [scenario]: event::Rule::Scenario
     /// [started]: event::Rule::Started
     /// [`Rule`]: gherkin::Rule
-    pub(crate) fn rule<W: Debug>(
+    pub(crate) fn rule(
         &mut self,
         feat: &gherkin::Feature,
         rule: &gherkin::Rule,
@@ -286,7 +294,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [started]: event::Scenario::Started
     /// [step]: event::Step
     /// [`Scenario`]: gherkin::Scenario
-    pub(crate) fn scenario<W: Debug>(
+    pub(crate) fn scenario(
         &mut self,
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
@@ -301,8 +309,8 @@ impl<Out: io::Write> Basic<Out> {
             Scenario::Hook(_, Hook::Started) => {
                 self.indent += 4;
             }
-            Scenario::Hook(which, Hook::Failed(world, info)) => {
-                self.hook_failed(feat, scenario, *which, world.as_ref(), info)?;
+            Scenario::Hook(which, Hook::Failed(w, info)) => {
+                self.hook_failed(feat, scenario, *which, w.as_deref(), info)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Scenario::Hook(_, Hook::Passed) => {
@@ -323,7 +331,7 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [failed]: event::Hook::Failed
     /// [`Scenario`]: gherkin::Scenario
-    pub(crate) fn hook_failed<W: Debug>(
+    pub(crate) fn hook_failed(
         &mut self,
         feat: &gherkin::Feature,
         sc: &gherkin::Scenario,
@@ -379,7 +387,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [skipped]: event::Step::Skipped
     /// [started]: event::Step::Started
     /// [`Step`]: gherkin::Step
-    pub(crate) fn step<W: Debug>(
+    pub(crate) fn step(
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
@@ -400,7 +408,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(c, w, i) => {
-                self.step_failed(feat, step, c.as_ref(), w.as_ref(), i)?;
+                self.step_failed(feat, step, c.as_ref(), w.as_deref(), i)?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -535,7 +543,7 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
-    pub(crate) fn step_failed<W: Debug>(
+    pub(crate) fn step_failed(
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,
@@ -612,7 +620,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [started]: event::Step::Started
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
-    pub(crate) fn background<W: Debug>(
+    pub(crate) fn background(
         &mut self,
         feat: &gherkin::Feature,
         bg: &gherkin::Step,
@@ -633,7 +641,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(c, w, i) => {
-                self.bg_step_failed(feat, bg, c.as_ref(), w.as_ref(), i)?;
+                self.bg_step_failed(feat, bg, c.as_ref(), w.as_deref(), i)?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -772,7 +780,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
-    pub(crate) fn bg_step_failed<W: Debug>(
+    pub(crate) fn bg_step_failed(
         &mut self,
         feat: &gherkin::Feature,
         step: &gherkin::Step,

@@ -913,7 +913,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::Summarized<writer::Normalized<W, writer::Basic>>,
+    writer::Summarized<writer::Normalized<W, writer::Basic<W>>>,
 >;
 
 impl<W, I> Default for DefaultCucumber<W, I>
