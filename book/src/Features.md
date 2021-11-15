@@ -474,6 +474,50 @@ World::cucumber()
 
 
 
+## Cucumber JSON format output
+
+Library provides an ability to output tests result in a [Cucumber JSON format].
+
+Just enable `output-json` library feature in your `Cargo.toml`:
+```toml
+cucumber = { version = "0.11", features = ["output-json"] }
+```
+
+And configure [Cucumber]'s output to `writer::Json`:
+```rust
+# use std::{convert::Infallible, fs, io};
+# 
+# use async_trait::async_trait;
+# use cucumber::WorldInit;
+use cucumber::writer;
+
+# #[derive(Debug, WorldInit)]
+# struct World;
+# 
+# #[async_trait(?Send)]
+# impl cucumber::World for World {
+#     type Error = Infallible;
+# 
+#     async fn new() -> Result<Self, Self::Error> {
+#         Ok(World)
+#     }
+# }
+#
+# #[tokio::main]
+# async fn main() -> io::Result<()> {
+let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
+World::cucumber()
+    .with_writer(writer::Json::new(file))
+    .run("tests/features/book")
+    .await;
+# Ok(())
+# }
+```
+
+
+
+
 [Cucumber]: https://cucumber.io
+[Cucumber JSON format]: https://github.com/cucumber/cucumber-json-schema
 [Gherkin]: https://cucumber.io/docs/gherkin
 [JUnit XML report]: https://llg.cubic.org/docs/junit
