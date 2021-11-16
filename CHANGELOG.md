@@ -20,7 +20,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>]+)>` ([#163])
+- Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
