@@ -1,7 +1,7 @@
 use std::{convert::Infallible, fs, io::Read as _};
 
 use async_trait::async_trait;
-use cucumber::{given, then, when, writer, WorldInit, WriterExt as _};
+use cucumber::{given, then, when, writer, WorldInit};
 use regex::Regex;
 use tempfile::NamedTempFile;
 

@@ -195,14 +195,13 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .repeat_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-ox14HynkBIw8atpfhyfvKrsO3"
@@ -249,14 +248,13 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-UcipuopO6IFEsIDty6vaJlCH9"
@@ -283,15 +281,14 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .repeat_failed()
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-ofOljvyEMb41OTLhE081QKv68"
@@ -347,14 +344,13 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-UcipuopO6IFEsIDty6vaJlCH9"
@@ -382,7 +378,8 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .repeat_if(|ev| {
     ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
@@ -409,9 +406,7 @@ where
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-ofOljvyEMb41OTLhE081QKv68"
@@ -489,14 +484,13 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped()
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// <script
     ///     id="asciicast-IHLxMEgku9BtBVkR4k2DtOjMd"
@@ -570,14 +564,13 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .fail_on_skipped_with(|_, _, s| !s.tags.iter().any(|t| t == "dog"))
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// ```gherkin
     /// Feature: Animal feature
@@ -694,7 +687,8 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// #[derive(StructOpt)]
     /// struct CustomCli {
     ///     /// Additional time to wait in a before hook.
@@ -713,13 +707,7 @@ where
     ///     .with_cli(cli)
     ///     .run_and_exit("tests/features/readme")
     ///     .await;
-    /// # };
-    /// #
-    /// # tokio::runtime::Builder::new_current_thread()
-    /// #    .enable_all()
-    /// #    .build()
-    /// #    .unwrap()
-    /// #    .block_on(fut);
+    /// # }
     /// ```
     /// ```gherkin
     /// Feature: Animal feature
@@ -787,15 +775,14 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .filter_run("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// ```gherkin
     /// Feature: Animal feature
@@ -1238,15 +1225,14 @@ where
     /// #     }
     /// # }
     /// #
-    /// # let fut = async {
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .filter_run_and_exit("tests/features/readme", |_, _, sc| {
     ///         sc.tags.iter().any(|t| t == "cat")
     ///     })
     ///     .await;
-    /// # };
-    /// #
-    /// # futures::executor::block_on(fut);
+    /// # }
     /// ```
     /// ```gherkin
     /// Feature: Animal feature

@@ -19,7 +19,6 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     iter,
-    path::PathBuf,
 };
 
 use derive_more::{Deref, DerefMut, Display, Error};
@@ -179,7 +178,7 @@ impl<World> Collection<World> {
                 return Err(AmbiguousMatchError {
                     possible_matches: matches
                         .into_iter()
-                        .map(|(re, loc, ..)| (re.clone(), loc.clone()))
+                        .map(|(re, loc, ..)| (re.clone(), *loc))
                         .collect(),
                 })
             }
@@ -229,10 +228,10 @@ pub struct AmbiguousMatchError {
 }
 
 /// Location of a [`Step`] [`fn`] automatically filled by a proc macro.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Location {
     /// Path to the file where [`Step`] [`fn`] is located.
-    pub path: PathBuf,
+    pub path: &'static str,
 
     /// Line of the file where [`Step`] [`fn`] is located.
     pub line: u32,
