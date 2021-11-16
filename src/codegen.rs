@@ -151,18 +151,3 @@ pub trait StepConstructor<W> {
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
     fn inner(&self) -> (step::Location, &'static str, Step<W>);
 }
-
-/// Type used to hack around [`inventory::Collect`] requiring [`Sync`].
-///
-/// # Safety
-///
-/// As the only way to get this type is to [`transmute`] some other type, you
-/// have to be sure, that [`transmute`]d type is [`Sync`].
-///
-/// [`transmute`]: std::mem::transmute
-#[derive(Clone, Copy, Debug)]
-#[repr(C)]
-pub struct SyncHack(*const ());
-
-#[allow(unsafe_code)]
-unsafe impl Sync for SyncHack {}

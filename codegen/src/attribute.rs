@@ -139,29 +139,29 @@ impl Step {
             #func
 
             #[automatically_derived]
-            ::cucumber::codegen::submit!(
-                {
-                    // SAFETY
-                    // `func` argument is transmuted from `cucumber::Step`.
-                    unsafe { <#world as ::cucumber::codegen::WorldInventory>::
-                    #step_type::new(
-                        ::cucumber::step::Location {
-                            path: ::std::file!(),
-                            line: ::std::line!(),
-                            column: ::std::column!(),
-                        },
-                        #step_matcher,
-                        // SAFETY
-                        // As we transmute fn pointer into `StepHack`, which is
-                        // `#[repr(C)]` over `*const ()`, this is safe on
-                        // platforms where fn pointers and data pointers have
-                        // the same sizes. Realistically this is every platform
-                        // supported by Rust.
-                        // https://bit.ly/3ogfQaZ
-                        unsafe { std::mem::transmute(#step_caller) },
-                    ) }
+            ::cucumber::codegen::submit!({
+                // TODO: remove this, once `#![feature(more_qualified_paths)]`
+                //       is stabilized.
+                //       https://github.com/rust-lang/rust/issues/86935
+                type StepAlias =
+                    <#world as ::cucumber::codegen::WorldInventory>::#step_type;
+
+                StepAlias {
+                    loc: ::cucumber::step::Location {
+                        path: ::std::file!(),
+                        line: ::std::line!(),
+                        column: ::std::column!(),
+                    },
+                    regex: #step_matcher,
+                    func: {
+                        // This hack exists, as `fn item` to `fn pointer`
+                        // coercion can be done inside `const`, but not
+                        // `const fn`.
+                        const F: ::cucumber::Step<#world> = #step_caller;
+                        F
+                    },
                 }
-            );
+            });
         })
     }
 

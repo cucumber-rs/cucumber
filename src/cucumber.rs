@@ -786,9 +786,6 @@ where
     /// #
     /// # #[derive(Debug, WorldInit)]
     /// # struct MyWorld;
-    /// mod te {
-    ///     use super::MyWorld;
-    /// }
     /// #
     /// # #[async_trait(?Send)]
     /// # impl cucumber::World for MyWorld {
