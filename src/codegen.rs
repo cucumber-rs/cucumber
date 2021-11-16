@@ -18,6 +18,7 @@ use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
+pub use once_cell::sync::Lazy;
 pub use regex::Regex;
 
 /// [`World`] extension with auto-wiring capabilities.
@@ -35,32 +36,17 @@ pub trait WorldInit: Debug + WorldInventory {
 
         for given in inventory::iter::<Self::Given> {
             let (loc, regex, fun) = given.inner();
-            out = out.given(
-                Some(loc),
-                Regex::new(regex)
-                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
-                fun,
-            );
+            out = out.given(Some(loc), regex(), fun);
         }
 
         for when in inventory::iter::<Self::When> {
             let (loc, regex, fun) = when.inner();
-            out = out.when(
-                Some(loc),
-                Regex::new(regex)
-                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
-                fun,
-            );
+            out = out.when(Some(loc), regex(), fun);
         }
 
         for then in inventory::iter::<Self::Then> {
             let (loc, regex, fun) = then.inner();
-            out = out.then(
-                Some(loc),
-                Regex::new(regex)
-                    .unwrap_or_else(|e| panic!("Regex failed: {}", e)),
-                fun,
-            );
+            out = out.then(Some(loc), regex(), fun);
         }
 
         out
@@ -121,7 +107,7 @@ pub trait WorldInit: Debug + WorldInventory {
     }
 }
 
-impl<T> WorldInit for T where T: WorldInventory + Debug {}
+impl<T> WorldInit for T where T: Debug + WorldInventory {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {
@@ -141,13 +127,16 @@ pub trait WorldInventory: World {
     type Then: inventory::Collect + StepConstructor<Self>;
 }
 
-/// Trait for creating [`Step`]s to be registered by [`given`], [`when`] and
-/// [`then`] attributes.
+/// [`fn`] alias for [`Lazy`] [`Regex`].
+pub type LazyRegex = fn() -> Regex;
+
+/// Trait for registering [`Step`]s by [`given`], [`when`] and [`then`]
+/// attributes.
 ///
 /// [`given`]: crate::given
 /// [`when`]: crate::when
 /// [`then`]: crate::then
 pub trait StepConstructor<W> {
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
-    fn inner(&self) -> (step::Location, &'static str, Step<W>);
+    fn inner(&self) -> (step::Location, LazyRegex, Step<W>);
 }

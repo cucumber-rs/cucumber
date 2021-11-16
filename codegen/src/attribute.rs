@@ -152,7 +152,19 @@ impl Step {
                         line: ::std::line!(),
                         column: ::std::column!(),
                     },
-                    regex: #step_matcher,
+                    regex: {
+                        let lazy: ::cucumber::codegen::LazyRegex = || {
+                            static LAZY: ::cucumber::codegen::Lazy<
+                                ::cucumber::codegen::Regex
+                            > = ::cucumber::codegen::Lazy::new(|| {
+                                ::cucumber::codegen::Regex::new(#step_matcher)
+                                    .unwrap()
+                            });
+                            LAZY.clone()
+                        };
+
+                        lazy
+                    },
                     func: {
                         // This hack exists, as `fn item` to `fn pointer`
                         // coercion can be done inside `const`, but not

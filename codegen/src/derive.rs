@@ -11,8 +11,8 @@
 //! `#[derive(WorldInit)]` macro implementation.
 
 use inflections::case::to_pascal_case;
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
 #[allow(clippy::similar_names)]
@@ -48,10 +48,7 @@ pub(crate) fn world_init(
 fn step_types(steps: &[&str], world: &syn::Ident) -> Vec<syn::Ident> {
     steps
         .iter()
-        .map(|step| {
-            let ty = format!("Cucumber{}{}", &to_pascal_case(step), world);
-            syn::Ident::new(&ty, Span::call_site())
-        })
+        .map(|step| format_ident!("Cucumber{}{}", to_pascal_case(step), world))
         .collect()
 }
 
@@ -74,7 +71,7 @@ fn generate_step_structs(
                     #world_vis loc: ::cucumber::step::Location,
 
                     #[doc(hidden)]
-                    #world_vis regex: &'static str,
+                    #world_vis regex: ::cucumber::codegen::LazyRegex,
 
                     #[doc(hidden)]
                     #world_vis func: ::cucumber::Step<#world>,
@@ -84,7 +81,7 @@ fn generate_step_structs(
                 impl ::cucumber::codegen::StepConstructor<#world> for #ty {
                     fn inner(&self) -> (
                         ::cucumber::step::Location,
-                        &'static str,
+                        ::cucumber::codegen::LazyRegex,
                         ::cucumber::Step<#world>,
                     ) {
                         (self.loc, self.regex, self.func)
@@ -123,7 +120,7 @@ mod spec {
                  pub loc: ::cucumber::step::Location,
 
                  #[doc(hidden)]
-                 pub regex: &'static str,
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
@@ -135,7 +132,7 @@ mod spec {
             {
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    &'static str,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
@@ -152,7 +149,7 @@ mod spec {
                  pub loc: ::cucumber::step::Location,
 
                  #[doc(hidden)]
-                 pub regex: &'static str,
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
@@ -164,7 +161,7 @@ mod spec {
             {
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    &'static str,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
@@ -181,7 +178,7 @@ mod spec {
                  pub loc: ::cucumber::step::Location,
 
                  #[doc(hidden)]
-                 pub regex: &'static str,
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
@@ -193,7 +190,7 @@ mod spec {
             {
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    &'static str,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
