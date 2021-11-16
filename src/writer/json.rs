@@ -1,4 +1,4 @@
-//! [JSON schema report][1] [`Writer`] implementation.
+//! [Cucumber JSON format][1] [`Writer`] implementation.
 //!
 //! [1]: https://github.com/cucumber/cucumber-json-schema
 
@@ -16,21 +16,21 @@ use crate::{
     Event, World, Writer, WriterExt as _,
 };
 
-/// [JSON schema][1] [`Writer`] implementation outputting to an [`io::Write`]
-/// implementor.
+/// [Cucumber JSON format][1] [`Writer`] implementation outputting JSON to an
+/// [`io::Write`] implementor.
 ///
 /// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form correct [JSON schema][1].
+/// will panic in runtime as won't be able to form [correct JSON][1].
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
 #[derive(Clone, Debug)]
 pub struct Json<Out: io::Write> {
-    /// [`io::Write`] implementor to output [JSON schema][1] into.
+    /// [`io::Write`] implementor to output [JSON][1] into.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     output: Out,
 
-    /// Collection of [`Feature`]s to output [JSON schema][1] into.
+    /// Collection of [`Feature`]s to output [JSON][1] into.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     features: Vec<Feature>,
@@ -56,8 +56,8 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
 }
 
 impl<Out: io::Write> Json<Out> {
-    /// Creates a new normalized [`Json`] [`Writer`] outputting [JSON schema][1]
-    /// into the given `output`.
+    /// Creates a new normalized [`Json`] [`Writer`] outputting [JSON][1] into
+    /// the given `output`.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     #[must_use]
@@ -65,13 +65,13 @@ impl<Out: io::Write> Json<Out> {
         Self::raw(output).normalized()
     }
 
-    /// Creates a new raw and unnormalized [`Json`] [`Writer`] outputting report
-    /// into the given `output`.
+    /// Creates a new raw and unnormalized [`Json`] [`Writer`] outputting
+    /// [JSON][1] into the given `output`.
     ///
     /// # Warning
     ///
-    /// It may panic in runtime as won't be able to form correct
-    /// [JSON schema][1] from unordered [`Cucumber` events][2].
+    /// It may panic in runtime as won't be able to form [correct JSON][1] from
+    /// unordered [`Cucumber` events][2].
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`Json::new()`] which creates an already [`Normalized`] version of
@@ -89,7 +89,7 @@ impl<Out: io::Write> Json<Out> {
         }
     }
 
-    /// Handles [`event::Cucumber`].
+    /// Handles the given [`event::Cucumber`].
     fn handle_event<W>(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
@@ -125,17 +125,17 @@ impl<Out: io::Write> Json<Out> {
                     .write_all(
                         serde_json::to_string(&self.features)
                             .unwrap_or_else(|e| {
-                                panic!("Failed to serialize: {}", e)
+                                panic!("Failed to serialize JSON: {}", e)
                             })
                             .as_bytes(),
                     )
-                    .unwrap_or_else(|e| panic!("Failed to write: {}", e));
+                    .unwrap_or_else(|e| panic!("Failed to write JSON: {}", e));
             }
             _ => {}
         }
     }
 
-    /// Handles [`event::Scenario`].
+    /// Handles the given [`event::Scenario`].
     fn handle_scenario_event<W>(
         &mut self,
         feature: &gherkin::Feature,
@@ -170,7 +170,7 @@ impl<Out: io::Write> Json<Out> {
         }
     }
 
-    /// Handles [`event::Hook`].
+    /// Handles the given [`event::Hook`].
     fn handle_hook_event<W>(
         &mut self,
         feature: &gherkin::Feature,
@@ -184,7 +184,7 @@ impl<Out: io::Write> Json<Out> {
 
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No Started event for {} Hook", hook_ty)
+                panic!("No `Started` event for `{} Hook`", hook_ty)
             });
             meta.at
                 .duration_since(started)
@@ -219,14 +219,14 @@ impl<Out: io::Write> Json<Out> {
         };
 
         let el =
-            self.get_or_insert_element(feature, rule, scenario, "scenario");
+            self.mut_or_insert_element(feature, rule, scenario, "scenario");
         match hook_ty {
             HookType::Before => el.before.push(res),
             HookType::After => el.after.push(res),
         }
     }
 
-    /// Handles [`event::Step`].
+    /// Handles the given [`event::Step`].
     #[allow(clippy::too_many_arguments)]
     fn handle_step_event<W>(
         &mut self,
@@ -240,7 +240,7 @@ impl<Out: io::Write> Json<Out> {
     ) {
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No Started event for Step '{}'", step.value)
+                panic!("No `Started` event for `Step` '{}'", step.value)
             });
             meta.at
                 .duration_since(started)
@@ -256,7 +256,7 @@ impl<Out: io::Write> Json<Out> {
         let result = match event {
             event::Step::Started => {
                 self.started = Some(meta.at);
-                let _ = self.get_or_insert_element(feature, rule, scenario, ty);
+                let _ = self.mut_or_insert_element(feature, rule, scenario, ty);
                 return;
             }
             event::Step::Passed(..) => RunResult {
@@ -268,7 +268,7 @@ impl<Out: io::Write> Json<Out> {
                 event::StepError::AmbiguousMatch(err) => RunResult {
                     status: Status::Ambiguous,
                     duration: duration(),
-                    error_message: Some(format!("{}", err)),
+                    error_message: Some(err.to_string()),
                 },
                 event::StepError::Panic(info) => RunResult {
                     status: Status::Failed,
@@ -283,7 +283,7 @@ impl<Out: io::Write> Json<Out> {
             },
         };
 
-        let el = self.get_or_insert_element(feature, rule, scenario, ty);
+        let el = self.mut_or_insert_element(feature, rule, scenario, ty);
         el.steps.push(Step {
             keyword: step.keyword.clone(),
             line: step.position.line,
@@ -293,9 +293,9 @@ impl<Out: io::Write> Json<Out> {
         });
     }
 
-    /// Inserts `scenario`, if not present, then returns a mutable reference to
-    /// the contained value.
-    fn get_or_insert_element(
+    /// Inserts the given `scenario`, if not present, and then returns a mutable
+    /// reference to the contained value.
+    fn mut_or_insert_element(
         &mut self,
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -314,6 +314,7 @@ impl<Out: io::Write> Json<Out> {
             .features
             .get_mut(f_pos)
             .unwrap_or_else(|| unreachable!());
+
         let el_pos = f
             .elements
             .iter()
@@ -336,32 +337,32 @@ impl<Out: io::Write> Json<Out> {
     }
 }
 
-/// [`gherkin::Feature`] or [`gherkin::Scenario`] tag.
+/// [`Serialize`]able tag of a [`gherkin::Feature`] or a [`gherkin::Scenario`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Tag {
-    /// [`Tag`] name.
+    /// Name of this [`Tag`].
     pub name: String,
 
-    /// Line number.
+    /// Line number of this [`Tag`] in a `.feature` file.
     ///
     /// As [`gherkin`] parser omits this info, line number is taken from
     /// [`gherkin::Feature`] or [`gherkin::Scenario`].
     pub line: usize,
 }
 
-/// [`gherkin::Step`] run status.
+/// Possible statuses of running [`gherkin::Step`].
 #[derive(Clone, Copy, Debug, Serialize)]
 pub enum Status {
     /// [`event::Step::Passed`].
     Passed,
 
-    /// [`event::Step::Failed`] with [`event::StepError::Panic`].
+    /// [`event::Step::Failed`] with an [`event::StepError::Panic`].
     Failed,
 
     /// [`event::Step::Skipped`].
     Skipped,
 
-    /// [`event::Step::Failed`] with [`event::StepError::AmbiguousMatch`].
+    /// [`event::Step::Failed`] with an [`event::StepError::AmbiguousMatch`].
     Ambiguous,
 
     /// Never constructed and is here only to fully describe [JSON schema][1].
@@ -375,65 +376,61 @@ pub enum Status {
     Pending,
 }
 
-/// Run result.
+/// [`Serialize`]able result of running something.
 #[derive(Clone, Debug, Serialize)]
 pub struct RunResult {
-    /// [`Status`].
+    /// [`Status`] of this running result.
     pub status: Status,
 
     /// Execution time.
     ///
-    /// While nowhere to be documented, `cucumber-jvm` uses nanoseconds.
-    /// Source: <https://bit.ly/3onkLXJ>
+    /// While nowhere being documented, [`cucumber-jvm` uses nanoseconds][1].
+    ///
+    /// [1]: https://tinyurl.com/34wry46u#L325
     pub duration: u128,
 
-    /// Error message.
-    ///
-    /// Present only if [`Status::Failed`] or [`Status::Ambiguous`].
+    /// Error message of [`Status::Failed`] or [`Status::Ambiguous`] (if any).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }
 
-/// [`gherkin::Step`].
+/// [`Serialize`]able [`gherkin::Step`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Step {
     /// [`gherkin::Step::keyword`].
     pub keyword: String,
 
-    /// [`gherkin::Step`] line number in `.feature` file.
+    /// [`gherkin::Step`] line number in a `.feature` file.
     pub line: usize,
 
     /// [`gherkin::Step::value`].
     pub name: String,
 
-    /// Never [`true`] and is here only to fully describe [JSON schema][1].
+    /// Never [`true`] and is here only to fully describe a [JSON schema][1].
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub hidden: bool,
 
-    /// [`gherkin::Step`] run result.
+    /// [`RunResult`] of this [`Step`].
     pub result: RunResult,
 }
 
-/// [`Before`] or [`After`] hook run result.
+/// [`Serialize`]able result of running a [`Before`] or [`After`] hook.
 ///
 /// [`Before`]: event::HookType::Before
 /// [`After`]: event::HookType::After
 #[derive(Clone, Debug, Serialize)]
 pub struct HookResult {
-    /// [`Before`] or [`After`] hook run result.
-    ///
-    /// [`Before`]: event::HookType::Before
-    /// [`After`]: event::HookType::After
+    /// [`RunResult`] of the hook.
     pub result: RunResult,
 }
 
-/// [`gherkin::Background`] or [`gherkin::Scenario`].
+/// [`Serialize`]able [`gherkin::Background`] or [`gherkin::Scenario`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Element {
     /// Doesn't appear in the [JSON schema][1], but present in
-    /// [generated test cases][2].
+    /// [its generated test cases][2].
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: https://github.com/cucumber/cucumber-json-testdata-generator
@@ -441,7 +438,7 @@ pub struct Element {
     pub after: Vec<HookResult>,
 
     /// Doesn't appear in the [JSON schema][1], but present in
-    /// [generated test cases][2].
+    /// [its generated test cases][2].
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: https://github.com/cucumber/cucumber-json-testdata-generator
@@ -451,7 +448,7 @@ pub struct Element {
     /// [`gherkin::Scenario::keyword`].
     pub keyword: String,
 
-    /// [`Element`] type.
+    /// Type of this [`Element`].
     ///
     /// Only set to `background` or `scenario`, but [JSON schema][1] doesn't
     /// constraint only to those values, so maybe a subject to change.
@@ -459,15 +456,17 @@ pub struct Element {
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     pub r#type: &'static str,
 
-    /// [`Element`] identifier. Doesn't have to be unique.
+    /// Identifier of this [`Element`]. Doesn't have to be unique.
     pub id: String,
 
-    /// [`gherkin::Scenario`] line number inside `.feature` file.
+    /// [`gherkin::Scenario`] line number inside a `.feature` file.
     pub line: usize,
 
-    /// [`gherkin::Scenario::name`] maybe prepended with
-    /// [`gherkin::Rule::name`]. This is done because [JSON schema][1] doesn't
-    /// have [`gherkin::Rule`].
+    /// [`gherkin::Scenario::name`], optionally prepended with a
+    /// [`gherkin::Rule::name`].
+    ///
+    /// This is done because [JSON schema][1] doesn't support [`gherkin::Rule`]s
+    /// at the moment.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     pub name: String,
@@ -475,12 +474,12 @@ pub struct Element {
     /// [`gherkin::Scenario::tags`].
     pub tags: Vec<Tag>,
 
-    /// [`gherkin::Scenario`] [`Step`]s.
+    /// [`gherkin::Scenario`]'s [`Step`]s.
     pub steps: Vec<Step>,
 }
 
 impl Element {
-    /// Creates a new [`Element`].
+    /// Creates a new [`Element`] out of the given values.
     fn new(
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
@@ -517,12 +516,12 @@ impl Element {
                     line: scenario.position.line,
                 })
                 .collect(),
-            steps: vec![],
+            steps: Vec::new(),
         }
     }
 }
 
-/// [`gherkin::Feature`].
+/// [`Serialize`]able [`gherkin::Feature`].
 #[derive(Clone, Debug, Serialize)]
 pub struct Feature {
     /// [`gherkin::Feature::path`].
@@ -534,15 +533,15 @@ pub struct Feature {
     /// [`gherkin::Feature::name`].
     pub name: String,
 
-    /// [`gherkin::Feature::tags`]
+    /// [`gherkin::Feature::tags`].
     pub tags: Vec<Tag>,
 
-    /// [`gherkin::Feature`] [`Element`]s.
+    /// [`gherkin::Feature`]'s [`Element`]s.
     pub elements: Vec<Element>,
 }
 
 impl Feature {
-    /// Creates a new [`Feature`].
+    /// Creates a new [`Feature`] out of the given [`gherkin::Feature`].
     fn new(feature: &gherkin::Feature) -> Self {
         Self {
             uri: feature
@@ -564,7 +563,7 @@ impl Feature {
         }
     }
 
-    /// Creates a new [`Feature`] from [`ExpandExamplesError`].
+    /// Creates a new [`Feature`] from the given [`ExpandExamplesError`].
     fn example_expansion_err(err: &ExpandExamplesError) -> Self {
         Self {
             uri: err
@@ -574,7 +573,7 @@ impl Feature {
                 .map(str::to_owned),
             keyword: String::new(),
             name: String::new(),
-            tags: vec![],
+            tags: Vec::new(),
             elements: vec![Element {
                 after: Vec::new(),
                 before: Vec::new(),
@@ -589,23 +588,23 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: vec![],
+                tags: Vec::new(),
                 steps: vec![Step {
                     keyword: String::new(),
                     line: err.pos.line,
-                    name: "scenario".to_owned(),
+                    name: "scenario".into(),
                     hidden: false,
                     result: RunResult {
                         status: Status::Failed,
                         duration: 0,
-                        error_message: Some(format!("{}", err)),
+                        error_message: Some(err.to_string()),
                     },
                 }],
             }],
         }
     }
 
-    /// Creates a new [`Feature`] from [`gherkin::ParseFileError`].
+    /// Creates a new [`Feature`] from the given [`gherkin::ParseFileError`].
     fn parsing_err(err: &gherkin::ParseFileError) -> Self {
         let path = match err {
             gherkin::ParseFileError::Reading { path, .. }
@@ -630,16 +629,16 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: vec![],
+                tags: Vec::new(),
                 steps: vec![Step {
                     keyword: String::new(),
                     line: 0,
-                    name: "scenario".to_owned(),
+                    name: "scenario".into(),
                     hidden: false,
                     result: RunResult {
                         status: Status::Failed,
                         duration: 0,
-                        error_message: Some(format!("{}", err)),
+                        error_message: Some(err.to_string()),
                     },
                 }],
             }],
