@@ -140,8 +140,8 @@ impl Step {
 
             #[automatically_derived]
             ::cucumber::codegen::submit!({
-                // TODO: remove this, once `#![feature(more_qualified_paths)]`
-                //       is stabilized.
+                // TODO: Remove this, once `#![feature(more_qualified_paths)]`
+                //       is stabilized:
                 //       https://github.com/rust-lang/rust/issues/86935
                 type StepAlias =
                     <#world as ::cucumber::codegen::WorldInventory>::#step_type;
@@ -153,6 +153,9 @@ impl Step {
                         column: ::std::column!(),
                     },
                     regex: {
+                        // This hack exists, as `fn item` to `fn pointer`
+                        // coercion can be done inside `const`, but not
+                        // `const fn`.
                         let lazy: ::cucumber::codegen::LazyRegex = || {
                             static LAZY: ::cucumber::codegen::Lazy<
                                 ::cucumber::codegen::Regex
@@ -162,7 +165,6 @@ impl Step {
                             });
                             LAZY.clone()
                         };
-
                         lazy
                     },
                     func: {

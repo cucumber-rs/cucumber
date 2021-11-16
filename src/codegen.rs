@@ -111,27 +111,27 @@ impl<T> WorldInit for T where T: Debug + WorldInventory {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {
-    /// Struct [`submit`]ted in [`given`] macro.
+    /// Struct [`submit`]ted in a [`given`] macro.
     ///
     /// [`given`]: crate::given
     type Given: inventory::Collect + StepConstructor<Self>;
 
-    /// Struct [`submit`]ted in [`when`] macro.
+    /// Struct [`submit`]ted in a [`when`] macro.
     ///
     /// [`when`]: crate::when
     type When: inventory::Collect + StepConstructor<Self>;
 
-    /// Struct [`submit`]ted in [`then`] macro.
+    /// Struct [`submit`]ted in a [`then`] macro.
     ///
     /// [`then`]: crate::then
     type Then: inventory::Collect + StepConstructor<Self>;
 }
 
-/// [`fn`] alias for [`Lazy`] [`Regex`].
+/// Alias for a [`fn`] returning a [`Lazy`] [`Regex`].
 pub type LazyRegex = fn() -> Regex;
 
-/// Trait for registering [`Step`]s by [`given`], [`when`] and [`then`]
-/// attributes.
+/// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]
+/// attributes inside [`WorldInit::collection()`] method.
 ///
 /// [`given`]: crate::given
 /// [`when`]: crate::when

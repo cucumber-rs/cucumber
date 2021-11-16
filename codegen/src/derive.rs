@@ -27,9 +27,9 @@ pub(crate) fn world_init(
     let step_types = step_types(steps, world);
     let step_structs = generate_step_structs(steps, &input);
 
-    let given_ty = step_types[0].clone();
-    let when_ty = step_types[1].clone();
-    let then_ty = step_types[2].clone();
+    let given_ty = &step_types[0];
+    let when_ty = &step_types[1];
+    let then_ty = &step_types[2];
 
     Ok(quote! {
         impl ::cucumber::codegen::WorldInventory for #world {

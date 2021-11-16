@@ -64,8 +64,8 @@ and may be extended with custom CLI options additionally.
 #     }
 # }
 #
-# fn main() {
-#   let fut = async {
+# #[tokio::main(flavor = "current_thread")]
+# async fn main() {
 #[derive(StructOpt)]
 struct CustomOpts {
     /// Additional time to wait in before hook.
@@ -84,13 +84,6 @@ MyWorld::cucumber()
     .with_cli(opts)
     .run_and_exit("tests/features/readme")
     .await;
-# };
-#
-#     tokio::runtime::Builder::new_current_thread()
-#        .enable_all()
-#        .build()
-#        .unwrap()
-#        .block_on(fut);
 # }
 ```
 
