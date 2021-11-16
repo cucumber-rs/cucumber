@@ -126,7 +126,7 @@ fn expand_scenario(
     /// [`Examples`]: gherkin::Examples
     #[allow(clippy::expect_used)]
     static TEMPLATE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"<(\S+)>").expect("incorrect Regex"));
+        Lazy::new(|| Regex::new(r"<([^>]+)>").expect("incorrect Regex"));
 
     let (header, vals) = match scenario
         .examples
