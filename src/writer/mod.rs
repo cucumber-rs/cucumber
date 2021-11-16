@@ -14,7 +14,6 @@
 
 pub mod basic;
 pub mod fail_on_skipped;
-pub mod join;
 #[cfg(feature = "output-json")]
 pub mod json;
 #[cfg(feature = "output-junit")]
@@ -23,6 +22,7 @@ pub mod normalized;
 pub mod out;
 pub mod repeat;
 pub mod summarized;
+pub mod tee;
 
 use async_trait::async_trait;
 use sealed::sealed;
@@ -38,8 +38,8 @@ pub use self::json::Json;
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
-    basic::Basic, fail_on_skipped::FailOnSkipped, join::Join,
-    normalized::Normalized, repeat::Repeat, summarized::Summarized,
+    basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
+    repeat::Repeat, summarized::Summarized, tee::Tee,
 };
 
 /// Writer of [`Cucumber`] events to some output.
@@ -188,7 +188,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
 
     /// Passes events both to the `self` and `other` [`Writer`]s.
     #[must_use]
-    fn join<Wr: Writer<W>>(self, other: Wr) -> Join<Self, Wr>;
+    fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
 }
 
 #[sealed]
@@ -235,7 +235,7 @@ where
         Repeat::new(self, filter)
     }
 
-    fn join<Wr: Writer<W>>(self, other: Wr) -> Join<Self, Wr> {
-        Join::new(self, other)
+    fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr> {
+        Tee::new(self, other)
     }
 }

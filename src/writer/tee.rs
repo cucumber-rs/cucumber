@@ -32,7 +32,7 @@ use crate::{
 ///
 /// [1]: crate::WriterExt::join()
 #[derive(Clone, Debug)]
-pub struct Join<L, R> {
+pub struct Tee<L, R> {
     /// Left [`Writer`].
     left: L,
 
@@ -40,7 +40,7 @@ pub struct Join<L, R> {
     right: R,
 }
 
-impl<L, R> Join<L, R> {
+impl<L, R> Tee<L, R> {
     /// Creates a new [`Join`]ed [`Writer`], which passes events both to the
     /// `left` and `right`.
     #[must_use]
@@ -50,7 +50,7 @@ impl<L, R> Join<L, R> {
 }
 
 #[async_trait(?Send)]
-impl<W, L, R> Writer<W> for Join<L, R>
+impl<W, L, R> Writer<W> for Tee<L, R>
 where
     W: World,
     L: Writer<W>,
@@ -72,7 +72,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, L, R, Val> ArbitraryWriter<'val, W, Val> for Join<L, R>
+impl<'val, W, L, R, Val> ArbitraryWriter<'val, W, Val> for Tee<L, R>
 where
     W: World,
     L: ArbitraryWriter<'val, W, Val>,
@@ -87,7 +87,7 @@ where
     }
 }
 
-impl<W, L, R> FailureWriter<W> for Join<L, R>
+impl<W, L, R> FailureWriter<W> for Tee<L, R>
 where
     L: FailureWriter<W>,
     R: Writer<W>,
