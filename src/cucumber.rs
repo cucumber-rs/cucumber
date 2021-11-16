@@ -25,8 +25,10 @@ use regex::Regex;
 use structopt::{StructOpt, StructOptInternal};
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, Event,
-    FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
+    cli, event, parser, runner, step,
+    tag::Ext as _,
+    writer::{self, Normalized},
+    Event, FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
     WriterExt as _,
 };
 
@@ -645,7 +647,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: Writer<W>,
+    Wr: Writer<W> + Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
@@ -913,7 +915,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::Summarized<writer::Normalized<W, writer::Basic<W>>>,
+    writer::Summarize<writer::Normalize<W, writer::Basic<W>>>,
 >;
 
 impl<W, I> Default for DefaultCucumber<W, I>
@@ -925,7 +927,7 @@ where
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Basic::default().normalized().summarized(),
+            writer::Basic::stdout().summarize(),
         )
     }
 }
@@ -944,15 +946,15 @@ where
     ///     `@serial` [tag] is present on a [`Scenario`];
     ///   * Allowed to run up to 64 [`Concurrent`] [`Scenario`]s.
     ///
-    /// * [`Writer`] — [`Normalized`] and [`Summarized`] [`writer::Basic`].
+    /// * [`Writer`] — [`Normalize`] and [`Summarize`] [`writer::Basic`].
     ///
     /// [`Concurrent`]: runner::basic::ScenarioType::Concurrent
-    /// [`Normalized`]: writer::Normalized
+    /// [`Normalize`]: writer::Normalize
     /// [`Parser`]: parser::Parser
     /// [`Scenario`]: gherkin::Scenario
     /// [`Serial`]: runner::basic::ScenarioType::Serial
     /// [`ScenarioType`]: runner::basic::ScenarioType
-    /// [`Summarized`]: writer::Summarized
+    /// [`Summarize`]: writer::Summarize
     ///
     /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
     #[must_use]
@@ -1187,7 +1189,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: FailureWriter<W>,
+    Wr: FailureWriter<W> + Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].

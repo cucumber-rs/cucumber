@@ -14,7 +14,8 @@ use async_trait::async_trait;
 use futures::future;
 
 use crate::{
-    cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    cli, event, parser, writer::Normalized, ArbitraryWriter, Event,
+    FailureWriter, World, Writer,
 };
 
 /// Wrapper for passing events to multiple [`Writer`]s.
@@ -105,3 +106,5 @@ where
         self.left.hook_errors()
     }
 }
+
+impl<L: Normalized, R: Normalized> Normalized for Tee<L, R> {}

@@ -19,10 +19,13 @@ use crate::{
 /// [Cucumber JSON format][1] [`Writer`] implementation outputting JSON to an
 /// [`io::Write`] implementor.
 ///
-/// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form [correct JSON][1].
+/// # Ordering
+///
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// [`writer::Normalize`].
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
+/// [`Normalized`]: writer::Normalized
 #[derive(Clone, Debug)]
 pub struct Json<Out: io::Write> {
     /// [`io::Write`] implementor to output [JSON][1] into.
@@ -56,22 +59,18 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
 }
 
 impl<Out: io::Write> Json<Out> {
-    /// Creates a new normalized [`Json`] [`Writer`] outputting [JSON][1] into
-    /// the given `output`.
+    /// Creates a new [`Normalized`] [`Json`] [`Writer`] outputting [JSON][1]
+    /// into the given `output`.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn new<W: Debug + World>(output: Out) -> writer::Normalized<W, Self> {
-        Self::raw(output).normalized()
+    pub fn new<W: Debug + World>(output: Out) -> writer::Normalize<W, Self> {
+        Self::raw(output).normalize()
     }
 
-    /// Creates a new raw and unnormalized [`Json`] [`Writer`] outputting
+    /// Creates a new raw and non-[`Normalized`] [`Json`] [`Writer`] outputting
     /// [JSON][1] into the given `output`.
-    ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form [correct JSON][1] from
-    /// unordered [`Cucumber` events][2].
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`Json::new()`] which creates an already [`Normalized`] version of

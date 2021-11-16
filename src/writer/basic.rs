@@ -28,8 +28,11 @@ use structopt::StructOpt;
 use crate::{
     event::{self, Info},
     parser,
-    writer::out::{Styles, WriteStrExt as _},
-    ArbitraryWriter, Event, World, Writer,
+    writer::{
+        self,
+        out::{Styles, WriteStrExt as _},
+    },
+    ArbitraryWriter, Event, World, Writer, WriterExt as _,
 };
 
 // Workaround for overwritten doc-comments.
@@ -86,14 +89,12 @@ impl FromStr for Coloring {
 ///
 /// # Ordering
 ///
-/// It naively and immediately outputs anything it receives from a [`Runner`],
-/// so in case the later executes [`Scenario`]s concurrently, the output will be
-/// mixed and unordered. To output in a readable order, consider to wrap this
-/// [`Basic`] [`Writer`] into a [`writer::Normalized`].
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// [`writer::Normalize`].
 ///
+/// [`Normalized`]: writer::Normalized
 /// [`Runner`]: crate::runner::Runner
 /// [`Scenario`]: gherkin::Scenario
-/// [`writer::Normalized`]: crate::writer::Normalized
 #[derive(Debug, Deref, DerefMut)]
 pub struct Basic<W, Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to write the output into.
@@ -172,16 +173,29 @@ where
     }
 }
 
-impl<W: Debug> Default for Basic<W> {
-    fn default() -> Self {
+impl<W: Debug + World> Basic<W> {
+    /// Creates a new normalized [`Basic`] [`Writer`] outputting to
+    /// [`io::Stdout`].
+    #[must_use]
+    pub fn stdout() -> writer::Normalize<W, Self> {
         Self::new(io::stdout(), Coloring::Auto, false)
     }
 }
 
-impl<W: Debug, Out: io::Write> Basic<W, Out> {
-    /// Creates a new [`Basic`] [`Writer`].
+impl<W: Debug + World, Out: io::Write> Basic<W, Out> {
+    /// Creates a new normalized [`Basic`] [`Writer`].
     #[must_use]
-    pub fn new(output: Out, color: Coloring, verbose: bool) -> Self {
+    pub fn new(
+        output: Out,
+        color: Coloring,
+        verbose: bool,
+    ) -> writer::Normalize<W, Self> {
+        Self::raw(output, color, verbose).normalize()
+    }
+
+    /// Creates a new unnormalized [`Basic`] [`Writer`].
+    #[must_use]
+    pub fn raw(output: Out, color: Coloring, verbose: bool) -> Self {
         let mut basic = Self {
             output,
             styles: Styles::new(),

@@ -23,17 +23,18 @@ use crate::{
 /// Advice phrase to use in panic messages of incorrect [events][1] ordering.
 ///
 /// [1]: event::Scenario
-const WRAP_ADVICE: &str =
-    "Consider wrapping `Writer` into `writer::Normalized`";
+const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// [JUnit XML report][1] [`Writer`] implementation outputting XML to an
 /// [`io::Write`] implementor.
 ///
-/// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form correct
-/// [JUnit `testsuite`s][1].
+/// # Ordering
+///
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// [`writer::Normalize`].
 ///
 /// [1]: https://llg.cubic.org/docs/junit
+/// [`Normalized`]: writer::Normalized
 #[derive(Debug)]
 pub struct JUnit<W, Out: io::Write> {
     /// [`io::Write`] implementor to output XML report into.
@@ -122,24 +123,16 @@ where
     }
 }
 
-impl<W: Debug, Out: io::Write> JUnit<W, Out> {
+impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
     /// Creates a new normalized [`JUnit`] [`Writer`] outputting XML report into
     /// the given `output`.
     #[must_use]
-    pub fn new(output: Out) -> writer::Normalized<W, Self>
-    where
-        W: World,
-    {
-        Self::raw(output).normalized()
+    pub fn new(output: Out) -> writer::Normalize<W, Self> {
+        Self::raw(output).normalize()
     }
 
     /// Creates a new raw and unnormalized [`JUnit`] [`Writer`] outputting XML
     /// report into the given `output`.
-    ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form correct
-    /// [JUnit `testsuite`s][1] from unordered [`Cucumber` events][2].
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`JUnit::new()`] which creates an already [`Normalized`] version of
@@ -322,7 +315,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             }
         };
 
-        let mut basic_wr = writer::Basic::new(
+        let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,
             false,

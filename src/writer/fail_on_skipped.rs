@@ -20,7 +20,8 @@ use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{
-    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    event, parser, writer::Normalized, ArbitraryWriter, Event, FailureWriter,
+    World, Writer,
 };
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
@@ -138,6 +139,8 @@ where
         self.writer.hook_errors()
     }
 }
+
+impl<Wr: Normalized, F> Normalized for FailOnSkipped<Wr, F> {}
 
 impl<Writer> From<Writer> for FailOnSkipped<Writer> {
     fn from(writer: Writer) -> Self {

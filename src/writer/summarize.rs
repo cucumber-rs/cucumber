@@ -17,8 +17,9 @@ use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
-    event, parser, writer::out::Styles, ArbitraryWriter, Event, FailureWriter,
-    World, Writer,
+    event, parser,
+    writer::{out::Styles, Normalized},
+    ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Execution statistics.
@@ -91,10 +92,10 @@ enum Indicator {
 /// __Note:__ The underlying [`Writer`] is expected to be an [`ArbitraryWriter`]
 /// with `Value` accepting [`String`]. If your underlying [`ArbitraryWriter`]
 /// operates with something like JSON (or any other type), you should implement
-/// a [`Writer`] on [`Summarized`] by yourself, to provide the required summary
+/// a [`Writer`] on [`Summarize`] by yourself, to provide the required summary
 /// format.
 #[derive(Debug, Deref)]
-pub struct Summarized<Writer> {
+pub struct Summarize<Writer> {
     /// Original [`Writer`] to summarize output of.
     #[deref]
     pub writer: Writer,
@@ -136,7 +137,7 @@ pub struct Summarized<Writer> {
 }
 
 #[async_trait(?Send)]
-impl<W, Wr> Writer<W> for Summarized<Wr>
+impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
     Wr: for<'val> ArbitraryWriter<'val, W, String>,
@@ -177,7 +178,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Summarized<Wr>
+impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Summarize<Wr>
 where
     W: World,
     Self: Writer<W>,
@@ -192,7 +193,7 @@ where
     }
 }
 
-impl<W, Wr> FailureWriter<W> for Summarized<Wr>
+impl<W, Wr> FailureWriter<W> for Summarize<Wr>
 where
     W: World,
     Self: Writer<W>,
@@ -210,7 +211,9 @@ where
     }
 }
 
-impl<Writer> From<Writer> for Summarized<Writer> {
+impl<Wr: Normalized> Normalized for Summarize<Wr> {}
+
+impl<Writer> From<Writer> for Summarize<Writer> {
     fn from(writer: Writer) -> Self {
         Self {
             writer,
@@ -233,7 +236,7 @@ impl<Writer> From<Writer> for Summarized<Writer> {
     }
 }
 
-impl<Writer> Summarized<Writer> {
+impl<Writer> Summarize<Writer> {
     /// Keeps track of [`Step`]'s [`Stats`].
     ///
     /// [`Step`]: gherkin::Step
@@ -313,8 +316,8 @@ impl<Writer> Summarized<Writer> {
     }
 }
 
-impl<Writer> Summarized<Writer> {
-    /// Wraps the given [`Writer`] into a new [`Summarized`] one.
+impl<Writer> Summarize<Writer> {
+    /// Wraps the given [`Writer`] into a new [`Summarize`] one.
     #[must_use]
     pub fn new(writer: Writer) -> Self {
         Self::from(writer)
@@ -326,7 +329,7 @@ impl<Writer> Summarized<Writer> {
 impl Styles {
     /// Generates a formatted summary [`String`].
     #[must_use]
-    pub fn summary<W>(&self, summary: &Summarized<W>) -> String {
+    pub fn summary<W>(&self, summary: &Summarize<W>) -> String {
         let features = self.maybe_plural("feature", summary.features);
 
         let rules = (summary.rules > 0)

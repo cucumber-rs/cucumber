@@ -171,7 +171,7 @@ mod spec {
             .lines()
             .collect::<String>();
             let normalized = World::cucumber()
-                .with_writer(DebugWriter::default().normalized())
+                .with_writer(DebugWriter::default().normalize())
                 .run(format!("tests/features/output/{}", file))
                 .await;
 

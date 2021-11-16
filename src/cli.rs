@@ -179,7 +179,8 @@ another one:
 ```rust
 # use async_trait::async_trait;
 # use cucumber::{
-#     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+#     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World,
+#     writer::Normalized, Writer,
 # };
 # use structopt::StructOpt;
 #
@@ -246,6 +247,8 @@ where
         self.0.hook_errors()
     }
 }
+
+impl<Wr: Normalized> Normalized for CustomWriter<Wr> {}
 ```
 
 [`Writer`]: crate::Writer

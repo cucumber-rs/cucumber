@@ -16,7 +16,8 @@ use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{
-    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    event, parser, writer::Normalized, ArbitraryWriter, Event, FailureWriter,
+    World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
@@ -109,6 +110,8 @@ where
         self.writer.hook_errors()
     }
 }
+
+impl<W, Wr: Normalized, F> Normalized for Repeat<W, Wr, F> {}
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an

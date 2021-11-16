@@ -18,10 +18,10 @@ pub mod fail_on_skipped;
 pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
-pub mod normalized;
+pub mod normalize;
 pub mod out;
 pub mod repeat;
-pub mod summarized;
+pub mod summarize;
 pub mod tee;
 
 use async_trait::async_trait;
@@ -38,19 +38,31 @@ pub use self::json::Json;
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
-    basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    repeat::Repeat, summarized::Summarized, tee::Tee,
+    basic::{Basic, Coloring},
+    fail_on_skipped::FailOnSkipped,
+    normalize::{Normalize, Normalized},
+    repeat::Repeat,
+    summarize::Summarize,
+    tee::Tee,
 };
 
 /// Writer of [`Cucumber`] events to some output.
 ///
+/// As [`Runner`] may produce events in [happens-before] order (see
+/// [Order guarantees]), [`Writer`]s are required to be [`Normalized`]. This
+/// happens if [`Writer`] itself implements [`Normalized`] or any [`Writer`]
+/// wrapped in [`Normalize`].
+///
 /// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
-/// inspection after execution. See [`Summarized`] and
+/// inspection after execution. See [`Summarize`] and
 /// [`Cucumber::run_and_exit()`] for examples.
 ///
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
+/// [Order guarantees]: crate::Runner#order-guarantees
 /// [`Cucumber`]: crate::event::Cucumber
 /// [`Cucumber::run()`]: crate::Cucumber::run
 /// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
+/// [`Runner`]: crate::Runner
 #[async_trait(?Send)]
 pub trait Writer<World> {
     /// CLI options of this [`Writer`]. In case no options should be introduced,
@@ -122,17 +134,17 @@ pub trait Failure<World>: Writer<World> {
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext<W: World>: Writer<W> + Sized {
-    /// Wraps this [`Writer`] into a [`Normalized`] version.
+    /// Wraps this [`Writer`] into a [`Normalize`] version.
     ///
-    /// See [`Normalized`] for more information.
+    /// See [`Normalize`] for more information.
     #[must_use]
-    fn normalized(self) -> Normalized<W, Self>;
+    fn normalize(self) -> Normalize<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
-    /// See [`Summarized`] for more information.
+    /// See [`Summarize`] for more information.
     #[must_use]
-    fn summarized(self) -> Summarized<Self>;
+    fn summarize(self) -> Summarize<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
     /// [`Scenario`] isn't marked with `@allow_skipped` tag.
@@ -197,12 +209,12 @@ where
     W: World,
     T: Writer<W> + Sized,
 {
-    fn normalized(self) -> Normalized<W, Self> {
-        Normalized::new(self)
+    fn normalize(self) -> Normalize<W, Self> {
+        Normalize::new(self)
     }
 
-    fn summarized(self) -> Summarized<Self> {
-        Summarized::from(self)
+    fn summarize(self) -> Summarize<Self> {
+        Summarize::from(self)
     }
 
     fn fail_on_skipped(self) -> FailOnSkipped<Self> {

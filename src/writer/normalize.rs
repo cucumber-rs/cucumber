@@ -40,7 +40,7 @@ use crate::{
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
-pub struct Normalized<World, Writer> {
+pub struct Normalize<World, Writer> {
     /// Original [`Writer`] to normalize output of.
     #[deref]
     pub writer: Writer,
@@ -49,7 +49,7 @@ pub struct Normalized<World, Writer> {
     queue: CucumberQueue<World>,
 }
 
-impl<W: World, Writer> Normalized<W, Writer> {
+impl<W: World, Writer> Normalize<W, Writer> {
     /// Creates a new [`Normalized`] wrapper, which will rearrange [`event`]s
     /// and feed them to the given [`Writer`].
     #[must_use]
@@ -62,7 +62,7 @@ impl<W: World, Writer> Normalized<W, Writer> {
 }
 
 #[async_trait(?Send)]
-impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
+impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
     type Cli = Wr::Cli;
 
     async fn handle_event(
@@ -131,7 +131,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Normalized<W, Wr>
+impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Normalize<W, Wr>
 where
     Wr: ArbitraryWriter<'val, W, Val>,
     Val: 'val,
@@ -144,7 +144,7 @@ where
     }
 }
 
-impl<W, Wr> FailureWriter<W> for Normalized<W, Wr>
+impl<W, Wr> FailureWriter<W> for Normalize<W, Wr>
 where
     Wr: FailureWriter<W>,
     Self: Writer<W>,
@@ -161,6 +161,16 @@ where
         self.writer.hook_errors()
     }
 }
+
+/// Marker trait indicating that [`Writer`] can accept events in
+/// [happens-before] order.
+///
+/// Any [`Writer`] can be wrapped into [`Normalize`] to become [`Normalized`].
+///
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
+pub trait Normalized {}
+
+impl<World, Writer> Normalized for Normalize<World, Writer> {}
 
 /// Normalization queue for incoming events.
 ///
