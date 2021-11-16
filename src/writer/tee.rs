@@ -23,14 +23,14 @@ use crate::{
 ///
 /// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case the
 /// `left` [`Writer`] implements them. This is done to achieve balance between
-/// being able to [`WriterExt::join()`][1] 3 or more writers, while imposing
+/// being able to [`WriterExt::tee()`][1] 3 or more writers, while imposing
 /// minimal trait bounds.
 ///
 /// Unfortunately for now it's impossible to pass [`ArbitraryWriter`]s `Val`
 /// additionally to the `right` [`Writer`] in case it implements
 /// [`ArbitraryWriter`].
 ///
-/// [1]: crate::WriterExt::join()
+/// [1]: crate::WriterExt::tee()
 #[derive(Clone, Debug)]
 pub struct Tee<L, R> {
     /// Left [`Writer`].
@@ -41,8 +41,8 @@ pub struct Tee<L, R> {
 }
 
 impl<L, R> Tee<L, R> {
-    /// Creates a new [`Join`]ed [`Writer`], which passes events both to the
-    /// `left` and `right`.
+    /// Creates a new [`Tee`] [`Writer`], which passes events both to the `left`
+    /// and `right`.
     #[must_use]
     pub const fn new(left: L, right: R) -> Self {
         Self { left, right }

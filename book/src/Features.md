@@ -483,7 +483,7 @@ Just enable `output-json` library feature in your `Cargo.toml`:
 cucumber = { version = "0.11", features = ["output-json"] }
 ```
 
-And configure [Cucumber]'s output both to `STDOUT` and `writer::Json`:
+You can configure [Cucumber]'s output both to `STDOUT` and `writer::Json` with `writer::Tee`:
 ```rust
 # use std::{convert::Infallible, fs, io};
 # 

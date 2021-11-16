@@ -186,7 +186,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
-    /// Passes events both to the `self` and `other` [`Writer`]s.
+    /// Wraps `self` and `other` [`Writer`]s to pass events to both of them.
     #[must_use]
     fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
 }
