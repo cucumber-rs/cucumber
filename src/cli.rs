@@ -175,7 +175,7 @@ another one:
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World,
-#     writer::{Normalized, Repetable}, Writer,
+#     writer::{Normalized, Repeatable}, Writer,
 # };
 # use structopt::StructOpt;
 #
