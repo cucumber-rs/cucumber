@@ -180,6 +180,7 @@ impl<W, Wr: Repeatable> Repeatable for Normalize<W, Wr> {}
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 /// [`Step`]: gherkin::Step
 /// [`Failed`]: event::Step::Failed
+/// [`Runner`]: crate::Runner
 pub trait Normalized {}
 
 impl<World, Writer> Normalized for Normalize<World, Writer> {}

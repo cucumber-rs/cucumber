@@ -123,7 +123,7 @@ impl<W, Wr: Normalized, F> Normalized for Repeat<W, Wr, F> {}
 /// [`Repeat`] will print untransformed [`Skipped`] events.
 ///
 /// [`Failed`]: event::Step::Failed
-/// [`FailOnSkipped`]: writer::FailOnSkipped
+/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
 /// [`Skipped`]: event::Step::Skipped
 pub trait Repeatable {}
 
