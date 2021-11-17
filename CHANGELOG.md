@@ -19,6 +19,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
 - `writer::Tee` for outputting to multiple terminating `Writer`s simultaneously. ([#160])
 - `writer::ArbitraryDiscard` and `writer::FailureDiscard` for adding empty implementations of corresponding traits. ([#160])
+- Move `World` parameter of `WriterExt` to methods. ([#160])
 
 ### Fixed
 
