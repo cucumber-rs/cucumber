@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Wrapper for passing events to multiple [`Writer`]s.
+//! Wrapper for passing events to multiple terminating [`Writer`]s.
 
 use async_trait::async_trait;
 use futures::future;
@@ -17,7 +17,7 @@ use crate::{
     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
-/// Wrapper for passing events to multiple [`Writer`]s.
+/// Wrapper for passing events to multiple terminating [`Writer`]s.
 ///
 /// # Blanket implementations
 ///
