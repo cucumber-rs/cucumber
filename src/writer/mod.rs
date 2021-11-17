@@ -12,8 +12,10 @@
 //!
 //! [`Cucumber`]: crate::event::Cucumber
 
+pub mod arbitrary_discard;
 pub mod basic;
 pub mod fail_on_skipped;
+pub mod failure_discard;
 #[cfg(feature = "output-json")]
 pub mod json;
 #[cfg(feature = "output-junit")]
@@ -38,8 +40,10 @@ pub use self::json::Json;
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
+    arbitrary_discard::ArbitraryDiscard,
     basic::{Basic, Coloring},
     fail_on_skipped::FailOnSkipped,
+    failure_discard::FailureDiscard,
     normalize::{Normalize, Normalized},
     repeat::{Repeat, Repeatable},
     summarize::Summarize,
@@ -133,12 +137,12 @@ pub trait Failure<World>: Writer<World> {
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
-pub trait Ext<W: World>: Writer<W> + Sized {
+pub trait Ext: Sized {
     /// Wraps this [`Writer`] into a [`Normalize`] version.
     ///
     /// See [`Normalize`] for more information.
     #[must_use]
-    fn normalize(self) -> Normalize<W, Self>;
+    fn normalized<W>(self) -> Normalized<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
@@ -180,7 +184,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_skipped(self) -> Repeat<W, Self>;
+    fn repeat_skipped<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
     /// errors at the end of an output.
@@ -189,27 +193,46 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_failed(self) -> Repeat<W, Self>;
+    fn repeat_failed<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output `filter`ed events at the end of an
     /// output.
     #[must_use]
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
-    /// Wraps `self` and `other` [`Writer`]s to pass events to both of them.
+    /// Attaches the provided `other` [`Writer`] to the current one for passing
+    /// events to both of them.
+    ///
+    /// This way an event can be processed by multiple [`Writer`]s
+    /// simultaneously.
     #[must_use]
-    fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
+
+    /// Adds [`ArbitraryWriter`] implementation, which discards provided value.
+    ///
+    /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    ///
+    /// [`tee()`]: Self::tee()
+    /// [`ArbitraryWriter`]: Arbitrary
+    #[must_use]
+    fn discard_arbitrary(self) -> ArbitraryDiscard<Self>;
+
+    /// Adds [`FailureWriter`] implementation, which return `0` on every stat
+    /// method.
+    ///
+    /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    ///
+    /// [`tee()`]: Self::tee()
+    /// [`FailureWriter`]: Failure
+    #[must_use]
+    fn discard_failure(self) -> FailureDiscard<Self>;
 }
 
 #[sealed]
-impl<W, T> Ext<W> for T
-where
-    W: World,
-    T: Writer<W> + Sized,
-{
-    fn normalize(self) -> Normalize<W, Self> {
+impl<T> Ext for T {
+    fn normalize<W>(self) -> Normalized<W, Self> {
         Normalize::new(self)
     }
 
@@ -232,22 +255,30 @@ where
         FailOnSkipped::with(self, f)
     }
 
-    fn repeat_skipped(self) -> Repeat<W, Self> {
+    fn repeat_skipped<W>(self) -> Repeat<W, Self> {
         Repeat::skipped(self)
     }
 
-    fn repeat_failed(self) -> Repeat<W, Self> {
+    fn repeat_failed<W>(self) -> Repeat<W, Self> {
         Repeat::failed(self)
     }
 
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Repeat::new(self, filter)
     }
 
-    fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr> {
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr> {
         Tee::new(self, other)
+    }
+
+    fn discard_arbitrary(self) -> ArbitraryDiscard<Self> {
+        ArbitraryDiscard::from(self)
+    }
+
+    fn discard_failure(self) -> FailureDiscard<Self> {
+        FailureDiscard::from(self)
     }
 }

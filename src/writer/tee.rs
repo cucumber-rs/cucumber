@@ -8,7 +8,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Wrapper for passing events to multiple terminating [`Writer`]s.
+//! Passing events to multiple terminating [`Writer`]s simultaneously.
+
+use std::cmp;
 
 use async_trait::async_trait;
 use futures::future;
@@ -19,22 +21,18 @@ use crate::{
     ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
-/// Wrapper for passing events to multiple terminating [`Writer`]s.
+/// Wrapper for passing events to multiple terminating [`Writer`]s
+/// simultaneously.
 ///
 /// # Blanket implementations
 ///
-/// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case the
-/// `left` [`Writer`] implements them. This is done to achieve balance between
-/// being able to [`WriterExt::tee()`][1] 3 or more writers, while imposing
-/// minimal trait bounds.
-/// Unfortunately for now it's impossible to pass [`ArbitraryWriter`]s `Val`
-/// additionally to the `right` [`Writer`] in case it implements
-/// [`ArbitraryWriter`].
+/// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case both
+/// `left` and `right` [`Writer`] implements them. In case one of them doesn't
+/// implement required traits, use [`WriterExt::discard_arbitrary()`][1] and
+/// [`WriterExt::discard_failure()`][2].
 ///
-/// [`Normalized`] and [`Repeatable`] are implemented only if both [`Writer`]s
-/// are implementing corresponding traits.
-///
-/// [1]: crate::WriterExt::tee()
+/// [1]: crate::WriterExt::discard_arbitrary()
+/// [2]: crate::WriterExt::discard_failure()
 #[derive(Clone, Debug)]
 pub struct Tee<L, R> {
     /// Left [`Writer`].
@@ -46,7 +44,7 @@ pub struct Tee<L, R> {
 
 impl<L, R> Tee<L, R> {
     /// Creates a new [`Tee`] [`Writer`], which passes events both to the `left`
-    /// and `right`.
+    /// and `right` [`Writer`]s simultaneously.
     #[must_use]
     pub const fn new(left: L, right: R) -> Self {
         Self { left, right }
@@ -80,33 +78,33 @@ impl<'val, W, L, R, Val> ArbitraryWriter<'val, W, Val> for Tee<L, R>
 where
     W: World,
     L: ArbitraryWriter<'val, W, Val>,
-    R: Writer<W>,
-    Val: 'val,
+    R: ArbitraryWriter<'val, W, Val>,
+    Val: Clone + 'val,
 {
     async fn write(&mut self, val: Val)
     where
         'val: 'async_trait,
     {
-        self.left.write(val).await;
+        future::join(self.left.write(val.clone()), self.right.write(val)).await;
     }
 }
 
 impl<W, L, R> FailureWriter<W> for Tee<L, R>
 where
     L: FailureWriter<W>,
-    R: Writer<W>,
+    R: FailureWriter<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
-        self.left.failed_steps()
+        cmp::max(self.left.failed_steps(), self.right.failed_steps())
     }
 
     fn parsing_errors(&self) -> usize {
-        self.left.parsing_errors()
+        cmp::max(self.left.parsing_errors(), self.right.parsing_errors())
     }
 
     fn hook_errors(&self) -> usize {
-        self.left.hook_errors()
+        cmp::max(self.left.hook_errors(), self.right.hook_errors())
     }
 }
 
