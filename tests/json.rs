@@ -1,9 +1,9 @@
 use std::{convert::Infallible, fs, io::Read as _};
 
 use async_trait::async_trait;
-use cucumber::{given, then, when, writer, WorldInit, WriterExt as _};
+use cucumber::{given, then, when, writer, WorldInit};
 use futures::FutureExt as _;
-use regex::{Regex, RegexBuilder};
+use regex::RegexBuilder;
 use tempfile::NamedTempFile;
 
 #[given(regex = r"(\d+) secs?")]

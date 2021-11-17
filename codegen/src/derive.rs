@@ -15,6 +15,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
+#[allow(clippy::similar_names)]
 pub(crate) fn world_init(
     input: TokenStream,
     steps: &[&str],
@@ -26,10 +27,16 @@ pub(crate) fn world_init(
     let step_types = step_types(steps, world);
     let step_structs = generate_step_structs(steps, &input);
 
+    let given_ty = &step_types[0];
+    let when_ty = &step_types[1];
+    let then_ty = &step_types[2];
+
     Ok(quote! {
-        impl ::cucumber::codegen::WorldInventory<
-            #( #step_types, )*
-        > for #world {}
+        impl ::cucumber::codegen::WorldInventory for #world {
+            type Given = #given_ty;
+            type When = #when_ty;
+            type Then = #then_ty;
+        }
 
         #( #step_structs )*
     })
@@ -41,10 +48,7 @@ pub(crate) fn world_init(
 fn step_types(steps: &[&str], world: &syn::Ident) -> Vec<syn::Ident> {
     steps
         .iter()
-        .map(|step| {
-            let step = to_pascal_case(step);
-            format_ident!("Cucumber{}{}", step, world)
-        })
+        .map(|step| format_ident!("Cucumber{}{}", to_pascal_case(step), world))
         .collect()
 }
 
@@ -53,7 +57,8 @@ fn generate_step_structs(
     steps: &[&str],
     world: &syn::DeriveInput,
 ) -> Vec<TokenStream> {
-    let (world, world_vis) = (&world.ident, &world.vis);
+    let world_vis = &world.vis;
+    let world = &world.ident;
 
     step_types(steps, world)
         .iter()
@@ -63,35 +68,23 @@ fn generate_step_structs(
                 #[doc(hidden)]
                 #world_vis struct #ty {
                     #[doc(hidden)]
-                    pub loc: ::cucumber::step::Location,
+                    #world_vis loc: ::cucumber::step::Location,
 
                     #[doc(hidden)]
-                    pub regex: ::cucumber::codegen::Regex,
+                    #world_vis regex: ::cucumber::codegen::LazyRegex,
 
                     #[doc(hidden)]
-                    pub func: ::cucumber::Step<#world>,
+                    #world_vis func: ::cucumber::Step<#world>,
                 }
 
                 #[automatically_derived]
                 impl ::cucumber::codegen::StepConstructor<#world> for #ty {
-                    fn new (
-                        loc: ::cucumber::step::Location,
-                        regex: ::cucumber::codegen::Regex,
-                        func: ::cucumber::Step<#world>,
-                    ) -> Self {
-                        Self { loc, regex, func }
-                    }
-
                     fn inner(&self) -> (
                         ::cucumber::step::Location,
-                        ::cucumber::codegen::Regex,
+                        ::cucumber::codegen::LazyRegex,
                         ::cucumber::Step<#world>,
                     ) {
-                        (
-                            self.loc.clone(),
-                            self.regex.clone(),
-                            self.func.clone(),
-                        )
+                        (self.loc, self.regex, self.func)
                     }
                 }
 
@@ -114,45 +107,35 @@ mod spec {
         };
 
         let output = quote! {
-            impl ::cucumber::codegen::WorldInventory<
-                CucumberGivenWorld, CucumberWhenWorld, CucumberThenWorld,
-            > for World {}
+            impl ::cucumber::codegen::WorldInventory for World {
+                type Given = CucumberGivenWorld;
+                type When = CucumberWhenWorld;
+                type Then = CucumberThenWorld;
+            }
 
             #[automatically_derived]
             #[doc(hidden)]
             pub struct CucumberGivenWorld {
-                #[doc(hidden)]
-                pub loc: ::cucumber::step::Location,
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
 
-                #[doc(hidden)]
-                pub regex: ::cucumber::codegen::Regex,
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
-                #[doc(hidden)]
-                pub func: ::cucumber::Step<World>,
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
             }
 
             #[automatically_derived]
             impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberGivenWorld
             {
-                fn new (
-                    loc: ::cucumber::step::Location,
-                    regex: ::cucumber::codegen::Regex,
-                    func: ::cucumber::Step<World>,
-                ) -> Self {
-                    Self { loc, regex, func }
-                }
-
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    ::cucumber::codegen::Regex,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
-                    (
-                        self.loc.clone(),
-                        self.regex.clone(),
-                        self.func.clone(),
-                    )
+                    (self.loc, self.regex, self.func)
                 }
             }
 
@@ -162,38 +145,26 @@ mod spec {
             #[automatically_derived]
             #[doc(hidden)]
             pub struct CucumberWhenWorld {
-                #[doc(hidden)]
-                pub loc: ::cucumber::step::Location,
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
 
-                #[doc(hidden)]
-                pub regex: ::cucumber::codegen::Regex,
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
-                #[doc(hidden)]
-                pub func: ::cucumber::Step<World>,
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
             }
 
             #[automatically_derived]
             impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberWhenWorld
             {
-                fn new (
-                    loc: ::cucumber::step::Location,
-                    regex: ::cucumber::codegen::Regex,
-                    func: ::cucumber::Step<World>,
-                ) -> Self {
-                    Self { loc, regex, func }
-                }
-
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    ::cucumber::codegen::Regex,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
-                    (
-                        self.loc.clone(),
-                        self.regex.clone(),
-                        self.func.clone(),
-                    )
+                    (self.loc, self.regex, self.func)
                 }
             }
 
@@ -203,38 +174,26 @@ mod spec {
             #[automatically_derived]
             #[doc(hidden)]
             pub struct CucumberThenWorld {
-                #[doc(hidden)]
-                pub loc: ::cucumber::step::Location,
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
 
-                #[doc(hidden)]
-                pub regex: ::cucumber::codegen::Regex,
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
 
-                #[doc(hidden)]
-                pub func: ::cucumber::Step<World>,
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
             }
 
             #[automatically_derived]
             impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberThenWorld
             {
-                fn new (
-                    loc: ::cucumber::step::Location,
-                    regex: ::cucumber::codegen::Regex,
-                    func: ::cucumber::Step<World>,
-                ) -> Self {
-                    Self { loc, regex, func }
-                }
-
                 fn inner(&self) -> (
                     ::cucumber::step::Location,
-                    ::cucumber::codegen::Regex,
+                    ::cucumber::codegen::LazyRegex,
                     ::cucumber::Step<World>,
                 ) {
-                    (
-                        self.loc.clone(),
-                        self.regex.clone(),
-                        self.func.clone(),
-                    )
+                    (self.loc, self.regex, self.func)
                 }
             }
 

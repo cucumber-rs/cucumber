@@ -27,11 +27,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `WriterExt::nomalized()` and `WriterExt::summarized()` renamed to `normalize` and `summarize`. ([#162])
 - Remove `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 
+### Fixed
+
+- Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
+
 [#147]: /../../pull/147
 [#151]: /../../pull/151
 [#159]: /../../pull/159
 [#160]: /../../pull/160
 [#162]: /../../pull/162
+[#163]: /../../pull/163
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
