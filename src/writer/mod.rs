@@ -48,7 +48,7 @@ pub use self::{
 
 /// Writer of [`Cucumber`] events to some output.
 ///
-/// As [`Runner`] may produce events in [happens-before] order (see
+/// As [`Runner`] produces events in [happens-before] order (see
 /// [Order guarantees]), [`Writer`]s are required to be [`Normalized`]. This
 /// happens if [`Writer`] itself implements [`Normalized`] or any [`Writer`]
 /// wrapped in [`Normalize`].

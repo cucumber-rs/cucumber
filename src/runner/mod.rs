@@ -40,7 +40,8 @@ pub use self::basic::{Basic, ScenarioType};
 /// some [`Scenario`], it should be resolved as [`ScenarioType::Serial`] by the
 /// [`Runner`].
 ///
-/// Because of that, [`Writer`]s, accepting events have to be [`Normalized`].
+/// Because of that, [`Writer`]s, accepting events produced by [`Runner`] have 
+/// to be [`Normalized`].
 ///
 /// All those rules are considered in a [`Basic`] reference [`Runner`]
 /// implementation.
@@ -53,7 +54,6 @@ pub use self::basic::{Basic, ScenarioType};
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
 /// [`Writer`]: crate::Writer
-/// [`writer::Normalize`]: crate::writer::Normalize
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 pub trait Runner<World> {

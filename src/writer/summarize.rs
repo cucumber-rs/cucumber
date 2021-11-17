@@ -139,9 +139,9 @@ pub struct Summarize<Writer> {
     handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
 }
 
-///
-#[derive(Debug)]
-enum State {
+/// State of [`Summarize`] [`Writer`].
+#[derive(Clone, Copy, Debug)]
+pub enum State {
     /// [`Finished`] event hasn't been encountered yet.
     ///
     /// [`Finished`]: event::Cucumber::Finished

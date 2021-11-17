@@ -27,10 +27,12 @@ use crate::{
 /// `left` [`Writer`] implements them. This is done to achieve balance between
 /// being able to [`WriterExt::tee()`][1] 3 or more writers, while imposing
 /// minimal trait bounds.
-///
 /// Unfortunately for now it's impossible to pass [`ArbitraryWriter`]s `Val`
 /// additionally to the `right` [`Writer`] in case it implements
 /// [`ArbitraryWriter`].
+///
+/// [`Normalized`] and [`Repeatable`] are implemented only if both [`Writer`]s
+/// are implementing corresponding traits.
 ///
 /// [1]: crate::WriterExt::tee()
 #[derive(Clone, Debug)]

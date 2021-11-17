@@ -327,6 +327,7 @@ impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
             }
         };
 
+        // We pass normalized Step events, so `writer::Basic::raw()` is ok here.
         let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,

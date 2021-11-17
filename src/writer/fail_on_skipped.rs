@@ -28,8 +28,11 @@ use crate::{
 ///
 /// Doesn't implement [`Repeatable`], as wrapping this [`Writer`] into
 /// [`Repeat`] will cause repetition of [`Skipped`] [`Step`]s, not [`Failed`],
-/// which is quite confusing.
+/// which is quite confusing. You should first apply [`repeat_failed()`] and
+/// only then [`fail_on_skipped()`].
 ///
+/// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
+/// [`repeat_failed()`]: crate::WriterExt::repeat_failed()
 /// [`Failed`]: event::Step::Failed
 /// [`Repeat`]: crate::writer::Repeat
 /// [`Repeatable`]: crate::writer::Repeatable
