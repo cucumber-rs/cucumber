@@ -11,12 +11,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [Diff](/../../compare/v0.10.2...v0.11.0) | [Milestone](/../../milestone/3)
 
+### BC Breaks
+
+- Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
+
 ### Added
 
 - Ability for step functions to return `Result`. ([#151])
 - Arbitrary output for `writer::Basic`. ([#147])
 - `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag. ([#147])
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
+- `writer::Tee` for outputting to multiple terminating `Writer`s simultaneously. ([#160])
+- `writer::discard::Arbitrary` and `writer::discard::Failure` for providing no-op implementations of the corresponding `Writer` traits. ([#160])
 
 ### Fixed
 
@@ -25,6 +31,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#147]: /../../pull/147
 [#151]: /../../pull/151
 [#159]: /../../pull/159
+[#160]: /../../pull/160
 [#163]: /../../pull/163
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema

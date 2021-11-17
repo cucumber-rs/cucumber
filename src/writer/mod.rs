@@ -13,6 +13,7 @@
 //! [`Cucumber`]: crate::event::Cucumber
 
 pub mod basic;
+pub mod discard;
 pub mod fail_on_skipped;
 #[cfg(feature = "output-json")]
 pub mod json;
@@ -22,12 +23,13 @@ pub mod normalized;
 pub mod out;
 pub mod repeat;
 pub mod summarized;
+pub mod tee;
 
 use async_trait::async_trait;
 use sealed::sealed;
 use structopt::StructOptInternal;
 
-use crate::{event, parser, Event, World};
+use crate::{event, parser, Event};
 
 #[cfg(feature = "output-json")]
 #[doc(inline)]
@@ -38,7 +40,7 @@ pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
     basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    repeat::Repeat, summarized::Summarized,
+    repeat::Repeat, summarized::Summarized, tee::Tee,
 };
 
 /// Writer of [`Cucumber`] events to some output.
@@ -120,12 +122,12 @@ pub trait Failure<World>: Writer<World> {
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
-pub trait Ext<W: World>: Writer<W> + Sized {
+pub trait Ext: Sized {
     /// Wraps this [`Writer`] into a [`Normalized`] version.
     ///
     /// See [`Normalized`] for more information.
     #[must_use]
-    fn normalized(self) -> Normalized<W, Self>;
+    fn normalized<W>(self) -> Normalized<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
@@ -167,7 +169,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_skipped(self) -> Repeat<W, Self>;
+    fn repeat_skipped<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
     /// errors at the end of an output.
@@ -176,23 +178,46 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_failed(self) -> Repeat<W, Self>;
+    fn repeat_failed<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output `filter`ed events at the end of an
     /// output.
     #[must_use]
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
+
+    /// Attaches the provided `other` [`Writer`] to the current one for passing
+    /// events to both of them simultaneously.
+    #[must_use]
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
+
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`ArbitraryWriter`] implementation.
+    ///
+    /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`ArbitraryWriter`]s.
+    ///
+    /// [`tee()`]: Ext::tee
+    /// [`ArbitraryWriter`]: Arbitrary
+    #[must_use]
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self>;
+
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`FailureWriter`] implementation returning only `0`.
+    ///
+    /// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`FailureWriter`]s.
+    ///
+    /// [`tee()`]: Ext::tee
+    /// [`FailureWriter`]: Failure
+    #[must_use]
+    fn discard_failure_writes(self) -> discard::Failure<Self>;
 }
 
 #[sealed]
-impl<W, T> Ext<W> for T
-where
-    W: World,
-    T: Writer<W> + Sized,
-{
-    fn normalized(self) -> Normalized<W, Self> {
+impl<T> Ext for T {
+    fn normalized<W>(self) -> Normalized<W, Self> {
         Normalized::new(self)
     }
 
@@ -215,18 +240,30 @@ where
         FailOnSkipped::with(self, f)
     }
 
-    fn repeat_skipped(self) -> Repeat<W, Self> {
+    fn repeat_skipped<W>(self) -> Repeat<W, Self> {
         Repeat::skipped(self)
     }
 
-    fn repeat_failed(self) -> Repeat<W, Self> {
+    fn repeat_failed<W>(self) -> Repeat<W, Self> {
         Repeat::failed(self)
     }
 
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Repeat::new(self, filter)
+    }
+
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr> {
+        Tee::new(self, other)
+    }
+
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self> {
+        discard::Arbitrary::wrap(self)
+    }
+
+    fn discard_failure_writes(self) -> discard::Failure<Self> {
+        discard::Failure::wrap(self)
     }
 }
