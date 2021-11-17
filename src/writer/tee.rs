@@ -91,7 +91,6 @@ impl<W, L, R> FailureWriter<W> for Tee<L, R>
 where
     L: FailureWriter<W>,
     R: FailureWriter<W>,
-    R: Writer<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {

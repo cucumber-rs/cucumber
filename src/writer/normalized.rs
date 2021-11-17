@@ -19,7 +19,7 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    parser, ArbitraryWriter, Event, FailureWriter, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding

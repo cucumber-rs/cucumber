@@ -200,6 +200,9 @@ pub trait Ext: Sized {
     /// Adds [`ArbitraryWriter`] implementation, which discards provided value.
     ///
     /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    ///
+    /// [`tee()`]: Self::tee()
+    /// [`ArbitraryWriter`]: Arbitrary
     #[must_use]
     fn discard_arbitrary(self) -> ArbitraryDiscard<Self>;
 
@@ -207,6 +210,9 @@ pub trait Ext: Sized {
     /// method.
     ///
     /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    ///
+    /// [`tee()`]: Self::tee()
+    /// [`FailureWriter`]: Failure
     #[must_use]
     fn discard_failure(self) -> FailureDiscard<Self>;
 }

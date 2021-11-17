@@ -8,15 +8,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Wrapper for adding an empty [`ArbitraryWriter`] implementation.
+//! Wrapper for adding an empty [`ArbitraryDiscard`] implementation.
 
 use async_trait::async_trait;
 use derive_more::{Deref, DerefMut, From};
 
-use crate::event::Cucumber;
-use crate::{ArbitraryWriter, Event, FailureWriter, World, Writer};
+use crate::{
+    event::Cucumber, ArbitraryWriter, Event, FailureWriter, World, Writer,
+};
 
-/// Wrapper for adding an empty [`ArbitraryWriter`] implementation.
+/// Wrapper for adding an empty [`ArbitraryDiscard`] implementation.
 ///
 /// Can be useful for one of the [`Writer`]s in [`writer::Tee`].
 ///
