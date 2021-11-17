@@ -27,8 +27,11 @@ use structopt::StructOpt;
 use crate::{
     event::{self, Info},
     parser,
-    writer::out::{Styles, WriteStrExt as _},
-    ArbitraryWriter, Event, World, Writer,
+    writer::{
+        self,
+        out::{Styles, WriteStrExt as _},
+    },
+    ArbitraryWriter, Event, World, Writer, WriterExt as _,
 };
 
 // Workaround for overwritten doc-comments.
@@ -163,7 +166,7 @@ where
     }
 }
 
-impl<O: io::Write> Repeatable for Basic<O> {}
+impl<O: io::Write> writer::NotTransformEvents for Basic<O> {}
 
 impl Basic {
     /// Creates a new normalized [`Basic`] [`Writer`] outputting to

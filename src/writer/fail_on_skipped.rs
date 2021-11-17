@@ -20,22 +20,12 @@ use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{
-    event, parser, writer::Normalized, ArbitraryWriter, Event, FailureWriter,
-    World, Writer,
+    event, parser, writer, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
-/// Doesn't implement [`Repeatable`], as wrapping this [`Writer`] into
-/// [`Repeat`] will cause repetition of [`Skipped`] [`Step`]s, not [`Failed`],
-/// which is quite confusing. You should first apply [`repeat_failed()`] and
-/// only then [`fail_on_skipped()`].
-///
-/// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
-/// [`repeat_failed()`]: crate::WriterExt::repeat_failed()
 /// [`Failed`]: event::Step::Failed
-/// [`Repeat`]: crate::writer::Repeat
-/// [`Repeatable`]: crate::writer::Repeatable
 /// [`Skipped`]: event::Step::Skipped
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
@@ -149,7 +139,7 @@ where
     }
 }
 
-impl<Wr: Normalized, F> Normalized for FailOnSkipped<Wr, F> {}
+impl<Wr: writer::Normalized, F> writer::Normalized for FailOnSkipped<Wr, F> {}
 
 impl<Writer> From<Writer> for FailOnSkipped<Writer> {
     fn from(writer: Writer) -> Self {

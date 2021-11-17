@@ -175,7 +175,7 @@ another one:
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World,
-#     writer::{Normalized, Repeatable}, Writer,
+#     writer::{Normalized, NotTransformEvents}, Writer,
 # };
 # use structopt::StructOpt;
 #
@@ -245,7 +245,7 @@ where
 
 impl<Wr: Normalized> Normalized for CustomWriter<Wr> {}
 
-impl<Wr: Repeatable> Repeatable for CustomWriter<Wr> {}
+impl<Wr: NotTransformEvents> NotTransformEvents for CustomWriter<Wr> {}
 ```
 
 [`Writer`]: crate::Writer

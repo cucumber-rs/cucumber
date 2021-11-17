@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 use crate::{
     event, parser,
-    writer::{out::Styles, Normalized, Repeatable},
+    writer::{self, out::Styles},
     ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
@@ -163,7 +163,7 @@ pub enum State {
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
-    Wr: for<'val> ArbitraryWriter<'val, W, String>,
+    Wr: for<'val> ArbitraryWriter<'val, W, String> + NotTransformEvents,
 {
     type Cli = Wr::Cli;
 
@@ -242,9 +242,12 @@ where
     }
 }
 
-impl<Wr: Normalized> Normalized for Summarize<Wr> {}
+impl<Wr: writer::Normalized> writer::Normalized for Summarize<Wr> {}
 
-impl<Wr: Repeatable> Repeatable for Summarize<Wr> {}
+impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
+    for Summarize<Wr>
+{
+}
 
 impl<Writer> From<Writer> for Summarize<Writer> {
     fn from(writer: Writer) -> Self {

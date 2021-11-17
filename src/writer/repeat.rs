@@ -16,18 +16,19 @@ use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{
-    event, parser, writer::Normalized, ArbitraryWriter, Event, FailureWriter,
-    World, Writer,
+    event, parser, writer, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
-/// of an output, based on a filter predicated. Underlying [`Writer`] has to be
-/// [`Repeatable`].
+/// of an output, based on a filter predicated.
 ///
 /// Useful for re-outputting [skipped] or [failed] [`Step`]s.
 ///
+/// Underlying [`Writer`] has to implement [`NotTransformEvents`].
+///
 /// [failed]: crate::WriterExt::repeat_failed
 /// [skipped]: crate::WriterExt::repeat_skipped
+/// [`NotTransformEvents`]: writer::NotTransformEvents
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
 pub struct Repeat<W, Wr, F = FilterEvent<W>> {
@@ -51,7 +52,7 @@ pub type FilterEvent<W> =
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: Writer<W> + Repeatable,
+    Wr: Writer<W> + writer::NotTransformEvents,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     type Cli = Wr::Cli;
@@ -82,7 +83,7 @@ where
 impl<'val, W, Wr, Val, F> ArbitraryWriter<'val, W, Val> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: ArbitraryWriter<'val, W, Val> + Repeatable,
+    Wr: ArbitraryWriter<'val, W, Val> + writer::NotTransformEvents,
     Val: 'val,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
@@ -96,7 +97,7 @@ where
 
 impl<W, Wr, F> FailureWriter<W> for Repeat<W, Wr, F>
 where
-    Wr: FailureWriter<W> + Repeatable,
+    Wr: FailureWriter<W> + writer::NotTransformEvents,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -112,20 +113,12 @@ where
     }
 }
 
-impl<W, Wr: Normalized, F> Normalized for Repeat<W, Wr, F> {}
+impl<W, Wr: writer::Normalized, F> writer::Normalized for Repeat<W, Wr, F> {}
 
-/// Marker trait indicating that [`Writer`] events can be [`Repeat`]ed.
-///
-/// Most of the [`Writer`]s implement it. Counterexample may be
-/// [`FailOnSkipped`], which transforms [`Skipped`] events into [`Failed`].
-/// We should [`Repeat`] first and only then [`FailOnSkipped`]. Applying them in
-/// reversed order will cause event transformation only on main output, while
-/// [`Repeat`] will print untransformed [`Skipped`] events.
-///
-/// [`Failed`]: event::Step::Failed
-/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
-/// [`Skipped`]: event::Step::Skipped
-pub trait Repeatable {}
+impl<W, Wr: writer::NotTransformEvents, F> writer::NotTransformEvents
+    for Repeat<W, Wr, F>
+{
+}
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an

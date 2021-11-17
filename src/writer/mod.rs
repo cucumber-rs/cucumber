@@ -30,7 +30,7 @@ use async_trait::async_trait;
 use sealed::sealed;
 use structopt::StructOptInternal;
 
-use crate::{event, parser, Event, World};
+use crate::{event, parser, Event};
 
 #[cfg(feature = "output-json")]
 #[doc(inline)]
@@ -45,7 +45,7 @@ pub use self::{
     fail_on_skipped::FailOnSkipped,
     failure_discard::FailureDiscard,
     normalize::{Normalize, Normalized},
-    repeat::{Repeat, Repeatable},
+    repeat::Repeat,
     summarize::Summarize,
     tee::Tee,
 };
@@ -53,9 +53,7 @@ pub use self::{
 /// Writer of [`Cucumber`] events to some output.
 ///
 /// As [`Runner`] produces events in [happens-before] order (see
-/// [Order guarantees]), [`Writer`]s are required to be [`Normalized`]. This
-/// happens if [`Writer`] itself implements [`Normalized`] or any [`Writer`]
-/// wrapped in [`Normalize`].
+/// [Order guarantees]), [`Writer`]s are required to be [`Normalized`].
 ///
 /// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
 /// inspection after execution. See [`Summarize`] and
@@ -135,6 +133,19 @@ pub trait Failure<World>: Writer<World> {
     fn hook_errors(&self) -> usize;
 }
 
+/// Marker trait indicating that [`Writer`] events can be [`Repeat`]ed.
+///
+/// Most of the [`Writer`]s implement it. Counterexample may be
+/// [`FailOnSkipped`], which transforms [`Skipped`] events into [`Failed`].
+/// We should [`Repeat`] first and only then [`FailOnSkipped`]. Applying them in
+/// reversed order will cause event transformation only on main output, while
+/// [`Repeat`] will print untransformed [`Skipped`] events.
+///
+/// [`Failed`]: event::Step::Failed
+/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
+/// [`Skipped`]: event::Step::Skipped
+pub trait NotTransformEvents {}
+
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext: Sized {
@@ -142,7 +153,7 @@ pub trait Ext: Sized {
     ///
     /// See [`Normalize`] for more information.
     #[must_use]
-    fn normalized<W>(self) -> Normalized<W, Self>;
+    fn normalize<W>(self) -> Normalize<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
@@ -232,7 +243,7 @@ pub trait Ext: Sized {
 
 #[sealed]
 impl<T> Ext for T {
-    fn normalize<W>(self) -> Normalized<W, Self> {
+    fn normalize<W>(self) -> Normalize<W, Self> {
         Normalize::new(self)
     }
 

@@ -14,7 +14,8 @@ use async_trait::async_trait;
 use derive_more::{Deref, DerefMut, From};
 
 use crate::{
-    event::Cucumber, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    event::Cucumber, writer, ArbitraryWriter, Event, FailureWriter, World,
+    Writer,
 };
 
 /// Wrapper for adding an empty [`ArbitraryDiscard`] implementation.
@@ -61,6 +62,13 @@ impl<W: World, Wr: FailureWriter<W>> FailureWriter<W> for ArbitraryDiscard<Wr> {
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
     }
+}
+
+impl<Wr: writer::Normalized> writer::Normalized for ArbitraryDiscard<Wr> {}
+
+impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
+    for ArbitraryDiscard<Wr>
+{
 }
 
 impl<Wr> ArbitraryDiscard<Wr> {

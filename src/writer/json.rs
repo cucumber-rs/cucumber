@@ -22,7 +22,7 @@ use crate::{
     cli, event,
     feature::ExpandExamplesError,
     parser,
-    writer::{self, basic::coerce_error, Repeatable},
+    writer::{self, basic::coerce_error},
     Event, World, Writer, WriterExt as _,
 };
 
@@ -68,7 +68,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     }
 }
 
-impl<O: io::Write> Repeatable for Json<O> {}
+impl<O: io::Write> writer::NotTransformEvents for Json<O> {}
 
 impl<Out: io::Write> Json<Out> {
     /// Creates a new [`Normalized`] [`Json`] [`Writer`] outputting [JSON][1]

@@ -20,8 +20,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Tee` for outputting to multiple terminating `Writer`s simultaneously. ([#160])
 - `writer::ArbitraryDiscard` and `writer::FailureDiscard` for adding empty implementations of corresponding traits. ([#160])
 - Move `World` parameter of `WriterExt` to methods. ([#160])
-- Add `Normalized` trait and require it for `Writer`s in `Cucumber` run methods. ([#162])
-- Add `Repeatable` trait and require it for `writer::Repeat`. ([#162])
+- Forbid building invalid `Writer`s 
+  - Add `Normalized` trait and require it for `Writer`s in `Cucumber` run methods. ([#162])
+  - Add `NotTransformEvents` trait and require it for `writer::Repeat` and `writer::Summarize`. ([#162])
 
 ### BC Breaks
 

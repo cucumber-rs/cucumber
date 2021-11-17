@@ -19,9 +19,7 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser,
-    writer::Repeatable,
-    ArbitraryWriter, Event, FailureWriter, World, Writer,
+    parser, writer, ArbitraryWriter, Event, FailureWriter, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -164,7 +162,10 @@ where
     }
 }
 
-impl<W, Wr: Repeatable> Repeatable for Normalize<W, Wr> {}
+impl<W, Wr: writer::NotTransformEvents> writer::NotTransformEvents
+    for Normalize<W, Wr>
+{
+}
 
 /// Marker trait indicating that [`Writer`] can accept events in
 /// [happens-before] order. This means one of two things:

@@ -27,7 +27,7 @@ use structopt::{StructOpt, StructOptInternal};
 use crate::{
     cli, event, parser, runner, step,
     tag::Ext as _,
-    writer::{self, Normalized, Repeatable},
+    writer::{self, Normalized, NotTransformEvents},
     Event, FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
     WriterExt as _,
 };
@@ -218,7 +218,7 @@ where
         self,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
     where
-        Wr: Repeatable,
+        Wr: NotTransformEvents,
     {
         Cucumber {
             parser: self.parser,
@@ -310,7 +310,7 @@ where
         self,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
     where
-        Wr: Repeatable,
+        Wr: NotTransformEvents,
     {
         Cucumber {
             parser: self.parser,
@@ -426,7 +426,7 @@ where
         filter: F,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
-        Wr: Repeatable,
+        Wr: NotTransformEvents,
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Cucumber {
