@@ -10,6 +10,8 @@
 
 //! Passing events to multiple terminating [`Writer`]s simultaneously.
 
+use std::cmp;
+
 use async_trait::async_trait;
 use futures::future;
 
@@ -22,16 +24,13 @@ use crate::{
 ///
 /// # Blanket implementations
 ///
-/// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case the
-/// `left` [`Writer`] implements them. This is done to achieve a balance between
-/// being able to [`tee()`] 3 or more writers, while imposing
-/// minimal trait bounds.
+/// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case both
+/// `left` and `right` [`Writer`] implements them. In case one of them doesn't
+/// implement required traits, use [`WriterExt::discard_arbitrary()`][1] and
+/// [`WriterExt::discard_failure()`][2].
 ///
-/// Unfortunately, for now it's impossible to pass [`ArbitraryWriter`]s `Val`
-/// additionally to the `right` [`Writer`] in case it implements
-/// [`ArbitraryWriter`].
-///
-/// [`tee()`]: crate::WriterExt::tee()
+/// [1]: crate::WriterExt::discard_arbitrary()
+/// [2]: crate::WriterExt::discard_failure()
 #[derive(Clone, Debug)]
 pub struct Tee<L, R> {
     /// Left [`Writer`].
@@ -77,32 +76,33 @@ impl<'val, W, L, R, Val> ArbitraryWriter<'val, W, Val> for Tee<L, R>
 where
     W: World,
     L: ArbitraryWriter<'val, W, Val>,
-    R: Writer<W>,
-    Val: 'val,
+    R: ArbitraryWriter<'val, W, Val>,
+    Val: Clone + 'val,
 {
     async fn write(&mut self, val: Val)
     where
         'val: 'async_trait,
     {
-        self.left.write(val).await;
+        future::join(self.left.write(val.clone()), self.right.write(val)).await;
     }
 }
 
 impl<W, L, R> FailureWriter<W> for Tee<L, R>
 where
     L: FailureWriter<W>,
+    R: FailureWriter<W>,
     R: Writer<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
-        self.left.failed_steps()
+        cmp::max(self.left.failed_steps(), self.right.failed_steps())
     }
 
     fn parsing_errors(&self) -> usize {
-        self.left.parsing_errors()
+        cmp::max(self.left.parsing_errors(), self.right.parsing_errors())
     }
 
     fn hook_errors(&self) -> usize {
-        self.left.hook_errors()
+        cmp::max(self.left.hook_errors(), self.right.hook_errors())
     }
 }

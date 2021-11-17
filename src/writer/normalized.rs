@@ -49,7 +49,7 @@ pub struct Normalized<World, Writer> {
     queue: CucumberQueue<World>,
 }
 
-impl<W: World, Writer> Normalized<W, Writer> {
+impl<W, Writer> Normalized<W, Writer> {
     /// Creates a new [`Normalized`] wrapper, which will rearrange [`event`]s
     /// and feed them to the given [`Writer`].
     #[must_use]

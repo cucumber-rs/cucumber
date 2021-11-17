@@ -508,8 +508,13 @@ use cucumber::{writer, WriterExt as _};
 let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::default().summarized::<World>()
-            .tee(writer::Json::raw(file))
+        writer::Basic::default()
+            .summarized()
+            .tee::<World, _>(
+                writer::Json::raw(file)
+                    .discard_failure()
+                    .discard_arbitrary()
+            )
             .normalized()
     )
     .run_and_exit("tests/features/book")

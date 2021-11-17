@@ -18,7 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag. ([#147])
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
 - `writer::Tee` for outputting to multiple terminating `Writer`s simultaneously. ([#160])
-- `World` generic parameter to `writer::Basic` for better type inference. ([#160])
+- `writer::ArbitraryDiscard` and `writer::FailureDiscard` for adding empty implementations of corresponding traits. ([#160])
 
 ### Fixed
 
