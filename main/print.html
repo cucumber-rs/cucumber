@@ -1027,12 +1027,12 @@ World::cucumber()
 <p>Just enable <code>output-json</code> library feature in your <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">cucumber = { version = &quot;0.11&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
-<p>And configure <a href="https://cucumber.io">Cucumber</a>'s output to <code>writer::Json</code>:</p>
+<p>And configure <a href="https://cucumber.io">Cucumber</a>'s output both to STDOUT and <code>writer::Json</code> (with <code>writer::Tee</code>):</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">use std::{convert::Infallible, fs, io};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::WorldInit;
-</span>use cucumber::writer;
+</span>use cucumber::{writer, WriterExt as _};
 
 <span class="boring">#[derive(Debug, WorldInit)]
 </span><span class="boring">struct World;
@@ -1050,8 +1050,13 @@ World::cucumber()
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
 </span>let file = fs::File::create(dbg!(format!(&quot;{}/target/schema.json&quot;, env!(&quot;CARGO_MANIFEST_DIR&quot;))))?;
 World::cucumber()
-    .with_writer(writer::Json::new(file))
-    .run(&quot;tests/features/book&quot;)
+    .with_writer(
+        writer::Basic::default()
+            .summarized()
+            .tee::&lt;World, _&gt;(writer::Json::for_tee(file))
+            .normalized(),
+    )
+    .run_and_exit(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}
