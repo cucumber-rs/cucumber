@@ -483,13 +483,13 @@ Just enable `output-json` library feature in your `Cargo.toml`:
 cucumber = { version = "0.11", features = ["output-json"] }
 ```
 
-You can configure [Cucumber]'s output both to `STDOUT` and `writer::Json` with `writer::Tee`:
+And configure [Cucumber]'s output both to `STDOUT` and `writer::Json` with `writer::Tee`:
 ```rust
 # use std::{convert::Infallible, fs, io};
 # 
 # use async_trait::async_trait;
 # use cucumber::WorldInit;
-use cucumber::{writer, WriterExt};
+use cucumber::{writer, WriterExt as _};
 
 # #[derive(Debug, WorldInit)]
 # struct World;
@@ -508,8 +508,7 @@ use cucumber::{writer, WriterExt};
 let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::<World>::default()
-            .summarized()
+        writer::Basic::default().summarized::<World>()
             .tee(writer::Json::raw(file))
             .normalized()
     )

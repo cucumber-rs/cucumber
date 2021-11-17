@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Wrapper for passing events to multiple terminating [`Writer`]s.
+//! Passing events to multiple terminating [`Writer`]s simultaneously.
 
 use async_trait::async_trait;
 use futures::future;
@@ -17,20 +17,21 @@ use crate::{
     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
-/// Wrapper for passing events to multiple terminating [`Writer`]s.
+/// Wrapper for passing events to multiple terminating [`Writer`]s
+/// simultaneously.
 ///
 /// # Blanket implementations
 ///
 /// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case the
-/// `left` [`Writer`] implements them. This is done to achieve balance between
-/// being able to [`WriterExt::tee()`][1] 3 or more writers, while imposing
+/// `left` [`Writer`] implements them. This is done to achieve a balance between
+/// being able to [`tee()`] 3 or more writers, while imposing
 /// minimal trait bounds.
 ///
-/// Unfortunately for now it's impossible to pass [`ArbitraryWriter`]s `Val`
+/// Unfortunately, for now it's impossible to pass [`ArbitraryWriter`]s `Val`
 /// additionally to the `right` [`Writer`] in case it implements
 /// [`ArbitraryWriter`].
 ///
-/// [1]: crate::WriterExt::tee()
+/// [`tee()`]: crate::WriterExt::tee()
 #[derive(Clone, Debug)]
 pub struct Tee<L, R> {
     /// Left [`Writer`].
@@ -42,7 +43,7 @@ pub struct Tee<L, R> {
 
 impl<L, R> Tee<L, R> {
     /// Creates a new [`Tee`] [`Writer`], which passes events both to the `left`
-    /// and `right`.
+    /// and `right` [`Writer`]s simultaneously.
     #[must_use]
     pub const fn new(left: L, right: R) -> Self {
         Self { left, right }

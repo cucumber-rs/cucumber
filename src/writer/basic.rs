@@ -116,11 +116,11 @@ pub struct Basic<W, Out: io::Write = io::Stdout> {
     /// [1]: gherkin::Step::docstring
     verbose: bool,
 
-    /// Exists for better type resolving, especially when using with
+    /// Exists for better type inference/resolution, especially when used with
     /// [`WriterExt`].
     ///
     /// [`WriterExt`]: crate::WriterExt
-    _w: PhantomData<W>,
+    _world: PhantomData<W>,
 }
 
 #[async_trait(?Send)]
@@ -188,7 +188,7 @@ impl<W: Debug, Out: io::Write> Basic<W, Out> {
             indent: 0,
             lines_to_clear: 0,
             verbose: false,
-            _w: PhantomData,
+            _world: PhantomData,
         };
         basic.apply_cli(Cli { verbose, color });
         basic

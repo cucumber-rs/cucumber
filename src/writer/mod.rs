@@ -121,12 +121,13 @@ pub trait Failure<World>: Writer<World> {
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
-pub trait Ext<W: World>: Writer<W> + Sized {
+pub trait Ext<W: World>: Sized {
     /// Wraps this [`Writer`] into a [`Normalized`] version.
     ///
     /// See [`Normalized`] for more information.
     #[must_use]
-    fn normalized(self) -> Normalized<W, Self>;
+    fn normalized<W: World>(self) -> Normalized<W, Self>
+    where Self: Writer<W>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
@@ -186,7 +187,11 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
-    /// Wraps `self` and `other` [`Writer`]s to pass events to both of them.
+    /// Attaches the provided `other` [`Writer`] to the current one for passing
+    /// events to both of them.
+    ///
+    /// This way an event can be processed by multiple [`Writer`]s
+    /// simultaneously.
     #[must_use]
     fn tee<Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
 }
