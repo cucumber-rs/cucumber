@@ -17,12 +17,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Arbitrary output for `writer::Basic`. ([#147])
 - `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag. ([#147])
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
-- `writer::Tee` to output to multiple terminating `Writer`s ([#160])
+- `writer::Tee` to output to multiple terminating `Writer`s. ([#160])
+- Add `Normalized` trait and require it for `Writer`s in `Cucumber` run methods. ([#162])
+- Add `Repeatable` trait and require it for `writer::Repeat`. ([#162])
+
+### BC Breaks
+
+- `writer::Normalized` and `writer::Summarized` renamed to `Normalize` and `Summarize`. ([#162])
+- `WriterExt::nomalized()` and `WriterExt::summarized()` renamed to `normalize` and `summarize`. ([#162])
+- Remove `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
 [#159]: /../../pull/159
 [#160]: /../../pull/160
+[#162]: /../../pull/162
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 

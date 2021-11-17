@@ -15,7 +15,7 @@ use crate::{
         self,
         basic::{coerce_error, Coloring},
         out::WritableString,
-        Ext as _,
+        Ext as _, Repeatable,
     },
     Event, World, Writer,
 };
@@ -122,6 +122,8 @@ where
         }
     }
 }
+
+impl<W, O: io::Write> Repeatable for JUnit<W, O> {}
 
 impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
     /// Creates a new normalized [`JUnit`] [`Writer`] outputting XML report into

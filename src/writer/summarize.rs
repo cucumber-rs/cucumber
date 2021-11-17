@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 use crate::{
     event, parser,
-    writer::{out::Styles, Normalized},
+    writer::{out::Styles, Normalized, Repeatable},
     ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
@@ -130,10 +130,33 @@ pub struct Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     pub failed_hooks: usize,
 
+    /// [`State`] of this [`Writer`].
+    state: State,
+
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
     handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
+}
+
+///
+#[derive(Debug)]
+enum State {
+    /// [`Finished`] event hasn't been encountered yet.
+    ///
+    /// [`Finished`]: event::Cucumber::Finished
+    InProgress,
+
+    /// [`Finished`] event was encountered, but summary hasn't been outputted
+    /// yet.
+    ///
+    /// [`Finished`]: event::Cucumber::Finished
+    FinishedButNotOutputted,
+
+    /// [`Finished`] event was encountered and summary was outputted.
+    ///
+    /// [`Finished`]: event::Cucumber::Finished
+    FinishedAndOutputted,
 }
 
 #[async_trait(?Send)]
@@ -151,27 +174,35 @@ where
     ) {
         use event::{Cucumber, Feature, Rule};
 
-        let mut finished = false;
-        match ev.as_deref() {
-            Err(_) => self.parsing_errors += 1,
-            Ok(Cucumber::Feature(_, ev)) => match ev {
-                Feature::Started => self.features += 1,
-                Feature::Rule(_, Rule::Started) => {
-                    self.rules += 1;
+        // Once `Cucumber::Finished` is emitted, we just pass events through,
+        // without collecting `Stats`.
+        // This is done to avoid miscalculations if this `Writer` happens to be
+        // wrapped inside `writer::Repeat` or similar.
+        if let State::InProgress = self.state {
+            match ev.as_deref() {
+                Err(_) => self.parsing_errors += 1,
+                Ok(Cucumber::Feature(_, ev)) => match ev {
+                    Feature::Started => self.features += 1,
+                    Feature::Rule(_, Rule::Started) => {
+                        self.rules += 1;
+                    }
+                    Feature::Rule(_, Rule::Scenario(sc, ev))
+                    | Feature::Scenario(sc, ev) => {
+                        self.handle_scenario(sc, ev);
+                    }
+                    Feature::Finished | Feature::Rule(..) => {}
+                },
+                Ok(Cucumber::Finished) => {
+                    self.state = State::FinishedButNotOutputted;
                 }
-                Feature::Rule(_, Rule::Scenario(sc, ev))
-                | Feature::Scenario(sc, ev) => {
-                    self.handle_scenario(sc, ev);
-                }
-                Feature::Finished | Feature::Rule(..) => {}
-            },
-            Ok(Cucumber::Finished) => finished = true,
-            Ok(Cucumber::Started) => {}
-        };
+                Ok(Cucumber::Started) => {}
+            };
+        }
 
         self.writer.handle_event(ev, cli).await;
 
-        if finished {
+        if let State::FinishedButNotOutputted = self.state {
+            self.state = State::FinishedAndOutputted;
             self.writer.write(Styles::new().summary(self)).await;
         }
     }
@@ -213,6 +244,8 @@ where
 
 impl<Wr: Normalized> Normalized for Summarize<Wr> {}
 
+impl<Wr: Repeatable> Repeatable for Summarize<Wr> {}
+
 impl<Writer> From<Writer> for Summarize<Writer> {
     fn from(writer: Writer) -> Self {
         Self {
@@ -231,6 +264,7 @@ impl<Writer> From<Writer> for Summarize<Writer> {
             },
             parsing_errors: 0,
             failed_hooks: 0,
+            state: State::InProgress,
             handled_scenarios: HashMap::new(),
         }
     }

@@ -41,7 +41,7 @@ pub use self::{
     basic::{Basic, Coloring},
     fail_on_skipped::FailOnSkipped,
     normalize::{Normalize, Normalized},
-    repeat::Repeat,
+    repeat::{Repeat, Repeatable},
     summarize::Summarize,
     tee::Tee,
 };

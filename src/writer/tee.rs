@@ -14,8 +14,9 @@ use async_trait::async_trait;
 use futures::future;
 
 use crate::{
-    cli, event, parser, writer::Normalized, ArbitraryWriter, Event,
-    FailureWriter, World, Writer,
+    cli, event, parser,
+    writer::{Normalized, Repeatable},
+    ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Wrapper for passing events to multiple [`Writer`]s.
@@ -108,3 +109,5 @@ where
 }
 
 impl<L: Normalized, R: Normalized> Normalized for Tee<L, R> {}
+
+impl<L: Repeatable, R: Repeatable> Repeatable for Tee<L, R> {}

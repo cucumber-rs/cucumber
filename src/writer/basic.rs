@@ -31,6 +31,7 @@ use crate::{
     writer::{
         self,
         out::{Styles, WriteStrExt as _},
+        Repeatable,
     },
     ArbitraryWriter, Event, World, Writer, WriterExt as _,
 };
@@ -172,6 +173,8 @@ where
             .unwrap_or_else(|e| panic!("Failed to write: {}", e));
     }
 }
+
+impl<W, O: io::Write> Repeatable for Basic<W, O> {}
 
 impl<W: Debug + World> Basic<W> {
     /// Creates a new normalized [`Basic`] [`Writer`] outputting to

@@ -27,7 +27,7 @@ use structopt::{StructOpt, StructOptInternal};
 use crate::{
     cli, event, parser, runner, step,
     tag::Ext as _,
-    writer::{self, Normalized},
+    writer::{self, Normalized, Repeatable},
     Event, FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
     WriterExt as _,
 };
@@ -217,7 +217,10 @@ where
     #[must_use]
     pub fn repeat_skipped(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
+    where
+        Wr: Repeatable,
+    {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -301,12 +304,6 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > ⚠️ __WARNING__: [`Cucumber::repeat_failed()`] should be called before
-    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
-    ///                   outer [`Writer`]s to inner ones. So we need to
-    ///                   transform [`Skipped`] to [`Failed`] first, and only
-    ///                   then [`Repeat`] them.
-    ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Repeat`]: writer::Repeat
     /// [`Scenario`]: gherkin::Scenario
@@ -314,7 +311,10 @@ where
     #[must_use]
     pub fn repeat_failed(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
+    where
+        Wr: Repeatable,
+    {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -421,12 +421,6 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > ⚠️ __WARNING__: [`Cucumber::repeat_if()`] should be called before
-    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
-    ///                   outer [`Writer`]s to inner ones. So we need to
-    ///                   transform [`Skipped`] to [`Failed`] first, and only
-    ///                   then [`Repeat`] them.
-    ///
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Repeat`]: writer::Repeat
     /// [`Scenario`]: gherkin::Scenario
@@ -437,6 +431,7 @@ where
         filter: F,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
+        Wr: Repeatable,
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Cucumber {

@@ -21,7 +21,8 @@ use crate::{
 };
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
-/// of an output, based on a filter predicated.
+/// of an output, based on a filter predicated. Underlying [`Writer`] has to be
+/// [`Repeatable`].
 ///
 /// Useful for re-outputting [skipped] or [failed] [`Step`]s.
 ///
@@ -50,7 +51,7 @@ pub type FilterEvent<W> =
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: Writer<W>,
+    Wr: Writer<W> + Repeatable,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     type Cli = Wr::Cli;
@@ -81,7 +82,7 @@ where
 impl<'val, W, Wr, Val, F> ArbitraryWriter<'val, W, Val> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: ArbitraryWriter<'val, W, Val> + Repeatable,
     Val: 'val,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
@@ -95,7 +96,7 @@ where
 
 impl<W, Wr, F> FailureWriter<W> for Repeat<W, Wr, F>
 where
-    Wr: FailureWriter<W>,
+    Wr: FailureWriter<W> + Repeatable,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -112,6 +113,19 @@ where
 }
 
 impl<W, Wr: Normalized, F> Normalized for Repeat<W, Wr, F> {}
+
+/// Marker trait indicating that [`Writer`] events can be [`Repeat`]ed.
+///
+/// Most of the [`Writer`]s implement it. Counterexample may be
+/// [`FailOnSkipped`], which transforms [`Skipped`] events into [`Failed`].
+/// We should [`Repeat`] first and only then [`FailOnSkipped`]. Applying them in
+/// reversed order will cause event transformation only on main output, while
+/// [`Repeat`] will print untransformed [`Skipped`] events.
+///
+/// [`Failed`]: event::Step::Failed
+/// [`FailOnSkipped`]: writer::FailOnSkipped
+/// [`Skipped`]: event::Step::Skipped
+pub trait Repeatable {}
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an

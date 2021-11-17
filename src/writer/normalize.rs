@@ -19,7 +19,9 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    parser,
+    writer::Repeatable,
+    ArbitraryWriter, Event, FailureWriter, World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -162,12 +164,22 @@ where
     }
 }
 
+impl<W, Wr: Repeatable> Repeatable for Normalize<W, Wr> {}
+
 /// Marker trait indicating that [`Writer`] can accept events in
-/// [happens-before] order.
+/// [happens-before] order. This means one of two things:
 ///
-/// Any [`Writer`] can be wrapped into [`Normalize`] to become [`Normalized`].
+/// 1. [`Writer`] doesn't depend on events ordering.
+///    For example, [`Writer`] which prints only [`Failed`] [`Step`]s.
+/// 2. [`Writer`] does depend on events ordering, but implements some logic to
+///    rearrange them.
+///    For example [`Normalized`] wrapper will rearrange events
+///    and pass them to the underlying [`Writer`], like [`Runner`] wasn't
+///    concurrent at all.
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
+/// [`Step`]: gherkin::Step
+/// [`Failed`]: event::Step::Failed
 pub trait Normalized {}
 
 impl<World, Writer> Normalized for Normalize<World, Writer> {}

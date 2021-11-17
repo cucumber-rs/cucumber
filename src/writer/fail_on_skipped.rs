@@ -26,7 +26,13 @@ use crate::{
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
+/// Doesn't implement [`Repeatable`], as wrapping this [`Writer`] into
+/// [`Repeat`] will cause repetition of [`Skipped`] [`Step`]s, not [`Failed`],
+/// which is quite confusing.
+///
 /// [`Failed`]: event::Step::Failed
+/// [`Repeat`]: crate::writer::Repeat
+/// [`Repeatable`]: crate::writer::Repeatable
 /// [`Skipped`]: event::Step::Skipped
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
