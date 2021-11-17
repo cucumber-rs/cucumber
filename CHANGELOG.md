@@ -18,6 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::JUnit` ([JUnit XML report][0110-1]) behind the `output-junit` feature flag. ([#147])
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
 - `writer::Tee` to output to multiple terminating `Writer`s. ([#160])
+- Add `World` generic parameter to `writer::Basic` for better type inference. ([#160])
 - Add `Normalized` trait and require it for `Writer`s in `Cucumber` run methods. ([#162])
 - Add `Repeatable` trait and require it for `writer::Repeat`. ([#162])
 
