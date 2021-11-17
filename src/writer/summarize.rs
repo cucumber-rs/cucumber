@@ -163,7 +163,7 @@ pub enum State {
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
-    Wr: for<'val> ArbitraryWriter<'val, W, String> + NotTransformEvents,
+    Wr: for<'val> ArbitraryWriter<'val, W, String> + writer::NotTransformEvents,
 {
     type Cli = Wr::Cli;
 
