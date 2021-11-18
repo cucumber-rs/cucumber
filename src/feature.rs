@@ -151,6 +151,10 @@ fn expand_scenario(
                 .map_or_else(|| scenario.position, |ex| ex.position);
             modified.position.line += id + 1;
 
+            modified.tags.extend(
+                scenario.examples.iter().flat_map(|ex| &ex.tags).cloned(),
+            );
+
             let mut err = None;
 
             for s in &mut modified.steps {

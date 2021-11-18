@@ -27,12 +27,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
+- Add tags from `Examples` to `Scenario Outline`. ([#165])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
 [#159]: /../../pull/159
 [#160]: /../../pull/160
 [#163]: /../../pull/163
+[#165]: /../../pull/165
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
