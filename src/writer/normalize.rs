@@ -23,7 +23,8 @@ use crate::{
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
-/// to _order guarantees_ from the [`Runner`] in a normalized readable order.
+/// to _order guarantees_ from the [`Runner`] in a [`Normalized`] readable
+/// order.
 ///
 /// Doesn't output anything by itself, but rather is used as a combinator for
 /// rearranging events and feeding them to the underlying [`Writer`].

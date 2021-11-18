@@ -89,11 +89,11 @@ enum Indicator {
 /// Wrapper for a [`Writer`] for outputting an execution summary (number of
 /// executed features, scenarios, steps and parsing errors).
 ///
-/// __Note:__ The underlying [`Writer`] is expected to be an [`ArbitraryWriter`]
-/// with `Value` accepting [`String`]. If your underlying [`ArbitraryWriter`]
-/// operates with something like JSON (or any other type), you should implement
-/// a [`Writer`] on [`Summarize`] by yourself, to provide the required summary
-/// format.
+/// Underlying [`Writer`] has to implement [`Summarizable`] and
+/// [`ArbitraryWriter`] with `Value` accepting [`String`]. If your underlying
+/// [`ArbitraryWriter`] operates with something like JSON (or any other type),
+/// you should implement a [`Writer`] on [`Summarize`] by yourself, to provide
+/// the required summary format.
 #[derive(Debug, Deref)]
 pub struct Summarize<Writer> {
     /// Original [`Writer`] to summarize output of.
@@ -163,7 +163,7 @@ pub enum State {
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
-    Wr: for<'val> ArbitraryWriter<'val, W, String> + writer::NotTransformEvents,
+    Wr: for<'val> ArbitraryWriter<'val, W, String> + Summarizable,
 {
     type Cli = Wr::Cli;
 
@@ -248,6 +248,93 @@ impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
     for Summarize<Wr>
 {
 }
+
+/// Marker trait indicating that [`Writer`] can be wrapped into [`Summarize`].
+///
+/// Not every trait can be wrapped into [`Summarize`], as inner [`Writer`] may
+/// transform event inside and summary won't reflect outputted events. So this
+/// trait ensures wrong [`Writer`] can't be build.
+///
+/// # Example
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         writer::Basic::stdout()
+///             .fail_on_skipped() // fails as `Summarize` will count `Skipped`
+///             .summarize()       // `Step`s instead of `Failed`.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust
+/// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// # use futures::FutureExt as _;
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// # let fut = async {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         writer::Basic::stdout()
+///             .summarize()       // Then count them.
+///             .fail_on_skipped() // First, we transform `Skipped` to `Failed`.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # };
+/// # let err = AssertUnwindSafe(fut)
+/// #         .catch_unwind()
+/// #         .await
+/// #         .expect_err("should err");
+/// # let err = err.downcast_ref::<String>().unwrap();
+/// # assert_eq!(err, "1 step failed");
+/// # }
+/// ```
+///
+/// [`FailOnSkipped`]: writer::FailOnSkipped
+pub trait Summarizable {}
+
+impl<T: writer::NotTransformEvents> Summarizable for T {}
+
+// `Repeat` case is handled inside implementation
+impl<Wr, F> Summarizable for writer::Repeat<Wr, F> {}
 
 impl<Writer> From<Writer> for Summarize<Writer> {
     fn from(writer: Writer) -> Self {

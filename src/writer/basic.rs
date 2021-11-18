@@ -169,8 +169,10 @@ where
 impl<O: io::Write> writer::NotTransformEvents for Basic<O> {}
 
 impl Basic {
-    /// Creates a new normalized [`Basic`] [`Writer`] outputting to
+    /// Creates a new [`Normalized`] [`Basic`] [`Writer`] outputting to
     /// [`io::Stdout`].
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn stdout<W>() -> writer::Normalize<W, Self> {
         Self::new(io::stdout(), Coloring::Auto, false)
@@ -178,7 +180,9 @@ impl Basic {
 }
 
 impl<Out: io::Write> Basic<Out> {
-    /// Creates a new normalized [`Basic`] [`Writer`].
+    /// Creates a new [`Normalized`] [`Basic`] [`Writer`].
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn new<W>(
         output: Out,
@@ -188,7 +192,13 @@ impl<Out: io::Write> Basic<Out> {
         Self::raw(output, color, verbose).normalize()
     }
 
-    /// Creates a new unnormalized [`Basic`] [`Writer`].
+    /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`].
+    ///
+    /// Use it only if you know what you're doing. Otherwise, consider using
+    /// [`Basic::new()`] which creates an already [`Normalized`] version of
+    /// [`Basic`] [`Writer`].
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn raw(output: Out, color: Coloring, verbose: bool) -> Self {
         let mut basic = Self {

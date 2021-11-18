@@ -43,7 +43,7 @@ pub use self::{
     fail_on_skipped::FailOnSkipped,
     normalize::{Normalize, Normalized},
     repeat::Repeat,
-    summarize::Summarize,
+    summarize::{Summarizable, Summarize},
     tee::Tee,
 };
 
@@ -130,13 +130,121 @@ pub trait Failure<World>: Writer<World> {
     fn hook_errors(&self) -> usize;
 }
 
-/// Marker trait indicating that [`Writer`] events can be [`Repeat`]ed.
+/// Marker trait indicating that [`Writer`] doesn't transform events.
 ///
-/// Most of the [`Writer`]s implement it. Counterexample may be
-/// [`FailOnSkipped`], which transforms [`Skipped`] events into [`Failed`].
-/// We should [`Repeat`] first and only then [`FailOnSkipped`]. Applying them in
-/// reversed order will cause event transformation only on main output, while
-/// [`Repeat`] will print untransformed [`Skipped`] events.
+/// This trait is used to ensure that [`Writer`]s that rely on events not being
+/// transformed (like [`Repeat`]) are called in the right order. This means that
+/// every event transformation should be done before they are [`Repeat`]ed.
+///
+/// # Example
+///
+/// If you want to combine [`FailOnSkipped`], [`Summarize`] and [`Repeat`]
+/// code won't compile on wrong configuration.
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         writer::Basic::stdout()
+///             .fail_on_skipped() // fails as `Repeat` will re-output `Skipped`
+///             .repeat_failed()   // `Step`s instead of `Failed`.
+///             .summarize()
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         writer::Basic::stdout()
+///             .repeat_failed()
+///             .fail_on_skipped() // fails as `Summarize` will count `Skipped`
+///             .summarize()       // `Step`s instead of `Failed`.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust
+/// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// # use futures::FutureExt as _;
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// # let fut = async {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         writer::Basic::stdout()
+///             .repeat_failed()   // And finally repeat `Failed` ones.
+///             .summarize()       // Then count them.
+///             .fail_on_skipped(), // First, we transform `Step`s.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # };
+/// # let err = AssertUnwindSafe(fut)
+/// #         .catch_unwind()
+/// #         .await
+/// #         .expect_err("should err");
+/// # let err = err.downcast_ref::<String>().unwrap();
+/// # assert_eq!(err, "1 step failed");
+/// # }
+/// ```
 ///
 /// [`Failed`]: event::Step::Failed
 /// [`FailOnSkipped`]: crate::writer::FailOnSkipped

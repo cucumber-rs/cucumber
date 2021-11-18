@@ -510,7 +510,7 @@ World::cucumber()
     .with_writer(
         writer::Basic::raw(io::stdout(), Coloring::Auto, false)
             .summarize()
-            .tee::<World, _>(writer::Json::raw::for_tee(file))
+            .tee::<World, _>(writer::Json::for_tee(file))
             .normalize()
     )
     .run_and_exit("tests/features/book")

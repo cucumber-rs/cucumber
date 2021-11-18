@@ -136,28 +136,21 @@ where
 
 impl<W, O: io::Write> writer::NotTransformEvents for JUnit<W, O> {}
 
-impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
-    /// Creates a new normalized [`JUnit`] [`Writer`] outputting XML report into
-    /// the given `output`.
+impl<W: Debug, Out: io::Write> JUnit<W, Out> {
+    /// Creates a new [`Normalized`] [`JUnit`] [`Writer`] outputting XML report
+    /// into the given `output`.
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn new(output: Out) -> writer::Normalize<W, Self> {
         Self::raw(output).normalize()
     }
 
-    /// Creates a new unnormalized [`JUnit`] [`Writer`] outputting XML report
-    /// into the given `output`, and suitable for feeding into [`tee()`].
+    /// Creates a new non-[`Normalized`] [`JUnit`] [`Writer`] outputting XML
+    /// report into the given `output`, and suitable for feeding into [`tee()`].
     ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to correct
-    /// [JUnit `testsuite`s][1] from unordered [`Cucumber` events][2], until is
-    /// [`normalized()`].
-    ///
-    /// So, either make it [`normalized()`] before feeding into [`tee()`], or
-    /// make the whole [`tee()`] pipeline [`normalized()`].
-    ///
-    /// [`normalized()`]: crate::WriterExt::normalized
     /// [`tee()`]: crate::WriterExt::tee
+    /// [`Normalized`]: writer::Normalized
     /// [1]: https://llg.cubic.org/docs/junit
     /// [2]: crate::event::Cucumber
     #[must_use]
@@ -167,8 +160,8 @@ impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
             .discard_arbitrary_writes()
     }
 
-    /// Creates a new raw and unnormalized [`JUnit`] [`Writer`] outputting XML
-    /// report into the given `output`.
+    /// Creates a new raw and non-[`Normalized`] [`JUnit`] [`Writer`] outputting
+    /// XML report into the given `output`.
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`JUnit::new()`] which creates an already [`Normalized`] version of

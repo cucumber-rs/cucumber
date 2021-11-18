@@ -81,19 +81,12 @@ impl<Out: io::Write> Json<Out> {
         Self::raw(output).normalize()
     }
 
-    /// Creates a new unnormalized [`Json`] [`Writer`] outputting [JSON][1] into
-    /// the given `output`, and suitable for feeding into [`tee()`].
+    /// Creates a new non-[`Normalized`] [`Json`] [`Writer`] outputting
+    /// [JSON][1] into the given `output`, and suitable for feeding into
+    /// [`tee()`].
     ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form [correct JSON][1] from
-    /// unordered [`Cucumber` events][2], until is [`normalized()`].
-    ///
-    /// So, either make it [`normalized()`] before feeding into [`tee()`], or
-    /// make the whole [`tee()`] pipeline [`normalized()`].
-    ///
-    /// [`normalized()`]: crate::WriterExt::normalized
     /// [`tee()`]: crate::WriterExt::tee
+    /// [`Normalized`]: writer::Normalized
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: crate::event::Cucumber
     #[must_use]

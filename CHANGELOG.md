@@ -14,12 +14,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### BC Breaks
 
 - Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
-- `writer::Normalized` and `writer::Summarized` renamed to `Normalize` and `Summarize`. ([#162])
+- `Normalized` and `Summarized` `Writer`s renamed to `Normalize` and `Summarize`. ([#162])
 - `WriterExt::nomalized()` and `WriterExt::summarized()` renamed to `normalize` and `summarize`. ([#162])
 - Remove `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 - Forbid building invalid `Writer`s
     - Add `Normalized` trait and require it for `Writer`s in `Cucumber` run methods. ([#162])
-    - Add `NotTransformEvents` trait and require it for `writer::Repeat` and `writer::Summarize`. ([#162])
+    - Add `NotTransformEvents` trait and require it for `writer::Repeat`. ([#162])
+    - Add `Summarizable` trait and require it for `writer::Summarize`. ([#162])
 ### Added
 
 - Ability for step functions to return `Result`. ([#151])

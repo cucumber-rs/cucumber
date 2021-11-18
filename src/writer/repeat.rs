@@ -115,11 +115,6 @@ where
 
 impl<W, Wr: writer::Normalized, F> writer::Normalized for Repeat<W, Wr, F> {}
 
-impl<W, Wr: writer::NotTransformEvents, F> writer::NotTransformEvents
-    for Repeat<W, Wr, F>
-{
-}
-
 impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an
     /// output in case the given `filter` predicated returns `true`.

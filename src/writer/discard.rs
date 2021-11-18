@@ -14,7 +14,8 @@ use async_trait::async_trait;
 use derive_more::{Deref, DerefMut};
 
 use crate::{
-    event::Cucumber, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    event::Cucumber, writer, ArbitraryWriter, Event, FailureWriter, World,
+    Writer,
 };
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
@@ -66,6 +67,13 @@ impl<W: World, Wr: FailureWriter<W> + ?Sized> FailureWriter<W>
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
     }
+}
+
+impl<Wr: writer::Normalized> writer::Normalized for Arbitrary<Wr> {}
+
+impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
+    for Arbitrary<Wr>
+{
 }
 
 impl<Wr> Arbitrary<Wr> {
@@ -128,6 +136,13 @@ impl<W: World, Wr: Writer<W> + ?Sized> FailureWriter<W> for Failure<Wr> {
     fn hook_errors(&self) -> usize {
         0
     }
+}
+
+impl<Wr: writer::Normalized> writer::Normalized for Failure<Wr> {}
+
+impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
+    for Failure<Wr>
+{
 }
 
 impl<Wr> Failure<Wr> {
