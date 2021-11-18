@@ -12,10 +12,9 @@
 //!
 //! [`Cucumber`]: crate::event::Cucumber
 
-pub mod arbitrary_discard;
 pub mod basic;
+pub mod discard;
 pub mod fail_on_skipped;
-pub mod failure_discard;
 #[cfg(feature = "output-json")]
 pub mod json;
 #[cfg(feature = "output-junit")]
@@ -40,10 +39,8 @@ pub use self::json::Json;
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
-    arbitrary_discard::ArbitraryDiscard,
     basic::{Basic, Coloring},
     fail_on_skipped::FailOnSkipped,
-    failure_discard::FailureDiscard,
     normalize::{Normalize, Normalized},
     repeat::Repeat,
     summarize::Summarize,
@@ -214,31 +211,31 @@ pub trait Ext: Sized {
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
     /// Attaches the provided `other` [`Writer`] to the current one for passing
-    /// events to both of them.
-    ///
-    /// This way an event can be processed by multiple [`Writer`]s
-    /// simultaneously.
+    /// events to both of them simultaneously.
     #[must_use]
     fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
 
-    /// Adds [`ArbitraryWriter`] implementation, which discards provided value.
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`ArbitraryWriter`] implementation.
     ///
-    /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`ArbitraryWriter`]s.
     ///
-    /// [`tee()`]: Self::tee()
+    /// [`tee()`]: Ext::tee
     /// [`ArbitraryWriter`]: Arbitrary
     #[must_use]
-    fn discard_arbitrary(self) -> ArbitraryDiscard<Self>;
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self>;
 
-    /// Adds [`FailureWriter`] implementation, which return `0` on every stat
-    /// method.
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`FailureWriter`] implementation returning only `0`.
     ///
-    /// Can be useful for one of the [`Writer`]s in [`tee()`].
+    /// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`FailureWriter`]s.
     ///
-    /// [`tee()`]: Self::tee()
+    /// [`tee()`]: Ext::tee
     /// [`FailureWriter`]: Failure
     #[must_use]
-    fn discard_failure(self) -> FailureDiscard<Self>;
+    fn discard_failure_writes(self) -> discard::Failure<Self>;
 }
 
 #[sealed]
@@ -285,11 +282,11 @@ impl<T> Ext for T {
         Tee::new(self, other)
     }
 
-    fn discard_arbitrary(self) -> ArbitraryDiscard<Self> {
-        ArbitraryDiscard::from(self)
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self> {
+        discard::Arbitrary::wrap(self)
     }
 
-    fn discard_failure(self) -> FailureDiscard<Self> {
-        FailureDiscard::from(self)
+    fn discard_failure_writes(self) -> discard::Failure<Self> {
+        discard::Failure::wrap(self)
     }
 }

@@ -24,6 +24,7 @@ use crate::{
     writer::{
         self,
         basic::{coerce_error, Coloring},
+        discard,
         out::WritableString,
         Ext as _,
     },
@@ -141,6 +142,29 @@ impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
     #[must_use]
     pub fn new(output: Out) -> writer::Normalize<W, Self> {
         Self::raw(output).normalize()
+    }
+
+    /// Creates a new unnormalized [`JUnit`] [`Writer`] outputting XML report
+    /// into the given `output`, and suitable for feeding into [`tee()`].
+    ///
+    /// # Warning
+    ///
+    /// It may panic in runtime as won't be able to correct
+    /// [JUnit `testsuite`s][1] from unordered [`Cucumber` events][2], until is
+    /// [`normalized()`].
+    ///
+    /// So, either make it [`normalized()`] before feeding into [`tee()`], or
+    /// make the whole [`tee()`] pipeline [`normalized()`].
+    ///
+    /// [`normalized()`]: crate::WriterExt::normalized
+    /// [`tee()`]: crate::WriterExt::tee
+    /// [1]: https://llg.cubic.org/docs/junit
+    /// [2]: crate::event::Cucumber
+    #[must_use]
+    pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Failure<Self>> {
+        Self::raw(output)
+            .discard_failure_writes()
+            .discard_arbitrary_writes()
     }
 
     /// Creates a new raw and unnormalized [`JUnit`] [`Writer`] outputting XML
