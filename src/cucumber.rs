@@ -25,11 +25,8 @@ use regex::Regex;
 use structopt::{StructOpt, StructOptInternal};
 
 use crate::{
-    cli, event, parser, runner, step,
-    tag::Ext as _,
-    writer::{self, Normalized, NotTransformEvents},
-    Event, FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
-    WriterExt as _,
+    cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
+    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -218,7 +215,7 @@ where
         self,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
     where
-        Wr: NotTransformEvents,
+        Wr: writer::NonTransforming,
     {
         Cucumber {
             parser: self.parser,
@@ -302,15 +299,12 @@ where
     /// </script>
     ///
     /// [`Failed`]: crate::event::Step::Failed
-    /// [`Repeat`]: writer::Repeat
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
     #[must_use]
     pub fn repeat_failed(
         self,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
     where
-        Wr: NotTransformEvents,
+        Wr: writer::NonTransforming,
     {
         Cucumber {
             parser: self.parser,
@@ -417,17 +411,14 @@ where
     /// </script>
     ///
     /// [`Failed`]: crate::event::Step::Failed
-    /// [`Repeat`]: writer::Repeat
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
     #[must_use]
     pub fn repeat_if<F>(
         self,
         filter: F,
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
-        Wr: NotTransformEvents,
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
+        Wr: writer::NonTransforming,
     {
         Cucumber {
             parser: self.parser,
@@ -635,7 +626,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: Writer<W> + Normalized,
+    Wr: Writer<W> + writer::Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
@@ -909,7 +900,7 @@ where
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Basic::stdout().summarize(),
+            writer::Basic::stdout().summarized(),
         )
     }
 }
@@ -1171,7 +1162,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: FailureWriter<W> + Normalized,
+    Wr: writer::Failure<W> + writer::Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].

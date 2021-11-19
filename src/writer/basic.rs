@@ -30,8 +30,9 @@ use crate::{
     writer::{
         self,
         out::{Styles, WriteStrExt as _},
+        Ext as _,
     },
-    ArbitraryWriter, Event, World, Writer, WriterExt as _,
+    Event, World, Writer,
 };
 
 // Workaround for overwritten doc-comments.
@@ -89,7 +90,8 @@ impl FromStr for Coloring {
 /// # Ordering
 ///
 /// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
-/// [`writer::Normalize`].
+/// a [`writer::Normalize`], otherwise will produce output [`Event`]s in a
+/// broken order.
 ///
 /// [`Normalized`]: writer::Normalized
 /// [`Runner`]: crate::runner::Runner
@@ -150,7 +152,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Val, Out> ArbitraryWriter<'val, W, Val> for Basic<Out>
+impl<'val, W, Val, Out> writer::Arbitrary<'val, W, Val> for Basic<Out>
 where
     W: World + Debug,
     Val: AsRef<str> + 'val,
@@ -166,7 +168,7 @@ where
     }
 }
 
-impl<O: io::Write> writer::NotTransformEvents for Basic<O> {}
+impl<O: io::Write> writer::NonTransforming for Basic<O> {}
 
 impl Basic {
     /// Creates a new [`Normalized`] [`Basic`] [`Writer`] outputting to
@@ -180,7 +182,8 @@ impl Basic {
 }
 
 impl<Out: io::Write> Basic<Out> {
-    /// Creates a new [`Normalized`] [`Basic`] [`Writer`].
+    /// Creates a new [`Normalized`] [`Basic`] [`Writer`] outputting to the
+    /// given `output`.
     ///
     /// [`Normalized`]: writer::Normalized
     #[must_use]
@@ -189,13 +192,14 @@ impl<Out: io::Write> Basic<Out> {
         color: Coloring,
         verbose: bool,
     ) -> writer::Normalize<W, Self> {
-        Self::raw(output, color, verbose).normalize()
+        Self::raw(output, color, verbose).normalized()
     }
 
-    /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`].
+    /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`] outputting to the
+    /// given `output`.
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
-    /// [`Basic::new()`] which creates an already [`Normalized`] version of
+    /// [`Basic::new()`] which creates an already [`Normalized`] version of a
     /// [`Basic`] [`Writer`].
     ///
     /// [`Normalized`]: writer::Normalized

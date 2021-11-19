@@ -489,7 +489,7 @@ And configure [Cucumber]'s output both to STDOUT and `writer::Json` (with `write
 # 
 # use async_trait::async_trait;
 # use cucumber::WorldInit;
-use cucumber::{writer::{self, Coloring}, WriterExt as _};
+use cucumber::{writer, WriterExt as _};
 
 # #[derive(Debug, WorldInit)]
 # struct World;
@@ -508,10 +508,11 @@ use cucumber::{writer::{self, Coloring}, WriterExt as _};
 let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::raw(io::stdout(), Coloring::Auto, false)
-            .summarize()
-            .tee::<World, _>(writer::Json::for_tee(file))
-            .normalize()
+        // `Writer`s pipeline is constructed in a reversed order.
+        writer::Basic::stdout() // And output to STDOUT.
+            .summarized()       // Simultaneously, add execution summary.
+            .tee::<World, _>(writer::Json::for_tee(file)) // Then, output to JSON file.
+            .normalized()       // First, normalize events order.
     )
     .run_and_exit("tests/features/book")
     .await;

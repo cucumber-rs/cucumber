@@ -13,10 +13,7 @@
 use async_trait::async_trait;
 use derive_more::{Deref, DerefMut};
 
-use crate::{
-    event::Cucumber, writer, ArbitraryWriter, Event, FailureWriter, World,
-    Writer,
-};
+use crate::{event::Cucumber, writer, Event, World, Writer};
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
 ///
@@ -41,8 +38,11 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W: World, Val: 'val, Wr: Writer<W> + ?Sized>
-    ArbitraryWriter<'val, W, Val> for Arbitrary<Wr>
+impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Arbitrary<Wr>
+where
+    W: World,
+    Val: 'val,
+    Wr: Writer<W> + ?Sized,
 {
     /// Does nothing.
     async fn write(&mut self, _: Val)
@@ -53,7 +53,7 @@ impl<'val, W: World, Val: 'val, Wr: Writer<W> + ?Sized>
     }
 }
 
-impl<W: World, Wr: FailureWriter<W> + ?Sized> FailureWriter<W>
+impl<W: World, Wr: writer::Failure<W> + ?Sized> writer::Failure<W>
     for Arbitrary<Wr>
 {
     fn failed_steps(&self) -> usize {
@@ -71,10 +71,7 @@ impl<W: World, Wr: FailureWriter<W> + ?Sized> FailureWriter<W>
 
 impl<Wr: writer::Normalized> writer::Normalized for Arbitrary<Wr> {}
 
-impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
-    for Arbitrary<Wr>
-{
-}
+impl<Wr: writer::NonTransforming> writer::NonTransforming for Arbitrary<Wr> {}
 
 impl<Wr> Arbitrary<Wr> {
     /// Wraps the given [`Writer`] into a [`discard::Arbitrary`] one.
@@ -110,8 +107,11 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Failure<Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W: World, Val: 'val, Wr: ArbitraryWriter<'val, W, Val> + ?Sized>
-    ArbitraryWriter<'val, W, Val> for Failure<Wr>
+impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Failure<Wr>
+where
+    W: World,
+    Val: 'val,
+    Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
 {
     async fn write(&mut self, val: Val)
     where
@@ -121,7 +121,7 @@ impl<'val, W: World, Val: 'val, Wr: ArbitraryWriter<'val, W, Val> + ?Sized>
     }
 }
 
-impl<W: World, Wr: Writer<W> + ?Sized> FailureWriter<W> for Failure<Wr> {
+impl<W: World, Wr: Writer<W> + ?Sized> writer::Failure<W> for Failure<Wr> {
     /// Always returns `0`.
     fn failed_steps(&self) -> usize {
         0
@@ -140,10 +140,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> FailureWriter<W> for Failure<Wr> {
 
 impl<Wr: writer::Normalized> writer::Normalized for Failure<Wr> {}
 
-impl<Wr: writer::NotTransformEvents> writer::NotTransformEvents
-    for Failure<Wr>
-{
-}
+impl<Wr: writer::NonTransforming> writer::NonTransforming for Failure<Wr> {}
 
 impl<Wr> Failure<Wr> {
     /// Wraps the given [`Writer`] into a [`discard::Failure`] one.

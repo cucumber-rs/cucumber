@@ -42,10 +42,11 @@ const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 /// # Ordering
 ///
 /// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
-/// [`writer::Normalize`].
+/// a [`writer::Normalize`], otherwise will panic in runtime as won't be able to
+/// form correct [JUnit `testsuite`s][1].
 ///
-/// [1]: https://llg.cubic.org/docs/junit
 /// [`Normalized`]: writer::Normalized
+/// [1]: https://llg.cubic.org/docs/junit
 #[derive(Debug)]
 pub struct JUnit<W, Out: io::Write> {
     /// [`io::Write`] implementor to output XML report into.
@@ -134,7 +135,7 @@ where
     }
 }
 
-impl<W, O: io::Write> writer::NotTransformEvents for JUnit<W, O> {}
+impl<W, O: io::Write> writer::NonTransforming for JUnit<W, O> {}
 
 impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// Creates a new [`Normalized`] [`JUnit`] [`Writer`] outputting XML report
@@ -143,14 +144,14 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn new(output: Out) -> writer::Normalize<W, Self> {
-        Self::raw(output).normalize()
+        Self::raw(output).normalized()
     }
 
     /// Creates a new non-[`Normalized`] [`JUnit`] [`Writer`] outputting XML
     /// report into the given `output`, and suitable for feeding into [`tee()`].
     ///
-    /// [`tee()`]: crate::WriterExt::tee
     /// [`Normalized`]: writer::Normalized
+    /// [`tee()`]: crate::WriterExt::tee
     /// [1]: https://llg.cubic.org/docs/junit
     /// [2]: crate::event::Cucumber
     #[must_use]
@@ -344,7 +345,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             }
         };
 
-        // We pass normalized Step events, so `writer::Basic::raw()` is ok here.
+        // We should be passing normalized events here,
+        // so using `writer::Basic::raw()` is OK.
         let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,

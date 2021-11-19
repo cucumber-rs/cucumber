@@ -19,7 +19,7 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser, writer, ArbitraryWriter, Event, FailureWriter, Writer,
+    parser, writer, Event, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -132,9 +132,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Normalize<W, Wr>
+impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Normalize<W, Wr>
 where
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: writer::Arbitrary<'val, W, Val>,
     Val: 'val,
 {
     async fn write(&mut self, val: Val)
@@ -145,9 +145,9 @@ where
     }
 }
 
-impl<W, Wr> FailureWriter<W> for Normalize<W, Wr>
+impl<W, Wr> writer::Failure<W> for Normalize<W, Wr>
 where
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -163,26 +163,28 @@ where
     }
 }
 
-impl<W, Wr: writer::NotTransformEvents> writer::NotTransformEvents
+impl<W, Wr: writer::NonTransforming> writer::NonTransforming
     for Normalize<W, Wr>
 {
 }
 
-/// Marker trait indicating that [`Writer`] can accept events in
-/// [happens-before] order. This means one of two things:
+/// Marker indicating that a [`Writer`] can accept events in a [happened-before]
+/// order.
 ///
-/// 1. [`Writer`] doesn't depend on events ordering.
+/// This means one of two things:
+///
+/// 1. Either [`Writer`] doesn't depend on events ordering.
 ///    For example, [`Writer`] which prints only [`Failed`] [`Step`]s.
-/// 2. [`Writer`] does depend on events ordering, but implements some logic to
-///    rearrange them.
-///    For example [`Normalized`] wrapper will rearrange events
-///    and pass them to the underlying [`Writer`], like [`Runner`] wasn't
-///    concurrent at all.
 ///
-/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
+/// 2. Or [`Writer`] does depend on events ordering, but implements some logic
+///    to rearrange them.
+///    For example, a [`Normalize`] wrapper will rearrange events and pass them
+///    to the underlying [`Writer`], like a [`Runner`] wasn't concurrent at all.
+///
 /// [`Step`]: gherkin::Step
 /// [`Failed`]: event::Step::Failed
 /// [`Runner`]: crate::Runner
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 pub trait Normalized {}
 
 impl<World, Writer> Normalized for Normalize<World, Writer> {}
