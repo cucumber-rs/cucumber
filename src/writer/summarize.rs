@@ -113,6 +113,8 @@ enum State {
 /// operates with something like JSON (or any other type), you should implement
 /// a [`Writer`] on [`Summarize`] by yourself, to provide the required summary
 /// format.
+///
+/// [`ArbitraryWriter`]: writer::Arbitrary
 #[derive(Debug, Deref)]
 pub struct Summarize<Writer> {
     /// Original [`Writer`] to summarize output of.
@@ -391,7 +393,7 @@ impl<Writer> Summarize<Writer> {
 ///         // `Writer`s pipeline is constructed in a reversed order.
 ///         writer::Basic::stdout()
 ///             .fail_on_skipped() // Fails as `Summarize` will count skipped
-///             .summarize()       // steps instead of failed.
+///             .summarized()      // steps instead of failed.
 ///     )
 ///     .run_and_exit("tests/features/readme")
 ///     .await;
@@ -424,7 +426,7 @@ impl<Writer> Summarize<Writer> {
 ///     .with_writer(
 ///         // `Writer`s pipeline is constructed in a reversed order.
 ///         writer::Basic::stdout() // And, finally, print them.
-///             .summarize()        // Only then, count summary for them.
+///             .summarized()       // Only then, count summary for them.
 ///             .fail_on_skipped()  // First, transform skipped steps to failed.
 ///     )
 ///     .run_and_exit("tests/features/readme")

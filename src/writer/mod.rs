@@ -315,7 +315,7 @@ impl<T> Ext for T {
 ///         writer::Basic::stdout()
 ///             .fail_on_skipped() // Fails as `Repeat` will re-output skipped
 ///             .repeat_failed()   // steps instead of failed ones.
-///             .summarize()
+///             .summarized()
 ///     )
 ///     .run_and_exit("tests/features/readme")
 ///     .await;
@@ -348,7 +348,7 @@ impl<T> Ext for T {
 ///         writer::Basic::stdout()
 ///             .repeat_failed()
 ///             .fail_on_skipped() // Fails as `Summarize` will count skipped
-///             .summarize()       // steps instead of `failed` ones.
+///             .summarized()      // steps instead of `failed` ones.
 ///     )
 ///     .run_and_exit("tests/features/readme")
 ///     .await;
@@ -382,7 +382,7 @@ impl<T> Ext for T {
 ///         // `Writer`s pipeline is constructed in a reversed order.
 ///         writer::Basic::stdout() // And, finally, print them.
 ///             .repeat_failed()    // Then, repeat failed ones once again.
-///             .summarize()        // Only then, count summary for them.
+///             .summarized()       // Only then, count summary for them.
 ///             .fail_on_skipped(), // First, transform skipped steps to failed.
 ///     )
 ///     .run_and_exit("tests/features/readme")

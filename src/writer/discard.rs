@@ -20,7 +20,7 @@ use crate::{event::Cucumber, writer, Event, World, Writer};
 /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`] into a
 /// [`writer::Tee`], as the later accepts only [`ArbitraryWriter`]s.
 ///
-/// [`writer::Tee`]: crate::writer::Tee
+/// [`ArbitraryWriter`]: writer::Arbitrary
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
 pub struct Arbitrary<Wr: ?Sized>(Wr);
 
@@ -89,7 +89,7 @@ impl<Wr> Arbitrary<Wr> {
 /// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`] into a
 /// [`writer::Tee`], as the later accepts only [`FailureWriter`]s.
 ///
-/// [`writer::Tee`]: crate::writer::Tee
+/// [`FailureWriter`]: writer::Failure
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
 pub struct Failure<Wr: ?Sized>(Wr);
 

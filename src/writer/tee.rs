@@ -29,6 +29,8 @@ use crate::{cli, event, parser, writer, Event, World, Writer};
 /// [`WriterExt::discard_failure_writes()`][2] methods to provide the one with
 /// no-op implementations.
 ///
+/// [`ArbitraryWriter`]: writer::Arbitrary
+/// [`FailureWriter`]: writer::Failure
 /// [1]: crate::WriterExt::discard_arbitrary_writes
 /// [2]: crate::WriterExt::discard_failure_writes
 #[derive(Clone, Copy, Debug)]
