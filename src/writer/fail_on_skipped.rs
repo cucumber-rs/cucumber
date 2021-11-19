@@ -19,9 +19,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{
-    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
-};
+use crate::{event, parser, writer, Event, World, Writer};
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
@@ -59,7 +57,7 @@ where
         Option<&gherkin::Rule>,
         &gherkin::Scenario,
     ) -> bool,
-    Wr: for<'val> ArbitraryWriter<'val, W, String>,
+    Wr: for<'val> writer::Arbitrary<'val, W, String>,
 {
     type Cli = Wr::Cli;
 
@@ -106,11 +104,12 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val, F> ArbitraryWriter<'val, W, Val> for FailOnSkipped<Wr, F>
+impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val>
+    for FailOnSkipped<Wr, F>
 where
     W: World,
     Self: Writer<W>,
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: writer::Arbitrary<'val, W, Val>,
     Val: 'val,
 {
     async fn write(&mut self, val: Val)
@@ -121,9 +120,9 @@ where
     }
 }
 
-impl<W, Wr, F> FailureWriter<W> for FailOnSkipped<Wr, F>
+impl<W, Wr, F> writer::Failure<W> for FailOnSkipped<Wr, F>
 where
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -138,6 +137,8 @@ where
         self.writer.hook_errors()
     }
 }
+
+impl<Wr: writer::Normalized, F> writer::Normalized for FailOnSkipped<Wr, F> {}
 
 impl<Writer> From<Writer> for FailOnSkipped<Writer> {
     fn from(writer: Writer) -> Self {

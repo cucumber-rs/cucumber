@@ -22,17 +22,21 @@ use crate::{
     cli, event,
     feature::ExpandExamplesError,
     parser,
-    writer::{self, basic::coerce_error, discard},
-    Event, World, Writer, WriterExt as _,
+    writer::{self, basic::coerce_error, discard, Ext as _},
+    Event, World, Writer,
 };
 
 /// [Cucumber JSON format][1] [`Writer`] implementation outputting JSON to an
 /// [`io::Write`] implementor.
 ///
-/// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form [correct JSON][1].
+/// # Ordering
+///
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// a [`writer::Normalize`], otherwise will panic in runtime as won't be able to
+/// form [correct JSON][1].
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
+/// [`Normalized`]: writer::Normalized
 #[derive(Clone, Debug)]
 pub struct Json<Out: io::Write> {
     /// [`io::Write`] implementor to output [JSON][1] into.
@@ -65,28 +69,24 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     }
 }
 
+impl<O: io::Write> writer::NonTransforming for Json<O> {}
+
 impl<Out: io::Write> Json<Out> {
-    /// Creates a new normalized [`Json`] [`Writer`] outputting [JSON][1] into
-    /// the given `output`.
+    /// Creates a new [`Normalized`] [`Json`] [`Writer`] outputting [JSON][1]
+    /// into the given `output`.
     ///
+    /// [`Normalized`]: writer::Normalized
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     #[must_use]
-    pub fn new<W: Debug + World>(output: Out) -> writer::Normalized<W, Self> {
+    pub fn new<W: Debug + World>(output: Out) -> writer::Normalize<W, Self> {
         Self::raw(output).normalized()
     }
 
-    /// Creates a new unnormalized [`Json`] [`Writer`] outputting [JSON][1] into
-    /// the given `output`, and suitable for feeding into [`tee()`].
+    /// Creates a new non-[`Normalized`] [`Json`] [`Writer`] outputting
+    /// [JSON][1] into the given `output`, and suitable for feeding into
+    /// [`tee()`].
     ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form [correct JSON][1] from
-    /// unordered [`Cucumber` events][2], until is [`normalized()`].
-    ///
-    /// So, either make it [`normalized()`] before feeding into [`tee()`], or
-    /// make the whole [`tee()`] pipeline [`normalized()`].
-    ///
-    /// [`normalized()`]: crate::WriterExt::normalized
+    /// [`Normalized`]: writer::Normalized
     /// [`tee()`]: crate::WriterExt::tee
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: crate::event::Cucumber
@@ -97,13 +97,8 @@ impl<Out: io::Write> Json<Out> {
             .discard_arbitrary_writes()
     }
 
-    /// Creates a new raw and unnormalized [`Json`] [`Writer`] outputting
+    /// Creates a new raw and non-[`Normalized`] [`Json`] [`Writer`] outputting
     /// [JSON][1] into the given `output`.
-    ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form [correct JSON][1] from
-    /// unordered [`Cucumber` events][2].
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`Json::new()`] which creates an already [`Normalized`] version of

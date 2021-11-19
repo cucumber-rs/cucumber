@@ -508,10 +508,11 @@ use cucumber::{writer, WriterExt as _};
 let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::default()
-            .summarized()
-            .tee::<World, _>(writer::Json::for_tee(file))
-            .normalized(),
+        // `Writer`s pipeline is constructed in a reversed order.
+        writer::Basic::stdout() // And output to STDOUT.
+            .summarized()       // Simultaneously, add execution summary.
+            .tee::<World, _>(writer::Json::for_tee(file)) // Then, output to JSON file.
+            .normalized()       // First, normalize events order.
     )
     .run_and_exit("tests/features/book")
     .await;

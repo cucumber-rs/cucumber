@@ -15,17 +15,23 @@ use std::mem;
 use async_trait::async_trait;
 use derive_more::Deref;
 
-use crate::{
-    event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
-};
+use crate::{event, parser, writer, Event, World, Writer};
+
+/// Alias for a [`fn`] predicate deciding whether an event should be
+/// re-outputted or not.
+pub type FilterEvent<W> =
+    fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
 
 /// Wrapper for a [`Writer`] implementation for re-outputting events at the end
 /// of an output, based on a filter predicated.
 ///
 /// Useful for re-outputting [skipped] or [failed] [`Step`]s.
 ///
+/// An underlying [`Writer`] has to be [`NonTransforming`].
+///
 /// [failed]: crate::WriterExt::repeat_failed
 /// [skipped]: crate::WriterExt::repeat_skipped
+/// [`NonTransforming`]: writer::NonTransforming
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
 pub struct Repeat<W, Wr, F = FilterEvent<W>> {
@@ -40,16 +46,11 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     events: Vec<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
-/// Alias for a [`fn`] predicate deciding whether an event should be
-/// re-outputted or not.
-pub type FilterEvent<W> =
-    fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
-
 #[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: Writer<W>,
+    Wr: Writer<W> + writer::NonTransforming,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
     type Cli = Wr::Cli;
@@ -77,10 +78,10 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val, F> ArbitraryWriter<'val, W, Val> for Repeat<W, Wr, F>
+impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: writer::Arbitrary<'val, W, Val> + writer::NonTransforming,
     Val: 'val,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
@@ -92,9 +93,9 @@ where
     }
 }
 
-impl<W, Wr, F> FailureWriter<W> for Repeat<W, Wr, F>
+impl<W, Wr, F> writer::Failure<W> for Repeat<W, Wr, F>
 where
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W> + writer::NonTransforming,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -109,6 +110,10 @@ where
         self.writer.hook_errors()
     }
 }
+
+impl<W, Wr: writer::Normalized, F> writer::Normalized for Repeat<W, Wr, F> {}
+
+impl<W, Wr, F> writer::Summarizable for Repeat<W, Wr, F> {}
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
     /// Creates a new [`Writer`] for re-outputting events at the end of an

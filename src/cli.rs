@@ -173,9 +173,7 @@ This struct is especially useful, when implementing custom [`Writer`] wrapping
 another one:
 ```rust
 # use async_trait::async_trait;
-# use cucumber::{
-#     cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
-# };
+# use cucumber::{cli, event, parser, writer, Event, World, Writer};
 # use structopt::StructOpt;
 #
 struct CustomWriter<Wr>(Wr);
@@ -208,11 +206,11 @@ where
 // Useful blanket impls:
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for CustomWriter<Wr>
+impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
 where
     W: World,
     Self: Writer<W>,
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: writer::Arbitrary<'val, W, Val>,
     Val: 'val,
 {
     async fn write(&mut self, val: Val)
@@ -223,11 +221,11 @@ where
     }
 }
 
-impl<W, Wr> FailureWriter<W> for CustomWriter<Wr>
+impl<W, Wr> writer::Failure<W> for CustomWriter<Wr>
 where
     W: World,
     Self: Writer<W>,
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W>,
 {
     fn failed_steps(&self) -> usize {
         self.0.failed_steps()
@@ -241,6 +239,12 @@ where
         self.0.hook_errors()
     }
 }
+
+impl<Wr: writer::Normalized> writer::Normalized for CustomWriter<Wr> {}
+
+impl<Wr: writer::NonTransforming> writer::NonTransforming
+    for CustomWriter<Wr>
+{}
 ```
 
 [`Writer`]: crate::Writer

@@ -25,9 +25,8 @@ use regex::Regex;
 use structopt::{StructOpt, StructOptInternal};
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, Event,
-    FailureWriter, Parser, Runner, ScenarioType, Step, World, Writer,
-    WriterExt as _,
+    cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
+    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -214,7 +213,10 @@ where
     #[must_use]
     pub fn repeat_skipped(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
+    where
+        Wr: writer::NonTransforming,
+    {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -296,20 +298,14 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > ⚠️ __WARNING__: [`Cucumber::repeat_failed()`] should be called before
-    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
-    ///                   outer [`Writer`]s to inner ones. So we need to
-    ///                   transform [`Skipped`] to [`Failed`] first, and only
-    ///                   then [`Repeat`] them.
-    ///
     /// [`Failed`]: crate::event::Step::Failed
-    /// [`Repeat`]: writer::Repeat
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
     #[must_use]
     pub fn repeat_failed(
         self,
-    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli> {
+    ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr>, Cli>
+    where
+        Wr: writer::NonTransforming,
+    {
         Cucumber {
             parser: self.parser,
             runner: self.runner,
@@ -414,16 +410,7 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// > ⚠️ __WARNING__: [`Cucumber::repeat_if()`] should be called before
-    ///                   [`Cucumber::fail_on_skipped()`], as events pass from
-    ///                   outer [`Writer`]s to inner ones. So we need to
-    ///                   transform [`Skipped`] to [`Failed`] first, and only
-    ///                   then [`Repeat`] them.
-    ///
     /// [`Failed`]: crate::event::Step::Failed
-    /// [`Repeat`]: writer::Repeat
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
     #[must_use]
     pub fn repeat_if<F>(
         self,
@@ -431,6 +418,7 @@ where
     ) -> Cucumber<W, P, I, R, writer::Repeat<W, Wr, F>, Cli>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
+        Wr: writer::NonTransforming,
     {
         Cucumber {
             parser: self.parser,
@@ -638,7 +626,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: Writer<W>,
+    Wr: Writer<W> + writer::Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
@@ -900,7 +888,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::Summarized<writer::Normalized<W, writer::Basic>>,
+    writer::Summarize<writer::Normalize<W, writer::Basic>>,
 >;
 
 impl<W, I> Default for DefaultCucumber<W, I>
@@ -912,7 +900,7 @@ where
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Basic::default().normalized().summarized(),
+            writer::Basic::stdout().summarized(),
         )
     }
 }
@@ -931,15 +919,15 @@ where
     ///     `@serial` [tag] is present on a [`Scenario`];
     ///   * Allowed to run up to 64 [`Concurrent`] [`Scenario`]s.
     ///
-    /// * [`Writer`] — [`Normalized`] and [`Summarized`] [`writer::Basic`].
+    /// * [`Writer`] — [`Normalize`] and [`Summarize`] [`writer::Basic`].
     ///
     /// [`Concurrent`]: runner::basic::ScenarioType::Concurrent
-    /// [`Normalized`]: writer::Normalized
+    /// [`Normalize`]: writer::Normalize
     /// [`Parser`]: parser::Parser
     /// [`Scenario`]: gherkin::Scenario
     /// [`Serial`]: runner::basic::ScenarioType::Serial
     /// [`ScenarioType`]: runner::basic::ScenarioType
-    /// [`Summarized`]: writer::Summarized
+    /// [`Summarize`]: writer::Summarize
     ///
     /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
     #[must_use]
@@ -1174,7 +1162,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W> + writer::Normalized,
     Cli: StructOpt + StructOptInternal,
 {
     /// Runs [`Cucumber`].
