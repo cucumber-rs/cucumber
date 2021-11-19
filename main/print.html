@@ -1051,10 +1051,11 @@ World::cucumber()
 </span>let file = fs::File::create(dbg!(format!(&quot;{}/target/schema.json&quot;, env!(&quot;CARGO_MANIFEST_DIR&quot;))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::default()
-            .summarized()
-            .tee::&lt;World, _&gt;(writer::Json::for_tee(file))
-            .normalized(),
+        // `Writer`s pipeline is constructed in a reversed order.
+        writer::Basic::stdout() // And output to STDOUT.
+            .summarized()       // Simultaneously, add execution summary.
+            .tee::&lt;World, _&gt;(writer::Json::for_tee(file)) // Then, output to JSON file.
+            .normalized()       // First, normalize events order.
     )
     .run_and_exit(&quot;tests/features/book&quot;)
     .await;
