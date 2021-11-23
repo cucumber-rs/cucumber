@@ -194,38 +194,42 @@ Feature: Animal feature
 
 ```rust
 # use std::{convert::Infallible, str::FromStr, time::Duration};
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
-# 
-# #[derive(Debug)]
-# struct Cat {
-#     pub hungry: bool,
-# }
-# 
-# impl Cat {
-#     fn feed(&mut self) {
-#         self.hungry = false;
-#     }
-# }
-# 
-# #[derive(Debug, WorldInit)]
-# pub struct AnimalWorld {
-#     cat: Cat,
-# }
-# 
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
-# }
-# 
+#
+#[derive(Debug)]
+struct AnimalState {
+    pub hungry: bool
+}
+
+impl AnimalState {
+    fn feed(&mut self) {
+        self.hungry = false;
+    }
+}
+
+#[derive(Debug, WorldInit)]
+pub struct AnimalWorld {
+    cat: AnimalState,
+    dog: AnimalState,
+    ferris: AnimalState,
+}
+
+#[async_trait(?Send)]
+impl World for AnimalWorld {
+    type Error = Infallible;
+
+    async fn new() -> Result<Self, Infallible> {
+        Ok(Self {
+            cat: AnimalState { hungry: false },
+            dog: AnimalState { hungry: false },
+            ferris: AnimalState { hungry: false },
+        })
+    }
+}
+
 enum State {
     Hungry,
     Satiated,
@@ -243,32 +247,65 @@ impl FromStr for State {
     }
 }
 
-#[given(regex = r"^a (\S+) (\S+)$")]
-async fn hungry_cat(world: &mut AnimalWorld, state: State) {
-    sleep(Duration::from_secs(2)).await;
+enum Animal {
+    Cat,
+    Dog,
+    Ferris,
+}
 
-    match state {
-        State::Hungry => world.cat.hungry = true,
-        State::Satiated => world.cat.hungry = false,
+impl FromStr for Animal {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cat" => Ok(Self::Cat),
+            "dog" => Ok(Self::Dog),
+            "🦀" => Ok(Self::Ferris),
+            _ => Err("expected 'cat', 'dog' or '🦀'"),
+        }
     }
 }
 
-#[when(regex = r"^I feed the (?:\S+) (\d+) times?$")]
-async fn feed_cat(world: &mut AnimalWorld, times: usize) {
+#[given(regex = r"^a (\S+) (\S+)$")]
+async fn hungry_cat(world: &mut AnimalWorld, state: State, animal: Animal) {
+    sleep(Duration::from_secs(2)).await;
+
+    let hunger = match state {
+        State::Hungry => true,
+        State::Satiated => false,
+    };
+
+    match animal {
+        Animal::Cat => world.cat.hungry = hunger,
+        Animal::Dog => world.dog.hungry = hunger,
+        Animal::Ferris => world.ferris.hungry = hunger,
+    };
+}
+
+#[when(regex = r"^I feed the (\S+) (\d+) times?$")]
+async fn feed_cat(world: &mut AnimalWorld, animal: Animal, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
     for _ in 0..times {
-        world.cat.feed();
+        match animal {
+            Animal::Cat => world.cat.feed(),
+            Animal::Dog => world.dog.feed(),
+            Animal::Ferris => world.ferris.feed(),
+        };
     }
 }
 
 #[then(expr = "the {word} is not hungry")]
-async fn cat_is_fed(world: &mut AnimalWorld) {
+async fn cat_is_fed(world: &mut AnimalWorld, animal: Animal) {
     sleep(Duration::from_secs(2)).await;
 
-    assert!(!world.cat.hungry);
+    match animal {
+        Animal::Cat => assert!(!world.cat.hungry),
+        Animal::Dog => assert!(!world.dog.hungry),
+        Animal::Ferris => assert!(!world.ferris.hungry),
+    };
 }
-# 
+#
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::run("/tests/features/book/features/scenario_outline_fromstr.feature").await;
