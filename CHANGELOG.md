@@ -16,6 +16,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
 - Renamed `Normalized` and `Summarized` `Writer`s to `Normalize` and `Summarize`. ([#162])
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
+- Merge tags from `Feature` and `Rule` with `Scenario` on filtering with `--tags` CLI option. ([#166])
 
 ### Added
 
@@ -42,6 +43,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#160]: /../../pull/160
 [#162]: /../../pull/162
 [#163]: /../../pull/163
+[#166]: /../../pull/166
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 [Cucumber Expressions]: https://docs.rs/cucumber-expressions
