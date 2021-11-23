@@ -29,6 +29,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
     - `writer::Normalized` trait required for `Writer`s in `Cucumber` running methods. ([#162])
     - `writer::NonTransforming` trait required for `writer::Repeat`. ([#162])
     - `writer::Summarizable` trait required for `writer::Summarize`. ([#162])
+- Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 
 ### Fixed
 
@@ -36,6 +37,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
+[#157]: /../../pull/157
 [#159]: /../../pull/159
 [#160]: /../../pull/160
 [#162]: /../../pull/162
@@ -263,4 +265,5 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
 
+[Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [Semantic Versioning 2.0.0]: https://semver.org

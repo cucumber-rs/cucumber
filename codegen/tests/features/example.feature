@@ -16,9 +16,9 @@ Feature: Example feature
     Given foo is sync 0
 
   Scenario: Steps returning result
-    When I write "abc" to `myfile.txt`
-    Then the file `myfile.txt` should contain "abc"
+    When I write "abc" to 'myfile.txt'
+    Then the file 'myfile.txt' should contain "abc"
 
   Scenario: Steps returning result and failing
-    When I write "abc" to `myfile.txt`
-    Then the file `not-here.txt` should contain "abc"
+    When I write "abc" to 'myfile.txt'
+    Then the file 'not-here.txt' should contain "abc"
