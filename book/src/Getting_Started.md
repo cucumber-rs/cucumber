@@ -360,7 +360,7 @@ We surround regex with `^..$` to ensure the __exact__ match. This is much more u
 
 Captured groups are __bold__ to indicate which part of step could be dynamically changed.  
 
-[Cucumber Expressions] are supported too!
+Alternatively, you may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
 ```rust
 # use std::convert::Infallible;
 #
@@ -598,5 +598,5 @@ Feature: Animal feature
 
 
 [Cucumber]: https://cucumber.io
-[Cucumber Expressions]: https://docs.rs/cucumber-expressions
+[Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [Gherkin]: https://cucumber.io/docs/gherkin/reference

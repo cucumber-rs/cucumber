@@ -395,10 +395,10 @@ impl Parse for AttributeArgument {
 
                         Ok(Self::Regex(str_lit))
                     }
-                    Some(i) if i == "expr" || i == "expression" => {
+                    Some(i) if i == "expr" => {
                         let str_lit = to_string_literal(arg.lit)?;
 
-                        let expression_regex =
+                        let expr_regex =
                             Expression::regex(str_lit.value().as_str())
                                 .map_err(|e| {
                                     syn::Error::new(
@@ -411,13 +411,13 @@ impl Parse for AttributeArgument {
                                 })?;
 
                         Ok(Self::Expression(syn::LitStr::new(
-                            expression_regex.as_str(),
+                            expr_regex.as_str(),
                             str_lit.span(),
                         )))
                     }
                     _ => Err(syn::Error::new(
                         arg.span(),
-                        "Expected 'regex' or 'expr' argument",
+                        "Expected `regex` or `expr` argument",
                     )),
                 }
             }
@@ -426,7 +426,7 @@ impl Parse for AttributeArgument {
 
             syn::NestedMeta::Meta(_) => Err(syn::Error::new(
                 arg.span(),
-                "Expected string literal, 'regex' or 'expr' argument",
+                "Expected string literal, `regex` or `expr` argument",
             )),
         }
     }

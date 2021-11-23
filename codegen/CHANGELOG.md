@@ -14,8 +14,10 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 ### Added
 
 - Unwrapping `Result`s returned by step functions. ([#151])
+- `expr = ...` argument to `#[given(...)]`, `#[when(...)]` and `#[then(...)]` attributes allowing [Cucumber Expressions]. ([#157])
 
 [#151]: /../../pull/151
+[#157]: /../../pull/157
 
 
 
@@ -76,4 +78,5 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 
+[Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [Semantic Versioning 2.0.0]: https://semver.org
