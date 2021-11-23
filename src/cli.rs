@@ -113,11 +113,13 @@ where
     pub re_filter: Option<Regex>,
 
     /// Tag expression to filter scenarios by.
+    ///
+    /// Note: Tags from Feature, Rule and Scenario are merged together on
+    /// filtering, so be careful about conflicting tags on different levels.
     #[structopt(
         short = "t",
         long = "tags",
         name = "tagexpr",
-        visible_alias = "scenario-tags",
         conflicts_with = "regex"
     )]
     pub tags_filter: Option<TagOperation>,
