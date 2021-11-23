@@ -13,6 +13,7 @@
 use std::mem;
 
 use cucumber_expressions::Expression;
+use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use regex::{self, Regex};
@@ -102,7 +103,7 @@ impl Step {
         let func_name = &func.sig.ident;
 
         let world = parse_world_from_args(&self.func.sig)?;
-        let constructor_method = self.constructor_method();
+        let step_type = self.step_type();
         let (func_args, addon_parsing) =
             self.fn_arguments_and_additional_parsing()?;
 
@@ -130,7 +131,8 @@ impl Step {
                     ::std::boxed::Box::pin(f)
                 }
 
-                #caller_name
+                let f: ::cucumber::Step<#world> = #caller_name;
+                f
             }
         };
 
@@ -138,22 +140,43 @@ impl Step {
             #func
 
             #[automatically_derived]
-            ::cucumber::codegen::submit!(
-                #![crate = ::cucumber::codegen] {
-                    <#world as ::cucumber::codegen::WorldInventory<
-                        _, _, _,
-                    >>::#constructor_method(
-                        ::cucumber::step::Location {
-                            path: ::std::convert::From::from(::std::file!()),
-                            line: ::std::line!(),
-                            column: ::std::column!(),
-                        },
-                        ::cucumber::codegen::Regex::new(#step_matcher)
-                            .unwrap(),
-                        #step_caller,
-                    )
+            ::cucumber::codegen::submit!({
+                // TODO: Remove this, once `#![feature(more_qualified_paths)]`
+                //       is stabilized:
+                //       https://github.com/rust-lang/rust/issues/86935
+                type StepAlias =
+                    <#world as ::cucumber::codegen::WorldInventory>::#step_type;
+
+                StepAlias {
+                    loc: ::cucumber::step::Location {
+                        path: ::std::file!(),
+                        line: ::std::line!(),
+                        column: ::std::column!(),
+                    },
+                    regex: {
+                        // This hack exists, as `fn item` to `fn pointer`
+                        // coercion can be done inside `const`, but not
+                        // `const fn`.
+                        let lazy: ::cucumber::codegen::LazyRegex = || {
+                            static LAZY: ::cucumber::codegen::Lazy<
+                                ::cucumber::codegen::Regex
+                            > = ::cucumber::codegen::Lazy::new(|| {
+                                ::cucumber::codegen::Regex::new(#step_matcher)
+                                    .unwrap()
+                            });
+                            LAZY.clone()
+                        };
+                        lazy
+                    },
+                    func: {
+                        // This hack exists, as `fn item` to `fn pointer`
+                        // coercion can be done inside `const`, but not
+                        // `const fn`.
+                        const F: ::cucumber::Step<#world> = #step_caller;
+                        F
+                    },
                 }
-            );
+            });
         })
     }
 
@@ -242,10 +265,10 @@ impl Step {
         }
     }
 
-    /// Composes a name of the `cucumber::codegen::WorldInventory` method to
-    /// wire this [`Step`] with.
-    fn constructor_method(&self) -> syn::Ident {
-        format_ident!("new_{}", self.attr_name)
+    /// Composes a name of the `cucumber::codegen::WorldInventory` associated
+    /// type to wire this [`Step`] with.
+    fn step_type(&self) -> syn::Ident {
+        format_ident!("{}", to_pascal_case(self.attr_name))
     }
 
     /// Returns [`syn::Ident`] and parsing code of the given function's

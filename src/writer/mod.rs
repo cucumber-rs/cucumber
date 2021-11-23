@@ -13,38 +13,55 @@
 //! [`Cucumber`]: crate::event::Cucumber
 
 pub mod basic;
+pub mod discard;
 pub mod fail_on_skipped;
+#[cfg(feature = "output-json")]
+pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
-pub mod normalized;
+pub mod normalize;
 pub mod out;
 pub mod repeat;
-pub mod summarized;
+pub mod summarize;
+pub mod tee;
 
 use async_trait::async_trait;
 use sealed::sealed;
 use structopt::StructOptInternal;
 
-use crate::{event, parser, Event, World};
+use crate::{event, parser, Event};
 
+#[cfg(feature = "output-json")]
+#[doc(inline)]
+pub use self::json::Json;
 #[cfg(feature = "output-junit")]
 #[doc(inline)]
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
-    basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    repeat::Repeat, summarized::Summarized,
+    basic::{Basic, Coloring},
+    fail_on_skipped::FailOnSkipped,
+    normalize::{Normalize, Normalized},
+    repeat::Repeat,
+    summarize::{Summarizable, Summarize},
+    tee::Tee,
 };
 
 /// Writer of [`Cucumber`] events to some output.
 ///
+/// As [`Runner`] produces events in a [happened-before] order (see
+/// [its order guarantees][1]), [`Writer`]s are required to be [`Normalized`].
+///
 /// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
-/// inspection after execution. See [`Summarized`] and
+/// inspection after execution. See [`Summarize`] and
 /// [`Cucumber::run_and_exit()`] for examples.
 ///
 /// [`Cucumber`]: crate::event::Cucumber
 /// [`Cucumber::run()`]: crate::Cucumber::run
 /// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
+/// [`Runner`]: crate::Runner
+/// [1]: crate::Runner#order-guarantees
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 #[async_trait(?Send)]
 pub trait Writer<World> {
     /// CLI options of this [`Writer`]. In case no options should be introduced,
@@ -115,18 +132,18 @@ pub trait Failure<World>: Writer<World> {
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
-pub trait Ext<W: World>: Writer<W> + Sized {
-    /// Wraps this [`Writer`] into a [`Normalized`] version.
+pub trait Ext: Sized {
+    /// Wraps this [`Writer`] into a [`Normalize`]d version.
     ///
-    /// See [`Normalized`] for more information.
+    /// See [`Normalize`] for more information.
     #[must_use]
-    fn normalized(self) -> Normalized<W, Self>;
+    fn normalized<W>(self) -> Normalize<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
-    /// See [`Summarized`] for more information.
+    /// See [`Summarize`] for more information.
     #[must_use]
-    fn summarized(self) -> Summarized<Self>;
+    fn summarized(self) -> Summarize<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
     /// [`Scenario`] isn't marked with `@allow_skipped` tag.
@@ -162,7 +179,7 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_skipped(self) -> Repeat<W, Self>;
+    fn repeat_skipped<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output [`Failed`] [`Step`]s or [`Parser`]
     /// errors at the end of an output.
@@ -171,28 +188,51 @@ pub trait Ext<W: World>: Writer<W> + Sized {
     /// [`Parser`]: crate::Parser
     /// [`Step`]: gherkin::Step
     #[must_use]
-    fn repeat_failed(self) -> Repeat<W, Self>;
+    fn repeat_failed<W>(self) -> Repeat<W, Self>;
 
     /// Wraps this [`Writer`] to re-output `filter`ed events at the end of an
     /// output.
     #[must_use]
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool;
+
+    /// Attaches the provided `other` [`Writer`] to the current one for passing
+    /// events to both of them simultaneously.
+    #[must_use]
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr>;
+
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`ArbitraryWriter`] implementation.
+    ///
+    /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`ArbitraryWriter`]s.
+    ///
+    /// [`tee()`]: Ext::tee
+    /// [`ArbitraryWriter`]: Arbitrary
+    #[must_use]
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self>;
+
+    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
+    /// no-op [`FailureWriter`] implementation returning only `0`.
+    ///
+    /// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`]
+    /// into a [`tee()`], as the later accepts only [`FailureWriter`]s.
+    ///
+    /// [`tee()`]: Ext::tee
+    /// [`FailureWriter`]: Failure
+    #[must_use]
+    fn discard_failure_writes(self) -> discard::Failure<Self>;
 }
 
 #[sealed]
-impl<W, T> Ext<W> for T
-where
-    W: World,
-    T: Writer<W> + Sized,
-{
-    fn normalized(self) -> Normalized<W, Self> {
-        Normalized::new(self)
+impl<T> Ext for T {
+    fn normalized<W>(self) -> Normalize<W, Self> {
+        Normalize::new(self)
     }
 
-    fn summarized(self) -> Summarized<Self> {
-        Summarized::from(self)
+    fn summarized(self) -> Summarize<Self> {
+        Summarize::from(self)
     }
 
     fn fail_on_skipped(self) -> FailOnSkipped<Self> {
@@ -210,18 +250,154 @@ where
         FailOnSkipped::with(self, f)
     }
 
-    fn repeat_skipped(self) -> Repeat<W, Self> {
+    fn repeat_skipped<W>(self) -> Repeat<W, Self> {
         Repeat::skipped(self)
     }
 
-    fn repeat_failed(self) -> Repeat<W, Self> {
+    fn repeat_failed<W>(self) -> Repeat<W, Self> {
         Repeat::failed(self)
     }
 
-    fn repeat_if<F>(self, filter: F) -> Repeat<W, Self, F>
+    fn repeat_if<W, F>(self, filter: F) -> Repeat<W, Self, F>
     where
         F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
     {
         Repeat::new(self, filter)
     }
+
+    fn tee<W, Wr: Writer<W>>(self, other: Wr) -> Tee<Self, Wr> {
+        Tee::new(self, other)
+    }
+
+    fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self> {
+        discard::Arbitrary::wrap(self)
+    }
+
+    fn discard_failure_writes(self) -> discard::Failure<Self> {
+        discard::Failure::wrap(self)
+    }
 }
+
+/// Marker indicating that a [`Writer`] doesn't transform or rearrange events.
+///
+/// It's used to ensure that a [`Writer`]s pipeline is built in the right order,
+/// avoiding situations like an event transformation isn't done before it's
+/// [`Repeat`]ed.
+///
+/// # Example
+///
+/// If you want to pipeline [`FailOnSkipped`], [`Summarize`] and [`Repeat`]
+/// [`Writer`]s, the code won't compile because of the wrong pipelining order.
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout()
+///             .fail_on_skipped() // Fails as `Repeat` will re-output skipped
+///             .repeat_failed()   // steps instead of failed ones.
+///             .summarized()
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout()
+///             .repeat_failed()
+///             .fail_on_skipped() // Fails as `Summarize` will count skipped
+///             .summarized()      // steps instead of `failed` ones.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust
+/// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// # use futures::FutureExt as _;
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// # let fut = async {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout() // And, finally, print them.
+///             .repeat_failed()    // Then, repeat failed ones once again.
+///             .summarized()       // Only then, count summary for them.
+///             .fail_on_skipped(), // First, transform skipped steps to failed.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # };
+/// # let err = AssertUnwindSafe(fut)
+/// #     .catch_unwind()
+/// #     .await
+/// #     .expect_err("should err");
+/// # let err = err.downcast_ref::<String>().unwrap();
+/// # assert_eq!(err, "1 step failed");
+/// # }
+/// ```
+///
+/// [`Failed`]: event::Step::Failed
+/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
+/// [`Skipped`]: event::Step::Skipped
+pub trait NonTransforming {}

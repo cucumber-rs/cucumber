@@ -1,3 +1,13 @@
+// Copyright (c) 2018-2021  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! [JUnit XML report][1] [`Writer`] implementation.
 //!
 //! [1]: https://llg.cubic.org/docs/junit
@@ -14,6 +24,7 @@ use crate::{
     writer::{
         self,
         basic::{coerce_error, Coloring},
+        discard,
         out::WritableString,
         Ext as _,
     },
@@ -23,16 +34,18 @@ use crate::{
 /// Advice phrase to use in panic messages of incorrect [events][1] ordering.
 ///
 /// [1]: event::Scenario
-const WRAP_ADVICE: &str =
-    "Consider wrapping `Writer` into `writer::Normalized`";
+const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// [JUnit XML report][1] [`Writer`] implementation outputting XML to an
 /// [`io::Write`] implementor.
 ///
-/// Should be wrapped into [`writer::Normalized`] to work correctly, otherwise
-/// will panic in runtime as won't be able to form correct
-/// [JUnit `testsuite`s][1].
+/// # Ordering
 ///
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// a [`writer::Normalize`], otherwise will panic in runtime as won't be able to
+/// form correct [JUnit `testsuite`s][1].
+///
+/// [`Normalized`]: writer::Normalized
 /// [1]: https://llg.cubic.org/docs/junit
 #[derive(Debug)]
 pub struct JUnit<W, Out: io::Write> {
@@ -122,24 +135,34 @@ where
     }
 }
 
+impl<W, O: io::Write> writer::NonTransforming for JUnit<W, O> {}
+
 impl<W: Debug, Out: io::Write> JUnit<W, Out> {
-    /// Creates a new normalized [`JUnit`] [`Writer`] outputting XML report into
-    /// the given `output`.
+    /// Creates a new [`Normalized`] [`JUnit`] [`Writer`] outputting XML report
+    /// into the given `output`.
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn new(output: Out) -> writer::Normalized<W, Self>
-    where
-        W: World,
-    {
+    pub fn new(output: Out) -> writer::Normalize<W, Self> {
         Self::raw(output).normalized()
     }
 
-    /// Creates a new raw and unnormalized [`JUnit`] [`Writer`] outputting XML
-    /// report into the given `output`.
+    /// Creates a new non-[`Normalized`] [`JUnit`] [`Writer`] outputting XML
+    /// report into the given `output`, and suitable for feeding into [`tee()`].
     ///
-    /// # Warning
-    ///
-    /// It may panic in runtime as won't be able to form correct
-    /// [JUnit `testsuite`s][1] from unordered [`Cucumber` events][2].
+    /// [`Normalized`]: writer::Normalized
+    /// [`tee()`]: crate::WriterExt::tee
+    /// [1]: https://llg.cubic.org/docs/junit
+    /// [2]: crate::event::Cucumber
+    #[must_use]
+    pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Failure<Self>> {
+        Self::raw(output)
+            .discard_failure_writes()
+            .discard_arbitrary_writes()
+    }
+
+    /// Creates a new raw and non-[`Normalized`] [`JUnit`] [`Writer`] outputting
+    /// XML report into the given `output`.
     ///
     /// Use it only if you know what you're doing. Otherwise, consider using
     /// [`JUnit::new()`] which creates an already [`Normalized`] version of
@@ -322,7 +345,9 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             }
         };
 
-        let mut basic_wr = writer::Basic::new(
+        // We should be passing normalized events here,
+        // so using `writer::Basic::raw()` is OK.
+        let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,
             false,

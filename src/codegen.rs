@@ -18,17 +18,12 @@ use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
+pub use once_cell::sync::Lazy;
 pub use regex::Regex;
 
 /// [`World`] extension with auto-wiring capabilities.
 #[async_trait(?Send)]
-pub trait WorldInit<G, W, T>: WorldInventory<G, W, T>
-where
-    Self: Debug,
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-{
+pub trait WorldInit: Debug + WorldInventory {
     /// Returns runner for tests with auto-wired steps marked by [`given`],
     /// [`when`] and [`then`] attributes.
     ///
@@ -39,19 +34,19 @@ where
     fn collection() -> step::Collection<Self> {
         let mut out = step::Collection::new();
 
-        for given in Self::cucumber_given() {
+        for given in inventory::iter::<Self::Given> {
             let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex, fun);
+            out = out.given(Some(loc), regex(), fun);
         }
 
-        for when in Self::cucumber_when() {
+        for when in inventory::iter::<Self::When> {
             let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex, fun);
+            out = out.when(Some(loc), regex(), fun);
         }
 
-        for then in Self::cucumber_then() {
+        for then in inventory::iter::<Self::Then> {
             let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex, fun);
+            out = out.then(Some(loc), regex(), fun);
         }
 
         out
@@ -112,83 +107,36 @@ where
     }
 }
 
-impl<G, W, T, E> WorldInit<G, W, T> for E
-where
-    Self: Debug,
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-    E: WorldInventory<G, W, T>,
-{
-}
+impl<T> WorldInit for T where T: Debug + WorldInventory {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
-pub trait WorldInventory<G, W, T>: World
-where
-    G: StepConstructor<Self> + inventory::Collect,
-    W: StepConstructor<Self> + inventory::Collect,
-    T: StepConstructor<Self> + inventory::Collect,
-{
-    /// Returns an [`Iterator`] over items with [`given`] attribute.
+pub trait WorldInventory: World {
+    /// Struct [`submit`]ted in a [`given`] macro.
     ///
     /// [`given`]: crate::given
-    #[must_use]
-    fn cucumber_given() -> inventory::iter<G> {
-        inventory::iter
-    }
+    type Given: inventory::Collect + StepConstructor<Self>;
 
-    /// Creates a new [`Given`] [`Step`] value. Used by [`given`] attribute.
-    ///
-    /// [`given`]: crate::given
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
-    fn new_given(loc: step::Location, regex: Regex, fun: Step<Self>) -> G {
-        G::new(loc, regex, fun)
-    }
-
-    /// Returns an [`Iterator`] over items with [`when`] attribute.
+    /// Struct [`submit`]ted in a [`when`] macro.
     ///
     /// [`when`]: crate::when
-    #[must_use]
-    fn cucumber_when() -> inventory::iter<W> {
-        inventory::iter
-    }
+    type When: inventory::Collect + StepConstructor<Self>;
 
-    /// Creates a new [`When`] [`Step`] value. Used by [`when`] attribute.
-    ///
-    /// [`when`]: crate::when
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
-    fn new_when(loc: step::Location, regex: Regex, fun: Step<Self>) -> W {
-        W::new(loc, regex, fun)
-    }
-
-    /// Returns an [`Iterator`] over items with [`then`] attribute.
+    /// Struct [`submit`]ted in a [`then`] macro.
     ///
     /// [`then`]: crate::then
-    #[must_use]
-    fn cucumber_then() -> inventory::iter<T> {
-        inventory::iter
-    }
-
-    /// Creates a new [`Then`] [`Step`] value. Used by [`then`] attribute.
-    ///
-    /// [`then`]: crate::then
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
-    fn new_then(loc: step::Location, regex: Regex, fun: Step<Self>) -> T {
-        T::new(loc, regex, fun)
-    }
+    type Then: inventory::Collect + StepConstructor<Self>;
 }
 
-/// Trait for creating [`Step`]s to be registered by [`given`], [`when`] and
-/// [`then`] attributes.
+/// Alias for a [`fn`] returning a [`Lazy`] [`Regex`].
+pub type LazyRegex = fn() -> Regex;
+
+/// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]
+/// attributes inside [`WorldInit::collection()`] method.
 ///
 /// [`given`]: crate::given
 /// [`when`]: crate::when
 /// [`then`]: crate::then
 pub trait StepConstructor<W> {
-    /// Creates a new [`Step`] with the corresponding [`Regex`].
-    #[must_use]
-    fn new(_: step::Location, _: Regex, _: Step<W>) -> Self;
-
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
-    fn inner(&self) -> (step::Location, Regex, Step<W>);
+    fn inner(&self) -> (step::Location, LazyRegex, Step<W>);
 }

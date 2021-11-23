@@ -19,11 +19,12 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
+    parser, writer, Event, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
-/// to _order guarantees_ from the [`Runner`] in a normalized readable order.
+/// to _order guarantees_ from the [`Runner`] in a [`Normalized`] readable
+/// order.
 ///
 /// Doesn't output anything by itself, but rather is used as a combinator for
 /// rearranging events and feeding them to the underlying [`Writer`].
@@ -40,7 +41,7 @@ use crate::{
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
 #[derive(Debug, Deref)]
-pub struct Normalized<World, Writer> {
+pub struct Normalize<World, Writer> {
     /// Original [`Writer`] to normalize output of.
     #[deref]
     pub writer: Writer,
@@ -49,7 +50,7 @@ pub struct Normalized<World, Writer> {
     queue: CucumberQueue<World>,
 }
 
-impl<W: World, Writer> Normalized<W, Writer> {
+impl<W, Writer> Normalize<W, Writer> {
     /// Creates a new [`Normalized`] wrapper, which will rearrange [`event`]s
     /// and feed them to the given [`Writer`].
     #[must_use]
@@ -62,7 +63,7 @@ impl<W: World, Writer> Normalized<W, Writer> {
 }
 
 #[async_trait(?Send)]
-impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
+impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
     type Cli = Wr::Cli;
 
     async fn handle_event(
@@ -131,9 +132,9 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalized<World, Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Wr, Val> ArbitraryWriter<'val, W, Val> for Normalized<W, Wr>
+impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Normalize<W, Wr>
 where
-    Wr: ArbitraryWriter<'val, W, Val>,
+    Wr: writer::Arbitrary<'val, W, Val>,
     Val: 'val,
 {
     async fn write(&mut self, val: Val)
@@ -144,9 +145,9 @@ where
     }
 }
 
-impl<W, Wr> FailureWriter<W> for Normalized<W, Wr>
+impl<W, Wr> writer::Failure<W> for Normalize<W, Wr>
 where
-    Wr: FailureWriter<W>,
+    Wr: writer::Failure<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -161,6 +162,32 @@ where
         self.writer.hook_errors()
     }
 }
+
+impl<W, Wr: writer::NonTransforming> writer::NonTransforming
+    for Normalize<W, Wr>
+{
+}
+
+/// Marker indicating that a [`Writer`] can accept events in a [happened-before]
+/// order.
+///
+/// This means one of two things:
+///
+/// 1. Either [`Writer`] doesn't depend on events ordering.
+///    For example, [`Writer`] which prints only [`Failed`] [`Step`]s.
+///
+/// 2. Or [`Writer`] does depend on events ordering, but implements some logic
+///    to rearrange them.
+///    For example, a [`Normalize`] wrapper will rearrange events and pass them
+///    to the underlying [`Writer`], like a [`Runner`] wasn't concurrent at all.
+///
+/// [`Step`]: gherkin::Step
+/// [`Failed`]: event::Step::Failed
+/// [`Runner`]: crate::Runner
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
+pub trait Normalized {}
+
+impl<World, Writer> Normalized for Normalize<World, Writer> {}
 
 /// Normalization queue for incoming events.
 ///

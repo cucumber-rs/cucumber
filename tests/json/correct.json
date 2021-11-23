@@ -1,0 +1,752 @@
+[
+  {
+    "uri": "/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+    "keyword": "",
+    "name": "",
+    "tags": [],
+    "elements": [
+      {
+        "keyword": "",
+        "type": "scenario",
+        "id": "failed-to-parse/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+        "line": 0,
+        "name": "",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "",
+            "line": 0,
+            "name": "scenario",
+            "result": {
+              "status": "Failed",
+              "duration": 0,
+              "error_message": "Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule.feature",
+    "keyword": "Feature",
+    "name": "Basic",
+    "tags": [],
+    "elements": [
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 4000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 15000
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 7,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 27000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 8,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 564000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 9,
+            "name": "unknown",
+            "result": {
+              "status": "Skipped",
+              "duration": 253000
+            }
+          }
+        ]
+      },
+      {
+        "keyword": "Background",
+        "type": "background",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 3,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 622000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 3000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 110000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/rule/2-secs",
+        "line": 14,
+        "name": "rule 2 secs",
+        "tags": [
+          {
+            "name": "fail_before",
+            "line": 14
+          }
+        ],
+        "steps": []
+      }
+    ]
+  },
+  {
+    "uri": "/Users/work/Work/cucumber/tests/features/wait/nested/rule.feature",
+    "keyword": "Feature",
+    "name": "Basic",
+    "tags": [],
+    "elements": [
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 10000
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 7,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 24000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 8,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 9,
+            "name": "unknown",
+            "result": {
+              "status": "Skipped",
+              "duration": 8000
+            }
+          }
+        ]
+      },
+      {
+        "keyword": "Background",
+        "type": "background",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 3,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 31000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 16000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/rule/2-secs",
+        "line": 14,
+        "name": "rule 2 secs",
+        "tags": [
+          {
+            "name": "fail_before",
+            "line": 14
+          }
+        ],
+        "steps": []
+      }
+    ]
+  },
+  {
+    "uri": "/Users/work/Work/cucumber/tests/features/wait/outline.feature",
+    "keyword": "Feature",
+    "name": "Outline",
+    "tags": [],
+    "elements": [
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 14000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 5000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "outline/wait",
+        "line": 12,
+        "name": "wait",
+        "tags": [
+          {
+            "name": "tag",
+            "line": 12
+          },
+          {
+            "name": "fail_after",
+            "line": 12
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 6,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 82000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 7,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 70000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 8,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 523000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 5000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "outline/wait",
+        "line": 13,
+        "name": "wait",
+        "tags": [
+          {
+            "name": "tag",
+            "line": 13
+          },
+          {
+            "name": "fail_after",
+            "line": 13
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 6,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 7,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 8,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 21000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "outline/wait",
+        "line": 14,
+        "name": "wait",
+        "tags": [
+          {
+            "name": "tag",
+            "line": 14
+          },
+          {
+            "name": "fail_after",
+            "line": 14
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 6,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 32000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 7,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 8,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Failed",
+              "duration": 12000,
+              "error_message": "Tag!"
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 5000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "outline/wait",
+        "line": 15,
+        "name": "wait",
+        "tags": [
+          {
+            "name": "tag",
+            "line": 15
+          },
+          {
+            "name": "fail_after",
+            "line": 15
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 6,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 7,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 8,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 26000
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule_outline.feature",
+    "keyword": "Feature",
+    "name": "Rule Outline",
+    "tags": [],
+    "elements": [
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "rule-outline/to-them-all/wait",
+        "line": 10,
+        "name": "To them all wait",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 5,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 6,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 7,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 21000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 9000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "rule-outline/to-them-all/wait",
+        "line": 11,
+        "name": "To them all wait",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 5,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 6,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 7,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 21000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "rule-outline/to-them-all/wait",
+        "line": 12,
+        "name": "To them all wait",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 5,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 6,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 25000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 7,
+            "name": "1 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario Outline",
+        "type": "scenario",
+        "id": "rule-outline/to-them-all/wait",
+        "line": 13,
+        "name": "To them all wait",
+        "tags": [],
+        "steps": [
+          {
+            "keyword": "Given",
+            "line": 5,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 29000
+            }
+          },
+          {
+            "keyword": "When",
+            "line": 6,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 23000
+            }
+          },
+          {
+            "keyword": "Then",
+            "line": 7,
+            "name": "5 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 21000
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

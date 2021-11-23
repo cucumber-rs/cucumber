@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/junit.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -29,6 +29,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["macros"]
 # Enables step attributes and auto-wiring.
 macros = ["cucumber-codegen", "inventory"]
+# Enables support for outputting in Cucumber JSON format.
+output-json = ["Inflector", "serde", "serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
 output-junit = ["junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
@@ -52,7 +54,12 @@ structopt = "0.3.25"
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.11.0-dev", path = "./codegen", optional = true }
-inventory = { version = "0.1.10", optional = true }
+inventory = { version = "0.2", optional = true }
+
+# "output-json" feature dependencies
+serde = { version = "1.0.103", features = ["derive"], optional = true }
+serde_json = { version = "1.0.18", optional = true }
+Inflector = { version = "0.11", default-features = false, optional = true }
 
 # "output-junit" feature dependencies
 junit-report = { version = "0.7", optional = true }
@@ -61,6 +68,11 @@ junit-report = { version = "0.7", optional = true }
 humantime = "2.1"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
+
+[[test]]
+name = "json"
+required-features = ["output-json"]
+harness = false
 
 [[test]]
 name = "junit"

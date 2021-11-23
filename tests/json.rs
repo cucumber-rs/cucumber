@@ -2,7 +2,8 @@ use std::{convert::Infallible, fs, io::Read as _};
 
 use async_trait::async_trait;
 use cucumber::{given, then, when, writer, WorldInit};
-use regex::Regex;
+use futures::FutureExt as _;
+use regex::RegexBuilder;
 use tempfile::NamedTempFile;
 
 #[given(regex = r"(\d+) secs?")]
@@ -20,7 +21,23 @@ async fn main() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
-            .with_writer(writer::JUnit::new(file.reopen().unwrap()))
+            .before(|_, _, sc, _| {
+                async {
+                    if sc.tags.iter().any(|t| t == "fail_before") {
+                        panic!("Tag!");
+                    }
+                }
+                .boxed_local()
+            })
+            .after(|_, _, sc, _| {
+                async {
+                    if sc.tags.iter().any(|t| t == "fail_after") {
+                        panic!("Tag!");
+                    }
+                }
+                .boxed_local()
+            })
+            .with_writer(writer::Json::new(file.reopen().unwrap()))
             .run("tests/features/wait")
             .await,
     );
@@ -30,15 +47,22 @@ async fn main() {
 
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
-    let non_deterministic = Regex::new(
-        r#"time(stamp)?="[^"]+"|: [\\/:?A-z]+.feature(:\d+:\d+)?|\s?\n"#,
+    let non_deterministic = RegexBuilder::new(
+        "\"uri\":\\s?\"[^\"]*\"\
+         |\"duration\":\\s?\\d+\
+         |\"id\":\\s?\"failed[^\"]*\"\
+         |\"error_message\":\\s?\"Could[^\"]*\"\
+         |\n\
+         |\\s",
     )
+    .multi_line(true)
+    .build()
     .unwrap();
 
     assert_eq!(
         non_deterministic.replace_all(&buffer, ""),
         non_deterministic.replace_all(
-            &fs::read_to_string("tests/junit/correct.xml").unwrap(),
+            &fs::read_to_string("tests/json/correct.json").unwrap(),
             "",
         ),
     );
