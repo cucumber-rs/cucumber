@@ -821,6 +821,8 @@ where
                     tags_filter.as_ref().map_or_else(
                         || filter(f, r, s),
                         |tags| {
+                            // The order `Feature` -> `Rule` -> `Scenario`
+                            // matters here.
                             tags.eval(
                                 f.tags
                                     .iter()

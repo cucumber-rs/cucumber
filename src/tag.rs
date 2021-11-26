@@ -21,21 +21,21 @@ pub trait Ext {
     fn eval<I, S>(&self, tags: I) -> bool
     where
         S: AsRef<str>,
-        I: Iterator<Item = S> + Clone;
+        I: IntoIterator<Item = S> + Clone;
 }
 
 #[sealed]
 impl Ext for TagOperation {
-    fn eval<I, S>(&self, mut tags: I) -> bool
+    fn eval<I, S>(&self, tags: I) -> bool
     where
         S: AsRef<str>,
-        I: Iterator<Item = S> + Clone,
+        I: IntoIterator<Item = S> + Clone,
     {
         match self {
             Self::And(l, r) => l.eval(tags.clone()) & r.eval(tags),
             Self::Or(l, r) => l.eval(tags.clone()) | r.eval(tags),
             Self::Not(t) => !t.eval(tags),
-            Self::Tag(t) => tags.any(|tag| tag.as_ref() == t),
+            Self::Tag(t) => tags.into_iter().any(|tag| tag.as_ref() == t),
         }
     }
 }

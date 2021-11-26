@@ -16,7 +16,6 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
 - Renamed `Normalized` and `Summarized` `Writer`s to `Normalize` and `Summarize`. ([#162])
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
-- Merge tags from `Feature` and `Rule` with `Scenario` on filtering with `--tags` CLI option. ([#166])
 
 ### Added
 
@@ -31,6 +30,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
     - `writer::NonTransforming` trait required for `writer::Repeat`. ([#162])
     - `writer::Summarizable` trait required for `writer::Summarize`. ([#162])
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
+- Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 
 ### Fixed
 

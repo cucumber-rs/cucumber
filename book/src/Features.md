@@ -430,7 +430,7 @@ cargo test --test <test-name> -- --help
 
 Default output is:
 ```
-cucumber 0.10.0
+cucumber
 Run the tests, pet a dog!
 
 USAGE:
