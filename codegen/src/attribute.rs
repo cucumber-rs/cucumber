@@ -363,13 +363,13 @@ impl Step {
             AttributeArgument::Regex(re) => {
                 Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
             }
-            AttributeArgument::Expression(expr) => self.expression(expr),
+            AttributeArgument::Expression(expr) => self.generate_expression_regex(expr),
         }
     }
 
     /// TODO
     #[allow(clippy::too_many_lines)]
-    fn expression(&self, expr: &syn::LitStr) -> syn::Result<TokenStream> {
+    fn generate_expression_regex(&self, expr: &syn::LitStr) -> syn::Result<TokenStream> {
         let expr = expr.value();
         let expr_ast = Expression::parse(&expr).map_err(|e| {
             syn::Error::new(
@@ -455,36 +455,47 @@ impl Step {
                 let par = par.0.fragment();
                 if DEFAULT_EXPRESSION_PARS.contains(par) {
                     quote! {
+                        // In case we encounter default parameter, we should
+                        // assert that corresponding type __doesn't__ implement
+                        // Parameter trait.
                         const _: fn() = || {
-                            // Generic trait with a blanket impl over `()` for all types.
-                            trait AmbiguousIfImpl<A> {
-                                // Required for actually being able to reference the trait.
+                            // Generic trait with a blanket impl over `()` for
+                            // all types.
+                            trait ParameterShouldNotBeImpled<A> {
                                 fn some_item() {}
                             }
 
-                            impl<T: ?Sized> AmbiguousIfImpl<()> for T {}
+                            impl<T: ?Sized>
+                                ParameterShouldNotBeImpled<()> for T {}
 
-                            // Used for the specialized impl when *all* traits in
-                            // `$($t)+` are implemented.
+                            // Used for the specialized impl when Parameter is
+                            // implemented.
                             #[allow(dead_code)]
                             struct Invalid;
 
-                            impl<T: ?Sized + ::cucumber::Parameter> AmbiguousIfImpl<Invalid> for T {}
+                            impl<T: ?Sized + ::cucumber::Parameter>
+                                ParameterShouldNotBeImpled<Invalid> for T {}
 
-                            // If there is only one specialized trait impl, type inference with
-                            // `_` can be resolved and this can compile. Fails to compile if
-                            // `$x` implements `AmbiguousIfImpl<Invalid>`.
-                            let _ = <#ty as AmbiguousIfImpl<_>>::some_item;
+                            // If there is only one specialized trait impl, type
+                            // inference with `_` can be resolved and this can
+                            // compile. Fails to compile if `#ty` implements
+                            // `ParameterShouldNotBeImpled<Invalid>`.
+                            let _ = <#ty as ParameterShouldNotBeImpled<_>>::
+                                some_item;
                         };
                     }
                 } else {
                     quote! {
+                        // In case we encounter custom parameter, we should
+                        // assert that corresponding type implements Parameter
+                        // and has right NAME.
                         #[allow(unknown_lints, eq_op)]
                         const _: [
                             ();
                             0 - !{
-                                const ASSERT: bool =
-                                    <#ty as ::cucumber::Parameter> == #par;
+                                const ASSERT: bool = <
+                                    #ty as ::cucumber::Parameter
+                                >::NAME == #par;
                                 ASSERT
                             } as usize
                         ] = [];
@@ -497,12 +508,17 @@ impl Step {
             #( #assertions )*
 
             let provider = #provider;
+            // This should never fail because:
+            // 1. We checked AST correction with `Expression::parse()`;
+            // 2. Custom `Parameter::REGEX`es are correct due to derive macro;
+            // 3. All parameter names are equal to the corresponding fn
+            //    arguments, so we shouldn't see `UnknownParameterError`.
             ::cucumber::codegen::Expression::regex_with_parameters(
                 #expr,
                 &provider,
             )
             .unwrap_or_else(|e| {
-                panic!("Failed to parse cucumber expression: {}", e)
+                panic!("Cucumber expression failed: {}", e)
             })
         }})
     }
@@ -542,6 +558,8 @@ impl Parse for AttributeArgument {
                         Ok(Self::Regex(str_lit))
                     }
                     Some(i) if i == "expr" => {
+                        // Correctness is checked later in
+                        // `Step::generate_expression_regex()`.
                         Ok(Self::Expression(to_string_literal(arg.lit)?))
                     }
                     _ => Err(syn::Error::new(
