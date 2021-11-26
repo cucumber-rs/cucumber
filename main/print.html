@@ -1052,7 +1052,7 @@ Whatever happens in a <code>Before</code> hook is invisible to people reading <c
 <pre><code class="language-shell">cargo test --test &lt;test-name&gt; -- --help
 </code></pre>
 <p>Default output is:</p>
-<pre><code>cucumber 0.10.0
+<pre><code>cucumber
 Run the tests, pet a dog!
 
 USAGE:
@@ -1070,7 +1070,9 @@ OPTIONS:
     -c, --concurrency &lt;int&gt;            Number of scenarios to run concurrently. If not specified, uses the value
                                        configured in tests runner, or 64 by default
     -n, --name &lt;regex&gt;                 Regex to filter scenarios by their name [aliases: scenario-name]
-    -t, --tags &lt;tagexpr&gt;               Tag expression to filter scenarios by [aliases: scenario-tags]
+    -t, --tags &lt;tagexpr&gt;               Tag expression to filter scenarios by.
+                                       Note: Tags from Feature, Rule and Scenario are merged together on filtering, 
+                                       so be careful about conflicting tags on different levels. 
 </code></pre>
 <p>Example with <a href="https://cucumber.io/docs/cucumber/api#tag-expressions">tag expressions</a> for filtering <code>Scenario</code>s:</p>
 <pre><code class="language-shell">cargo test --test &lt;test-name&gt; -- --tags='@cat or @dog or @ferris'
