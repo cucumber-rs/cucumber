@@ -142,23 +142,24 @@ macro_rules! step_attribute {
         /// }
         /// ```
         ///
-        /// # Attributes
+        /// # Attribute arguments
         ///
         /// - `#[given(regex = "regex")]`
         ///
-        ///   Uses [`Regex`], which correctness is checked at compile time.
+        ///   Uses [`Regex`] for matching the step. [`Regex`] is checked at
+        ///   compile time to have valid syntax.
         ///
-        /// - `#[given(expression = "cucumber-expression")]` or
-        ///   `#[given(expr = "cucumber-expression")]`
+        /// - `#[given(expr = "cucumber-expression")]`
         ///
-        ///   Uses [`cucumber-expressions`][1], which correctness is checked at
-        ///   compile time.
+        ///   Uses [Cucumber Expression][1] for matching the step. It's checked
+        ///   at compile time to have valid syntax.
         ///
         /// - `#[given("literal")]`
         ///
-        ///   Matches only **exact** literal.
+        ///   Matches the step with an **exact** literal only. Doesn't allow any
+        ///   values capturing to use as function arguments.
         ///
-        /// # Arguments
+        /// # Function arguments
         ///
         /// - First argument has to be mutable reference to the [`WorldInit`]
         ///   deriver (your [`World`] implementer).
@@ -208,12 +209,12 @@ macro_rules! step_attribute {
         /// to implement [`Display`], so returning it will cause the step to
         /// fail.
         ///
-        /// [1]: cucumber_expressions
         /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
         /// [`Regex`]: regex::Regex
         /// [`gherkin::Step`]: https://bit.ly/3j42hcd
         /// [`World`]: https://bit.ly/3j0aWw7
+        /// [1]: cucumber_expressions
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {
             attribute::step(std::stringify!($name), args.into(), input.into())

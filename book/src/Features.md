@@ -220,7 +220,7 @@ pub struct AnimalWorld {
 #[async_trait(?Send)]
 impl World for AnimalWorld {
     type Error = Infallible;
-    
+
     async fn new() -> Result<Self, Infallible> {
         Ok(Self {
             cat: AnimalState { hungry: false },
@@ -274,7 +274,7 @@ async fn hungry_cat(world: &mut AnimalWorld, state: State, animal: Animal) {
         State::Hungry => true,
         State::Satiated => false,
     };
-    
+
     match animal {
         Animal::Cat => world.cat.hungry = hunger,
         Animal::Dog => world.dog.hungry = hunger,
@@ -306,7 +306,7 @@ async fn cat_is_fed(world: &mut AnimalWorld, animal: Animal) {
     };
 }
 #
-# # [tokio::main]
+# #[tokio::main]
 # async fn main() {
 #     AnimalWorld::run("/tests/features/book/features/scenario_outline_fromstr.feature").await;
 # }

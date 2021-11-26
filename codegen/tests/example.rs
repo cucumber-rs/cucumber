@@ -39,7 +39,7 @@ async fn test_non_regex_async(w: &mut MyWorld, #[step] ctx: &Step) {
 }
 
 #[given(regex = r"(\S+) is (\d+)")]
-#[when(expression = r"{word} is {int}")]
+#[when(expr = r"{word} is {int}")]
 async fn test_regex_async(
     w: &mut MyWorld,
     step: String,
