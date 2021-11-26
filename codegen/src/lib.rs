@@ -95,6 +95,7 @@
 
 mod attribute;
 mod derive;
+mod parameter;
 
 use proc_macro::TokenStream;
 
@@ -218,7 +219,7 @@ macro_rules! step_attribute {
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {
             attribute::step(std::stringify!($name), args.into(), input.into())
-                .unwrap_or_else(|e| e.to_compile_error())
+                .unwrap_or_else(syn::Error::into_compile_error)
                 .into()
         }
     };
@@ -236,7 +237,7 @@ macro_rules! steps {
         #[proc_macro_derive(WorldInit)]
         pub fn derive_init(input: TokenStream) -> TokenStream {
             derive::world_init(input.into(), &[$(std::stringify!($name)),*])
-                .unwrap_or_else(|e| e.to_compile_error())
+                .unwrap_or_else(syn::Error::into_compile_error)
                 .into()
         }
 
@@ -245,3 +246,11 @@ macro_rules! steps {
 }
 
 steps!(given, when, then);
+
+/// TODO
+#[proc_macro_derive(Parameter)]
+pub fn parameter(input: TokenStream) -> TokenStream {
+    parameter::derive(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
