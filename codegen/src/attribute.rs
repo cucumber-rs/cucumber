@@ -10,9 +10,9 @@
 
 //! `#[given]`, `#[when]` and `#[then]` attribute macros implementation.
 
-use std::mem;
+use std::{iter, mem};
 
-use cucumber_expressions::Expression;
+use cucumber_expressions::{Expression, Parameter, SingleExpression, Spanned};
 use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -21,6 +21,10 @@ use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
 };
+
+/// TODO
+const DEFAULT_EXPRESSION_PARS: [&str; 5] =
+    ["int", "float", "word", "string", ""];
 
 /// Generates code of `#[given]`, `#[when]` and `#[then]` attribute macros
 /// expansion.
@@ -107,7 +111,8 @@ impl Step {
         let (func_args, addon_parsing) =
             self.fn_arguments_and_additional_parsing()?;
 
-        let step_matcher = self.attr_arg.regex_literal().value();
+        let regex = self.generate_regex()?;
+
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
@@ -161,8 +166,7 @@ impl Step {
                             static LAZY: ::cucumber::codegen::Lazy<
                                 ::cucumber::codegen::Regex
                             > = ::cucumber::codegen::Lazy::new(|| {
-                                ::cucumber::codegen::Regex::new(#step_matcher)
-                                    .unwrap()
+                                #regex
                             });
                             LAZY.clone()
                         };
@@ -345,6 +349,163 @@ impl Step {
             __cucumber_matches.as_slice(),
         })
     }
+
+    /// TODO
+    fn generate_regex(&self) -> syn::Result<TokenStream> {
+        match &self.attr_arg {
+            AttributeArgument::Literal(l) => {
+                let l = syn::LitStr::new(
+                    &format!("^{}$", regex::escape(&l.value())),
+                    l.span(),
+                );
+                Ok(quote! { ::cucumber::codegen::Regex::new(#l).unwrap() })
+            }
+            AttributeArgument::Regex(re) => {
+                Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
+            }
+            AttributeArgument::Expression(expr) => self.expression(expr),
+        }
+    }
+
+    /// TODO
+    #[allow(clippy::too_many_lines)]
+    fn expression(&self, expr: &syn::LitStr) -> syn::Result<TokenStream> {
+        let expr = expr.value();
+        let expr_ast = Expression::parse(&expr).map_err(|e| {
+            syn::Error::new(
+                expr.span(),
+                format!("Incorrect cucumber expression: {}", e),
+            )
+        })?;
+
+        let parameter_types = self
+            .func
+            .sig
+            .inputs
+            .iter()
+            .skip(1)
+            .filter_map(|arg| {
+                let (ident, ty) = match parse_fn_arg(arg) {
+                    Ok(res) => res,
+                    Err(err) => return Some(Err(err)),
+                };
+                let is_step = self
+                    .step_arg_name
+                    .as_ref()
+                    .map(|step| step == ident)
+                    .unwrap_or_default();
+                (!is_step).then(|| Ok(ty))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let parameter_with_fn_arg = expr_ast
+            .0
+            .into_iter()
+            .filter_map(|expr| match expr {
+                SingleExpression::Parameter(par) => Some(par),
+                SingleExpression::Alternation(_)
+                | SingleExpression::Optional(_)
+                | SingleExpression::Text(_)
+                | SingleExpression::Whitespaces(_) => None,
+            })
+            .zip(
+                parameter_types
+                    .into_iter()
+                    .map(Some)
+                    .chain(iter::repeat(None)),
+            )
+            .filter_map(
+                |(par, ty): (Parameter<Spanned<'_>>, Option<&syn::Type>)| {
+                    if DEFAULT_EXPRESSION_PARS.iter().any(|s| s == &**par) {
+                        ty.map(|ty| Ok((par, ty)))
+                    } else if let Some(ty) = ty {
+                        Some(Ok((par, ty)))
+                    } else {
+                        // TODO: make err message understandable
+                        Some(Err(syn::Error::new(
+                            self.func.span(),
+                            format!(
+                            "'{}' must correspond to the fn arg impl Parameter",
+                            *par,
+                        ),
+                        )))
+                    }
+                },
+            )
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let (pars, par_tys): (Vec<&str>, Vec<_>) = parameter_with_fn_arg
+            .iter()
+            .filter_map(|(par, ty)| {
+                (!DEFAULT_EXPRESSION_PARS.contains(par.0.fragment()))
+                    .then(|| (par.0.fragment(), *ty))
+            })
+            .unzip();
+        let provider = quote! {
+            [
+                #( (#pars, <#par_tys as ::cucumber::Parameter>::REGEX), )*
+            ]
+            .into_iter() // it's ok, as MSRV is 1.56
+            .collect::<::std::collections::HashMap<&'static str, &'static str>>()
+        };
+
+        let assertions = parameter_with_fn_arg
+            .iter()
+            .map(|(par, ty)| {
+                let par = par.0.fragment();
+                if DEFAULT_EXPRESSION_PARS.contains(par) {
+                    quote! {
+                        const _: fn() = || {
+                            // Generic trait with a blanket impl over `()` for all types.
+                            trait AmbiguousIfImpl<A> {
+                                // Required for actually being able to reference the trait.
+                                fn some_item() {}
+                            }
+
+                            impl<T: ?Sized> AmbiguousIfImpl<()> for T {}
+
+                            // Used for the specialized impl when *all* traits in
+                            // `$($t)+` are implemented.
+                            #[allow(dead_code)]
+                            struct Invalid;
+
+                            impl<T: ?Sized + ::cucumber::Parameter> AmbiguousIfImpl<Invalid> for T {}
+
+                            // If there is only one specialized trait impl, type inference with
+                            // `_` can be resolved and this can compile. Fails to compile if
+                            // `$x` implements `AmbiguousIfImpl<Invalid>`.
+                            let _ = <#ty as AmbiguousIfImpl<_>>::some_item;
+                        };
+                    }
+                } else {
+                    quote! {
+                        #[allow(unknown_lints, eq_op)]
+                        const _: [
+                            ();
+                            0 - !{
+                                const ASSERT: bool =
+                                    <#ty as ::cucumber::Parameter> == #par;
+                                ASSERT
+                            } as usize
+                        ] = [];
+                    }
+                }
+            });
+
+
+        Ok(quote! {{
+            #( #assertions )*
+
+            let provider = #provider;
+            ::cucumber::codegen::Expression::regex_with_parameters(
+                #expr,
+                &provider,
+            )
+            .unwrap_or_else(|e| {
+                panic!("Failed to parse cucumber expression: {}", e)
+            })
+        }})
+    }
 }
 
 /// Argument of the attribute macro.
@@ -358,21 +519,6 @@ enum AttributeArgument {
 
     /// `#[step(expr = "cucumber-expression")]` case.
     Expression(syn::LitStr),
-}
-
-impl AttributeArgument {
-    /// Returns a [`syn::LitStr`] to construct a [`Regex`] with.
-    ///
-    /// [`syn::LitStr`]: struct@syn::LitStr
-    fn regex_literal(&self) -> syn::LitStr {
-        match self {
-            Self::Regex(l) | Self::Expression(l) => l.clone(),
-            Self::Literal(l) => syn::LitStr::new(
-                &format!("^{}$", regex::escape(&l.value())),
-                l.span(),
-            ),
-        }
-    }
 }
 
 impl Parse for AttributeArgument {
@@ -396,24 +542,7 @@ impl Parse for AttributeArgument {
                         Ok(Self::Regex(str_lit))
                     }
                     Some(i) if i == "expr" => {
-                        let str_lit = to_string_literal(arg.lit)?;
-
-                        let expr_regex =
-                            Expression::regex(str_lit.value().as_str())
-                                .map_err(|e| {
-                                    syn::Error::new(
-                                        str_lit.span(),
-                                        format!(
-                                            "Invalid cucumber expression: {}",
-                                            e,
-                                        ),
-                                    )
-                                })?;
-
-                        Ok(Self::Expression(syn::LitStr::new(
-                            expr_regex.as_str(),
-                            str_lit.span(),
-                        )))
+                        Ok(Self::Expression(to_string_literal(arg.lit)?))
                     }
                     _ => Err(syn::Error::new(
                         arg.span(),

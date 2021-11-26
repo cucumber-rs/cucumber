@@ -44,7 +44,7 @@ async fn main() {
 
 #[given(regex = r"(\d+) secs?")]
 #[when(regex = r"(\d+) secs?")]
-#[then(regex = r"(\d+) secs?")]
+#[then(expr = "{int} secs")]
 async fn step(world: &mut World, secs: u64) {
     time::sleep(Duration::from_secs(secs)).await;
 
