@@ -363,15 +363,145 @@ impl Step {
             AttributeArgument::Regex(re) => {
                 Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
             }
-            AttributeArgument::Expression(expr) => self.generate_expression_regex(expr),
+            AttributeArgument::Expression(expr) => {
+                self.generate_expression_regex(expr)
+            }
         }
     }
 
     /// TODO
-    #[allow(clippy::too_many_lines)]
-    fn generate_expression_regex(&self, expr: &syn::LitStr) -> syn::Result<TokenStream> {
+    fn generate_expression_regex(
+        &self,
+        expr: &syn::LitStr,
+    ) -> syn::Result<TokenStream> {
         let expr = expr.value();
-        let expr_ast = Expression::parse(&expr).map_err(|e| {
+        let parameters = self.get_parameter_providers(&expr)?;
+
+        let provider = Self::generate_parameters_provider(&parameters);
+        let assertions = Self::generate_parameters_assertions(&parameters);
+
+        Ok(quote! {{
+            #assertions
+
+            let provider = #provider;
+
+            // This should never fail because:
+            // 1. We checked AST correction with `Expression::parse()`;
+            // 2. Custom `Parameter::REGEX`es are correct due to derive macro;
+            // 3. All parameter names are equal to the corresponding fn
+            //    arguments, so we shouldn't see `UnknownParameterError`.
+            ::cucumber::codegen::Expression::regex_with_parameters(
+                #expr,
+                &provider,
+            )
+            .unwrap_or_else(|e| {
+                panic!("Cucumber expression failed: {}", e)
+            })
+        }})
+    }
+
+    /// TODO
+    fn generate_parameters_provider(
+        parameters: &[ParameterProvider<'_>],
+    ) -> TokenStream {
+        let (custom_par, custom_par_ty): (Vec<&str>, Vec<_>) = parameters
+            .iter()
+            .filter_map(|par| {
+                let name = par.ast.0.fragment();
+                (!DEFAULT_EXPRESSION_PARS.contains(name))
+                    .then(|| (name, &par.ty))
+            })
+            .unzip();
+
+        // TODO: replace with custom `Provider` impl instead of `HashMap`.
+        quote! {
+            [
+                #((
+                    #custom_par,
+                    <#custom_par_ty as ::cucumber::Parameter>::REGEX
+                )),*
+            ]
+            .into_iter() // it's ok, as MSRV is 1.56
+            .collect::<
+                ::std::collections::HashMap<&'static str, &'static str>
+            >()
+        }
+    }
+
+    /// TODO
+    fn generate_parameters_assertions(
+        parameters: &[ParameterProvider<'_>],
+    ) -> TokenStream {
+        parameters
+            .iter()
+            .map(|par| {
+                let name = par.ast.0.fragment();
+                let ty = &par.ty;
+
+                if DEFAULT_EXPRESSION_PARS.contains(name) {
+                    let trait_with_hint = format_ident!(
+                        "UseParameterNameInsteadOf{}",
+                        to_pascal_case(name),
+                    );
+                    quote! {
+                        // In case we encounter default parameter, we should
+                        // assert that corresponding type __doesn't__ implement
+                        // Parameter trait.
+                        const _: fn() = || {
+                            // Generic trait with a blanket impl over `()` for
+                            // all types.
+                            trait #trait_with_hint<A> {
+                                fn some_item() {}
+                            }
+
+                            impl<T: ?Sized>
+                                #trait_with_hint<()> for T {}
+
+                            // Used for the specialized impl when Parameter is
+                            // implemented.
+                            #[allow(dead_code)]
+                            struct Invalid;
+
+                            impl<T: ?Sized + ::cucumber::Parameter>
+                                #trait_with_hint<Invalid> for T {}
+
+                            // If there is only one specialized trait impl, type
+                            // inference with `_` can be resolved and this can
+                            // compile. Fails to compile if `#ty` implements
+                            // `ParameterShouldNotBeImpled<Invalid>`.
+                            let _: fn() = <#ty as #trait_with_hint<_>>::
+                                some_item;
+                        };
+                    }
+                } else {
+                    quote! {
+                        // In case we encounter custom parameter, we should
+                        // assert that corresponding type implements Parameter
+                        // and has right NAME.
+                        #[allow(unknown_lints, eq_op)]
+                        const _: [
+                            ();
+                            0 - !{
+                                const ASSERT: bool =
+                                    ::cucumber::codegen::str_eq(
+                                        <#ty as ::cucumber::Parameter>::NAME,
+                                        #name,
+                                    );
+                                ASSERT
+                            } as usize
+                        ] = [];
+                    }
+                }
+            })
+            .collect()
+    }
+
+    /// TODO
+    fn get_parameter_providers<'s>(
+        &self,
+        expr: &'s str,
+    ) -> syn::Result<Vec<ParameterProvider<'s>>> {
+        let ast = Expression::parse(expr).map_err(|e| {
             syn::Error::new(
                 expr.span(),
                 format!("Incorrect cucumber expression: {}", e),
@@ -398,10 +528,9 @@ impl Step {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let parameter_with_fn_arg = expr_ast
-            .0
+        ast.0
             .into_iter()
-            .filter_map(|expr| match expr {
+            .filter_map(|e| match e {
                 SingleExpression::Parameter(par) => Some(par),
                 SingleExpression::Alternation(_)
                 | SingleExpression::Optional(_)
@@ -414,114 +543,38 @@ impl Step {
                     .map(Some)
                     .chain(iter::repeat(None)),
             )
-            .filter_map(
-                |(par, ty): (Parameter<Spanned<'_>>, Option<&syn::Type>)| {
-                    if DEFAULT_EXPRESSION_PARS.iter().any(|s| s == &**par) {
-                        ty.map(|ty| Ok((par, ty)))
-                    } else if let Some(ty) = ty {
-                        Some(Ok((par, ty)))
-                    } else {
-                        // TODO: make err message understandable
-                        Some(Err(syn::Error::new(
-                            self.func.span(),
-                            format!(
-                            "'{}' must correspond to the fn arg impl Parameter",
-                            *par,
-                        ),
-                        )))
-                    }
-                },
-            )
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let (pars, par_tys): (Vec<&str>, Vec<_>) = parameter_with_fn_arg
-            .iter()
-            .filter_map(|(par, ty)| {
-                (!DEFAULT_EXPRESSION_PARS.contains(par.0.fragment()))
-                    .then(|| (par.0.fragment(), *ty))
-            })
-            .unzip();
-        let provider = quote! {
-            [
-                #( (#pars, <#par_tys as ::cucumber::Parameter>::REGEX), )*
-            ]
-            .into_iter() // it's ok, as MSRV is 1.56
-            .collect::<::std::collections::HashMap<&'static str, &'static str>>()
-        };
-
-        let assertions = parameter_with_fn_arg
-            .iter()
-            .map(|(par, ty)| {
-                let par = par.0.fragment();
-                if DEFAULT_EXPRESSION_PARS.contains(par) {
-                    quote! {
-                        // In case we encounter default parameter, we should
-                        // assert that corresponding type __doesn't__ implement
-                        // Parameter trait.
-                        const _: fn() = || {
-                            // Generic trait with a blanket impl over `()` for
-                            // all types.
-                            trait ParameterShouldNotBeImpled<A> {
-                                fn some_item() {}
-                            }
-
-                            impl<T: ?Sized>
-                                ParameterShouldNotBeImpled<()> for T {}
-
-                            // Used for the specialized impl when Parameter is
-                            // implemented.
-                            #[allow(dead_code)]
-                            struct Invalid;
-
-                            impl<T: ?Sized + ::cucumber::Parameter>
-                                ParameterShouldNotBeImpled<Invalid> for T {}
-
-                            // If there is only one specialized trait impl, type
-                            // inference with `_` can be resolved and this can
-                            // compile. Fails to compile if `#ty` implements
-                            // `ParameterShouldNotBeImpled<Invalid>`.
-                            let _ = <#ty as ParameterShouldNotBeImpled<_>>::
-                                some_item;
-                        };
-                    }
+            .filter_map(|(parameter, ty)| {
+                if DEFAULT_EXPRESSION_PARS.iter().any(|s| s == &**parameter) {
+                    // If parameter is default, it's ok if there is no type
+                    // corresponding to it, as we know it's regex.
+                    ty.cloned()
+                        .map(|ty| Ok(ParameterProvider { ast: parameter, ty }))
+                } else if let Some(ty) = ty.cloned() {
+                    Some(Ok(ParameterProvider { ast: parameter, ty }))
                 } else {
-                    quote! {
-                        // In case we encounter custom parameter, we should
-                        // assert that corresponding type implements Parameter
-                        // and has right NAME.
-                        #[allow(unknown_lints, eq_op)]
-                        const _: [
-                            ();
-                            0 - !{
-                                const ASSERT: bool = <
-                                    #ty as ::cucumber::Parameter
-                                >::NAME == #par;
-                                ASSERT
-                            } as usize
-                        ] = [];
-                    }
+                    Some(Err(syn::Error::new(
+                        self.func.span(),
+                        format!(
+                            "Function argument corresponding to the `{p}` \
+                             parameter isn't found. Consider adding \
+                             argument which implements `Parameter` with \
+                             `Parameter::NAME == {p}`.",
+                            p = *parameter,
+                        ),
+                    )))
                 }
-            });
-
-
-        Ok(quote! {{
-            #( #assertions )*
-
-            let provider = #provider;
-            // This should never fail because:
-            // 1. We checked AST correction with `Expression::parse()`;
-            // 2. Custom `Parameter::REGEX`es are correct due to derive macro;
-            // 3. All parameter names are equal to the corresponding fn
-            //    arguments, so we shouldn't see `UnknownParameterError`.
-            ::cucumber::codegen::Expression::regex_with_parameters(
-                #expr,
-                &provider,
-            )
-            .unwrap_or_else(|e| {
-                panic!("Cucumber expression failed: {}", e)
             })
-        }})
+            .collect()
     }
+}
+
+/// TODO
+struct ParameterProvider<'p> {
+    /// TODO
+    ast: Parameter<Spanned<'p>>,
+
+    /// TODO
+    ty: syn::Type,
 }
 
 /// Argument of the attribute macro.

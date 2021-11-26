@@ -248,7 +248,7 @@ macro_rules! steps {
 steps!(given, when, then);
 
 /// TODO
-#[proc_macro_derive(Parameter)]
+#[proc_macro_derive(Parameter, attributes(param))]
 pub fn parameter(input: TokenStream) -> TokenStream {
     parameter::derive(input.into())
         .unwrap_or_else(syn::Error::into_compile_error)

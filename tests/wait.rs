@@ -1,7 +1,10 @@
-use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
+use std::{
+    convert::Infallible, num::ParseIntError, panic::AssertUnwindSafe,
+    str::FromStr, time::Duration,
+};
 
 use async_trait::async_trait;
-use cucumber::{cli, given, then, when, WorldInit};
+use cucumber::{cli, given, then, when, Parameter, WorldInit};
 use futures::FutureExt as _;
 use structopt::StructOpt;
 use tokio::time;
@@ -44,13 +47,25 @@ async fn main() {
 
 #[given(regex = r"(\d+) secs?")]
 #[when(regex = r"(\d+) secs?")]
-#[then(expr = "{int} secs")]
-async fn step(world: &mut World, secs: u64) {
-    time::sleep(Duration::from_secs(secs)).await;
+#[then(expr = "{u64} sec(s)")]
+async fn step(world: &mut World, secs: CustomU64) {
+    time::sleep(Duration::from_secs(secs.0)).await;
 
     world.0 += 1;
     if world.0 > 3 {
         panic!("Too much!");
+    }
+}
+
+#[derive(Parameter)]
+#[param(regex = "\\d+", name = "u64")]
+struct CustomU64(u64);
+
+impl FromStr for CustomU64 {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        u64::from_str(s).map(Self)
     }
 }
 
