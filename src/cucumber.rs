@@ -818,11 +818,24 @@ where
                            s: &gherkin::Scenario| {
             re_filter.as_ref().map_or_else(
                 || {
-                    tags_filter
-                        .as_ref()
-                        .map_or_else(|| filter(f, r, s), |f| f.eval(&s.tags))
+                    tags_filter.as_ref().map_or_else(
+                        || filter(f, r, s),
+                        |tags| {
+                            // The order `Feature` -> `Rule` -> `Scenario`
+                            // matters here.
+                            tags.eval(
+                                f.tags
+                                    .iter()
+                                    .chain(
+                                        r.into_iter()
+                                            .flat_map(|r| r.tags.iter()),
+                                    )
+                                    .chain(s.tags.iter()),
+                            )
+                        },
+                    )
                 },
-                |f| f.is_match(&s.name),
+                |re| re.is_match(&s.name),
             )
         };
 
