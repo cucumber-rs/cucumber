@@ -128,70 +128,77 @@ fn expand_scenario(
     static TEMPLATE_REGEX: Lazy<Regex> =
         Lazy::new(|| Regex::new(r"<([^>\s]+)>").expect("incorrect Regex"));
 
-    let (header, vals) = match scenario
+    if scenario.examples.is_empty() {
+        return vec![Ok(scenario)];
+    }
+
+    scenario
         .examples
-        .as_ref()
-        .and_then(|ex| ex.table.rows.split_first())
-    {
-        Some(s) => s,
-        None => return vec![Ok(scenario)],
-    };
+        .iter()
+        .filter_map(|example| {
+            example
+                .table
+                .rows
+                .split_first()
+                .map(|(h, v)| (h, v, example))
+        })
+        .flat_map(|(header, vals, example)| {
+            let table = vals.iter().map(|v| header.iter().zip(v));
 
-    let table = vals.iter().map(|v| header.iter().zip(v));
-    table
-        .enumerate()
-        .map(|(id, row)| {
-            let mut modified = scenario.clone();
+            table.enumerate().zip(iter::repeat(example.position)).map(
+                |((id, row), position)| {
+                    let mut modified = scenario.clone();
 
-            // This is done to differentiate `Hash`es of
-            // scenario outlines with the same examples.
-            modified.position = scenario
-                .examples
-                .as_ref()
-                .map_or_else(|| scenario.position, |ex| ex.position);
-            modified.position.line += id + 1;
+                    // This is done to differentiate `Hash`es of
+                    // scenario outlines with the same examples.
+                    modified.position = position;
+                    modified.position.line += id + 1;
 
-            modified.tags.extend(
-                scenario.examples.iter().flat_map(|ex| &ex.tags).cloned(),
-            );
+                    modified.tags.extend(example.tags.iter().cloned());
 
-            let mut err = None;
+                    let mut err = None;
 
-            for s in &mut modified.steps {
-                let pos = s.position;
-                let to_replace = iter::once(&mut s.value).chain(
-                    s.table.iter_mut().flat_map(|t| {
-                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
-                    }),
-                );
+                    for s in &mut modified.steps {
+                        let pos = s.position;
+                        let to_replace = iter::once(&mut s.value).chain(
+                            s.table.iter_mut().flat_map(|t| {
+                                t.rows.iter_mut().flat_map(|r| r.iter_mut())
+                            }),
+                        );
 
-                for value in to_replace {
-                    *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &regex::Captures<'_>| {
-                            let name = c.get(1).unwrap().as_str();
+                        for value in to_replace {
+                            *value = TEMPLATE_REGEX
+                                .replace_all(
+                                    value,
+                                    |c: &regex::Captures<'_>| {
+                                        let name = c.get(1).unwrap().as_str();
 
-                            row.clone()
-                                .find_map(|(k, v)| {
-                                    (name == k).then(|| v.as_str())
-                                })
-                                .unwrap_or_else(|| {
-                                    err = Some(ExpandExamplesError {
-                                        pos,
-                                        name: name.to_owned(),
-                                        path: path.cloned(),
-                                    });
-                                    ""
-                                })
-                        })
-                        .into_owned();
-                }
+                                        row.clone()
+                                            .find_map(|(k, v)| {
+                                                (name == k).then(|| v.as_str())
+                                            })
+                                            .unwrap_or_else(|| {
+                                                err =
+                                                    Some(ExpandExamplesError {
+                                                        pos,
+                                                        name: name.to_owned(),
+                                                        path: path.cloned(),
+                                                    });
+                                                ""
+                                            })
+                                    },
+                                )
+                                .into_owned();
+                        }
 
-                if let Some(e) = err {
-                    return Err(e);
-                }
-            }
+                        if let Some(e) = err {
+                            return Err(e);
+                        }
+                    }
 
-            Ok(modified)
+                    Ok(modified)
+                },
+            )
         })
         .collect()
 }

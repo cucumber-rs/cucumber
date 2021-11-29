@@ -14,4 +14,8 @@ Feature: Outline
       | 2    |
       | 1    |
       | 1    |
+
+    @long
+    Examples:
+      | wait |
       | 5    |
