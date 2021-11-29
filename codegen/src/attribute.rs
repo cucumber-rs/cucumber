@@ -22,7 +22,7 @@ use syn::{
     spanned::Spanned as _,
 };
 
-/// TODO
+/// Default [`Parameter`] names.
 const DEFAULT_EXPRESSION_PARS: [&str; 5] =
     ["int", "float", "word", "string", ""];
 
@@ -127,11 +127,9 @@ impl Step {
                 ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
-                        ::std::mem::drop(
-                            #func_name(__cucumber_world, #func_args)
-                                #awaiting
-                                #unwrapping,
-                        );
+                        let _ = #func_name(__cucumber_world, #func_args)
+                            #awaiting
+                            #unwrapping;
                     };
                     ::std::boxed::Box::pin(f)
                 }
@@ -350,7 +348,13 @@ impl Step {
         })
     }
 
-    /// TODO
+    /// Generates code that constructs [`Regex`] based on [`AttributeArgument`].
+    ///
+    /// # Errors
+    ///
+    /// - in case [`AttributeArgument::Regex`] isn't a valid [`Regex`].
+    /// - in case [`AttributeArgument::Expression`] passed to the
+    ///   [`Self::generate_expression_regex()`] errors.
     fn generate_regex(&self) -> syn::Result<TokenStream> {
         match &self.attr_arg {
             AttributeArgument::Literal(l) => {
@@ -373,7 +377,12 @@ impl Step {
         }
     }
 
-    /// TODO
+    /// Generates code that constructs [`Regex`] for
+    /// [`AttributeArgument::Expression`].
+    ///
+    /// # Errors
+    ///
+    /// If [`Parameters::new()`] errors.
     fn generate_expression_regex(
         &self,
         expr: &syn::LitStr,
@@ -411,20 +420,28 @@ impl Step {
     }
 }
 
-/// TODO
+/// [`Parameter`] parsed from [`AttributeArgument::Expression`] and
+/// [`syn::Type`] corresponding to it based on [`fn`]s arguments.
 struct ParameterProvider<'p> {
-    /// TODO
+    /// [`Parameter`] parsed from [`AttributeArgument::Expression`].
     ast: Parameter<Spanned<'p>>,
 
-    /// TODO
+    /// [`syn::Type`] corresponding to [`Self::ast`] based on [`fn`]s arguments.
     ty: syn::Type,
 }
 
-/// TODO
+/// Collection of [`ParameterProvider`]s.
 struct Parameters<'p>(Vec<ParameterProvider<'p>>);
 
 impl<'p> Parameters<'p> {
-    /// TODO
+    /// Creates a new [`Parameters`].
+    ///
+    /// # Errors
+    ///
+    /// - if [`Expression::parse()`] errors.
+    /// - if [`parse_fn_arg()`] on one of the `func`s argument errors.
+    /// - if non-default [`Parameter`] doesn't have corresponding `func`s
+    ///   argument.
     fn new(
         expr: &'p str,
         func: &syn::ItemFn,
@@ -492,7 +509,18 @@ impl<'p> Parameters<'p> {
             .map(Self)
     }
 
-    /// TODO
+    /// Generates code that asserts that all corresponding
+    /// [`ParameterProvider::ast`] and [`ParameterProvider::ty`] are correct.
+    ///
+    /// Here `correct` means one of 2 things:
+    /// - in case [`ParameterProvider::ast`] is one of the
+    ///   [`DEFAULT_EXPRESSION_PARS`], then [`ParameterProvider::ty`] shouldn't
+    ///   implement `Parameter`. Because in case it does, there is special
+    ///   `Parameter::NAME`, that should be used instead of the default one.
+    /// - in case [`ParameterProvider::ast`] isn't one of the
+    ///   [`DEFAULT_EXPRESSION_PARS`], then [`ParameterProvider::ty`] must
+    ///   implement `Parameter` with
+    ///   `Parameter::NAME == `[`ParameterProvider::ast`].
     fn generate_assertions(&self) -> TokenStream {
         self.0
             .iter()
@@ -534,7 +562,7 @@ impl<'p> Parameters<'p> {
                             // If there is only one specialized trait impl, type
                             // inference with `_` can be resolved and this can
                             // compile. Fails to compile if `#ty` implements
-                            // `ParameterShouldNotBeImpled<Invalid>`.
+                            // `#trait_with_hint<Invalid>`.
                             let _: fn() = <#ty as #trait_with_hint<_>>::method;
                         };
                     }
@@ -543,6 +571,8 @@ impl<'p> Parameters<'p> {
                         // In case we encounter custom parameter, we should
                         // assert that corresponding type implements Parameter
                         // and has right NAME.
+                        // TODO: panic here, once `const_panic` is stabilized.
+                        //       https://github.com/rust-lang/rust/pull/89508
                         #[allow(unknown_lints, eq_op)]
                         #[automatically_derived]
                         const _: [
@@ -562,7 +592,7 @@ impl<'p> Parameters<'p> {
             .collect()
     }
 
-    /// TODO
+    /// Generates code that implements `Provider` for `ident`.
     fn generate_provider_impl(&self, ident: &syn::Ident) -> TokenStream {
         let (custom_par, custom_par_ty): (Vec<_>, Vec<_>) = self
             .0

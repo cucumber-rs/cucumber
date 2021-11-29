@@ -100,7 +100,7 @@
 pub mod cli;
 mod cucumber;
 pub mod event;
-pub mod expressions;
+pub mod expression;
 pub mod feature;
 pub mod parser;
 pub mod runner;
@@ -128,7 +128,7 @@ pub use cucumber_codegen::{given, then, when, WorldInit};
 pub use self::{
     cucumber::Cucumber,
     event::Event,
-    expressions::Parameter,
+    expression::Parameter,
     parser::Parser,
     runner::{Runner, ScenarioType},
     step::Step,

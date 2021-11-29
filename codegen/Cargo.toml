@@ -33,6 +33,7 @@ synthez = "0.2.0"
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
+derive_more = { version = "0.99.16", default-features = false, features = ["deref", "from_str"] }
 futures = "0.3.17"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }

@@ -40,10 +40,8 @@ struct Attrs {
     name: Option<syn::LitStr>,
 }
 
-/// Representation of a struct implementing [`event::Adapter`][0], used for
-/// code generation.
-///
-/// [0]: arcana_core::es::event::Adapter
+/// Representation of a struct implementing `Parameter`, used for code
+/// generation.
 #[derive(Debug, ToTokens)]
 #[to_tokens(append(impl_parameter))]
 struct Definition {

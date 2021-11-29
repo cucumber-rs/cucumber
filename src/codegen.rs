@@ -151,6 +151,7 @@ pub trait StepConstructor<W> {
 ///
 /// [`Eq`]: std::cmp::Eq
 // TODO: Remove once `Eq` trait is allowed in `const` context.
+#[must_use]
 pub const fn str_eq(l: &str, r: &str) -> bool {
     if l.len() != r.len() {
         return false;

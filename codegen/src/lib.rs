@@ -247,7 +247,60 @@ macro_rules! steps {
 
 steps!(given, when, then);
 
-/// TODO
+/// In addition to the [default parameters] you can implement custom parameters.
+///
+/// # Example
+///
+/// ```
+/// # use std::{convert::Infallible};
+/// #
+/// # use async_trait::async_trait;
+/// # use derive_more::{Deref, FromStr};
+/// use cucumber::{given, when, Parameter, World, WorldInit};
+///
+/// #[derive(Debug, WorldInit)]
+/// struct MyWorld;
+///
+/// #[async_trait(?Send)]
+/// impl World for MyWorld {
+///     type Error = Infallible;
+///
+///     async fn new() -> Result<Self, Self::Error> {
+///         Ok(Self {})
+///     }
+/// }
+///
+/// #[given(regex = r"(\S+) is (\d+)")]
+/// #[when(expr = "{word} is {u64}")]
+/// fn test(w: &mut MyWorld, param: String, num: CustomU64) {
+///     assert_eq!(param, "foo");
+///     assert_eq!(*num, 0);
+/// }
+///
+/// #[derive(Deref, FromStr, Parameter)]
+/// #[param(regex = "\\d+", name = "u64")]
+/// struct CustomU64(u64);
+/// #
+/// # #[tokio::main]
+/// # async fn main() {
+/// #     MyWorld::run("./tests/features/doctests.feature").await;
+/// # }
+/// ```
+///
+/// # Attributes
+///
+/// - `#[param(regex = "regex")]`
+///
+/// [`Regex`] to match this parameter. Shouldn't contain capture groups.
+///
+/// - `#[param(name = "name")]` (optional)
+///
+/// Name which this parameter will be referenced by. By default will be
+/// lowercased struct ident.
+///
+///
+/// [`Regex`]: regex::Regex
+/// [default parameters]: cucumber_expressions::Expression#parameter-types
 #[proc_macro_derive(Parameter, attributes(param))]
 pub fn parameter(input: TokenStream) -> TokenStream {
     parameter::derive(input.into())
