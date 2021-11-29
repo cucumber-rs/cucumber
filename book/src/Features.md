@@ -430,7 +430,7 @@ cargo test --test <test-name> -- --help
 
 Default output is:
 ```
-cucumber 0.10.0
+cucumber
 Run the tests, pet a dog!
 
 USAGE:
@@ -448,7 +448,9 @@ OPTIONS:
     -c, --concurrency <int>            Number of scenarios to run concurrently. If not specified, uses the value
                                        configured in tests runner, or 64 by default
     -n, --name <regex>                 Regex to filter scenarios by their name [aliases: scenario-name]
-    -t, --tags <tagexpr>               Tag expression to filter scenarios by [aliases: scenario-tags]
+    -t, --tags <tagexpr>               Tag expression to filter scenarios by.
+                                       Note: Tags from Feature, Rule and Scenario are merged together on filtering, 
+                                       so be careful about conflicting tags on different levels. 
 ```
 
 Example with [tag expressions](https://cucumber.io/docs/cucumber/api#tag-expressions) for filtering `Scenario`s:
