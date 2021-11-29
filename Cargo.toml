@@ -28,7 +28,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["macros"]
 # Enables step attributes and auto-wiring.
-macros = ["cucumber-codegen", "inventory"]
+macros = ["cucumber-codegen", "cucumber-expressions", "inventory"]
 # Enables support for outputting in Cucumber JSON format.
 output-json = ["Inflector", "serde", "serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
@@ -40,7 +40,6 @@ timestamps = []
 async-trait = "0.1.40"
 atty = "0.2.14"
 console = "0.15"
-cucumber-expressions = { version = "0.1.0", features = ["into-regex"] }
 derive_more = { version = "0.99.16", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"], default_features = false }
 either = "1.6"
 futures = "0.3.17"
@@ -55,6 +54,7 @@ structopt = "0.3.25"
 
 # "macros" feature dependencies
 cucumber-codegen = { version = "0.11.0-dev", path = "./codegen", optional = true }
+cucumber-expressions = { version = "0.1.0", features = ["into-regex"], optional = true }
 inventory = { version = "0.2", optional = true }
 
 # "output-json" feature dependencies
