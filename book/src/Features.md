@@ -196,7 +196,7 @@ Feature: Animal feature
 # use std::{convert::Infallible, str::FromStr, time::Duration};
 #
 # use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, Parameter, World, WorldInit};
 # use tokio::time::sleep;
 #
 #[derive(Debug)]
@@ -230,6 +230,7 @@ impl World for AnimalWorld {
     }
 }
 
+#[derive(Clone, Copy)]
 enum State {
     Hungry,
     Satiated,
@@ -247,6 +248,8 @@ impl FromStr for State {
     }
 }
 
+#[derive(Clone, Copy, Parameter)]
+#[param(regex = "cat|dog|🦀")]
 enum Animal {
     Cat,
     Dog,
@@ -266,7 +269,7 @@ impl FromStr for Animal {
     }
 }
 
-#[given(regex = r"^a (\S+) (\S+)$")]
+#[given(regex = r"^a (hungry|satiated) (cat|dog|🦀)$")]
 async fn hungry_cat(world: &mut AnimalWorld, state: State, animal: Animal) {
     sleep(Duration::from_secs(2)).await;
 
@@ -282,7 +285,7 @@ async fn hungry_cat(world: &mut AnimalWorld, state: State, animal: Animal) {
     };
 }
 
-#[when(regex = r"^I feed the (\S+) (\d+) times?$")]
+#[when(regex = r"^I feed the (cat|dog|🦀) (\d+) times?$")]
 async fn feed_cat(world: &mut AnimalWorld, animal: Animal, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
@@ -295,7 +298,7 @@ async fn feed_cat(world: &mut AnimalWorld, animal: Animal, times: usize) {
     }
 }
 
-#[then(expr = "the {word} is not hungry")]
+#[then(expr = "the {animal} is not hungry")]
 async fn cat_is_fed(world: &mut AnimalWorld, animal: Animal) {
     sleep(Duration::from_secs(2)).await;
 
