@@ -10,17 +10,21 @@
 
 //! `#[given]`, `#[when]` and `#[then]` attribute macros implementation.
 
-use std::mem;
+use std::{iter, mem};
 
-use cucumber_expressions::Expression;
+use cucumber_expressions::{Expression, Parameter, SingleExpression, Spanned};
 use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use regex::{self, Regex};
 use syn::{
     parse::{Parse, ParseStream},
+    parse_quote,
     spanned::Spanned as _,
 };
+
+/// Names of default [`Parameter`]s.
+const DEFAULT_PARAMETERS: [&str; 5] = ["int", "float", "word", "string", ""];
 
 /// Generates code of `#[given]`, `#[when]` and `#[then]` attribute macros
 /// expansion.
@@ -107,7 +111,8 @@ impl Step {
         let (func_args, addon_parsing) =
             self.fn_arguments_and_additional_parsing()?;
 
-        let step_matcher = self.attr_arg.regex_literal().value();
+        let regex = self.gen_regex()?;
+
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
@@ -122,11 +127,9 @@ impl Step {
                 ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
                     let f = async move {
                         #addon_parsing
-                        ::std::mem::drop(
-                            #func_name(__cucumber_world, #func_args)
-                                #awaiting
-                                #unwrapping,
-                        );
+                        let _ = #func_name(__cucumber_world, #func_args)
+                            #awaiting
+                            #unwrapping;
                     };
                     ::std::boxed::Box::pin(f)
                 }
@@ -161,8 +164,7 @@ impl Step {
                             static LAZY: ::cucumber::codegen::Lazy<
                                 ::cucumber::codegen::Regex
                             > = ::cucumber::codegen::Lazy::new(|| {
-                                ::cucumber::codegen::Regex::new(#step_matcher)
-                                    .unwrap()
+                                #regex
                             });
                             LAZY.clone()
                         };
@@ -345,6 +347,292 @@ impl Step {
             __cucumber_matches.as_slice(),
         })
     }
+
+    /// Generates code constructing a [`Regex`] based on an
+    /// [`AttributeArgument`].
+    ///
+    /// # Errors
+    ///
+    /// - If [`AttributeArgument::Regex`] isn't a valid [`Regex`].
+    /// - If [`AttributeArgument::Expression`] passed to
+    ///   [`gen_expression_regex()`] errors.
+    ///
+    /// [`gen_expression_regex()`]: Self::gen_expression_regex
+    fn gen_regex(&self) -> syn::Result<TokenStream> {
+        match &self.attr_arg {
+            AttributeArgument::Literal(l) => {
+                let lit = syn::LitStr::new(
+                    &format!("^{}$", regex::escape(&l.value())),
+                    l.span(),
+                );
+
+                Ok(quote! { ::cucumber::codegen::Regex::new(#lit).unwrap() })
+            }
+            AttributeArgument::Regex(re) => {
+                drop(Regex::new(re.value().as_str()).map_err(|e| {
+                    syn::Error::new(re.span(), format!("Invalid regex: {}", e))
+                })?);
+
+                Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
+            }
+            AttributeArgument::Expression(expr) => {
+                self.gen_expression_regex(expr)
+            }
+        }
+    }
+
+    /// Generates code constructing [`Regex`] for an
+    /// [`AttributeArgument::Expression`].
+    ///
+    /// # Errors
+    ///
+    /// If [`Parameters::new()`] errors.
+    fn gen_expression_regex(
+        &self,
+        expr: &syn::LitStr,
+    ) -> syn::Result<TokenStream> {
+        let expr = expr.value();
+        let params =
+            Parameters::new(&expr, &self.func, self.step_arg_name.as_ref())?;
+
+        let provider_impl =
+            params.gen_provider_impl(&parse_quote! { Provider });
+        let const_assertions = params.gen_const_assertions();
+
+        Ok(quote! {{
+            #const_assertions
+
+            #[automatically_derived]
+            #[derive(Clone, Copy)]
+            struct Provider;
+
+            #provider_impl
+
+            // This should never fail because:
+            // 1. We checked AST correctness with `Expression::parse()`;
+            // 2. Custom `Parameter::REGEX`es are correct due to be validated
+            //    in `#[derive(Parameter)]` macro expansion;
+            // 3. All the parameter names are equal to the corresponding
+            //    function arguments, so we shouldn't see any
+            //    `UnknownParameterError`s.
+            ::cucumber::codegen::Expression::regex_with_parameters(
+                #expr,
+                Provider,
+            )
+            .unwrap()
+        }})
+    }
+}
+
+/// [`Parameter`] parsed from an [`AttributeArgument::Expression`] along with a
+/// [`fn`] argument's [`syn::Type`] corresponding to it.
+struct ParameterProvider<'p> {
+    /// [`Parameter`] parsed from an [`AttributeArgument::Expression`].
+    param: Parameter<Spanned<'p>>,
+
+    /// [`syn::Type`] of the [`fn`] argument corresponding to the [`Parameter`].
+    ty: syn::Type,
+}
+
+/// Collection of [`ParameterProvider`]s.
+struct Parameters<'p>(Vec<ParameterProvider<'p>>);
+
+impl<'p> Parameters<'p> {
+    /// Creates new [`Parameters`].
+    ///
+    /// # Errors
+    ///
+    /// - If [`Expression::parse()`] errors.
+    /// - If [`parse_fn_arg()`] on one of the `func`'s arguments errors.
+    /// - If non-default [`Parameter`] doesn't have the corresponding `func`'s
+    ///   argument.
+    fn new(
+        expr: &'p str,
+        func: &syn::ItemFn,
+        step: Option<&syn::Ident>,
+    ) -> syn::Result<Self> {
+        let expr = Expression::parse(expr).map_err(|e| {
+            syn::Error::new(
+                expr.span(),
+                format!("Incorrect cucumber expression: {}", e),
+            )
+        })?;
+
+        let param_tys = func
+            .sig
+            .inputs
+            .iter()
+            .skip(1)
+            .filter_map(|arg| {
+                let (ident, ty) = match parse_fn_arg(arg) {
+                    Ok(res) => res,
+                    Err(err) => return Some(Err(err)),
+                };
+                let is_step = step.map(|s| s == ident).unwrap_or_default();
+                (!is_step).then(|| Ok(ty))
+            })
+            .collect::<syn::Result<Vec<_>>>()?;
+
+        expr.0
+            .into_iter()
+            .filter_map(|e| match e {
+                SingleExpression::Parameter(par) => Some(par),
+                SingleExpression::Alternation(_)
+                | SingleExpression::Optional(_)
+                | SingleExpression::Text(_)
+                | SingleExpression::Whitespaces(_) => None,
+            })
+            .zip(param_tys.into_iter().map(Some).chain(iter::repeat(None)))
+            .filter_map(|(ast, ty)| {
+                if DEFAULT_PARAMETERS.iter().any(|s| s == &**ast) {
+                    // If parameter is default, it's ok if there is no type
+                    // corresponding to it, as we know its regex.
+                    ty.cloned()
+                        .map(|ty| Ok(ParameterProvider { param: ast, ty }))
+                } else if let Some(ty) = ty.cloned() {
+                    Some(Ok(ParameterProvider { param: ast, ty }))
+                } else {
+                    Some(Err(syn::Error::new(
+                        func.sig.inputs.span(),
+                        format!(
+                            "Function argument corresponding to the `{{{p}}}` \
+                             parameter isn't found. Consider adding \
+                             argument implementing a `Parameter` trait with \
+                             `Parameter::NAME == {p}`.",
+                            p = *ast,
+                        ),
+                    )))
+                }
+            })
+            .collect::<syn::Result<Vec<_>>>()
+            .map(Self)
+    }
+
+    /// Generates code asserting that all the corresponding
+    /// [`ParameterProvider::param`]s and [`ParameterProvider::ty`]s are
+    /// correct.
+    ///
+    /// Here `correct` means one of 2 things:
+    /// 1. If a [`ParameterProvider::param`] is one of [`DEFAULT_PARAMETERS`],
+    ///    then its [`ParameterProvider::ty`] shouldn't implement a `Parameter`
+    ///    trait, Because in case it does, there is a special `Parameter::NAME`,
+    ///    that should be used instead of the default one, while it cannot be
+    ///    done.
+    /// 2. If a [`ParameterProvider::param`] isn't one of
+    ///    [`DEFAULT_PARAMETERS`], then its [`ParameterProvider::ty`] must
+    ///    implement a `Parameter` trait with
+    ///    `Parameter::NAME == `[`ParameterProvider::param`].
+    fn gen_const_assertions(&self) -> TokenStream {
+        self.0
+            .iter()
+            .map(|par| {
+                let name = par.param.0.fragment();
+                let ty = &par.ty;
+
+                if DEFAULT_PARAMETERS.contains(name) {
+                    // We do use here custom machinery, rather than using
+                    // existing one from `const_assertions` crate, for the
+                    // purpose of better errors reporting when the assertion
+                    // fails.
+                    let trait_with_hint = format_ident!(
+                        "UseParameterNameInsteadOf{}",
+                        to_pascal_case(name),
+                    );
+                    quote! {
+                        // In case we encounter default parameter, we should
+                        // assert that corresponding type __doesn't__ implement
+                        // a `Parameter` trait.
+                        #[automatically_derived]
+                        const _: fn() = || {
+                            // Generic trait with a blanket impl over `()` for
+                            // all types.
+                            #[automatically_derived]
+                            trait #trait_with_hint<A> {
+                                fn method() {}
+                            }
+
+                            #[automatically_derived]
+                            impl<T: ?Sized> #trait_with_hint<()> for T {}
+
+                            // Used for the specialized impl when `Parameter` is
+                            // implemented.
+                            #[automatically_derived]
+                            #[allow(dead_code)]
+                            struct Invalid;
+
+                            #[automatically_derived]
+                            impl<T: ?Sized + ::cucumber::Parameter>
+                                #trait_with_hint<Invalid> for T {}
+
+                            // If there is only one specialized trait impl, type
+                            // inference with `_` can be resolved and this can
+                            // compile. Fails to compile if `#ty` implements
+                            // `#trait_with_hint<Invalid>`.
+                            let _: fn() = <#ty as #trait_with_hint<_>>::method;
+                        };
+                    }
+                } else {
+                    quote! {
+                        // In case we encounter a custom parameter, we should
+                        // assert that the corresponding type implements
+                        // `Parameter` and has correct `Parameter::NAME`.
+                        // TODO: Panic here, once `const_panic` is stabilized.
+                        //       https://github.com/rust-lang/rust/pull/89508
+                        #[automatically_derived]
+                        #[allow(unknown_lints, eq_op)]
+                        const _: [
+                            ();
+                            0 - !{
+                                const ASSERT: bool =
+                                    ::cucumber::codegen::str_eq(
+                                        <#ty as ::cucumber::Parameter>::NAME,
+                                        #name,
+                                    );
+                                ASSERT
+                            } as usize
+                        ] = [];
+                    }
+                }
+            })
+            .collect()
+    }
+
+    /// Generates code implementing a [`Provider`] for the given `ty`pe.
+    ///
+    /// [`Provider`]: cucumber_expressions::expand::parameters::Provider
+    fn gen_provider_impl(&self, ty: &syn::Type) -> TokenStream {
+        let (custom_par, custom_par_ty): (Vec<_>, Vec<_>) = self
+            .0
+            .iter()
+            .filter_map(|par| {
+                let name = par.param.0.fragment();
+                (!DEFAULT_PARAMETERS.contains(name)).then(|| (*name, &par.ty))
+            })
+            .unzip();
+
+        quote! {
+            #[automatically_derived]
+            impl<'s> ::cucumber::codegen::ParametersProvider<
+                ::cucumber::codegen::Spanned<'s>
+            > for #ty {
+                type Item = char;
+                type Value = &'static str;
+
+                fn get(
+                    &self,
+                    input: &::cucumber::codegen::Spanned<'s>,
+                ) -> ::std::option::Option<Self::Value> {
+                    #( if *input.fragment() == #custom_par {
+                        ::std::option::Option::Some(
+                            <#custom_par_ty as ::cucumber::Parameter>::REGEX,
+                        )
+                    } else )* {
+                        ::std::option::Option::None
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Argument of the attribute macro.
@@ -360,21 +648,6 @@ enum AttributeArgument {
     Expression(syn::LitStr),
 }
 
-impl AttributeArgument {
-    /// Returns a [`syn::LitStr`] to construct a [`Regex`] with.
-    ///
-    /// [`syn::LitStr`]: struct@syn::LitStr
-    fn regex_literal(&self) -> syn::LitStr {
-        match self {
-            Self::Regex(l) | Self::Expression(l) => l.clone(),
-            Self::Literal(l) => syn::LitStr::new(
-                &format!("^{}$", regex::escape(&l.value())),
-                l.span(),
-            ),
-        }
-    }
-}
-
 impl Parse for AttributeArgument {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let arg = input.parse::<syn::NestedMeta>()?;
@@ -382,38 +655,10 @@ impl Parse for AttributeArgument {
             syn::NestedMeta::Meta(syn::Meta::NameValue(arg)) => {
                 match arg.path.get_ident() {
                     Some(i) if i == "regex" => {
-                        let str_lit = to_string_literal(arg.lit)?;
-
-                        drop(Regex::new(str_lit.value().as_str()).map_err(
-                            |e| {
-                                syn::Error::new(
-                                    str_lit.span(),
-                                    format!("Invalid regex: {}", e),
-                                )
-                            },
-                        )?);
-
-                        Ok(Self::Regex(str_lit))
+                        Ok(Self::Regex(to_string_literal(arg.lit)?))
                     }
                     Some(i) if i == "expr" => {
-                        let str_lit = to_string_literal(arg.lit)?;
-
-                        let expr_regex =
-                            Expression::regex(str_lit.value().as_str())
-                                .map_err(|e| {
-                                    syn::Error::new(
-                                        str_lit.span(),
-                                        format!(
-                                            "Invalid cucumber expression: {}",
-                                            e,
-                                        ),
-                                    )
-                                })?;
-
-                        Ok(Self::Expression(syn::LitStr::new(
-                            expr_regex.as_str(),
-                            str_lit.span(),
-                        )))
+                        Ok(Self::Expression(to_string_literal(arg.lit)?))
                     }
                     _ => Err(syn::Error::new(
                         arg.span(),
