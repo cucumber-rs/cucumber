@@ -14,6 +14,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### BC Breaks
 
 - Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
+- Renamed `Normalized` and `Summarized` `Writer`s to `Normalize` and `Summarize`. ([#162])
+- Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 
 ### Added
 
@@ -23,6 +25,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Json` ([Cucumber JSON format][0110-2]) behind the `output-json` feature flag. ([#159])
 - `writer::Tee` for outputting to multiple terminating `Writer`s simultaneously. ([#160])
 - `writer::discard::Arbitrary` and `writer::discard::Failure` for providing no-op implementations of the corresponding `Writer` traits. ([#160])
+- Inability to build invalid `Writer`s pipelines:
+    - `writer::Normalized` trait required for `Writer`s in `Cucumber` running methods. ([#162])
+    - `writer::NonTransforming` trait required for `writer::Repeat`. ([#162])
+    - `writer::Summarizable` trait required for `writer::Summarize`. ([#162])
+- Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
+- Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 
 ### Fixed
 
@@ -31,10 +39,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
+[#157]: /../../pull/157
 [#159]: /../../pull/159
 [#160]: /../../pull/160
+[#162]: /../../pull/162
 [#163]: /../../pull/163
 [#165]: /../../pull/165
+[#166]: /../../pull/166
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
@@ -258,4 +269,5 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
 
+[Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [Semantic Versioning 2.0.0]: https://semver.org

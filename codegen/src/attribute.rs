@@ -12,6 +12,7 @@
 
 use std::mem;
 
+use cucumber_expressions::Expression;
 use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -199,10 +200,13 @@ impl Step {
     fn fn_arguments_and_additional_parsing(
         &self,
     ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
-        let is_regex = matches!(self.attr_arg, AttributeArgument::Regex(_));
+        let is_regex_or_expr = matches!(
+            self.attr_arg,
+            AttributeArgument::Regex(_) | AttributeArgument::Expression(_),
+        );
         let func = &self.func;
 
-        if is_regex {
+        if is_regex_or_expr {
             if let Some(elem_ty) = find_first_slice(&func.sig) {
                 let addon_parsing = Some(quote! {
                     let __cucumber_matches = __cucumber_ctx
@@ -351,6 +355,9 @@ enum AttributeArgument {
 
     /// `#[step(regex = "regex")]` case.
     Regex(syn::LitStr),
+
+    /// `#[step(expr = "cucumber-expression")]` case.
+    Expression(syn::LitStr),
 }
 
 impl AttributeArgument {
@@ -359,7 +366,7 @@ impl AttributeArgument {
     /// [`syn::LitStr`]: struct@syn::LitStr
     fn regex_literal(&self) -> syn::LitStr {
         match self {
-            Self::Regex(l) => l.clone(),
+            Self::Regex(l) | Self::Expression(l) => l.clone(),
             Self::Literal(l) => syn::LitStr::new(
                 &format!("^{}$", regex::escape(&l.value())),
                 l.span(),
@@ -373,21 +380,45 @@ impl Parse for AttributeArgument {
         let arg = input.parse::<syn::NestedMeta>()?;
         match arg {
             syn::NestedMeta::Meta(syn::Meta::NameValue(arg)) => {
-                if arg.path.is_ident("regex") {
-                    let str_lit = to_string_literal(arg.lit)?;
+                match arg.path.get_ident() {
+                    Some(i) if i == "regex" => {
+                        let str_lit = to_string_literal(arg.lit)?;
 
-                    drop(Regex::new(str_lit.value().as_str()).map_err(
-                        |e| {
-                            syn::Error::new(
-                                str_lit.span(),
-                                format!("Invalid regex: {}", e),
-                            )
-                        },
-                    )?);
+                        drop(Regex::new(str_lit.value().as_str()).map_err(
+                            |e| {
+                                syn::Error::new(
+                                    str_lit.span(),
+                                    format!("Invalid regex: {}", e),
+                                )
+                            },
+                        )?);
 
-                    Ok(Self::Regex(str_lit))
-                } else {
-                    Err(syn::Error::new(arg.span(), "Expected regex argument"))
+                        Ok(Self::Regex(str_lit))
+                    }
+                    Some(i) if i == "expr" => {
+                        let str_lit = to_string_literal(arg.lit)?;
+
+                        let expr_regex =
+                            Expression::regex(str_lit.value().as_str())
+                                .map_err(|e| {
+                                    syn::Error::new(
+                                        str_lit.span(),
+                                        format!(
+                                            "Invalid cucumber expression: {}",
+                                            e,
+                                        ),
+                                    )
+                                })?;
+
+                        Ok(Self::Expression(syn::LitStr::new(
+                            expr_regex.as_str(),
+                            str_lit.span(),
+                        )))
+                    }
+                    _ => Err(syn::Error::new(
+                        arg.span(),
+                        "Expected `regex` or `expr` argument",
+                    )),
                 }
             }
 
@@ -395,7 +426,7 @@ impl Parse for AttributeArgument {
 
             syn::NestedMeta::Meta(_) => Err(syn::Error::new(
                 arg.span(),
-                "Expected string literal or regex argument",
+                "Expected string literal, `regex` or `expr` argument",
             )),
         }
     }

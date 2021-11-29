@@ -173,7 +173,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 <script id="asciicast-o1s4mSMYkkVBy4WAsG8lhYtT8" src="https://asciinema.org/a/o1s4mSMYkkVBy4WAsG8lhYtT8.js" async data-autoplay="true" data-rows="18"></script>
 
 
-### Combining `regex` and `FromStr`
+### Combining `regex`/`cucumber-expressions` and `FromStr`
 
 At parsing stage, `<templates>` are replaced by value from cells. That means you can parse table cells into any type, that implements [`FromStr`](https://doc.rust-lang.org/stable/std/str/trait.FromStr.html).
 
@@ -194,38 +194,42 @@ Feature: Animal feature
 
 ```rust
 # use std::{convert::Infallible, str::FromStr, time::Duration};
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
-# 
-# #[derive(Debug)]
-# struct Cat {
-#     pub hungry: bool,
-# }
-# 
-# impl Cat {
-#     fn feed(&mut self) {
-#         self.hungry = false;
-#     }
-# }
-# 
-# #[derive(Debug, WorldInit)]
-# pub struct AnimalWorld {
-#     cat: Cat,
-# }
-# 
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
-# }
-# 
+#
+#[derive(Debug)]
+struct AnimalState {
+    pub hungry: bool
+}
+
+impl AnimalState {
+    fn feed(&mut self) {
+        self.hungry = false;
+    }
+}
+
+#[derive(Debug, WorldInit)]
+pub struct AnimalWorld {
+    cat: AnimalState,
+    dog: AnimalState,
+    ferris: AnimalState,
+}
+
+#[async_trait(?Send)]
+impl World for AnimalWorld {
+    type Error = Infallible;
+
+    async fn new() -> Result<Self, Infallible> {
+        Ok(Self {
+            cat: AnimalState { hungry: false },
+            dog: AnimalState { hungry: false },
+            ferris: AnimalState { hungry: false },
+        })
+    }
+}
+
 enum State {
     Hungry,
     Satiated,
@@ -243,32 +247,65 @@ impl FromStr for State {
     }
 }
 
-#[given(regex = r"^a (\S+) (\S+)$")]
-async fn hungry_cat(world: &mut AnimalWorld, state: State) {
-    sleep(Duration::from_secs(2)).await;
+enum Animal {
+    Cat,
+    Dog,
+    Ferris,
+}
 
-    match state {
-        State::Hungry => world.cat.hungry = true,
-        State::Satiated => world.cat.hungry = false,
+impl FromStr for Animal {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cat" => Ok(Self::Cat),
+            "dog" => Ok(Self::Dog),
+            "🦀" => Ok(Self::Ferris),
+            _ => Err("expected 'cat', 'dog' or '🦀'"),
+        }
     }
 }
 
-#[when(regex = r"^I feed the (?:\S+) (\d+) times?$")]
-async fn feed_cat(world: &mut AnimalWorld, times: usize) {
+#[given(regex = r"^a (\S+) (\S+)$")]
+async fn hungry_cat(world: &mut AnimalWorld, state: State, animal: Animal) {
+    sleep(Duration::from_secs(2)).await;
+
+    let hunger = match state {
+        State::Hungry => true,
+        State::Satiated => false,
+    };
+
+    match animal {
+        Animal::Cat => world.cat.hungry = hunger,
+        Animal::Dog => world.dog.hungry = hunger,
+        Animal::Ferris => world.ferris.hungry = hunger,
+    };
+}
+
+#[when(regex = r"^I feed the (\S+) (\d+) times?$")]
+async fn feed_cat(world: &mut AnimalWorld, animal: Animal, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
     for _ in 0..times {
-        world.cat.feed();
+        match animal {
+            Animal::Cat => world.cat.feed(),
+            Animal::Dog => world.dog.feed(),
+            Animal::Ferris => world.ferris.feed(),
+        };
     }
 }
 
-#[then(regex = r"^the (\S+) is not hungry$")]
-async fn cat_is_fed(world: &mut AnimalWorld) {
+#[then(expr = "the {word} is not hungry")]
+async fn cat_is_fed(world: &mut AnimalWorld, animal: Animal) {
     sleep(Duration::from_secs(2)).await;
 
-    assert!(!world.cat.hungry);
+    match animal {
+        Animal::Cat => assert!(!world.cat.hungry),
+        Animal::Dog => assert!(!world.dog.hungry),
+        Animal::Ferris => assert!(!world.ferris.hungry),
+    };
 }
-# 
+#
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::run("/tests/features/book/features/scenario_outline_fromstr.feature").await;
@@ -393,7 +430,7 @@ cargo test --test <test-name> -- --help
 
 Default output is:
 ```
-cucumber 0.10.0
+cucumber
 Run the tests, pet a dog!
 
 USAGE:
@@ -411,7 +448,9 @@ OPTIONS:
     -c, --concurrency <int>            Number of scenarios to run concurrently. If not specified, uses the value
                                        configured in tests runner, or 64 by default
     -n, --name <regex>                 Regex to filter scenarios by their name [aliases: scenario-name]
-    -t, --tags <tagexpr>               Tag expression to filter scenarios by [aliases: scenario-tags]
+    -t, --tags <tagexpr>               Tag expression to filter scenarios by.
+                                       Note: Tags from Feature, Rule and Scenario are merged together on filtering, 
+                                       so be careful about conflicting tags on different levels. 
 ```
 
 Example with [tag expressions](https://cucumber.io/docs/cucumber/api#tag-expressions) for filtering `Scenario`s:
@@ -508,10 +547,11 @@ use cucumber::{writer, WriterExt as _};
 let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(
-        writer::Basic::default()
-            .summarized()
-            .tee::<World, _>(writer::Json::for_tee(file))
-            .normalized(),
+        // `Writer`s pipeline is constructed in a reversed order.
+        writer::Basic::stdout() // And output to STDOUT.
+            .summarized()       // Simultaneously, add execution summary.
+            .tee::<World, _>(writer::Json::for_tee(file)) // Then, output to JSON file.
+            .normalized()       // First, normalize events order.
     )
     .run_and_exit("tests/features/book")
     .await;

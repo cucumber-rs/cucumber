@@ -19,10 +19,10 @@ pub mod fail_on_skipped;
 pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
-pub mod normalized;
+pub mod normalize;
 pub mod out;
 pub mod repeat;
-pub mod summarized;
+pub mod summarize;
 pub mod tee;
 
 use async_trait::async_trait;
@@ -39,19 +39,29 @@ pub use self::json::Json;
 pub use self::junit::JUnit;
 #[doc(inline)]
 pub use self::{
-    basic::Basic, fail_on_skipped::FailOnSkipped, normalized::Normalized,
-    repeat::Repeat, summarized::Summarized, tee::Tee,
+    basic::{Basic, Coloring},
+    fail_on_skipped::FailOnSkipped,
+    normalize::{Normalize, Normalized},
+    repeat::Repeat,
+    summarize::{Summarizable, Summarize},
+    tee::Tee,
 };
 
 /// Writer of [`Cucumber`] events to some output.
 ///
+/// As [`Runner`] produces events in a [happened-before] order (see
+/// [its order guarantees][1]), [`Writer`]s are required to be [`Normalized`].
+///
 /// As [`Cucumber::run()`] returns [`Writer`], it can hold some state inside for
-/// inspection after execution. See [`Summarized`] and
+/// inspection after execution. See [`Summarize`] and
 /// [`Cucumber::run_and_exit()`] for examples.
 ///
 /// [`Cucumber`]: crate::event::Cucumber
 /// [`Cucumber::run()`]: crate::Cucumber::run
 /// [`Cucumber::run_and_exit()`]: crate::Cucumber::run_and_exit
+/// [`Runner`]: crate::Runner
+/// [1]: crate::Runner#order-guarantees
+/// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
 #[async_trait(?Send)]
 pub trait Writer<World> {
     /// CLI options of this [`Writer`]. In case no options should be introduced,
@@ -123,17 +133,17 @@ pub trait Failure<World>: Writer<World> {
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext: Sized {
-    /// Wraps this [`Writer`] into a [`Normalized`] version.
+    /// Wraps this [`Writer`] into a [`Normalize`]d version.
     ///
-    /// See [`Normalized`] for more information.
+    /// See [`Normalize`] for more information.
     #[must_use]
-    fn normalized<W>(self) -> Normalized<W, Self>;
+    fn normalized<W>(self) -> Normalize<W, Self>;
 
     /// Wraps this [`Writer`] to print a summary at the end of an output.
     ///
-    /// See [`Summarized`] for more information.
+    /// See [`Summarize`] for more information.
     #[must_use]
-    fn summarized(self) -> Summarized<Self>;
+    fn summarized(self) -> Summarize<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
     /// [`Scenario`] isn't marked with `@allow_skipped` tag.
@@ -217,12 +227,12 @@ pub trait Ext: Sized {
 
 #[sealed]
 impl<T> Ext for T {
-    fn normalized<W>(self) -> Normalized<W, Self> {
-        Normalized::new(self)
+    fn normalized<W>(self) -> Normalize<W, Self> {
+        Normalize::new(self)
     }
 
-    fn summarized(self) -> Summarized<Self> {
-        Summarized::from(self)
+    fn summarized(self) -> Summarize<Self> {
+        Summarize::from(self)
     }
 
     fn fail_on_skipped(self) -> FailOnSkipped<Self> {
@@ -267,3 +277,127 @@ impl<T> Ext for T {
         discard::Failure::wrap(self)
     }
 }
+
+/// Marker indicating that a [`Writer`] doesn't transform or rearrange events.
+///
+/// It's used to ensure that a [`Writer`]s pipeline is built in the right order,
+/// avoiding situations like an event transformation isn't done before it's
+/// [`Repeat`]ed.
+///
+/// # Example
+///
+/// If you want to pipeline [`FailOnSkipped`], [`Summarize`] and [`Repeat`]
+/// [`Writer`]s, the code won't compile because of the wrong pipelining order.
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout()
+///             .fail_on_skipped() // Fails as `Repeat` will re-output skipped
+///             .repeat_failed()   // steps instead of failed ones.
+///             .summarized()
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust,compile_fail
+/// # use std::convert::Infallible;
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout()
+///             .repeat_failed()
+///             .fail_on_skipped() // Fails as `Summarize` will count skipped
+///             .summarized()      // steps instead of `failed` ones.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// ```rust
+/// # use std::{convert::Infallible, panic::AssertUnwindSafe};
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// # use futures::FutureExt as _;
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// # let fut = async {
+/// MyWorld::cucumber()
+///     .with_writer(
+///         // `Writer`s pipeline is constructed in a reversed order.
+///         writer::Basic::stdout() // And, finally, print them.
+///             .repeat_failed()    // Then, repeat failed ones once again.
+///             .summarized()       // Only then, count summary for them.
+///             .fail_on_skipped(), // First, transform skipped steps to failed.
+///     )
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # };
+/// # let err = AssertUnwindSafe(fut)
+/// #     .catch_unwind()
+/// #     .await
+/// #     .expect_err("should err");
+/// # let err = err.downcast_ref::<String>().unwrap();
+/// # assert_eq!(err, "1 step failed");
+/// # }
+/// ```
+///
+/// [`Failed`]: event::Step::Failed
+/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
+/// [`Skipped`]: event::Step::Skipped
+pub trait NonTransforming {}

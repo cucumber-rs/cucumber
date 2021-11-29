@@ -15,9 +15,7 @@ use std::cmp;
 use async_trait::async_trait;
 use futures::future;
 
-use crate::{
-    cli, event, parser, ArbitraryWriter, Event, FailureWriter, World, Writer,
-};
+use crate::{cli, event, parser, writer, Event, World, Writer};
 
 /// Wrapper for passing events to multiple terminating [`Writer`]s
 /// simultaneously.
@@ -31,6 +29,8 @@ use crate::{
 /// [`WriterExt::discard_failure_writes()`][2] methods to provide the one with
 /// no-op implementations.
 ///
+/// [`ArbitraryWriter`]: writer::Arbitrary
+/// [`FailureWriter`]: writer::Failure
 /// [1]: crate::WriterExt::discard_arbitrary_writes
 /// [2]: crate::WriterExt::discard_failure_writes
 #[derive(Clone, Copy, Debug)]
@@ -74,11 +74,11 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, L, R, Val> ArbitraryWriter<'val, W, Val> for Tee<L, R>
+impl<'val, W, L, R, Val> writer::Arbitrary<'val, W, Val> for Tee<L, R>
 where
     W: World,
-    L: ArbitraryWriter<'val, W, Val>,
-    R: ArbitraryWriter<'val, W, Val>,
+    L: writer::Arbitrary<'val, W, Val>,
+    R: writer::Arbitrary<'val, W, Val>,
     Val: Clone + 'val,
 {
     async fn write(&mut self, val: Val)
@@ -89,10 +89,10 @@ where
     }
 }
 
-impl<W, L, R> FailureWriter<W> for Tee<L, R>
+impl<W, L, R> writer::Failure<W> for Tee<L, R>
 where
-    L: FailureWriter<W>,
-    R: FailureWriter<W>,
+    L: writer::Failure<W>,
+    R: writer::Failure<W>,
     Self: Writer<W>,
 {
     fn failed_steps(&self) -> usize {
@@ -109,4 +109,18 @@ where
         // Either one of them is zero, or both numbers are the same.
         cmp::max(self.left.hook_errors(), self.right.hook_errors())
     }
+}
+
+impl<L, R> writer::Normalized for Tee<L, R>
+where
+    L: writer::Normalized,
+    R: writer::Normalized,
+{
+}
+
+impl<L, R> writer::NonTransforming for Tee<L, R>
+where
+    L: writer::NonTransforming,
+    R: writer::NonTransforming,
+{
 }

@@ -115,7 +115,7 @@ macro_rules! step_attribute {
         /// # use std::{convert::Infallible};
         /// #
         /// # use async_trait::async_trait;
-        /// use cucumber::{given, World, WorldInit};
+        /// use cucumber::{given, when, World, WorldInit};
         ///
         /// #[derive(Debug, WorldInit)]
         /// struct MyWorld;
@@ -130,6 +130,7 @@ macro_rules! step_attribute {
         /// }
         ///
         /// #[given(regex = r"(\S+) is (\d+)")]
+        /// #[when(expr = "{word} is {int}")]
         /// fn test(w: &mut MyWorld, param: String, num: i32) {
         ///     assert_eq!(param, "foo");
         ///     assert_eq!(num, 0);
@@ -141,7 +142,24 @@ macro_rules! step_attribute {
         /// }
         /// ```
         ///
-        /// # Arguments
+        /// # Attribute arguments
+        ///
+        /// - `#[given(regex = "regex")]`
+        ///
+        ///   Uses [`Regex`] for matching the step. [`Regex`] is checked at
+        ///   compile time to have valid syntax.
+        ///
+        /// - `#[given(expr = "cucumber-expression")]`
+        ///
+        ///   Uses [Cucumber Expression][1] for matching the step. It's checked
+        ///   at compile time to have valid syntax.
+        ///
+        /// - `#[given("literal")]`
+        ///
+        ///   Matches the step with an **exact** literal only. Doesn't allow any
+        ///   values capturing to use as function arguments.
+        ///
+        /// # Function arguments
         ///
         /// - First argument has to be mutable reference to the [`WorldInit`]
         ///   deriver (your [`World`] implementer).
@@ -193,8 +211,10 @@ macro_rules! step_attribute {
         ///
         /// [`Display`]: std::fmt::Display
         /// [`FromStr`]: std::str::FromStr
+        /// [`Regex`]: regex::Regex
         /// [`gherkin::Step`]: https://bit.ly/3j42hcd
         /// [`World`]: https://bit.ly/3j0aWw7
+        /// [1]: cucumber_expressions
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {
             attribute::step(std::stringify!($name), args.into(), input.into())

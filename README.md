@@ -53,7 +53,7 @@ impl cucumber::World for World {
     }
 }
 
-#[given(regex = r"^(\S+) is hungry$")]
+#[given(expr = "{word} is hungry")]
 async fn someone_is_hungry(w: &mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
     
@@ -69,7 +69,7 @@ async fn eat_cucumbers(w: &mut World, count: usize) {
     assert!(w.capacity < 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
-#[then(regex = r"^(?:he|she|they) (?:is|are) full$")]
+#[then(expr = "he/she/they is/are full")]
 async fn is_full(w: &mut World) {
     sleep(Duration::from_secs(2)).await;
 

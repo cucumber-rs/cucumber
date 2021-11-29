@@ -18,17 +18,24 @@ use sealed::sealed;
 pub trait Ext {
     /// Evaluates this [`TagOperation`] for the given `tags`.
     #[must_use]
-    fn eval(&self, tags: &[String]) -> bool;
+    fn eval<I, S>(&self, tags: I) -> bool
+    where
+        S: AsRef<str>,
+        I: IntoIterator<Item = S> + Clone;
 }
 
 #[sealed]
 impl Ext for TagOperation {
-    fn eval(&self, tags: &[String]) -> bool {
+    fn eval<I, S>(&self, tags: I) -> bool
+    where
+        S: AsRef<str>,
+        I: IntoIterator<Item = S> + Clone,
+    {
         match self {
-            Self::And(l, r) => l.eval(tags) & r.eval(tags),
-            Self::Or(l, r) => l.eval(tags) | r.eval(tags),
+            Self::And(l, r) => l.eval(tags.clone()) & r.eval(tags),
+            Self::Or(l, r) => l.eval(tags.clone()) | r.eval(tags),
             Self::Not(t) => !t.eval(tags),
-            Self::Tag(t) => tags.iter().any(|tag| tag == t),
+            Self::Tag(t) => tags.into_iter().any(|tag| tag.as_ref() == t),
         }
     }
 }

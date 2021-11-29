@@ -27,8 +27,12 @@ use structopt::StructOpt;
 use crate::{
     event::{self, Info},
     parser,
-    writer::out::{Styles, WriteStrExt as _},
-    ArbitraryWriter, Event, World, Writer,
+    writer::{
+        self,
+        out::{Styles, WriteStrExt as _},
+        Ext as _,
+    },
+    Event, World, Writer,
 };
 
 // Workaround for overwritten doc-comments.
@@ -85,14 +89,13 @@ impl FromStr for Coloring {
 ///
 /// # Ordering
 ///
-/// It naively and immediately outputs anything it receives from a [`Runner`],
-/// so in case the later executes [`Scenario`]s concurrently, the output will be
-/// mixed and unordered. To output in a readable order, consider to wrap this
-/// [`Basic`] [`Writer`] into a [`writer::Normalized`].
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
+/// a [`writer::Normalize`], otherwise will produce output [`Event`]s in a
+/// broken order.
 ///
+/// [`Normalized`]: writer::Normalized
 /// [`Runner`]: crate::runner::Runner
 /// [`Scenario`]: gherkin::Scenario
-/// [`writer::Normalized`]: crate::writer::Normalized
 #[derive(Debug, Deref, DerefMut)]
 pub struct Basic<Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to write the output into.
@@ -149,7 +152,7 @@ where
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Val, Out> ArbitraryWriter<'val, W, Val> for Basic<Out>
+impl<'val, W, Val, Out> writer::Arbitrary<'val, W, Val> for Basic<Out>
 where
     W: World + Debug,
     Val: AsRef<str> + 'val,
@@ -165,16 +168,43 @@ where
     }
 }
 
-impl Default for Basic {
-    fn default() -> Self {
+impl<O: io::Write> writer::NonTransforming for Basic<O> {}
+
+impl Basic {
+    /// Creates a new [`Normalized`] [`Basic`] [`Writer`] outputting to
+    /// [`io::Stdout`].
+    ///
+    /// [`Normalized`]: writer::Normalized
+    #[must_use]
+    pub fn stdout<W>() -> writer::Normalize<W, Self> {
         Self::new(io::stdout(), Coloring::Auto, false)
     }
 }
 
 impl<Out: io::Write> Basic<Out> {
-    /// Creates a new [`Basic`] [`Writer`].
+    /// Creates a new [`Normalized`] [`Basic`] [`Writer`] outputting to the
+    /// given `output`.
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn new(output: Out, color: Coloring, verbose: bool) -> Self {
+    pub fn new<W>(
+        output: Out,
+        color: Coloring,
+        verbose: bool,
+    ) -> writer::Normalize<W, Self> {
+        Self::raw(output, color, verbose).normalized()
+    }
+
+    /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`] outputting to the
+    /// given `output`.
+    ///
+    /// Use it only if you know what you're doing. Otherwise, consider using
+    /// [`Basic::new()`] which creates an already [`Normalized`] version of a
+    /// [`Basic`] [`Writer`].
+    ///
+    /// [`Normalized`]: writer::Normalized
+    #[must_use]
+    pub fn raw(output: Out, color: Coloring, verbose: bool) -> Self {
         let mut basic = Self {
             output,
             styles: Styles::new(),
