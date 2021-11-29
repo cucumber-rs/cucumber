@@ -16,7 +16,9 @@ use async_trait::async_trait;
 
 use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
-pub use cucumber_expressions::Expression;
+pub use cucumber_expressions::{
+    expand::parameters::Provider, Expression, Spanned,
+};
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
 pub use once_cell::sync::Lazy;
