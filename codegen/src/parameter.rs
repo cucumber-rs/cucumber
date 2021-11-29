@@ -20,7 +20,7 @@ use synthez::{ParseAttrs, Required, ToTokens};
 ///
 /// # Errors
 ///
-/// If failed to parse [`Attrs`].
+/// If failed to parse [`Attrs`] or the user-provided [`Regex`] is invalid.
 pub(crate) fn derive(input: TokenStream) -> syn::Result<TokenStream> {
     let input = syn::parse2::<syn::DeriveInput>(input)?;
     let definition = Definition::try_from(input)?;
@@ -31,30 +31,30 @@ pub(crate) fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 /// Helper attributes of `#[derive(Parameter)]` macro.
 #[derive(Debug, Default, ParseAttrs)]
 struct Attrs {
-    /// `Parameter::REGEX` associated const.
+    /// Value for a `Parameter::REGEX` associated constant.
     #[parse(value)]
     regex: Required<syn::LitStr>,
 
-    /// `Parameter::NAME` associated const.
+    /// Value for a `Parameter::NAME` associated constant.
     #[parse(value)]
     name: Option<syn::LitStr>,
 }
 
-/// Representation of a struct implementing `Parameter`, used for code
+/// Representation of a type implementing a `Parameter` trait, used for code
 /// generation.
 #[derive(Debug, ToTokens)]
 #[to_tokens(append(impl_parameter))]
 struct Definition {
-    /// [`syn::Ident`](struct@syn::Ident) of this type.
+    /// Name of this type.
     ident: syn::Ident,
 
     /// [`syn::Generics`] of this type.
     generics: syn::Generics,
 
-    /// `Parameter::REGEX` associated const.
+    /// Value for a `Parameter::REGEX` associated constant.
     regex: Regex,
 
-    /// `Parameter::NAME` associated const.
+    /// Value for a `Parameter::Name` associated constant.
     name: String,
 }
 
@@ -70,7 +70,7 @@ impl TryFrom<syn::DeriveInput> for Definition {
         if regex.captures_len() > 1 {
             return Err(syn::Error::new(
                 attrs.regex.span(),
-                "Regex shouldn't contain capture groups",
+                "Regex shouldn't contain any capturing groups",
             ));
         }
 
@@ -89,7 +89,7 @@ impl TryFrom<syn::DeriveInput> for Definition {
 }
 
 impl Definition {
-    /// Generates code to derive `Parameter` impl.
+    /// Generates code of implementing a `Parameter` trait.
     #[must_use]
     fn impl_parameter(&self) -> TokenStream {
         let ty = &self.ident;
@@ -222,6 +222,9 @@ mod spec {
 
         let err = super::derive(input).unwrap_err();
 
-        assert_eq!(err.to_string(), "Regex shouldn't contain capture groups");
+        assert_eq!(
+            err.to_string(),
+            "Regex shouldn't contain any capturing groups",
+        );
     }
 }

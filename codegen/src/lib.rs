@@ -94,8 +94,8 @@
 )]
 
 mod attribute;
-mod derive;
 mod parameter;
+mod world_init;
 
 use proc_macro::TokenStream;
 
@@ -126,7 +126,7 @@ macro_rules! step_attribute {
         ///     type Error = Infallible;
         ///
         ///     async fn new() -> Result<Self, Self::Error> {
-        ///         Ok(Self {})
+        ///         Ok(Self)
         ///     }
         /// }
         ///
@@ -183,7 +183,7 @@ macro_rules! step_attribute {
         /// #     type Error = Infallible;
         /// #
         /// #     async fn new() -> Result<Self, Self::Error> {
-        /// #         Ok(Self {})
+        /// #         Ok(Self)
         /// #     }
         /// # }
         /// #
@@ -236,7 +236,7 @@ macro_rules! steps {
         /// for further details.
         #[proc_macro_derive(WorldInit)]
         pub fn derive_init(input: TokenStream) -> TokenStream {
-            derive::world_init(input.into(), &[$(std::stringify!($name)),*])
+            world_init::derive(input.into(), &[$(std::stringify!($name)),*])
                 .unwrap_or_else(syn::Error::into_compile_error)
                 .into()
         }
@@ -247,16 +247,17 @@ macro_rules! steps {
 
 steps!(given, when, then);
 
-/// In addition to the [default parameters] you can implement custom parameters.
+/// In addition to [default parameters] of [Cucumber Expressions], you may
+/// implement and use custom ones.
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
 /// # use std::{convert::Infallible};
 /// #
 /// # use async_trait::async_trait;
-/// # use derive_more::{Deref, FromStr};
 /// use cucumber::{given, when, Parameter, World, WorldInit};
+/// use derive_more::{Deref, FromStr};
 ///
 /// #[derive(Debug, WorldInit)]
 /// struct MyWorld;
@@ -266,11 +267,11 @@ steps!(given, when, then);
 ///     type Error = Infallible;
 ///
 ///     async fn new() -> Result<Self, Self::Error> {
-///         Ok(Self {})
+///         Ok(Self)
 ///     }
 /// }
 ///
-/// #[given(regex = r"(\S+) is (\d+)")]
+/// #[given(regex = r"^(\S+) is (\d+)$")]
 /// #[when(expr = "{word} is {u64}")]
 /// fn test(w: &mut MyWorld, param: String, num: CustomU64) {
 ///     assert_eq!(param, "foo");
@@ -278,7 +279,7 @@ steps!(given, when, then);
 /// }
 ///
 /// #[derive(Deref, FromStr, Parameter)]
-/// #[param(regex = "\\d+", name = "u64")]
+/// #[param(regex = r"\d+", name = "u64")]
 /// struct CustomU64(u64);
 /// #
 /// # #[tokio::main]
@@ -287,19 +288,19 @@ steps!(given, when, then);
 /// # }
 /// ```
 ///
-/// # Attributes
+/// # Attribute arguments
 ///
 /// - `#[param(regex = "regex")]`
 ///
-/// [`Regex`] to match this parameter. Shouldn't contain capture groups.
+///   [`Regex`] to match this parameter. Shouldn't contain any capturing groups.
 ///
 /// - `#[param(name = "name")]` (optional)
 ///
-/// Name which this parameter will be referenced by. By default will be
-/// lowercased struct ident.
-///
+///   Name of this parameter to reference it by. If not specified, then
+///   lower-cased type name will be used by default.
 ///
 /// [`Regex`]: regex::Regex
+/// [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 /// [default parameters]: cucumber_expressions::Expression#parameter-types
 #[proc_macro_derive(Parameter, attributes(param))]
 pub fn parameter(input: TokenStream) -> TokenStream {

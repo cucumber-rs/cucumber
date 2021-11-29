@@ -16,7 +16,7 @@ use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
 #[allow(clippy::similar_names)]
-pub(crate) fn world_init(
+pub(crate) fn derive(
     input: TokenStream,
     steps: &[&str],
 ) -> syn::Result<TokenStream> {
@@ -101,7 +101,7 @@ mod spec {
     use syn::parse_quote;
 
     #[test]
-    fn expand() {
+    fn expands() {
         let input = parse_quote! {
             pub struct World;
         };
@@ -202,7 +202,7 @@ mod spec {
         };
 
         assert_eq!(
-            super::world_init(input, &["given", "when", "then"])
+            super::derive(input, &["given", "when", "then"])
                 .unwrap()
                 .to_string(),
             output.to_string(),

@@ -28,12 +28,12 @@ proc-macro2 = "1.0.28"
 quote = "1.0.9"
 regex = "1.4"
 syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
-synthez = "0.2.0"
+synthez = "0.2"
 
 [dev-dependencies]
 async-trait = "0.1"
 cucumber = { path = "..", features = ["macros"] }
-derive_more = { version = "0.99.16", default-features = false, features = ["deref", "from_str"] }
+derive_more = "0.99.17"
 futures = "0.3.17"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }

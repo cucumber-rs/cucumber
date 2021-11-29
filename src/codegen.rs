@@ -17,7 +17,7 @@ use async_trait::async_trait;
 use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
 pub use cucumber_expressions::{
-    expand::parameters::Provider, Expression, Spanned,
+    expand::parameters::Provider as ParametersProvider, Expression, Spanned,
 };
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
@@ -144,13 +144,37 @@ pub trait StepConstructor<W> {
     fn inner(&self) -> (step::Location, LazyRegex, Step<W>);
 }
 
-/// Compares strings in `const` context.
+/// Custom parameter of a [Cucumber Expression].
 ///
-/// As there is no `const impl Trait` and `l == r` calls [`Eq`], we have to
-/// write custom comparison function.
+/// Should be implemented only with via [`Parameter`] derive macro.
+///
+/// [`Parameter`]: macro@crate::Parameter
+/// [Cucumber Expression]: https://cucumber.github.io/cucumber-expressions
+pub trait Parameter {
+    /// [`Regex`] matching this [`Parameter`].
+    ///
+    /// Shouldn't contain any capturing groups.
+    ///
+    /// Validated during [`Parameter`](macro@crate::Parameter) derive macro
+    /// expansion.
+    ///
+    /// [`Regex`]: regex::Regex
+    const REGEX: &'static str;
+
+    /// Name of this [`Parameter`] to be referenced by in
+    /// [Cucumber Expressions].
+    ///
+    /// [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+    const NAME: &'static str;
+}
+
+/// Compares two strings in a `const` context.
+///
+/// As there is no `const impl Trait` and `l == r` calls [`Eq`], we have to use
+/// a custom comparison function.
 ///
 /// [`Eq`]: std::cmp::Eq
-// TODO: Remove once `Eq` trait is allowed in `const` context.
+// TODO: Remove once `Eq` trait is allowed in a `const` context.
 #[must_use]
 pub const fn str_eq(l: &str, r: &str) -> bool {
     if l.len() != r.len() {

@@ -109,8 +109,6 @@ pub mod writer;
 
 #[cfg(feature = "macros")]
 pub mod codegen;
-#[cfg(feature = "macros")]
-pub mod expression;
 
 use std::error::Error as StdError;
 
@@ -120,10 +118,10 @@ pub use gherkin;
 
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use self::{codegen::WorldInit, expression::Parameter};
+pub use self::codegen::{Parameter, WorldInit};
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use cucumber_codegen::{given, then, when, WorldInit};
+pub use cucumber_codegen::{given, then, when, Parameter, WorldInit};
 
 #[doc(inline)]
 pub use self::{
