@@ -13,9 +13,9 @@ Feature: Eating too much cucumbers may not be good for you
     Then she is full
 ```
 
-These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (`Given`, `When`, `Then`). 
+These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (`Given`, `When`, `Then`). [Gherkin] offers support for [languages other than English][1], as well.
 
-[Gherkin] offers support for [languages other than English][1], as well. [Cucumber] implementations then simply hook into these keywords and execute the logic corresponding to the keywords. [`cucumber`] crate is one of such implementations and is the subject of this book.
+[Cucumber] implementations then simply hook into these keywords and execute the logic corresponding to the keywords. [`cucumber`] crate is one of such implementations and is the subject of this book.
 
 ```rust
 # use std::{convert::Infallible, time::Duration};

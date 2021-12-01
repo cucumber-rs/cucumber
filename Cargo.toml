@@ -86,7 +86,7 @@ name = "wait"
 harness = false
 
 [[test]]
-name = "cucumber"
+name = "example"
 harness = false
 
 [workspace]

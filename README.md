@@ -18,8 +18,6 @@ An implementation of the [Cucumber] testing framework for Rust. Fully native, no
 
 Describe testing scenarios in `.feature` files:
 ```gherkin
-## /tests/features/readme/eating.feature
-    
 Feature: Eating too much cucumbers may not be good for you
     
   Scenario: Eating a few isn't a problem
