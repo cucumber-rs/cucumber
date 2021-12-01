@@ -135,70 +135,59 @@ fn expand_scenario(
     scenario
         .examples
         .iter()
-        .filter_map(|example| {
-            example
-                .table
-                .rows
-                .split_first()
-                .map(|(h, v)| (h, v, example))
-        })
+        .filter_map(|ex| ex.table.rows.split_first().map(|(h, v)| (h, v, ex)))
         .flat_map(|(header, vals, example)| {
-            let table = vals.iter().map(|v| header.iter().zip(v));
+            vals.iter()
+                .map(|v| header.iter().zip(v))
+                .enumerate()
+                .zip(iter::repeat((example.position, example.tags.iter())))
+        })
+        .map(|((id, row), (position, tags))| {
+            let mut modified = scenario.clone();
 
-            table.enumerate().zip(iter::repeat(example.position)).map(
-                |((id, row), position)| {
-                    let mut modified = scenario.clone();
+            // This is done to differentiate `Hash`es of
+            // scenario outlines with the same examples.
+            modified.position = position;
+            modified.position.line += id + 1;
 
-                    // This is done to differentiate `Hash`es of
-                    // scenario outlines with the same examples.
-                    modified.position = position;
-                    modified.position.line += id + 1;
+            modified.tags.extend(tags.cloned());
 
-                    modified.tags.extend(example.tags.iter().cloned());
+            for s in &mut modified.steps {
+                let mut err = None;
 
-                    let mut err = None;
+                let to_replace = iter::once(&mut s.value).chain(
+                    s.table.iter_mut().flat_map(|t| {
+                        t.rows.iter_mut().flat_map(|r| r.iter_mut())
+                    }),
+                );
 
-                    for s in &mut modified.steps {
-                        let pos = s.position;
-                        let to_replace = iter::once(&mut s.value).chain(
-                            s.table.iter_mut().flat_map(|t| {
-                                t.rows.iter_mut().flat_map(|r| r.iter_mut())
-                            }),
-                        );
+                for value in to_replace {
+                    *value = TEMPLATE_REGEX
+                        .replace_all(value, |c: &regex::Captures<'_>| {
+                            let name = c.get(1).unwrap().as_str();
 
-                        for value in to_replace {
-                            *value = TEMPLATE_REGEX
-                                .replace_all(
-                                    value,
-                                    |c: &regex::Captures<'_>| {
-                                        let name = c.get(1).unwrap().as_str();
+                            row.clone()
+                                .find_map(|(k, v)| {
+                                    (name == k).then(|| v.as_str())
+                                })
+                                .unwrap_or_else(|| {
+                                    err = Some(ExpandExamplesError {
+                                        pos: s.position,
+                                        name: name.to_owned(),
+                                        path: path.cloned(),
+                                    });
+                                    ""
+                                })
+                        })
+                        .into_owned();
+                }
 
-                                        row.clone()
-                                            .find_map(|(k, v)| {
-                                                (name == k).then(|| v.as_str())
-                                            })
-                                            .unwrap_or_else(|| {
-                                                err =
-                                                    Some(ExpandExamplesError {
-                                                        pos,
-                                                        name: name.to_owned(),
-                                                        path: path.cloned(),
-                                                    });
-                                                ""
-                                            })
-                                    },
-                                )
-                                .into_owned();
-                        }
+                if let Some(e) = err {
+                    return Err(e);
+                }
+            }
 
-                        if let Some(e) = err {
-                            return Err(e);
-                        }
-                    }
-
-                    Ok(modified)
-                },
-            )
+            Ok(modified)
         })
         .collect()
 }
