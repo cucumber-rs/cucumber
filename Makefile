@@ -27,6 +27,9 @@ fmt: cargo.fmt
 lint: cargo.lint
 
 
+record: record.gif
+
+
 test: test.cargo test.book
 
 
@@ -124,22 +127,33 @@ book.serve:
 # Recording commands #
 ######################
 
-# Record GIF image of terminal.
+# Record GIF image of terminal with asciinema.
+#
+# Requires asciinema and Docker being installed:
+#	https://asciinema.org/docs/installation
+#	https://docs.docker.com/get-docker
 #
 # Usage:
 #	make record [name=(<current-datetime>|<file-name>)]
 
-record-dir := book/src/rec
-record-name := $(or $(name),$(shell date +%y"-"%m"-"%d"_"%H"-"%M"-"%S))
+record-gif-dir := book/src/rec
+record-gif-name := $(or $(name),$(shell date +%y"-"%m"-"%d"_"%H"-"%M"-"%S))
+record-gif-file = $(record-gif-dir)/$(record-gif-name).gif
 
-record:
+record.gif:
 	asciinema rec --overwrite rec.cast.json
-	@mkdir -p $(record-dir)/
-	@rm -f $(record-dir)/$(record-name).gif
+	@mkdir -p $(record-gif-dir)/
+	@rm -f $(record-gif-file)
 	docker run --rm -v "$(PWD)":/data -w /data \
-		asciinema/asciicast2gif rec.cast.json $(record-dir)/$(record-name).gif
-	git add $(record-dir)/$(record-name).gif
+		asciinema/asciicast2gif -s 2 rec.cast.json $(record-gif-file)
+	git add $(record-gif-file)
 	@rm -f rec.cast.json
+ifeq ($(record-gif-name),readme)
+	head -n $$(($$(wc -l < README.md)-1)) README.md > README.tmp.md
+	mv README.tmp.md README.md
+	printf "[asciicast]: data:image/gif;base64," >> README.md
+	base64 -i $(record-gif-file) >> README.md
+endif
 
 
 
@@ -148,8 +162,8 @@ record:
 # .PHONY section #
 ##################
 
-.PHONY: book docs fmt lint test \
+.PHONY: book docs fmt lint record test \
         cargo.doc cargo.fmt cargo.lint \
         book.build book.serve \
-        record \
+        record.gif \
         test.cargo test.book
