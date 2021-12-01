@@ -485,16 +485,20 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "outline/wait",
-        "line": 15,
+        "line": 19,
         "name": "wait",
         "tags": [
           {
             "name": "tag",
-            "line": 15
+            "line": 19
           },
           {
             "name": "fail_after",
-            "line": 15
+            "line": 19
+          },
+          {
+            "name": "long",
+            "line": 19
           }
         ],
         "steps": [

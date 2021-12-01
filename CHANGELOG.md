@@ -36,6 +36,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
+- Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
@@ -44,6 +45,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#160]: /../../pull/160
 [#162]: /../../pull/162
 [#163]: /../../pull/163
+[#164]: /../../issues/164
+[#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
 [0110-1]: https://llg.cubic.org/docs/junit

@@ -128,33 +128,33 @@ fn expand_scenario(
     static TEMPLATE_REGEX: Lazy<Regex> =
         Lazy::new(|| Regex::new(r"<([^>\s]+)>").expect("incorrect Regex"));
 
-    let (header, vals) = match scenario
-        .examples
-        .as_ref()
-        .and_then(|ex| ex.table.rows.split_first())
-    {
-        Some(s) => s,
-        None => return vec![Ok(scenario)],
-    };
+    if scenario.examples.is_empty() {
+        return vec![Ok(scenario)];
+    }
 
-    let table = vals.iter().map(|v| header.iter().zip(v));
-    table
-        .enumerate()
-        .map(|(id, row)| {
+    scenario
+        .examples
+        .iter()
+        .filter_map(|ex| ex.table.rows.split_first().map(|(h, v)| (h, v, ex)))
+        .flat_map(|(header, vals, example)| {
+            vals.iter()
+                .map(|v| header.iter().zip(v))
+                .enumerate()
+                .zip(iter::repeat((example.position, example.tags.iter())))
+        })
+        .map(|((id, row), (position, tags))| {
             let mut modified = scenario.clone();
 
             // This is done to differentiate `Hash`es of
             // scenario outlines with the same examples.
-            modified.position = scenario
-                .examples
-                .as_ref()
-                .map_or_else(|| scenario.position, |ex| ex.position);
+            modified.position = position;
             modified.position.line += id + 1;
 
-            let mut err = None;
+            modified.tags.extend(tags.cloned());
 
             for s in &mut modified.steps {
-                let pos = s.position;
+                let mut err = None;
+
                 let to_replace = iter::once(&mut s.value).chain(
                     s.table.iter_mut().flat_map(|t| {
                         t.rows.iter_mut().flat_map(|r| r.iter_mut())
@@ -172,7 +172,7 @@ fn expand_scenario(
                                 })
                                 .unwrap_or_else(|| {
                                     err = Some(ExpandExamplesError {
-                                        pos,
+                                        pos: s.position,
                                         name: name.to_owned(),
                                         path: path.cloned(),
                                     });
