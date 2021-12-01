@@ -1,5 +1,7 @@
 # Cucumber
 
+![Test](rec/test.gif)
+
 [Cucumber] is a specification for running tests in a behavioral driven development style workflow ([BDD](https://en.wikipedia.org/wiki/Behavior-driven_development)). It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language [Gherkin]. A typical feature could look something like this:
 
 ```gherkin

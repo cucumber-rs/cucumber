@@ -120,6 +120,30 @@ book.serve:
 
 
 
+######################
+# Recording commands #
+######################
+
+# Record GIF image of terminal.
+#
+# Usage:
+#	make record [name=(<current-datetime>|<file-name>)]
+
+record-dir := book/src/rec
+record-name := $(or $(name),$(shell date +%y"-"%m"-"%d"_"%H"-"%M"-"%S))
+
+record:
+	asciinema rec --overwrite rec.cast.json
+	@mkdir -p $(record-dir)/
+	@rm -f $(record-dir)/$(record-name).gif
+	docker run --rm -v "$(PWD)":/data -w /data \
+		asciinema/asciicast2gif rec.cast.json $(record-dir)/$(record-name).gif
+	git add $(record-dir)/$(record-name).gif
+	@rm -f rec.cast.json
+
+
+
+
 ##################
 # .PHONY section #
 ##################
@@ -127,4 +151,5 @@ book.serve:
 .PHONY: book docs fmt lint test \
         cargo.doc cargo.fmt cargo.lint \
         book.build book.serve \
+        record \
         test.cargo test.book
