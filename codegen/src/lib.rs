@@ -94,7 +94,8 @@
 )]
 
 mod attribute;
-mod derive;
+mod parameter;
+mod world_init;
 
 use proc_macro::TokenStream;
 
@@ -125,7 +126,7 @@ macro_rules! step_attribute {
         ///     type Error = Infallible;
         ///
         ///     async fn new() -> Result<Self, Self::Error> {
-        ///         Ok(Self {})
+        ///         Ok(Self)
         ///     }
         /// }
         ///
@@ -182,7 +183,7 @@ macro_rules! step_attribute {
         /// #     type Error = Infallible;
         /// #
         /// #     async fn new() -> Result<Self, Self::Error> {
-        /// #         Ok(Self {})
+        /// #         Ok(Self)
         /// #     }
         /// # }
         /// #
@@ -218,7 +219,7 @@ macro_rules! step_attribute {
         #[proc_macro_attribute]
         pub fn $name(args: TokenStream, input: TokenStream) -> TokenStream {
             attribute::step(std::stringify!($name), args.into(), input.into())
-                .unwrap_or_else(|e| e.to_compile_error())
+                .unwrap_or_else(syn::Error::into_compile_error)
                 .into()
         }
     };
@@ -235,8 +236,8 @@ macro_rules! steps {
         /// for further details.
         #[proc_macro_derive(WorldInit)]
         pub fn derive_init(input: TokenStream) -> TokenStream {
-            derive::world_init(input.into(), &[$(std::stringify!($name)),*])
-                .unwrap_or_else(|e| e.to_compile_error())
+            world_init::derive(input.into(), &[$(std::stringify!($name)),*])
+                .unwrap_or_else(syn::Error::into_compile_error)
                 .into()
         }
 
@@ -245,3 +246,65 @@ macro_rules! steps {
 }
 
 steps!(given, when, then);
+
+/// In addition to [default parameters] of [Cucumber Expressions], you may
+/// implement and use custom ones.
+///
+/// # Example
+///
+/// ```rust
+/// # use std::{convert::Infallible};
+/// #
+/// # use async_trait::async_trait;
+/// use cucumber::{given, when, Parameter, World, WorldInit};
+/// use derive_more::{Deref, FromStr};
+///
+/// #[derive(Debug, WorldInit)]
+/// struct MyWorld;
+///
+/// #[async_trait(?Send)]
+/// impl World for MyWorld {
+///     type Error = Infallible;
+///
+///     async fn new() -> Result<Self, Self::Error> {
+///         Ok(Self)
+///     }
+/// }
+///
+/// #[given(regex = r"^(\S+) is (\d+)$")]
+/// #[when(expr = "{word} is {u64}")]
+/// fn test(w: &mut MyWorld, param: String, num: CustomU64) {
+///     assert_eq!(param, "foo");
+///     assert_eq!(*num, 0);
+/// }
+///
+/// #[derive(Deref, FromStr, Parameter)]
+/// #[param(regex = r"\d+", name = "u64")]
+/// struct CustomU64(u64);
+/// #
+/// # #[tokio::main]
+/// # async fn main() {
+/// #     MyWorld::run("./tests/features/doctests.feature").await;
+/// # }
+/// ```
+///
+/// # Attribute arguments
+///
+/// - `#[param(regex = "regex")]`
+///
+///   [`Regex`] to match this parameter. Shouldn't contain any capturing groups.
+///
+/// - `#[param(name = "name")]` (optional)
+///
+///   Name of this parameter to reference it by. If not specified, then
+///   lower-cased type name will be used by default.
+///
+/// [`Regex`]: regex::Regex
+/// [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+/// [default parameters]: cucumber_expressions::Expression#parameter-types
+#[proc_macro_derive(Parameter, attributes(param))]
+pub fn parameter(input: TokenStream) -> TokenStream {
+    parameter::derive(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}

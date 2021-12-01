@@ -30,6 +30,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
     - `writer::NonTransforming` trait required for `writer::Repeat`. ([#162])
     - `writer::Summarizable` trait required for `writer::Summarize`. ([#162])
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
+- Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 
 ### Fixed
@@ -46,6 +47,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#163]: /../../pull/163
 [#165]: /../../pull/165
 [#166]: /../../pull/166
+[#168]: /../../pull/168
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 

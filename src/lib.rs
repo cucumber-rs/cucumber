@@ -118,10 +118,10 @@ pub use gherkin;
 
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use self::codegen::WorldInit;
+pub use self::codegen::{Parameter, WorldInit};
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use cucumber_codegen::{given, then, when, WorldInit};
+pub use cucumber_codegen::{given, then, when, Parameter, WorldInit};
 
 #[doc(inline)]
 pub use self::{
