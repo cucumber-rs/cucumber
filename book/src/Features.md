@@ -1,36 +1,6 @@
 Features
 ========
 
-This chapter contains overview and examples of some [Cucumber] and [Gherkin] features.
-
-
-
-
-## `Rule` keyword
-
-The purpose of the `Rule` keyword is to represent a business rule that should be implemented. It provides additional information for a feature. A `Rule` is used to group together several scenarios that belong to this business rule. A `Rule` should contain one or more scenarios that illustrate the particular rule.
-
-You don't need additional work on the implementation side to support `Rule`s. Let's take final example from [Getting Started](Getting_Started.md) chapter and change the `.feature` file to:
-
-```gherkin
-Feature: Animal feature
-    
-  Rule: Hungry cat becomes satiated
-      
-    Scenario: If we feed a hungry cat it will no longer be hungry
-      Given a hungry cat
-      When I feed the cat
-      Then the cat is not hungry
-    
-  Rule: Satiated cat remains the same
-      
-    Scenario: If we feed a satiated cat it will not become hungry
-      Given a satiated cat
-      When I feed the cat
-      Then the cat is not hungry
-```
-
-<script id="asciicast-c8XFsr52VB8tuIJfIaofWAfyh" src="https://asciinema.org/a/c8XFsr52VB8tuIJfIaofWAfyh.js" async data-autoplay="true" data-rows="18"></script>
 
 
 
