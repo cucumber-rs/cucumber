@@ -103,7 +103,7 @@ These various [step] matching functions are executed to transform the `World`. A
 We can add a `when` [step] matcher:
 ```rust
 # use std::convert::Infallible;
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, when, World, WorldInit};
 #
@@ -111,7 +111,7 @@ We can add a `when` [step] matcher:
 # struct Cat {
 #     pub hungry: bool,
 # }
-# 
+#
 # impl Cat {
 #     fn feed(&mut self) {
 #         self.hungry = false;
@@ -126,7 +126,7 @@ We can add a `when` [step] matcher:
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     type Error = Infallible;
-# 
+#
 #     async fn new() -> Result<Self, Infallible> {
 #         Ok(Self {
 #             cat: Cat { hungry: false },
@@ -138,7 +138,7 @@ We can add a `when` [step] matcher:
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
 # }
-# 
+#
 // Don't forget to additionally `use cucumber::when;`.
 
 #[when("I feed the cat")]
@@ -434,31 +434,31 @@ harness = false  # allows Cucumber to print output instead of libtest
 And, simply `sleep` on each [step] to test the `async` support (in the real world, of course, there will be web/database requests, etc.):
 ```rust
 # use std::{convert::Infallible, time::Duration};
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
-# 
+#
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
 # }
-# 
+#
 # impl Cat {
 #     fn feed(&mut self) {
 #         self.hungry = false;
 #     }
 # }
-# 
+#
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
-# 
+#
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     type Error = Infallible;
-# 
+#
 #     async fn new() -> Result<Self, Infallible> {
 #         Ok(Self {
 #             cat: Cat { hungry: false },

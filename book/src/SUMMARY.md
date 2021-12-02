@@ -5,6 +5,7 @@
 - [Writing tests](writing/index.md)
     - [`Rule` keyword](writing/rule.md)
     - [`Background` keyword](writing/background.md)
+    - [`Scenario Outline` keyword](writing/scenario_outline.md)
 
 - [Features](Features.md)
 - [Test Modules Organization](Test_Modules_Organization.md)

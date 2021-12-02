@@ -30,27 +30,27 @@ Feature: Animal feature
 ```
 ```rust
 # use std::{convert::Infallible, time::Duration};
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
-# 
+#
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
 # }
-# 
+#
 # impl Cat {
 #     fn feed(&mut self) {
 #         self.hungry = false;
 #     }
 # }
-# 
+#
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
-# 
+#
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     type Error = Infallible;
