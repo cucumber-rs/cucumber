@@ -147,7 +147,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -206,7 +206,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -265,7 +265,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -341,7 +341,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/concurrent.feature"));
 # }
 ```
 
@@ -406,7 +406,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
