@@ -4,6 +4,7 @@
 - [Quickstart](quickstart.md)
 - [Writing tests](writing/index.md)
     - [`Rule` keyword](writing/rule.md)
+    - [`Background` keyword](writing/background.md)
 
 - [Features](Features.md)
 - [Test Modules Organization](Test_Modules_Organization.md)

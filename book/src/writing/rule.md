@@ -83,7 +83,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book").await;
+#     AnimalWorld::run("/tests/features/book/writing/rule.feature").await;
 # }
 ```
 ![record](../rec/writing_rule.gif)
@@ -92,5 +92,5 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 
 [feature]: https://cucumber.io/docs/gherkin/reference#feature
-[rule]: https://cucumber.io/docs/gherkin/reference/#rule
+[rule]: https://cucumber.io/docs/gherkin/reference#rule
 [scenario]: https://cucumber.io/docs/gherkin/reference#example

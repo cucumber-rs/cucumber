@@ -5,51 +5,7 @@ Features
 
 
 
-## `Background` keyword
 
-Occasionally you’ll find yourself repeating the same `Given` steps in all the scenarios of a `Feature`.
-
-Since it's repeated in every scenario, this is an indication that those steps are not essential to describe the scenarios, so they are _incidental details_. You can literally move such `Given` steps to background, by grouping them under a `Background` section.
-
-`Background` allows you to add some context to the `Scenario`s following it. It can contain one or more steps, which are run before each scenario (but after any [`Before` hooks](#before-hook)).
-
-```gherkin
-Feature: Animal feature
-    
-  Background: 
-    Given a hungry cat
-    
-  Rule: Hungry cat becomes satiated
-      
-    Scenario: If we feed a hungry cat it will no longer be hungry
-      When I feed the cat
-      Then the cat is not hungry
-    
-  Rule: Satiated cat remains the same
-      
-    Background:
-      When I feed the cat
-
-    Scenario: If we feed a satiated cat it will not become hungry
-      When I feed the cat
-      Then the cat is not hungry
-```
-
-<script id="asciicast-ZQyfL8gVHD932rskDDESqlsD9" src="https://asciinema.org/a/ZQyfL8gVHD932rskDDESqlsD9.js" async data-autoplay="true" data-rows="18"></script>
-
-`Background` `Step`s indicated by `>` sign in the output by default.
-
-In case `Background` is declared outside any `Rule`, it will be run on any `Scenario`. Otherwise, if `Background` is declared inside `Rule`, it will be run only for `Scenario`s inside this `Rule` and only after top-level `Background` statements, if any.
-
-
-### Tips for using `Background`
-
- - Don’t use `Background` to set up complicated states, unless that state is actually something the client needs to know.
- - Keep your `Background` section short.
- - Make your `Background` section vivid, use colorful names, and try to tell a story.
- - Keep your `Scenario`s short, and don’t have too many.
-
-Clearly, example provided above doesn't need `Background` and was done for demonstration purposes only.
 
 
 
