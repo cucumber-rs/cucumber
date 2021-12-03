@@ -7,6 +7,7 @@
     - [`Rule` keyword](writing/rule.md)
     - [`Background` keyword](writing/background.md)
     - [`Scenario Outline` keyword](writing/scenario_outline.md)
+    - [Scenario hooks](writing/hooks.md)
 
 - [Features](Features.md)
 - [Test Modules Organization](Test_Modules_Organization.md)

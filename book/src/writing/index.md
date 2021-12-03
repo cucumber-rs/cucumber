@@ -9,6 +9,7 @@ Also, it's worth to become familiar with [Gherkin language][1].
 2. [`Rule` keyword](rule.md)
 3. [`Background` keyword](background.md)
 4. [`Scenario Outline` keyword](scenario_outline.md)
+5. [Scenario hooks](hooks.md)
 
 
 
