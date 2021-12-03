@@ -68,7 +68,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<World>>>,
+        event: parser::Result<Event<event::Cucumber<World>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
@@ -78,11 +78,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
         // This is done to avoid panic if this `Writer` happens to be wrapped
         // inside `writer::Repeat` or similar.
         if self.queue.is_finished_and_emitted() {
-            self.writer.handle_event(ev, cli).await;
+            self.writer.handle_event(event, cli).await;
             return;
         }
 
-        match ev.map(Event::split) {
+        match event.map(Event::split) {
             res @ (Err(_) | Ok((Cucumber::Started, _))) => {
                 self.writer
                     .handle_event(res.map(|(ev, meta)| meta.insert(ev)), cli)
@@ -524,11 +524,11 @@ impl<World> FeatureQueue<World> {
         scenario: Arc<gherkin::Scenario>,
         ev: Event<event::Scenario<World>>,
     ) {
-        if let Some(rule) = rule {
+        if let Some(r) = rule {
             match self
                 .queue
-                .get_mut(&Either::Left(Arc::clone(&rule)))
-                .unwrap_or_else(|| panic!("No Rule {}", rule.name))
+                .get_mut(&Either::Left(Arc::clone(&r)))
+                .unwrap_or_else(|| panic!("No Rule {}", r.name))
             {
                 Either::Left(rules) => rules
                     .queue

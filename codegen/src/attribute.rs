@@ -234,6 +234,7 @@ impl Step {
 
                 Ok((func_args, addon_parsing))
             } else {
+                // false positive: impl of `FnOnce` is not general enough
                 #[allow(clippy::redundant_closure_for_method_calls)]
                 let (idents, parsings): (Vec<_>, Vec<_>) =
                     itertools::process_results(
@@ -483,13 +484,14 @@ impl<'p> Parameters<'p> {
                 | SingleExpression::Whitespaces(_) => None,
             })
             .zip(param_tys.into_iter().map(Some).chain(iter::repeat(None)))
-            .filter_map(|(ast, ty)| {
+            .filter_map(|(ast, param_ty)| {
                 if DEFAULT_PARAMETERS.iter().any(|s| s == &**ast) {
-                    // If parameter is default, it's ok if there is no type
+                    // If parameter is default, it's OK if there is no type
                     // corresponding to it, as we know its regex.
-                    ty.cloned()
+                    param_ty
+                        .cloned()
                         .map(|ty| Ok(ParameterProvider { param: ast, ty }))
-                } else if let Some(ty) = ty.cloned() {
+                } else if let Some(ty) = param_ty.cloned() {
                     Some(Ok(ParameterProvider { param: ast, ty }))
                 } else {
                     Some(Err(syn::Error::new(
@@ -534,14 +536,16 @@ impl<'p> Parameters<'p> {
                     // existing one from `const_assertions` crate, for the
                     // purpose of better errors reporting when the assertion
                     // fails.
+
                     let trait_with_hint = format_ident!(
                         "UseParameterNameInsteadOf{}",
                         to_pascal_case(name),
                     );
+
                     quote! {
                         // In case we encounter default parameter, we should
-                        // assert that corresponding type __doesn't__ implement
-                        // a `Parameter` trait.
+                        // assert that corresponding argument's type __doesn't__
+                        // implement a `Parameter` trait.
                         #[automatically_derived]
                         const _: fn() = || {
                             // Generic trait with a blanket impl over `()` for
@@ -572,6 +576,15 @@ impl<'p> Parameters<'p> {
                         };
                     }
                 } else {
+                    // Here we use double escaping to properly render `{name}`
+                    // in the assertion message of the generated code.
+                    let assert_msg = format!(
+                        "Type `{}` doesn't implement a custom parameter \
+                         `{{{{{}}}}}`",
+                        quote! { #ty },
+                        name,
+                    );
+
                     quote! {
                         // In case we encounter a custom parameter, we should
                         // assert that the corresponding type implements
@@ -579,18 +592,13 @@ impl<'p> Parameters<'p> {
                         // TODO: Panic here, once `const_panic` is stabilized.
                         //       https://github.com/rust-lang/rust/pull/89508
                         #[automatically_derived]
-                        #[allow(unknown_lints, eq_op)]
-                        const _: [
-                            ();
-                            0 - !{
-                                const ASSERT: bool =
-                                    ::cucumber::codegen::str_eq(
-                                        <#ty as ::cucumber::Parameter>::NAME,
-                                        #name,
-                                    );
-                                ASSERT
-                            } as usize
-                        ] = [];
+                        const _: () = ::std::assert!(
+                            ::cucumber::codegen::str_eq(
+                                <#ty as ::cucumber::Parameter>::NAME,
+                                #name,
+                            ),
+                            #assert_msg,
+                        );
                     }
                 }
             })

@@ -65,7 +65,45 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
         event: parser::Result<Event<event::Cucumber<W>>>,
         _: &Self::Cli,
     ) {
-        self.handle_event(event);
+        use event::{Cucumber, Rule};
+
+        match event.map(event::Event::split) {
+            Err(parser::Error::Parsing(e)) => {
+                let feature = Feature::parsing_err(&e);
+                self.features.push(feature);
+            }
+            Err(parser::Error::ExampleExpansion(e)) => {
+                let feature = Feature::example_expansion_err(&e);
+                self.features.push(feature);
+            }
+            Ok((
+                Cucumber::Feature(f, event::Feature::Scenario(sc, ev)),
+                meta,
+            )) => {
+                self.handle_scenario_event(&f, None, &sc, ev, meta);
+            }
+            Ok((
+                Cucumber::Feature(
+                    f,
+                    event::Feature::Rule(r, Rule::Scenario(sc, ev)),
+                ),
+                meta,
+            )) => {
+                self.handle_scenario_event(&f, Some(&r), &sc, ev, meta);
+            }
+            Ok((Cucumber::Finished, _)) => {
+                self.output
+                    .write_all(
+                        serde_json::to_string(&self.features)
+                            .unwrap_or_else(|e| {
+                                panic!("Failed to serialize JSON: {}", e)
+                            })
+                            .as_bytes(),
+                    )
+                    .unwrap_or_else(|e| panic!("Failed to write JSON: {}", e));
+            }
+            _ => {}
+        }
     }
 }
 
@@ -113,52 +151,6 @@ impl<Out: io::Write> Json<Out> {
             output,
             features: Vec::new(),
             started: None,
-        }
-    }
-
-    /// Handles the given [`event::Cucumber`].
-    fn handle_event<W>(
-        &mut self,
-        event: parser::Result<Event<event::Cucumber<W>>>,
-    ) {
-        use event::{Cucumber, Rule};
-
-        match event.map(event::Event::split) {
-            Err(parser::Error::Parsing(e)) => {
-                let feature = Feature::parsing_err(&e);
-                self.features.push(feature);
-            }
-            Err(parser::Error::ExampleExpansion(e)) => {
-                let feature = Feature::example_expansion_err(&e);
-                self.features.push(feature);
-            }
-            Ok((
-                Cucumber::Feature(f, event::Feature::Scenario(sc, ev)),
-                meta,
-            )) => {
-                self.handle_scenario_event(&f, None, &sc, ev, meta);
-            }
-            Ok((
-                Cucumber::Feature(
-                    f,
-                    event::Feature::Rule(r, Rule::Scenario(sc, ev)),
-                ),
-                meta,
-            )) => {
-                self.handle_scenario_event(&f, Some(&r), &sc, ev, meta);
-            }
-            Ok((Cucumber::Finished, _)) => {
-                self.output
-                    .write_all(
-                        serde_json::to_string(&self.features)
-                            .unwrap_or_else(|e| {
-                                panic!("Failed to serialize JSON: {}", e)
-                            })
-                            .as_bytes(),
-                    )
-                    .unwrap_or_else(|e| panic!("Failed to write JSON: {}", e));
-            }
-            _ => {}
         }
     }
 

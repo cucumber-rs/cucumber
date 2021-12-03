@@ -813,29 +813,29 @@ where
             ..
         } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::from_args);
 
-        let filter = move |f: &gherkin::Feature,
-                           r: Option<&gherkin::Rule>,
-                           s: &gherkin::Scenario| {
+        let filter = move |feat: &gherkin::Feature,
+                           rule: Option<&gherkin::Rule>,
+                           scenario: &gherkin::Scenario| {
             re_filter.as_ref().map_or_else(
                 || {
                     tags_filter.as_ref().map_or_else(
-                        || filter(f, r, s),
+                        || filter(feat, rule, scenario),
                         |tags| {
                             // The order `Feature` -> `Rule` -> `Scenario`
                             // matters here.
                             tags.eval(
-                                f.tags
+                                feat.tags
                                     .iter()
                                     .chain(
-                                        r.into_iter()
+                                        rule.into_iter()
                                             .flat_map(|r| r.tags.iter()),
                                     )
-                                    .chain(s.tags.iter()),
+                                    .chain(scenario.tags.iter()),
                             )
                         },
                     )
                 },
-                |re| re.is_match(&s.name),
+                |re| re.is_match(&scenario.name),
             )
         };
 
@@ -850,16 +850,16 @@ where
 
         let filtered = features.map(move |feature| {
             let mut feature = feature?;
-            let scenarios = mem::take(&mut feature.scenarios);
-            feature.scenarios = scenarios
+            let feat_scenarios = mem::take(&mut feature.scenarios);
+            feature.scenarios = feat_scenarios
                 .into_iter()
                 .filter(|s| filter(&feature, None, s))
                 .collect();
 
             let mut rules = mem::take(&mut feature.rules);
             for r in &mut rules {
-                let scenarios = mem::take(&mut r.scenarios);
-                r.scenarios = scenarios
+                let rule_scenarios = mem::take(&mut r.scenarios);
+                r.scenarios = rule_scenarios
                     .into_iter()
                     .filter(|s| filter(&feature, Some(r), s))
                     .collect();

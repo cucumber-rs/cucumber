@@ -582,10 +582,10 @@ impl<Out: io::Write> Basic<Out> {
         ));
         let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
-            |captures| {
+            |capts| {
                 format_captures(
                     &step.value,
-                    captures,
+                    capts,
                     |v| self.styles.err(v),
                     |v| self.styles.err(self.styles.bold(v)),
                 )
@@ -819,10 +819,10 @@ impl<Out: io::Write> Basic<Out> {
         ));
         let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
-            |captures| {
+            |capts| {
                 format_captures(
                     &step.value,
-                    captures,
+                    capts,
                     |v| self.styles.err(v),
                     |v| self.styles.err(self.styles.bold(v)),
                 )
@@ -905,8 +905,8 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .fold(None, |mut acc: Option<Vec<_>>, row| {
-            if let Some(acc) = acc.as_mut() {
-                for (cell, max_len) in row.iter().zip(acc) {
+            if let Some(existing_len) = acc.as_mut() {
+                for (cell, max_len) in row.iter().zip(existing_len) {
                     *max_len = cmp::max(*max_len, cell.len());
                 }
             } else {

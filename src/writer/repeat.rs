@@ -57,17 +57,17 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        if (self.filter)(&ev) {
-            self.events.push(ev.clone());
+        if (self.filter)(&event) {
+            self.events.push(event.clone());
         }
 
         let is_finished =
-            matches!(ev.as_deref(), Ok(event::Cucumber::Finished));
+            matches!(event.as_deref(), Ok(event::Cucumber::Finished));
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(event, cli).await;
 
         if is_finished {
             for ev in mem::take(&mut self.events) {

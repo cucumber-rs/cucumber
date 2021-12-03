@@ -63,7 +63,7 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{
@@ -71,17 +71,17 @@ where
         };
 
         let map_failed = |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: _| {
-            let event = if (self.should_fail)(&f, r.as_deref(), &sc) {
+            let ev = if (self.should_fail)(&f, r.as_deref(), &sc) {
                 Step::Failed(None, None, Panic(Arc::new("not allowed to skip")))
             } else {
                 Step::Skipped
             };
 
-            Cucumber::scenario(f, r, sc, Scenario::Step(st, event))
+            Cucumber::scenario(f, r, sc, Scenario::Step(st, ev))
         };
 
-        let ev = ev.map(|ev| {
-            ev.map(|ev| match ev {
+        let event = event.map(|outer| {
+            outer.map(|ev| match ev {
                 Cucumber::Feature(
                     f,
                     Feature::Rule(
@@ -99,7 +99,7 @@ where
             })
         });
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(event, cli).await;
     }
 }
 
