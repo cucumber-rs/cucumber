@@ -3,6 +3,7 @@
 - [Introduction](introduction.md)
 - [Quickstart](quickstart.md)
 - [Writing tests](writing/index.md)
+    - [Capturing and variation](writing/capturing.md)
     - [`Rule` keyword](writing/rule.md)
     - [`Background` keyword](writing/background.md)
     - [`Scenario Outline` keyword](writing/scenario_outline.md)

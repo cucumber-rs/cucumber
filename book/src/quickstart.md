@@ -350,7 +350,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 [Cucumber] will reuse these [step] matchers:  
 ![record](rec/quickstart_concurrent_sync.gif)
 
-> __NOTE__: Captured groups are __bold__ to indicate which part of a [step] could be dynamically changed.
+> __NOTE__: Captured values are __bold__ to indicate which part of a [step] is actually captured.
 
 Alternatively, we also may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
 ```rust

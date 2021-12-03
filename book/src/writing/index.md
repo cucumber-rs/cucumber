@@ -5,9 +5,10 @@ This chapter contains overview and examples of some [Cucumber] and [Gherkin] fea
 
 Also, it's worth to become familiar with [Gherkin language][1].
 
-1. [`Rule` keyword](rule.md)
-2. [`Background` keyword](background.md)
-3. [`Scenario Outline` keyword](scenario_outline.md)
+1. [Capturing and variation](capturing.md)
+2. [`Rule` keyword](rule.md)
+3. [`Background` keyword](background.md)
+4. [`Scenario Outline` keyword](scenario_outline.md)
 
 
 

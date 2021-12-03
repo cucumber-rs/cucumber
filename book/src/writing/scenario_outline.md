@@ -8,15 +8,18 @@ Feature: Animal feature
 
   Scenario Outline: If we feed a hungry animal it will no longer be hungry
     Given a hungry <animal>
-    When I feed the <animal>
+    When I feed the <animal> <n> times
     Then the <animal> is not hungry
 
-    Examples:
-      | animal |
-      | cat    |
-      | dog    |
-      | 🦀     |
+  Examples: 
+    | animal | n |
+    | cat    | 2 |
+    | dog    | 3 |
+    | 🦀     | 4 |
 ```
+
+At parsing stage `<template>`s are replaced by value from cells, so we may get that value in [step] matching functions (if we need though).
+
 ```rust
 # use std::{collections::HashMap, convert::Infallible, time::Duration};
 #
@@ -63,14 +66,16 @@ async fn hungry_animal(world: &mut AnimalWorld, state: String, which: String) {
         };
 }
 
-#[when(regex = r"^I feed the (\S+)$")]
-async fn feed_animal(world: &mut AnimalWorld, which: String) {
+#[when(expr = "I feed the {word} {int} time(s)")]
+async fn feed_animal(world: &mut AnimalWorld, which: String, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
-    world.animals.entry(which).and_modify(Animal::feed);
+    for _ in 0..times {
+        world.animals.get_mut(&which).map(Animal::feed);
+    }
 }
 
-#[then(regex = r"^the (\S+) is not hungry$")]
+#[then(expr = "the {word} is not hungry")]
 async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
     sleep(Duration::from_secs(2)).await;
 
@@ -79,7 +84,7 @@ async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/features/writing/scenario_outline.feature").await;
+#     AnimalWorld::run("/tests/features/book/writing/scenario_outline.feature").await;
 # }
 ```
 ![record](../rec/writing_scenario_outline.gif)
@@ -89,3 +94,4 @@ async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
 
 [`Scenario Outline`]: https://cucumber.io/docs/gherkin/reference#scenario-outline
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
+[step]: https://cucumber.io/docs/gherkin/reference#steps
