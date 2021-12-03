@@ -529,7 +529,7 @@ Feature: Animal feature
 
 [`regex`]: https://docs.rs/regex
 
-[CLI]: https://en.wikipedia.org/wiki/Command-line_interface
+[CLI]: cli.md
 [Cucumber]: https://cucumber.io
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [feature]: https://cucumber.io/docs/gherkin/reference#feature
