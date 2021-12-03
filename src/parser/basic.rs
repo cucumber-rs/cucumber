@@ -84,7 +84,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .collect::<Vec<_>>()
         };
 
-        let get_path = || {
+        let get_features_path = || {
             let path = path.as_ref();
             path.canonicalize()
                 .or_else(|_| {
@@ -106,26 +106,26 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             let features = if let Some(walker) = cli.features {
                 walk(walker.0)
             } else {
-                let path = match get_path() {
-                    Ok(path) => path,
+                let feats_path = match get_features_path() {
+                    Ok(p) => p,
                     Err(e) => return vec![Err(e.into())],
                 };
 
-                if path.is_file() {
+                if feats_path.is_file() {
                     let env = self
                         .language
                         .as_ref()
                         .and_then(|l| GherkinEnv::new(l).ok())
                         .unwrap_or_default();
-                    vec![gherkin::Feature::parse_path(path, env)]
+                    vec![gherkin::Feature::parse_path(feats_path, env)]
                 } else {
-                    let walker = GlobWalkerBuilder::new(path, "*.feature")
+                    let w = GlobWalkerBuilder::new(feats_path, "*.feature")
                         .case_insensitive(true)
                         .build()
                         .unwrap_or_else(|e| {
                             unreachable!("GlobWalkerBuilder panicked: {}", e)
                         });
-                    walk(walker)
+                    walk(w)
                 }
             };
 

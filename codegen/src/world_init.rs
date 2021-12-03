@@ -15,7 +15,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 /// Generates code of `#[derive(WorldInit)]` macro expansion.
-#[allow(clippy::similar_names)]
+#[allow(clippy::similar_names)] // because of `when_ty` vs `then_ty`
 pub(crate) fn derive(
     input: TokenStream,
     steps: &[&str],

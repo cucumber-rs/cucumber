@@ -158,6 +158,7 @@ where
 pub struct Empty {
     /// This field exists only because [`StructOpt`] derive macro doesn't
     /// support unit structs.
+    #[allow(dead_code)]
     #[structopt(skip)]
     skipped: (),
 }

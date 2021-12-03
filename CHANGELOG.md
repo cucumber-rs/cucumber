@@ -16,6 +16,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Moved `World` type parameter of `WriterExt` trait to methods. ([#160])
 - Renamed `Normalized` and `Summarized` `Writer`s to `Normalize` and `Summarize`. ([#162])
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
+- Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([rev])
 
 ### Added
 
@@ -49,6 +50,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
+[rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
@@ -273,4 +275,5 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
 
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+[MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org

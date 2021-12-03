@@ -191,7 +191,6 @@ impl<World> Cucumber<World> {
     ) -> Self {
         Self::Feature(
             feat,
-            #[allow(clippy::option_if_let_else)] // use of moved value: `event`
             if let Some(r) = rule {
                 Feature::Rule(r, Rule::Scenario(scenario, event))
             } else {

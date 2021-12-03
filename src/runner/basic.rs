@@ -708,8 +708,8 @@ where
 
             let rule_background = rule
                 .as_ref()
-                .map(|rule| {
-                    rule.background
+                .map(|r| {
+                    r.background
                         .as_ref()
                         .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
                         .into_iter()
@@ -861,6 +861,7 @@ where
                 }
             };
 
+            #[allow(clippy::shadow_unrelated)]
             match fut.await {
                 Ok(world) => {
                     self.send(event::Cucumber::scenario(
@@ -956,6 +957,7 @@ where
             }
         };
 
+        #[allow(clippy::shadow_unrelated)]
         match run.await {
             Ok((Some(captures), Some(world))) => {
                 self.send(passed(step, captures));
@@ -1047,16 +1049,18 @@ where
         }
 
         let mut started_rules = Vec::new();
-        for (feature, rule) in runnable
+        for (feat, rule) in runnable
             .iter()
-            .filter_map(|(f, r, _)| r.clone().map(|r| (Arc::clone(f), r)))
+            .filter_map(|(feat, rule, _)| {
+                rule.clone().map(|r| (Arc::clone(feat), r))
+            })
             .dedup()
         {
             let _ = self
                 .rule_scenarios_count
-                .entry((feature.path.clone(), Arc::clone(&rule)))
+                .entry((feat.path.clone(), Arc::clone(&rule)))
                 .or_insert_with(|| {
-                    started_rules.push((feature, rule));
+                    started_rules.push((feat, rule));
                     0.into()
                 });
         }
@@ -1172,11 +1176,11 @@ impl Features {
                     .map(|s| (&feature, Some(r), s))
                     .collect::<Vec<_>>()
             }))
-            .map(|(f, r, s)| {
+            .map(|(feat, rule, scenario)| {
                 (
-                    Arc::new(f.clone()),
-                    r.map(|r| Arc::new(r.clone())),
-                    Arc::new(s.clone()),
+                    Arc::new(feat.clone()),
+                    rule.map(|r| Arc::new(r.clone())),
+                    Arc::new(scenario.clone()),
                 )
             })
             .into_group_map_by(|(f, r, s)| {

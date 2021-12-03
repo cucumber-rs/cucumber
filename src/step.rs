@@ -161,7 +161,7 @@ impl<World> Collection<World> {
             StepType::Then => &self.then,
         };
 
-        let mut matches = collection
+        let mut captures = collection
             .iter()
             .filter_map(|((re, loc), step_fn)| {
                 let mut captures = re.capture_locations();
@@ -170,13 +170,13 @@ impl<World> Collection<World> {
             })
             .collect::<Vec<_>>();
 
-        let (_, _, whole_match, captures, step_fn) = match matches.len() {
+        let (_, _, whole_match, captures, step_fn) = match captures.len() {
             0 => return Ok(None),
             // Instead of `.unwrap()` to avoid documenting `# Panics` section.
-            1 => matches.pop().unwrap_or_else(|| unreachable!()),
+            1 => captures.pop().unwrap_or_else(|| unreachable!()),
             _ => {
                 return Err(AmbiguousMatchError {
-                    possible_matches: matches
+                    possible_matches: captures
                         .into_iter()
                         .map(|(re, loc, ..)| (re.clone(), *loc))
                         .collect(),

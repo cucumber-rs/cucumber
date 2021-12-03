@@ -11,6 +11,10 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 [Milestone](/../../milestone/3)
 
+### BC Breaks
+
+- Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([rev])
+
 ### Added
 
 - Unwrapping `Result`s returned by step functions. ([#151])
@@ -20,6 +24,7 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 [#151]: /../../pull/151
 [#157]: /../../pull/157
 [#168]: /../../pull/168
+[rev]: /../../commit/rev-full
 
 
 
@@ -81,4 +86,5 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+[MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org
