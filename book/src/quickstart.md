@@ -493,7 +493,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("/tests/features/book").await;
+    AnimalWorld::run("/tests/features/book/quickstart").await;
 }
 ```
 ![record](rec/quickstart_concurrent_async.gif)
@@ -520,9 +520,9 @@ Feature: Animal feature
 ```
 ![record](rec/quickstart_serial.gif)
 
-> __NOTE__: Any [scenario] marked with `@serial` will be executed in isolation, ensuring that there are no other [scenario]s running concurrently.
+> __NOTE__: Any [scenario] marked with `@serial` [tag] will be executed in isolation, ensuring that there are no other [scenario]s running concurrently at the moment.
 
-> __TIP__: To run the whole test suite serially, consider using `--concurrency=1` [CLI] option, rather than marking evey single [feature] with a `@serial` tag.
+> __TIP__: To run the whole test suite serially, consider using `--concurrency=1` [CLI] option, rather than marking evey single [feature] with a `@serial` [tag].
 
 
 

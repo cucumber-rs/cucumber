@@ -123,7 +123,7 @@ async fn hungry_cat(world: &mut AnimalWorld, step: &Step, state: String) {
 
 
 
-[`cucumber`]: https://docs.rs/cucumber 
+[`cucumber`]: https://docs.rs/cucumber
 [`gherkin`]: https://docs.rs/gherkin 
 [`Step`]: https://docs.rs/gherkin/*/gherkin/struct.Step.html
 [doc]: https://cucumber.io/docs/gherkin/reference#doc-strings

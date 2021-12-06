@@ -13,6 +13,7 @@ Also, it's worth to become familiar with [Gherkin language][1].
 6. [`Scenario Outline` keyword](scenario_outline.md)
 7. [Scenario hooks](hooks.md)
 8. [Spoken languages](languages.md)
+9. [Tags](tags.md)
 
 
 

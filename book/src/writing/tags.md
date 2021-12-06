@@ -1,1 +1,123 @@
-TODO
+Tags
+====
+
+[Tags][tag] represent meta information of [scenario]s and [feature]s.
+
+They can be used for different purposes, but in the majority of cases it's just:
+- either running a subset of [scenario]s filtering by [tag];
+- or making [scenario] run in isolation via `@serial` [tag].
+
+
+
+
+## Filtering
+
+A [scenario] may have as many [tag]s as it requires (they should be separated with spaces):
+```gherkin
+Feature: Animal feature
+
+  @hungry
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given a hungry cat
+    When I feed the cat
+    Then the cat is not hungry
+
+  @satiated @second
+  Scenario: If we feed a satiated cat it will not become hungry
+    Given a satiated cat
+    When I feed the cat
+    Then the cat is not hungry
+```
+
+To filter out running [scenario]s we may use:
+- either `--tags` [CLI] option providing [tag expressions];
+- or [`filter_run()`]-like method.
+
+![record](../rec/writing_tags_filtering.gif)
+
+
+
+
+## Inheritance
+
+[Tags][tag] may be placed above the following [Gherkin] elements:
+- [`Feature`][feature]
+- [`Scenario`][scenario]
+- [`Scenario Outline`]
+- [`Examples`]
+
+It's _not_ possible to place [tag]s above [`Background`](background.md) or [step]s (`Given`, `When`, `Then`, `And` and `But`).
+
+[Tags][tag] are inherited by child elements:
+- [`Feature`][feature] [tag]s will be inherited by [`Scenario`][scenario], [`Scenario Outline`], or [`Examples`].
+- [`Scenario Outline`] [tag]s will be inherited by [`Examples`].
+
+```gherkin
+@feature
+Feature: Animal feature
+
+  @scenario
+  Scenario Outline: If we feed a hungry animal it will no longer be hungry
+    Given a hungry <animal>
+    When I feed the <animal> <n> times
+    Then the <animal> is not hungry
+
+  @home
+  Examples: 
+    | animal | n |
+    | cat    | 2 |
+    | dog    | 3 |
+
+  @dire
+  Examples: 
+    | animal | n |
+    | lion   | 1 |
+    | wolf   | 1 |
+```
+
+> __NOTE__: In [`Scenario Outline`] it's possible to use [tag]s on different [`Examples`].
+
+![record](../rec/writing_tags_inheritance.gif)
+
+
+
+
+## Isolated execution
+
+[`cucumber`] crate provides out-of-the-box support for `@serial` [tag]. Any [scenario] marked with `@serial` [tag] will be executed in isolation, ensuring that there are no other [scenario]s running concurrently at the moment.
+
+```gherkin
+Feature: Animal feature
+    
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given a hungry cat
+    When I feed the cat
+    Then the cat is not hungry
+
+  @serial
+  Scenario: If we feed a satiated cat it will not become hungry
+    Given a satiated cat
+    When I feed the cat
+    Then the cat is not hungry
+```
+
+> __NOTE__: `@serial` [tag] may also be used for filtering.
+
+![record](../rec/writing_tags_serial.gif)
+
+> __TIP__: To run the whole test suite serially, consider using `--concurrency=1` [CLI] option, rather than marking evey single [feature] with a `@serial` [tag].
+
+
+
+
+[`cucumber`]: https://docs.rs/cucumber
+[`Examples`]: https://cucumber.io/docs/gherkin/reference#examples
+[`filter_run()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run
+[`Scenario Outline`]: scenario_outline.md
+[CLI]: ../cli.md
+[feature]: https://cucumber.io/docs/gherkin/reference#feature
+[Gherkin]: https://cucumber.io/docs/gherkin/reference
+[scenario]: https://cucumber.io/docs/gherkin/reference#example
+[tag]: https://cucumber.io/docs/cucumber/api#tags
+[tag expressions]: https://cucumber.io/docs/cucumber/api#tag-expressions
+[step]: https://cucumber.io/docs/gherkin/reference#steps
