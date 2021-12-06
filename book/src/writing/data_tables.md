@@ -118,7 +118,7 @@ impl World for AnimalWorld {
 
 
 
-[`Step`]: https://docs.rs/gherkin/latest/gherkin/struct.Step.html
+[`Step`]: https://docs.rs/gherkin/*/gherkin/struct.Step.html
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [table]: https://cucumber.io/docs/gherkin/reference#data-tables
 [tdt]: https://dave.cheney.net/2019/05/07/prefer-table-driven-tests
