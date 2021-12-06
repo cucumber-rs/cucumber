@@ -20,6 +20,8 @@ Feature: Animal feature
 
 At parsing stage `<template>`s are replaced by value from cells, so we may get that value in [step] matching functions (if we need though).
 
+> __NOTE__: `<template>`s are replaced even inside [doc strings] and [data tables].
+
 ```rust
 # use std::{collections::HashMap, convert::Infallible, time::Duration};
 #
@@ -87,11 +89,16 @@ async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
 #     AnimalWorld::run("/tests/features/book/writing/scenario_outline.feature").await;
 # }
 ```
+
+> __NOTE__: [`Scenario Outline`] runs the whole [scenario] for each table row separately, unlike [data tables], which run the whole table inside a single [step].
+
 ![record](../rec/writing_scenario_outline.gif)
 
 
 
 
 [`Scenario Outline`]: https://cucumber.io/docs/gherkin/reference#scenario-outline
+[data tables]: data_tables.md
+[doc strings]: doc_strings.md
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
 [step]: https://cucumber.io/docs/gherkin/reference#steps
