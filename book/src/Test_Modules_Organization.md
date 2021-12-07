@@ -10,7 +10,7 @@ You can have all of your step definitions in one file, or in multiple files. Whe
 
 Technically, it doesn't matter how you name your step definition files, or which step definitions you put in a file. You could have one giant file containing all your step definitions. However, as the project grows, the file becomes messy and hard to maintain. Instead, we recommend creating a separate `.rs` file for each domain concept.
 
-If you follow this pattern, you also avoid the [Feature-coupled step definitions](https://cucumberio/docs/guides/anti-patterns/#feature-coupled-step-definitions) anti-pattern.
+If you follow this pattern, you also avoid the [Feature-coupled step definitions](https://cucumber.io/docs/guides/anti-patterns/#feature-coupled-step-definitions) anti-pattern.
 
 Of course, how you group your step definitions is really up to you and your team. They should be grouped in a way that is meaningful to _your_ project.
 
