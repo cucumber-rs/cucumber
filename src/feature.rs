@@ -154,6 +154,26 @@ fn expand_scenario(
 
             for s in &mut modified.steps {
                 let mut err = None;
+                let mut replace = |c: &regex::Captures<'_>| {
+                    let name = c.get(1).unwrap().as_str();
+
+                    row.clone()
+                        .find_map(|(k, v)| (name == k).then(|| v.as_str()))
+                        .unwrap_or_else(|| {
+                            err = Some(ExpandExamplesError {
+                                pos: s.position,
+                                name: name.to_owned(),
+                                path: path.cloned(),
+                            });
+                            ""
+                        })
+                };
+
+                if let Some(docstring) = &mut s.docstring {
+                    *docstring = TEMPLATE_REGEX
+                        .replace_all(docstring, &mut replace)
+                        .into_owned();
+                }
 
                 let to_replace = iter::once(&mut s.value).chain(
                     s.table.iter_mut().flat_map(|t| {
@@ -163,22 +183,7 @@ fn expand_scenario(
 
                 for value in to_replace {
                     *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &regex::Captures<'_>| {
-                            let name = c.get(1).unwrap().as_str();
-
-                            row.clone()
-                                .find_map(|(k, v)| {
-                                    (name == k).then(|| v.as_str())
-                                })
-                                .unwrap_or_else(|| {
-                                    err = Some(ExpandExamplesError {
-                                        pos: s.position,
-                                        name: name.to_owned(),
-                                        path: path.cloned(),
-                                    });
-                                    ""
-                                })
-                        })
+                        .replace_all(value, &mut replace)
                         .into_owned();
                 }
 
