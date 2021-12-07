@@ -143,51 +143,51 @@ fn expand_scenario(
                 .zip(iter::repeat((example.position, example.tags.iter())))
         })
         .map(|((id, row), (position, tags))| {
-            let mut modified = scenario.clone();
+            let replace_templates = |str: &str, pos| {
+                let mut err = None;
+                let replaced = TEMPLATE_REGEX
+                    .replace_all(str, |cap: &regex::Captures<'_>| {
+                        let name = cap.get(1).unwrap().as_str();
+
+                        row.clone()
+                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
+                            .unwrap_or_else(|| {
+                                err = Some(ExpandExamplesError {
+                                    pos,
+                                    name: name.to_owned(),
+                                    path: path.cloned(),
+                                });
+                                ""
+                            })
+                    })
+                    .into_owned();
+
+                err.map_or_else(|| Ok(replaced), Err)
+            };
+
+            let mut expanded = scenario.clone();
 
             // This is done to differentiate `Hash`es of
             // scenario outlines with the same examples.
-            modified.position = position;
-            modified.position.line += id + 1;
+            expanded.position = position;
+            expanded.position.line += id + 1;
 
-            modified.tags.extend(tags.cloned());
+            expanded.tags.extend(tags.cloned());
 
-            for s in &mut modified.steps {
-                let mut err = None;
-
-                let to_replace = iter::once(&mut s.value).chain(
-                    s.table.iter_mut().flat_map(|t| {
+            expanded.name =
+                replace_templates(&expanded.name, expanded.position)?;
+            for s in &mut expanded.steps {
+                for value in iter::once(&mut s.value)
+                    .chain(s.docstring.iter_mut())
+                    .chain(s.table.iter_mut().flat_map(|t| {
                         t.rows.iter_mut().flat_map(|r| r.iter_mut())
-                    }),
-                );
-
-                for value in to_replace {
-                    *value = TEMPLATE_REGEX
-                        .replace_all(value, |c: &regex::Captures<'_>| {
-                            let name = c.get(1).unwrap().as_str();
-
-                            row.clone()
-                                .find_map(|(k, v)| {
-                                    (name == k).then(|| v.as_str())
-                                })
-                                .unwrap_or_else(|| {
-                                    err = Some(ExpandExamplesError {
-                                        pos: s.position,
-                                        name: name.to_owned(),
-                                        path: path.cloned(),
-                                    });
-                                    ""
-                                })
-                        })
-                        .into_owned();
-                }
-
-                if let Some(e) = err {
-                    return Err(e);
+                    }))
+                {
+                    *value = replace_templates(value, s.position)?;
                 }
             }
 
-            Ok(modified)
+            Ok(expanded)
         })
         .collect()
 }

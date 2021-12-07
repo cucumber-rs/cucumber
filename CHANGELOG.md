@@ -39,6 +39,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
+- Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
@@ -51,6 +52,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
+[#172]: /../../pull/172
+[#178]: /../../pull/178
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit
