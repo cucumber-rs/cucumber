@@ -5,7 +5,8 @@ Tags
 
 They can be used for different purposes, but in the majority of cases it's just:
 - either running a subset of [scenario]s filtering by [tag];
-- or making [scenario] run in isolation via `@serial` [tag].
+- or making [scenario] run in isolation via `@serial` [tag];
+- or marking [scenario]s as allowed to be skipped with `@allow_skipped` [tag].
 
 
 
@@ -101,11 +102,20 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-> __NOTE__: `@serial` [tag] may also be used for filtering.
+> __NOTE__: `@serial` [tag] may also be used for filtering as a regular one.
 
 ![record](../rec/writing_tags_serial.gif)
 
 > __TIP__: To run the whole test suite serially, consider using `--concurrency=1` [CLI] option, rather than marking evey single [feature] with a `@serial` [tag].
+
+
+
+
+## Failing on skipped [step]s
+
+TODO
+
+> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow_skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
 
 
 

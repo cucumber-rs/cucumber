@@ -1,36 +1,40 @@
-TODO
+Modules organization
+====================
 
-
-Test Modules Organization
-=========================
-
-You can have all of your step definitions in one file, or in multiple files. When you start with your project, all your step definitions will probably be in one file. As your project grows, you should split your step definitions into meaningful groups in different files. This will make your project more logically organized and easier to maintain.
+When the project is started it's okay to have all the [step]s defined in a single `.feature` file. However, as the project grows, it will be more efficient to split all the [step]s into meaningful groups in different `.feature` files. This will make the project tests more logically organized and easier to maintain.
 
 
 
 
-## Grouping step definitions
+## Grouping
 
-Technically, it doesn't matter how you name your step definition files, or which step definitions you put in a file. You could have one giant file containing all your step definitions. However, as the project grows, the file becomes messy and hard to maintain. Instead, we recommend creating a separate `.rs` file for each domain concept.
+Technically, it doesn't matter how `.feature` files are named, or which [scenario]s are put in there. However, as the project grows, big `.feature` files becomes messy and hard to maintain. Instead, we recommend creating a separate `.rs` file for each domain concept (in a way that is meaningful to _your_ project).
 
-If you follow this pattern, you also avoid the [Feature-coupled step definitions](https://cucumberio/docs/guides/anti-patterns/#feature-coupled-step-definitions) anti-pattern.
-
-Of course, how you group your step definitions is really up to you and your team. They should be grouped in a way that is meaningful to _your_ project.
+Following this pattern allows us also to avoid the [feature-coupled step definitions][1] anti-pattern.
 
 
 
 
-## Avoid duplication
+## Avoiding duplication
 
-Avoid writing similar step definitions, as they can lead to clutter. While documenting your steps helps, making use of [`regex`/`cucumber-expressions` and `FromStr`](Features.md#combining-regexcucumber-expressions-and-fromstr) can do wonders.
+It's better to avoid writing similar [step] matching functions, as they can lead to clutter. While documenting [step]s helps, making use of [regular and Cucumber expressions][2] can do wonders.
 
 
 
 
 ## Managing growth
 
-As your test suit grows, it may become harder to notice how minimal changes to `regex`es can lead to mismatched `Step`s. To avoid this, we recommend using [`Cucumber::fail_on_skipped()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped) combining with `@allow_skipped` tag. This will allow you to mark out `Scenario`s which `Step`s are allowed to skip.
+As the test suit grows, it may become harder to notice how minimal changes to regular expressions can lead to mismatched [step]s. 
 
-And, as time goes on, total run time of all tests can become overwhelming when you only want to test small subset of `Scenario`s. At least until you discover [`Cucumber::filter_run_and_exit()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run_and_exit), which will allow you run only `Scenario`s marked with custom [tags](https://cucumber.io/docs/cucumber/api/#tags). 
+> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow_skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
 
-We also suggest using [`Cucumber::repeat_failed()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed) and [`Cucumber::repeat_skipped()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped) to re-output failed or skipped steps for easier navigation.
+
+
+
+[`Cucumber::fail_on_skipped()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped
+[scenario]: https://cucumber.io/docs/gherkin/reference#example
+[step]: https://cucumber.io/docs/gherkin/reference#steps
+[tag]: https://cucumber.io/docs/cucumber/api#tags
+
+[1]: https://cucumberio/docs/guides/anti-patterns/#feature-coupled-step-definitions
+[2]: capturing.md

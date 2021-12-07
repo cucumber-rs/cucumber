@@ -14,6 +14,7 @@ Also, it's worth to become familiar with [Gherkin language][1].
 7. [Scenario hooks](hooks.md)
 8. [Spoken languages](languages.md)
 9. [Tags](tags.md)
+10. [Modules organization](modules.md)
 
 
 
