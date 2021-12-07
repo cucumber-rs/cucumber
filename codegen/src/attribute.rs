@@ -546,7 +546,7 @@ impl<'p> Parameters<'p> {
                         // In case we encounter default parameter, we should
                         // assert that corresponding argument's type __doesn't__
                         // implement a `Parameter` trait.
-                        // TODO: try to use autoderef-based specialization with
+                        // TODO: Try to use autoderef-based specialization with
                         //       readable assertion message.
                         #[automatically_derived]
                         const _: fn() = || {
@@ -591,7 +591,8 @@ impl<'p> Parameters<'p> {
                         // In case we encounter a custom parameter, we should
                         // assert that the corresponding type implements
                         // `Parameter` and has correct `Parameter::NAME`.
-                        ::std::assert!(
+                        #[automatically_derived]
+                        const _: () = ::std::assert!(
                             ::cucumber::codegen::str_eq(
                                 <#ty as ::cucumber::Parameter>::NAME,
                                 #name,

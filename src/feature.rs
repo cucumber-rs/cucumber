@@ -143,7 +143,7 @@ fn expand_scenario(
                 .zip(iter::repeat((example.position, example.tags.iter())))
         })
         .map(|((id, row), (position, tags))| {
-            let replace = |str: &str, pos| {
+            let replace_templates = |str: &str, pos| {
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
                     .replace_all(str, |cap: &regex::Captures<'_>| {
@@ -165,34 +165,29 @@ fn expand_scenario(
                 err.map_or_else(|| Ok(replaced), Err)
             };
 
-            let mut modified = scenario.clone();
+            let mut expanded = scenario.clone();
 
             // This is done to differentiate `Hash`es of
             // scenario outlines with the same examples.
-            modified.position = position;
-            modified.position.line += id + 1;
+            expanded.position = position;
+            expanded.position.line += id + 1;
 
-            modified.tags.extend(tags.cloned());
+            expanded.tags.extend(tags.cloned());
 
-            modified.name = replace(&modified.name, modified.position)?;
-
-            for s in &mut modified.steps {
-                if let Some(docstring) = &mut s.docstring {
-                    *docstring = replace(docstring, s.position)?;
-                }
-
-                let to_replace = iter::once(&mut s.value).chain(
-                    s.table.iter_mut().flat_map(|t| {
+            expanded.name =
+                replace_templates(&expanded.name, expanded.position)?;
+            for s in &mut expanded.steps {
+                for value in iter::once(&mut s.value)
+                    .chain(s.docstring.iter_mut())
+                    .chain(s.table.iter_mut().flat_map(|t| {
                         t.rows.iter_mut().flat_map(|r| r.iter_mut())
-                    }),
-                );
-
-                for value in to_replace {
-                    *value = replace(value, s.position)?;
+                    }))
+                {
+                    *value = replace_templates(value, s.position)?;
                 }
             }
 
-            Ok(modified)
+            Ok(expanded)
         })
         .collect()
 }
