@@ -8,8 +8,6 @@ Feature: Outline
 
     # comment
     @examples_ # comment
-
-
     #comment
     Examples:
       | bar1 | bar2 | bar3 |
