@@ -39,7 +39,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
-- Docstring expansion in `Scenario Outline`. ([#178], [#172])
+- Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
