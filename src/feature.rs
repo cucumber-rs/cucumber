@@ -143,6 +143,28 @@ fn expand_scenario(
                 .zip(iter::repeat((example.position, example.tags.iter())))
         })
         .map(|((id, row), (position, tags))| {
+            let replace = |str: &str, pos| {
+                let mut err = None;
+                let replaced = TEMPLATE_REGEX
+                    .replace_all(str, |cap: &regex::Captures<'_>| {
+                        let name = cap.get(1).unwrap().as_str();
+
+                        row.clone()
+                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
+                            .unwrap_or_else(|| {
+                                err = Some(ExpandExamplesError {
+                                    pos,
+                                    name: name.to_owned(),
+                                    path: path.cloned(),
+                                });
+                                ""
+                            })
+                    })
+                    .into_owned();
+
+                err.map_or_else(|| Ok(replaced), Err)
+            };
+
             let mut modified = scenario.clone();
 
             // This is done to differentiate `Hash`es of
@@ -152,27 +174,11 @@ fn expand_scenario(
 
             modified.tags.extend(tags.cloned());
 
+            modified.name = replace(&modified.name, modified.position)?;
+
             for s in &mut modified.steps {
-                let mut err = None;
-                let mut replace = |c: &regex::Captures<'_>| {
-                    let name = c.get(1).unwrap().as_str();
-
-                    row.clone()
-                        .find_map(|(k, v)| (name == k).then(|| v.as_str()))
-                        .unwrap_or_else(|| {
-                            err = Some(ExpandExamplesError {
-                                pos: s.position,
-                                name: name.to_owned(),
-                                path: path.cloned(),
-                            });
-                            ""
-                        })
-                };
-
                 if let Some(docstring) = &mut s.docstring {
-                    *docstring = TEMPLATE_REGEX
-                        .replace_all(docstring, &mut replace)
-                        .into_owned();
+                    *docstring = replace(docstring, s.position)?;
                 }
 
                 let to_replace = iter::once(&mut s.value).chain(
@@ -182,13 +188,7 @@ fn expand_scenario(
                 );
 
                 for value in to_replace {
-                    *value = TEMPLATE_REGEX
-                        .replace_all(value, &mut replace)
-                        .into_owned();
-                }
-
-                if let Some(e) = err {
-                    return Err(e);
+                    *value = replace(value, s.position)?;
                 }
             }
 
