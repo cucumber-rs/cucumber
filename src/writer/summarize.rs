@@ -10,7 +10,7 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{array, borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use derive_more::Deref;
@@ -501,7 +501,7 @@ impl Styles {
     /// Formats [`Stats`] for a terminal output.
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
-        let formatted = array::IntoIter::new([
+        let formatted = [
             (stats.passed > 0)
                 .then(|| self.bold(self.ok(format!("{} passed", stats.passed))))
                 .unwrap_or_default(),
@@ -517,7 +517,8 @@ impl Styles {
                     self.bold(self.err(format!("{} failed", stats.failed)))
                 })
                 .unwrap_or_default(),
-        ])
+        ]
+        .into_iter()
         .filter(|s| !s.is_empty())
         .join(&self.bold(", "));
 
