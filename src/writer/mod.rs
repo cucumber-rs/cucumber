@@ -41,7 +41,7 @@ pub use self::junit::JUnit;
 pub use self::{
     basic::{Basic, Coloring},
     fail_on_skipped::FailOnSkipped,
-    normalize::{Normalize, Normalized},
+    normalize::{AssertNormalized, Normalize, Normalized},
     repeat::Repeat,
     summarize::{Summarizable, Summarize},
     tee::Tee,
@@ -133,6 +133,16 @@ pub trait Failure<World>: Writer<World> {
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext: Sized {
+    /// Does nothing, but makes [`Writer`] [`Normalized`].
+    ///
+    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that
+    /// > incoming events will be in a [`Normalized`] order. For example with
+    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to `1`.
+    ///
+    /// [1]: crate::runner::Basic::max_concurrent_scenarios()
+    #[must_use]
+    fn assert_normalized(self) -> AssertNormalized<Self>;
+
     /// Wraps this [`Writer`] into a [`Normalize`]d version.
     ///
     /// See [`Normalize`] for more information.
@@ -227,6 +237,10 @@ pub trait Ext: Sized {
 
 #[sealed]
 impl<T> Ext for T {
+    fn assert_normalized(self) -> AssertNormalized<Self> {
+        AssertNormalized::new(self)
+    }
+
     fn normalized<W>(self) -> Normalize<W, Self> {
         Normalize::new(self)
     }

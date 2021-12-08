@@ -19,7 +19,7 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata},
-    parser, writer, Event, Writer,
+    parser, writer, Event, World, Writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -188,6 +188,84 @@ impl<W, Wr: writer::NonTransforming> writer::NonTransforming
 pub trait Normalized {}
 
 impl<World, Writer> Normalized for Normalize<World, Writer> {}
+
+/// Wrapper for a [`Writer`] that does nothing, but implements [`Normalized`].
+///
+/// > ⚠️ __WARNING__: Should be used only in case you are sure, that incoming
+/// > events will be in a [`Normalized`] order. For example with
+/// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to 1.
+///
+/// [1]: crate::runner::Basic::max_concurrent_scenarios()
+#[derive(Debug, Deref)]
+pub struct AssertNormalized<W: ?Sized>(W);
+
+impl<Writer> AssertNormalized<Writer> {
+    /// Creates a new [`AssertNormalized`] wrapper, which does nothing, but
+    /// implements [`Normalized`].
+    ///
+    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that incoming
+    /// > events will be in a [`Normalized`] order. For example with
+    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to 1.
+    ///
+    /// [1]: crate::runner::Basic::max_concurrent_scenarios()
+    #[must_use]
+    pub const fn new(writer: Writer) -> Self {
+        Self(writer)
+    }
+}
+
+#[async_trait(?Send)]
+impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
+    type Cli = Wr::Cli;
+
+    async fn handle_event(
+        &mut self,
+        event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Self::Cli,
+    ) {
+        self.0.handle_event(event, cli).await;
+    }
+}
+
+#[async_trait(?Send)]
+impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for AssertNormalized<Wr>
+where
+    W: World,
+    Val: 'val,
+    Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
+{
+    async fn write(&mut self, val: Val)
+    where
+        'val: 'async_trait,
+    {
+        self.0.write(val).await;
+    }
+}
+
+impl<W, Wr> writer::Failure<W> for AssertNormalized<Wr>
+where
+    Wr: writer::Failure<W>,
+    Self: Writer<W>,
+{
+    fn failed_steps(&self) -> usize {
+        self.0.failed_steps()
+    }
+
+    fn parsing_errors(&self) -> usize {
+        self.0.parsing_errors()
+    }
+
+    fn hook_errors(&self) -> usize {
+        self.0.hook_errors()
+    }
+}
+
+impl<Wr: writer::NonTransforming> writer::NonTransforming
+    for AssertNormalized<Wr>
+{
+}
+
+impl<Writer> Normalized for AssertNormalized<Writer> {}
 
 /// Normalization queue for incoming events.
 ///

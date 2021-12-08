@@ -6,7 +6,7 @@ Feature: Outline
     When foo is <bar2>
     Then foo is <bar3>
 
-    @#examples # comment
+    @#examples() # @comment
 
     # comment
     Examples:

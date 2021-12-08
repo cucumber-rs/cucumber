@@ -34,6 +34,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
+- `writer::AssertNormalized` in case you are sure, that incoming events are already `Normalized`. ([#181]) 
 
 ### Fixed
 
@@ -51,6 +52,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
+[#181]: /../../pull/168
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit
