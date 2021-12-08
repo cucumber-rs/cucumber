@@ -10,7 +10,7 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{array, borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use derive_more::Deref;

@@ -191,10 +191,6 @@ impl<World, Writer> Normalized for Normalize<World, Writer> {}
 
 /// Wrapper for a [`Writer`] that does nothing, but implements [`Normalized`].
 ///
-/// > ⚠️ __WARNING__: Should be used only in case you are sure, that incoming
-/// > events will be in a [`Normalized`] order. For example with
-/// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to 1.
-///
 /// [1]: crate::runner::Basic::max_concurrent_scenarios()
 #[derive(Debug, Deref)]
 pub struct AssertNormalized<W: ?Sized>(W);
@@ -203,9 +199,9 @@ impl<Writer> AssertNormalized<Writer> {
     /// Creates a new [`AssertNormalized`] wrapper, which does nothing, but
     /// implements [`Normalized`].
     ///
-    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that incoming
-    /// > events will be in a [`Normalized`] order. For example with
-    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to 1.
+    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that
+    /// > incoming events will be in a [`Normalized`] order. For example in case
+    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to `1`.
     ///
     /// [1]: crate::runner::Basic::max_concurrent_scenarios()
     #[must_use]

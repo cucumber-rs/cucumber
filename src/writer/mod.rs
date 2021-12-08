@@ -136,7 +136,7 @@ pub trait Ext: Sized {
     /// Does nothing, but makes [`Writer`] [`Normalized`].
     ///
     /// > ⚠️ __WARNING__: Should be used only in case you are sure, that
-    /// > incoming events will be in a [`Normalized`] order. For example with
+    /// > incoming events will be in a [`Normalized`] order. For example in case
     /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to `1`.
     ///
     /// [1]: crate::runner::Basic::max_concurrent_scenarios()
