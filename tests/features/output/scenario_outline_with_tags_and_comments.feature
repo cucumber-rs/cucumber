@@ -7,6 +7,8 @@ Feature: Outline
     Then foo is <bar3>
 
     @#examples # comment
+
+    # comment
     Examples:
       | bar1 | bar2 | bar3 |
       |  0   |  1   |  2   |
