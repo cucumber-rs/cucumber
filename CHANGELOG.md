@@ -34,7 +34,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
-- `writer::AssertNormalized` in case you are sure, that incoming events are already `Normalized`. ([#182]) 
+- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182]) 
 
 ### Fixed
 

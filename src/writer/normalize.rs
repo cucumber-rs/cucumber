@@ -189,21 +189,31 @@ pub trait Normalized {}
 
 impl<World, Writer> Normalized for Normalize<World, Writer> {}
 
-/// Wrapper for a [`Writer`] that does nothing, but implements [`Normalized`].
+/// Wrapper for a [`Writer`] asserting it being [`Normalized`].
 ///
-/// [1]: crate::runner::Basic::max_concurrent_scenarios()
+/// Technically is no-op, only forcing the [`Writer`] to become [`Normalized`]
+/// despite it actually doesn't represent the one.
+///
+/// > ⚠️ __WARNING__: Should be used only in case you are absolutely sure, that
+/// >                 incoming events will be emitted in a [`Normalized`] order.
+/// >                 For example, in case [`max_concurrent_scenarios()`][1] is
+/// >                 set to `1`.
+///
+/// [1]: crate::runner::Basic::max_concurrent_scenarios
 #[derive(Debug, Deref)]
 pub struct AssertNormalized<W: ?Sized>(W);
 
 impl<Writer> AssertNormalized<Writer> {
-    /// Creates a new [`AssertNormalized`] wrapper, which does nothing, but
-    /// implements [`Normalized`].
+    /// Creates a new no-op [`AssertNormalized`] wrapper forcing [`Normalized`]
+    /// implementation.
     ///
-    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that
-    /// > incoming events will be in a [`Normalized`] order. For example in case
-    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to `1`.
+    /// > ⚠️ __WARNING__: Should be used only in case you are absolutely sure,
+    /// >                 that incoming events will be emitted in a
+    /// >                 [`Normalized`] order.
+    /// >                 For example, in case [`max_concurrent_scenarios()`][1]
+    /// >                 is set to `1`.
     ///
-    /// [1]: crate::runner::Basic::max_concurrent_scenarios()
+    /// [1]: crate::runner::Basic::max_concurrent_scenarios
     #[must_use]
     pub const fn new(writer: Writer) -> Self {
         Self(writer)
