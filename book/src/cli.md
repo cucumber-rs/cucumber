@@ -145,9 +145,9 @@ async fn main() {
 
 [`cucumber`]: https://docs.rs/cucumber
 [`Cucumber::with_cli()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli
-[`Parser`]: https://docs.rs/cucumber/*/cucumber/trait.Parser.html
+[`Parser`]: architecture/parser.md
 [`Parser::Cli`]: https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli
-[`Runner`]: https://docs.rs/cucumber/*/cucumber/trait.Runner.html
+[`Runner`]: architecture/runner.md
 [`Runner::Cli`]: https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli
-[`Writer`]: https://docs.rs/cucumber/*/cucumber/trait.Writer.html
+[`Writer`]: architecture/writer.md
 [`Writer::Cli`]: https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli

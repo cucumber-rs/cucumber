@@ -1,23 +1,20 @@
-TODO
+Cucumber JSON format
+====================
 
+[`cucumber`] crate provides an ability to output tests result in a [Cucumber JSON format].
 
-
-## Cucumber JSON format output
-
-Library provides an ability to output tests result in a [Cucumber JSON format].
-
-Just enable `output-json` library feature in your `Cargo.toml`:
+This requires `output-json` feature to be enabled in `Cargo.toml`:
 ```toml
 cucumber = { version = "0.11", features = ["output-json"] }
 ```
 
-And configure [Cucumber]'s output both to STDOUT and `writer::Json` (with `writer::Tee`):
+And configuring output to [`writer::Json`]:
 ```rust
 # use std::{convert::Infallible, fs, io};
 # 
 # use async_trait::async_trait;
 # use cucumber::WorldInit;
-use cucumber::{writer, WriterExt as _};
+use cucumber::writer;
 
 # #[derive(Debug, WorldInit)]
 # struct World;
@@ -33,15 +30,9 @@ use cucumber::{writer, WriterExt as _};
 #
 # #[tokio::main]
 # async fn main() -> io::Result<()> {
-let file = fs::File::create(dbg!(format!("{}/target/schema.json", env!("CARGO_MANIFEST_DIR"))))?;
+let file = fs::File::create(dbg!(format!("{}/target/report.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
-    .with_writer(
-        // `Writer`s pipeline is constructed in a reversed order.
-        writer::Basic::stdout() // And output to STDOUT.
-            .summarized()       // Simultaneously, add execution summary.
-            .tee::<World, _>(writer::Json::for_tee(file)) // Then, output to JSON file.
-            .normalized()       // First, normalize events order.
-    )
+    .with_writer(writer::Json::new(file))
     .run_and_exit("tests/features/book")
     .await;
 # Ok(())
@@ -51,4 +42,6 @@ World::cucumber()
 
 
 
+[`cucumber`]: https://docs.rs/cucumber
+[`writer::Json`]: https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html
 [Cucumber JSON format]: https://github.com/cucumber/cucumber-json-schema

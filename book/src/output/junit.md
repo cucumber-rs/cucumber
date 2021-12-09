@@ -1,16 +1,14 @@
-TODO
+JUnit XML report
+================
 
+[`cucumber`] crate provides an ability to output tests result as a [JUnit XML report].
 
-## JUnit XML report
-
-Library provides an ability to output tests result in as [JUnit XML report].
-
-Just enable `output-junit` library feature in your `Cargo.toml`:
+This requires `output-junit` feature to be enabled in `Cargo.toml`:
 ```toml
 cucumber = { version = "0.11", features = ["output-junit"] }
 ```
 
-And configure [Cucumber]'s output to `writer::JUnit`:
+And configuring output to [`writer::JUnit`]:
 ```rust
 # use std::{convert::Infallible, fs, io};
 # 
@@ -44,4 +42,6 @@ World::cucumber()
 
 
 
+[`cucumber`]: https://docs.rs/cucumber
+[`writer::JUnit`]: https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html
 [JUnit XML report]: https://llg.cubic.org/docs/junit
