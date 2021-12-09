@@ -31,7 +31,7 @@ Feature: Animal feature
 ```
 
 To filter out running [scenario]s we may use:
-- either `--tags` [CLI] option providing [tag expressions];
+- either `--tags` [CLI] option providing [tag expressions] (also consider [escaping]);
 - or [`filter_run()`]-like method.
 
 ![record](../rec/writing_tags_filtering.gif)
@@ -230,6 +230,7 @@ Feature: Animal feature
 [`filter_run()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run
 [`Scenario Outline`]: scenario_outline.md
 [CLI]: ../cli.md
+[escaping]: https://github.com/cucumber/tag-expressions/tree/6f444830b23bd8e0c5a2617cd51b91bc2e05adde#escaping
 [feature]: https://cucumber.io/docs/gherkin/reference#feature
 [Gherkin]: https://cucumber.io/docs/gherkin/reference
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
