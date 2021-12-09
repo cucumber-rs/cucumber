@@ -6,7 +6,7 @@ Tags
 They can be used for different purposes, but in the majority of cases it's just:
 - either running a subset of [scenario]s filtering by [tag];
 - or making [scenario] run in isolation via `@serial` [tag];
-- or marking [scenario]s as allowed to be skipped with `@allow.skipped` [tag].
+- or allowing [scenario]s to be skipped with `@allow.skipped` [tag].
 
 
 
@@ -113,14 +113,119 @@ Feature: Animal feature
 
 ## Failing on skipped [step]s
 
-TODO
+As a test suit grows, it may become harder to notice how minimal changes to [regular expressions](capturing.md) can lead to mismatched [step]s.
 
-> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow.skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
+Using [`Cucumber::fail_on_skipped()`] method fails the whole test suite if some [step]s miss the implementation, so ensures that the whole test suite is covered.
+
+```gherkin
+Feature: Animal feature
+    
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given a hungry cat
+    When I feed the cat
+    Then the cat is not hungry
+
+  Scenario: If we feed a satiated cat it will not become hungry
+    Given a wild cat
+    When I feed the cat
+    Then the cat is not hungry
+```
+```rust,should_panic
+# use std::{convert::Infallible, time::Duration};
+#
+# use async_trait::async_trait;
+# use cucumber::{given, then, when, World, WorldInit};
+# use tokio::time::sleep;
+# 
+# #[derive(Debug, Default)]
+# struct Animal {
+#     pub hungry: bool,
+# }
+#
+# impl Animal {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+#
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Animal,
+# }
+#
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Animal::default(),
+#         })
+#     }
+# }
+#
+# #[given(regex = r"^a (hungry|satiated) cat$")]
+# async fn hungry_cat(world: &mut AnimalWorld, state: String) {
+#     sleep(Duration::from_secs(2)).await;
+#
+#     match state.as_str() {
+#         "hungry" => world.cat.hungry = true,
+#         "satiated" => world.cat.hungry = false,
+#         _ => unreachable!(),
+#     }
+# }
+#
+# #[when("I feed the cat")]
+# async fn feed_cat(world: &mut AnimalWorld) {
+#     sleep(Duration::from_secs(2)).await;
+#
+#     world.cat.feed();
+# }
+#
+# #[then("the cat is not hungry")]
+# async fn cat_is_fed(world: &mut AnimalWorld) {
+#     sleep(Duration::from_secs(2)).await;
+#
+#     assert!(!world.cat.hungry);
+# }
+#
+#[tokio::main]
+async fn main() {
+    AnimalWorld::cucumber()
+        .fail_on_skipped()
+        .run("/tests/features/book/writing/tags_skip_failed.feature")
+        .await;
+}
+```
+
+> __TIP__: Using `@allow.skipped` [tag] allows [scenario]s being skipped even in [`Cucumber::fail_on_skipped()`] mode. Use the one to intentionally skip the implementation.
+
+```gherkin
+Feature: Animal feature
+    
+  Scenario: If we feed a hungry cat it will no longer be hungry
+    Given a hungry cat
+    When I feed the cat
+    Then the cat is not hungry
+
+  @allow.skipped
+  Scenario: If we feed a satiated cat it will not become hungry
+    Given a wild cat
+    When I feed the cat
+    Then the cat is not hungry
+```
+
+![record](../rec/writing_tags_skip.gif)
+
+> __NOTE__: `@allow.skipped` [tag] may also be used for filtering as a regular one.
+
+![record](../rec/writing_tags_skip_filter.gif)
 
 
 
 
 [`cucumber`]: https://docs.rs/cucumber
+[`Cucumber::fail_on_skipped()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped
 [`Examples`]: https://cucumber.io/docs/gherkin/reference#examples
 [`filter_run()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run
 [`Scenario Outline`]: scenario_outline.md
