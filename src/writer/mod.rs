@@ -133,12 +133,20 @@ pub trait Failure<World>: Writer<World> {
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext: Sized {
-    /// Does nothing, but makes [`Writer`] [`Normalized`].
+    /// Asserts this [`Writer`] being [`Normalized`].
     ///
-    /// > ⚠️ __WARNING__: Should be used only in case you are sure, that
-    /// > incoming events will be in a [`Normalized`] order. For example in case
-    /// > [`runner::Basic::max_concurrent_scenarios()`][1] is set to `1`.
+    /// Technically is no-op, only forcing the [`Writer`] to become
+    /// [`Normalized`] despite it actually doesn't represent the one.
     ///
+    /// If you need a real normalization, use [`normalized()`] instead.
+    ///
+    /// > ⚠️ __WARNING__: Should be used only in case you are absolutely sure,
+    /// >                 that incoming events will be emitted in a
+    /// >                 [`Normalized`] order.
+    /// >                 For example, in case [`max_concurrent_scenarios()`][1]
+    /// >                 is set to `1`.
+    ///
+    /// [`normalized()`]: Ext::normalized
     /// [1]: crate::runner::Basic::max_concurrent_scenarios()
     #[must_use]
     fn assert_normalized(self) -> AssertNormalized<Self>;
