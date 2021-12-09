@@ -26,7 +26,7 @@ Avoid writing similar step definitions, as they can lead to clutter. While docum
 
 ## Managing growth
 
-As your test suit grows, it may become harder to notice how minimal changes to `regex`es can lead to mismatched `Step`s. To avoid this, we recommend using [`Cucumber::fail_on_skipped()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped) combining with `@allow_skipped` tag. This will allow you to mark out `Scenario`s which `Step`s are allowed to skip.
+As your test suit grows, it may become harder to notice how minimal changes to `regex`es can lead to mismatched `Step`s. To avoid this, we recommend using [`Cucumber::fail_on_skipped()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped) combining with `@allow.skipped` tag. This will allow you to mark out `Scenario`s which `Step`s are allowed to skip.
 
 And, as time goes on, total run time of all tests can become overwhelming when you only want to test small subset of `Scenario`s. At least until you discover [`Cucumber::filter_run_and_exit()`](https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run_and_exit), which will allow you run only `Scenario`s marked with custom [tags](https://cucumber.io/docs/cucumber/api/#tags). 
 

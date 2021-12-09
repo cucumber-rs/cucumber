@@ -145,7 +145,7 @@ impl<Writer> From<Writer> for FailOnSkipped<Writer> {
         Self {
             writer,
             should_fail: |_, _, sc| {
-                !sc.tags.iter().any(|tag| tag == "allow.skipped")
+                !sc.tags.iter().any(|t| t == "allow.skipped")
             },
         }
     }
