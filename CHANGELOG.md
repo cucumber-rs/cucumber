@@ -18,6 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
+- Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
 
 ### Added
 
@@ -34,11 +35,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
+- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182]) 
 
 ### Fixed
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
+- Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
@@ -51,6 +54,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
+[#172]: /../../pull/172
+[#178]: /../../pull/178
+[#181]: /../../pull/181
+[#182]: /../../pull/182
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit

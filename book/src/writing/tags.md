@@ -6,7 +6,7 @@ Tags
 They can be used for different purposes, but in the majority of cases it's just:
 - either running a subset of [scenario]s filtering by [tag];
 - or making [scenario] run in isolation via `@serial` [tag];
-- or marking [scenario]s as allowed to be skipped with `@allow_skipped` [tag].
+- or marking [scenario]s as allowed to be skipped with `@allow.skipped` [tag].
 
 
 
@@ -115,7 +115,7 @@ Feature: Animal feature
 
 TODO
 
-> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow_skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
+> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow.skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
 
 
 
