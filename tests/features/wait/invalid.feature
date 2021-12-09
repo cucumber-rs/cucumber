@@ -1,2 +1,2 @@
+not allowed
 Feature: invalid
-  Given: where's scenario???
