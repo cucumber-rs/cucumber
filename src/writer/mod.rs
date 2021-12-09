@@ -164,7 +164,7 @@ pub trait Ext: Sized {
     fn summarized(self) -> Summarize<Self>;
 
     /// Wraps this [`Writer`] to fail on [`Skipped`] [`Step`]s if their
-    /// [`Scenario`] isn't marked with `@allow_skipped` tag.
+    /// [`Scenario`] isn't marked with `@allow.skipped` tag.
     ///
     /// See [`FailOnSkipped`] for more information.
     ///

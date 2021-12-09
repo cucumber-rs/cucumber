@@ -440,7 +440,7 @@ where
     Cli: StructOpt,
 {
     /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
-    /// marked with `@allow_skipped` tag.
+    /// marked with `@allow.skipped` tag.
     ///
     /// It's useful option for ensuring that all the steps were covered.
     ///
@@ -487,7 +487,7 @@ where
     /// </script>
     ///
     /// To intentionally suppress some [`Skipped`] steps failing, use the
-    /// `@allow_skipped` tag:
+    /// `@allow.skipped` tag:
     /// ```gherkin
     /// Feature: Animal feature
     ///
@@ -496,7 +496,7 @@ where
     ///     When I feed the cat
     ///     Then the cat is not hungry
     ///
-    ///   @allow_skipped
+    ///   @allow.skipped
     ///   Scenario: If we feed a satiated dog it will not become hungry
     ///     Given a satiated dog
     ///     When I feed the dog

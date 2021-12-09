@@ -18,6 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
+- Rename `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
 
 ### Added
 
@@ -55,6 +56,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#168]: /../../pull/168
 [#172]: /../../pull/172
 [#178]: /../../pull/178
+[#181]: /../../pull/181
 [#182]: /../../pull/182
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
