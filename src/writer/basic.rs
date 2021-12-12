@@ -19,10 +19,10 @@ use std::{
 };
 
 use async_trait::async_trait;
+use clap::Args;
 use derive_more::{Deref, DerefMut};
 use itertools::Itertools as _;
 use regex::CaptureLocations;
-use structopt::StructOpt;
 
 use crate::{
     cli::Colored,
@@ -43,15 +43,15 @@ use crate::{
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Clone, Copy, Debug, StructOpt)]
+#[derive(Clone, Copy, Debug, Args)]
 pub struct Cli {
     /// Increased verbosity of an output: additionally outputs step's doc
     /// string (if present).
-    #[structopt(long, short)]
+    #[clap(long, short)]
     pub verbose: bool,
 
     /// Coloring policy for a console output.
-    #[structopt(long, name = "auto|always|never", default_value = "auto")]
+    #[clap(long, name = "auto|always|never", default_value = "auto")]
     pub color: Coloring,
 }
 

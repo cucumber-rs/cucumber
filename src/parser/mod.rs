@@ -14,11 +14,10 @@
 
 pub mod basic;
 
-use std::sync::Arc;
-
+use clap::Args;
 use derive_more::{Display, Error};
 use futures::Stream;
-use structopt::StructOptInternal;
+use std::sync::Arc;
 
 use crate::feature::ExpandExamplesError;
 
@@ -38,10 +37,7 @@ pub trait Parser<I> {
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Runner`]: crate::Runner
     /// [`Writer`]: crate::Writer
-    // We do use `StructOptInternal` here only because `StructOpt::from_args()`
-    // requires exactly this trait bound. We don't touch any `StructOptInternal`
-    // details being a subject of instability.
-    type Cli: StructOptInternal + 'static;
+    type Cli: Args;
 
     /// Output [`Stream`] of parsed [`Feature`]s.
     ///

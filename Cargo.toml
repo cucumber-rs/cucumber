@@ -50,7 +50,7 @@ linked-hash-map = "0.5.3"
 once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5"
 sealed = "0.3"
-structopt = "0.3.25"
+clap = { version = "3.0.0-rc.7", features = ["derive"]  }
 
 # "macros" feature dependencies.
 cucumber-codegen = { version = "0.11.0-dev", path = "./codegen", optional = true }

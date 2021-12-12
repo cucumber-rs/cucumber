@@ -20,14 +20,13 @@ use std::{
     path::Path,
 };
 
-use futures::{future::LocalBoxFuture, StreamExt as _};
-use regex::Regex;
-use structopt::{StructOpt, StructOptInternal};
-
 use crate::{
     cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
     Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
+use clap::{Args, Parser as _};
+use futures::{future::LocalBoxFuture, StreamExt as _};
+use regex::Regex;
 
 /// Top-level [Cucumber] executor.
 ///
@@ -54,7 +53,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: StructOpt,
+    Cli: Args,
 {
     /// [`Parser`] sourcing [`Feature`]s for execution.
     ///
@@ -88,7 +87,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: StructOpt,
+    Cli: Args,
 {
     /// Creates a custom [`Cucumber`] executor with the provided [`Parser`],
     /// [`Runner`] and [`Writer`].
@@ -437,7 +436,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
-    Cli: StructOpt,
+    Cli: Args,
 {
     /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
     /// marked with `@allow.skipped` tag.
@@ -627,7 +626,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + writer::Normalized,
-    Cli: StructOpt + StructOptInternal,
+    Cli: Args,
 {
     /// Runs [`Cucumber`].
     ///
@@ -645,7 +644,7 @@ where
     /// using them inside [`Cucumber`].
     ///
     /// Also, any additional custom CLI options may be specified as a
-    /// [`StructOpt`] deriving type, used as the last type parameter of
+    /// [`Args`] deriving type, used as the last type parameter of
     /// [`cli::Opts`].
     ///
     /// > ⚠️ __WARNING__: Any CLI options of [`Parser`], [`Runner`], [`Writer`]
@@ -658,9 +657,9 @@ where
     /// # use std::{convert::Infallible, time::Duration};
     /// #
     /// # use async_trait::async_trait;
+    /// # use clap::{Args, Parser as _};
     /// # use cucumber::{cli, WorldInit};
     /// # use futures::FutureExt as _;
-    /// # use structopt::StructOpt;
     /// # use tokio::time;
     /// #
     /// # #[derive(Debug, WorldInit)]
@@ -677,17 +676,17 @@ where
     /// #
     /// # #[tokio::main(flavor = "current_thread")]
     /// # async fn main() {
-    /// #[derive(StructOpt)]
+    /// #[derive(Args)]
     /// struct CustomCli {
     ///     /// Additional time to wait in a before hook.
-    ///     #[structopt(
+    ///     #[clap(
     ///         long,
     ///         parse(try_from_str = humantime::parse_duration)
     ///     )]
     ///     before_time: Option<Duration>,
     /// }
     ///
-    /// let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
+    /// let cli = cli::Opts::<_, _, _, CustomCli>::parse();
     /// let time = cli.custom.before_time.unwrap_or_default();
     ///
     /// MyWorld::cucumber()
@@ -719,7 +718,7 @@ where
         cli: cli::Opts<P::Cli, R::Cli, Wr::Cli, CustomCli>,
     ) -> Cucumber<W, P, I, R, Wr, CustomCli>
     where
-        CustomCli: StructOpt,
+        CustomCli: Args,
     {
         let Cucumber {
             parser,
@@ -811,7 +810,7 @@ where
             runner: runner_cli,
             writer: writer_cli,
             ..
-        } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::from_args);
+        } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::parse);
 
         let filter = move |feat: &gherkin::Feature,
                            rule: Option<&gherkin::Rule>,
@@ -884,7 +883,7 @@ where
     P: Debug + Parser<I>,
     R: Debug + Runner<W>,
     Wr: Debug + Writer<W>,
-    Cli: StructOpt,
+    Cli: Args,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cucumber")
@@ -954,7 +953,7 @@ where
     W: World,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: StructOpt,
+    Cli: Args,
     I: AsRef<Path>,
 {
     /// Sets the provided language of [`gherkin`] files.
@@ -977,7 +976,7 @@ where
     W: World,
     P: Parser<I>,
     Wr: Writer<W>,
-    Cli: StructOpt,
+    Cli: Args,
     F: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
@@ -1176,7 +1175,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: writer::Failure<W> + writer::Normalized,
-    Cli: StructOpt + StructOptInternal,
+    Cli: Args,
 {
     /// Runs [`Cucumber`].
     ///

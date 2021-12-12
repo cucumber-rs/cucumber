@@ -27,9 +27,9 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
+use clap::{Args, Parser as ClapParser};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
-use structopt::StructOpt;
 
 use crate::writer::Coloring;
 
@@ -49,9 +49,9 @@ and may be extended with custom CLI options additionally.
 # use std::{convert::Infallible, time::Duration};
 #
 # use async_trait::async_trait;
+# use clap::Parser as ClapParser;
 # use cucumber::{cli, WorldInit};
 # use futures::FutureExt as _;
-# use structopt::StructOpt;
 # use tokio::time;
 #
 # #[derive(Debug, WorldInit)]
@@ -68,17 +68,17 @@ and may be extended with custom CLI options additionally.
 #
 # #[tokio::main(flavor = "current_thread")]
 # async fn main() {
-#[derive(StructOpt)]
+#[derive(ClapParser)]
 struct CustomOpts {
     /// Additional time to wait in before hook.
-    #[structopt(
+    #[clap(
         long,
         parse(try_from_str = humantime::parse_duration)
     )]
     pre_pause: Option<Duration>,
 }
 
-let opts = cli::Opts::<_, _, _, CustomOpts>::from_args();
+let opts = cli::Opts::<_, _, _, CustomOpts>::parse();
 let pre_pause = opts.custom.pre_pause.unwrap_or_default();
 
 MyWorld::cucumber()
@@ -96,18 +96,18 @@ MyWorld::cucumber()
 "#
 )]
 #[cfg_attr(not(doc), doc = "Run the tests, pet a dog!.")]
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(name = "cucumber", about = "Run the tests, pet a dog!.")]
+#[derive(Debug, Clone, ClapParser)]
+#[clap(name = "cucumber", about = "Run the tests, pet a dog!.")]
 pub struct Opts<Parser, Runner, Writer, Custom = Empty>
 where
-    Parser: StructOpt,
-    Runner: StructOpt,
-    Writer: StructOpt,
-    Custom: StructOpt,
+    Parser: Args,
+    Runner: Args,
+    Writer: Args,
+    Custom: Args,
 {
     /// Regex to filter scenarios by their name.
-    #[structopt(
-        short = "n",
+    #[clap(
+        short = 'n',
         long = "name",
         name = "regex",
         visible_alias = "scenario-name"
@@ -118,8 +118,8 @@ where
     ///
     /// Note: Tags from Feature, Rule and Scenario are merged together on
     /// filtering, so be careful about conflicting tags on different levels.
-    #[structopt(
-        short = "t",
+    #[clap(
+        short = 't',
         long = "tags",
         name = "tagexpr",
         conflicts_with = "regex"
@@ -129,23 +129,23 @@ where
     /// [`Parser`] CLI options.
     ///
     /// [`Parser`]: crate::Parser
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub parser: Parser,
 
     /// [`Runner`] CLI options.
     ///
     /// [`Runner`]: crate::Runner
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub runner: Runner,
 
     /// [`Writer`] CLI options.
     ///
     /// [`Writer`]: crate::Writer
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub writer: Writer,
 
     /// Additional custom CLI options.
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub custom: Custom,
 }
 
@@ -170,14 +170,8 @@ pub trait Colored {
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Clone, Copy, Debug, StructOpt)]
-pub struct Empty {
-    /// This field exists only because [`StructOpt`] derive macro doesn't
-    /// support unit structs.
-    #[allow(dead_code)]
-    #[structopt(skip)]
-    skipped: (),
-}
+#[derive(Clone, Copy, Debug, Args)]
+pub struct Empty;
 
 impl Colored for Empty {}
 
@@ -186,7 +180,7 @@ impl Colored for Empty {}
 #[cfg_attr(
     doc,
     doc = r#"
-Composes two [`StructOpt`] derivers together.
+Composes two [`Args`] derivers together.
 
 # Example
 
@@ -195,13 +189,13 @@ another one:
 ```rust
 # use async_trait::async_trait;
 # use cucumber::{cli, event, parser, writer, Event, World, Writer};
-# use structopt::StructOpt;
+# use clap::Args;
 #
 struct CustomWriter<Wr>(Wr);
 
-#[derive(StructOpt)]
+#[derive(Args)]
 struct Cli {
-    #[structopt(long)]
+    #[clap(long)]
     custom_option: Option<String>,
 }
 
@@ -277,18 +271,18 @@ impl<Wr: writer::NonTransforming> writer::NonTransforming
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Debug, StructOpt)]
-pub struct Compose<L: StructOpt, R: StructOpt> {
-    /// Left [`StructOpt`] deriver.
-    #[structopt(flatten)]
+#[derive(Debug, Args)]
+pub struct Compose<L: Args, R: Args> {
+    /// Left [`Args`] deriver.
+    #[clap(flatten)]
     pub left: L,
 
-    /// Right [`StructOpt`] deriver.
-    #[structopt(flatten)]
+    /// Right [`Args`] deriver.
+    #[clap(flatten)]
     pub right: R,
 }
 
-impl<L: StructOpt, R: StructOpt> Compose<L, R> {
+impl<L: Args, R: Args> Compose<L, R> {
     /// Unpacks this [`Compose`] into the underlying CLIs.
     #[must_use]
     pub fn into_inner(self) -> (L, R) {
@@ -299,8 +293,8 @@ impl<L: StructOpt, R: StructOpt> Compose<L, R> {
 
 impl<L, R> Colored for Compose<L, R>
 where
-    L: Colored + StructOpt,
-    R: Colored + StructOpt,
+    L: Colored + Args,
+    R: Colored + Args,
 {
     fn coloring(&self) -> Coloring {
         // Basically, founds "maximum" `Coloring` of CLI options.

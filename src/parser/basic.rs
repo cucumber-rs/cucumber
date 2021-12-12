@@ -18,12 +18,12 @@ use std::{
     vec,
 };
 
+use clap::Parser as ClapParser;
 use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::{GlobWalker, GlobWalkerBuilder};
 use itertools::Itertools as _;
-use structopt::StructOpt;
 
 use crate::feature::Ext as _;
 
@@ -36,11 +36,11 @@ use super::{Error as ParseError, Parser};
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Debug, StructOpt)]
+#[derive(Debug, ClapParser)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.
-    #[structopt(long = "input", short = "i", name = "glob")]
+    #[clap(long = "input", short = 'i', name = "glob")]
     pub features: Option<Walker>,
 }
 
