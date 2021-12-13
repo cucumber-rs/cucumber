@@ -19,7 +19,6 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
-- Add `cli::Colored` trait to propagate `Coloring` to the outer `Writer`s. ([#189])
 
 ### Added
 
@@ -36,7 +35,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
-- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182]) 
+- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182])
+- `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189])
 
 ### Fixed
 

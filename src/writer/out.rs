@@ -60,7 +60,7 @@ impl Styles {
         Self::default()
     }
 
-    /// Applies [`Coloring`] from the CLI options.
+    /// Applies the given [`Coloring`] to these [`Styles`].
     pub fn apply_coloring(&mut self, color: Coloring) {
         match color {
             Coloring::Auto => {}

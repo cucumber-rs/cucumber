@@ -206,6 +206,7 @@ where
 
         if let State::FinishedButNotOutput = self.state {
             self.state = State::FinishedAndOutput;
+
             let mut styles = Styles::new();
             styles.apply_coloring(cli.coloring());
             self.writer.write(styles.summary(self)).await;
