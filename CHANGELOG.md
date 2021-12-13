@@ -35,13 +35,15 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for [Cucumber Expressions] via `#[given(expr = ...)]`, `#[when(expr = ...)]` and `#[then(expr = ...)]` syntax. ([#157])
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
-- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182]) 
+- `writer::AssertNormalized` forcing `Normalized` implementation. ([#182])
+- `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189])
 
 ### Fixed
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
 - Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
+- `writer::Summarized` ignoring `Coloring` options. ([#189], [#188])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151

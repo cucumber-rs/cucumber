@@ -15,6 +15,8 @@ use std::{borrow::Cow, io, str};
 use console::Style;
 use derive_more::{Deref, DerefMut, Display, From, Into};
 
+use super::Coloring;
+
 /// [`Style`]s for terminal output.
 #[derive(Debug)]
 pub struct Styles {
@@ -56,6 +58,15 @@ impl Styles {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Applies the given [`Coloring`] to these [`Styles`].
+    pub fn apply_coloring(&mut self, color: Coloring) {
+        match color {
+            Coloring::Auto => {}
+            Coloring::Always => self.is_present = true,
+            Coloring::Never => self.is_present = false,
+        }
     }
 
     /// If terminal is present colors `input` with [`Styles::ok`] color or
