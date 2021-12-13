@@ -19,6 +19,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
+- Add `cli::Colored` trait to propagate `Coloring` to the outer `Writer`s. ([#189])
 
 ### Added
 
@@ -42,6 +43,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
 - Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
+- `writer::Summarized` ignoring `Coloring` options. ([#189], [#188])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
