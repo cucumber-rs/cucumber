@@ -17,6 +17,7 @@ use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
+    cli::Colored,
     event, parser,
     writer::{self, out::Styles},
     Event, World, Writer,
@@ -165,6 +166,7 @@ impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
     Wr: for<'val> writer::Arbitrary<'val, W, String> + Summarizable,
+    Wr::Cli: Colored,
 {
     type Cli = Wr::Cli;
 
@@ -204,7 +206,9 @@ where
 
         if let State::FinishedButNotOutput = self.state {
             self.state = State::FinishedAndOutput;
-            self.writer.write(Styles::new().summary(self)).await;
+            let mut styles = Styles::new();
+            styles.apply_coloring(cli.coloring());
+            self.writer.write(styles.summary(self)).await;
         }
     }
 }
