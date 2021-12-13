@@ -282,6 +282,8 @@ impl<L: StructOpt, R: StructOpt> Compose<L, R> {
 }
 
 /// Indicates, whether [`Writer`] using CLI options supports colored output.
+///
+/// [`Writer`]: crate::Writer
 pub trait Colored {
     /// Returns [`Coloring`] indicating, whether [`Writer`] using CLI options
     /// supports colored output or not.
