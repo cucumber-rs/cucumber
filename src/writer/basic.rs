@@ -25,6 +25,7 @@ use regex::CaptureLocations;
 use structopt::StructOpt;
 
 use crate::{
+    cli::Colored,
     event::{self, Info},
     parser,
     writer::{
@@ -52,6 +53,12 @@ pub struct Cli {
     /// Coloring policy for a console output.
     #[structopt(long, name = "auto|always|never", default_value = "auto")]
     pub color: Coloring,
+}
+
+impl Colored for Cli {
+    fn coloring(&self) -> Coloring {
+        self.color
+    }
 }
 
 /// Possible policies of a [`console`] output coloring.
@@ -221,11 +228,7 @@ impl<Out: io::Write> Basic<Out> {
         if cli.verbose {
             self.verbose = true;
         }
-        match cli.color {
-            Coloring::Auto => {}
-            Coloring::Always => self.styles.is_present = true,
-            Coloring::Never => self.styles.is_present = false,
-        }
+        self.styles.apply_coloring(cli.color);
     }
 
     /// Clears last `n` lines if [`Coloring`] is enabled.

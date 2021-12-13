@@ -31,6 +31,8 @@ use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 use structopt::StructOpt;
 
+use crate::writer::Coloring;
+
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(
@@ -147,6 +149,20 @@ where
     pub custom: Custom,
 }
 
+/// Indication whether a [`Writer`] using CLI options supports colored output.
+///
+/// [`Writer`]: crate::Writer
+pub trait Colored {
+    /// Returns [`Coloring`] indicating whether a [`Writer`] using CLI options
+    /// supports colored output or not.
+    ///
+    /// [`Writer`]: crate::Writer
+    #[must_use]
+    fn coloring(&self) -> Coloring {
+        Coloring::Never
+    }
+}
+
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
 #[cfg_attr(doc, doc = "Empty CLI options.")]
@@ -162,6 +178,8 @@ pub struct Empty {
     #[structopt(skip)]
     skipped: (),
 }
+
+impl Colored for Empty {}
 
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
@@ -207,6 +225,8 @@ where
 }
 
 // Useful blanket impls:
+
+impl cli::Colored for Cli {}
 
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
@@ -274,5 +294,20 @@ impl<L: StructOpt, R: StructOpt> Compose<L, R> {
     pub fn into_inner(self) -> (L, R) {
         let Compose { left, right } = self;
         (left, right)
+    }
+}
+
+impl<L, R> Colored for Compose<L, R>
+where
+    L: Colored + StructOpt,
+    R: Colored + StructOpt,
+{
+    fn coloring(&self) -> Coloring {
+        // Basically, founds "maximum" `Coloring` of CLI options.
+        match (self.left.coloring(), self.right.coloring()) {
+            (Coloring::Always, _) | (_, Coloring::Always) => Coloring::Always,
+            (Coloring::Auto, _) | (_, Coloring::Auto) => Coloring::Auto,
+            (Coloring::Never, Coloring::Never) => Coloring::Never,
+        }
     }
 }
