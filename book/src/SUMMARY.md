@@ -4,6 +4,7 @@
 - [Quickstart](quickstart.md)
 - [Writing tests](writing/index.md)
     - [Capturing and variation](writing/capturing.md)
+    - [Asserting](writing/asserting.md)
     - [Data tables](writing/data_tables.md)
     - [Doc strings](writing/doc_strings.md)
     - [`Rule` keyword](writing/rule.md)
