@@ -20,13 +20,13 @@ use std::{
     path::Path,
 };
 
+use futures::{future::LocalBoxFuture, StreamExt as _};
+use regex::Regex;
+
 use crate::{
     cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
     Runner, ScenarioType, Step, World, Writer, WriterExt as _,
 };
-use clap::{Args, Parser as _};
-use futures::{future::LocalBoxFuture, StreamExt as _};
-use regex::Regex;
 
 /// Top-level [Cucumber] executor.
 ///
@@ -53,7 +53,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: Args,
+    Cli: clap::Args,
 {
     /// [`Parser`] sourcing [`Feature`]s for execution.
     ///
@@ -87,7 +87,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: Args,
+    Cli: clap::Args,
 {
     /// Creates a custom [`Cucumber`] executor with the provided [`Parser`],
     /// [`Runner`] and [`Writer`].
@@ -436,7 +436,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
-    Cli: Args,
+    Cli: clap::Args,
 {
     /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
     /// marked with `@allow.skipped` tag.
@@ -626,7 +626,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + writer::Normalized,
-    Cli: Args,
+    Cli: clap::Args,
 {
     /// Runs [`Cucumber`].
     ///
@@ -644,7 +644,7 @@ where
     /// using them inside [`Cucumber`].
     ///
     /// Also, any additional custom CLI options may be specified as a
-    /// [`Args`] deriving type, used as the last type parameter of
+    /// [`clap::Args`] deriving type, used as the last type parameter of
     /// [`cli::Opts`].
     ///
     /// > ⚠️ __WARNING__: Any CLI options of [`Parser`], [`Runner`], [`Writer`]
@@ -657,7 +657,6 @@ where
     /// # use std::{convert::Infallible, time::Duration};
     /// #
     /// # use async_trait::async_trait;
-    /// # use clap::{Args, Parser as _};
     /// # use cucumber::{cli, WorldInit};
     /// # use futures::FutureExt as _;
     /// # use tokio::time;
@@ -676,7 +675,7 @@ where
     /// #
     /// # #[tokio::main(flavor = "current_thread")]
     /// # async fn main() {
-    /// #[derive(Args)]
+    /// #[derive(clap::Args)]
     /// struct CustomCli {
     ///     /// Additional time to wait in a before hook.
     ///     #[clap(
@@ -686,7 +685,7 @@ where
     ///     before_time: Option<Duration>,
     /// }
     ///
-    /// let cli = cli::Opts::<_, _, _, CustomCli>::parse();
+    /// let cli = cli::Opts::<_, _, _, CustomCli>::parsed();
     /// let time = cli.custom.before_time.unwrap_or_default();
     ///
     /// MyWorld::cucumber()
@@ -718,7 +717,7 @@ where
         cli: cli::Opts<P::Cli, R::Cli, Wr::Cli, CustomCli>,
     ) -> Cucumber<W, P, I, R, Wr, CustomCli>
     where
-        CustomCli: Args,
+        CustomCli: clap::Args,
     {
         let Cucumber {
             parser,
@@ -810,7 +809,7 @@ where
             runner: runner_cli,
             writer: writer_cli,
             ..
-        } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::parse);
+        } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::parsed);
 
         let filter = move |feat: &gherkin::Feature,
                            rule: Option<&gherkin::Rule>,
@@ -883,7 +882,7 @@ where
     P: Debug + Parser<I>,
     R: Debug + Runner<W>,
     Wr: Debug + Writer<W>,
-    Cli: Args,
+    Cli: clap::Args,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cucumber")
@@ -953,7 +952,7 @@ where
     W: World,
     R: Runner<W>,
     Wr: Writer<W>,
-    Cli: Args,
+    Cli: clap::Args,
     I: AsRef<Path>,
 {
     /// Sets the provided language of [`gherkin`] files.
@@ -976,7 +975,7 @@ where
     W: World,
     P: Parser<I>,
     Wr: Writer<W>,
-    Cli: Args,
+    Cli: clap::Args,
     F: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
@@ -1175,7 +1174,7 @@ where
     P: Parser<I>,
     R: Runner<W>,
     Wr: writer::Failure<W> + writer::Normalized,
-    Cli: Args,
+    Cli: clap::Args,
 {
     /// Runs [`Cucumber`].
     ///

@@ -27,11 +27,12 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
-use clap::{Args, Parser as ClapParser};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::writer::Coloring;
+
+pub use clap::{Args, Parser};
 
 // Workaround for overwritten doc-comments.
 // https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
@@ -49,7 +50,6 @@ and may be extended with custom CLI options additionally.
 # use std::{convert::Infallible, time::Duration};
 #
 # use async_trait::async_trait;
-# use clap::Parser as ClapParser;
 # use cucumber::{cli, WorldInit};
 # use futures::FutureExt as _;
 # use tokio::time;
@@ -68,7 +68,7 @@ and may be extended with custom CLI options additionally.
 #
 # #[tokio::main(flavor = "current_thread")]
 # async fn main() {
-#[derive(ClapParser)]
+#[derive(clap::Args)]
 struct CustomOpts {
     /// Additional time to wait in before hook.
     #[clap(
@@ -78,7 +78,7 @@ struct CustomOpts {
     pre_pause: Option<Duration>,
 }
 
-let opts = cli::Opts::<_, _, _, CustomOpts>::parse();
+let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
 let pre_pause = opts.custom.pre_pause.unwrap_or_default();
 
 MyWorld::cucumber()
@@ -96,7 +96,7 @@ MyWorld::cucumber()
 "#
 )]
 #[cfg_attr(not(doc), doc = "Run the tests, pet a dog!.")]
-#[derive(Debug, Clone, ClapParser)]
+#[derive(Debug, Clone, clap::Parser)]
 #[clap(name = "cucumber", about = "Run the tests, pet a dog!.")]
 pub struct Opts<Parser, Runner, Writer, Custom = Empty>
 where
@@ -149,6 +149,21 @@ where
     pub custom: Custom,
 }
 
+impl<Parser, Runner, Writer, Custom> Opts<Parser, Runner, Writer, Custom>
+where
+    Parser: Args,
+    Runner: Args,
+    Writer: Args,
+    Custom: Args,
+{
+    /// Shortcut for [`clap::Parser::parse()`], which doesn't require the trait
+    /// being imported.
+    #[must_use]
+    pub fn parsed() -> Self {
+        <Self as clap::Parser>::parse()
+    }
+}
+
 /// Indication whether a [`Writer`] using CLI options supports colored output.
 ///
 /// [`Writer`]: crate::Writer
@@ -170,7 +185,7 @@ pub trait Colored {
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Clone, Copy, Debug, Args)]
+#[derive(Args, Clone, Copy, Debug)]
 pub struct Empty;
 
 impl Colored for Empty {}
@@ -180,7 +195,7 @@ impl Colored for Empty {}
 #[cfg_attr(
     doc,
     doc = r#"
-Composes two [`Args`] derivers together.
+Composes two [`clap::Args`] derivers together.
 
 # Example
 
@@ -189,11 +204,10 @@ another one:
 ```rust
 # use async_trait::async_trait;
 # use cucumber::{cli, event, parser, writer, Event, World, Writer};
-# use clap::Args;
 #
 struct CustomWriter<Wr>(Wr);
 
-#[derive(Args)]
+#[derive(clap::Args)]
 struct Cli {
     #[clap(long)]
     custom_option: Option<String>,
@@ -271,13 +285,13 @@ impl<Wr: writer::NonTransforming> writer::NonTransforming
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Debug, Args)]
+#[derive(Args, Debug)]
 pub struct Compose<L: Args, R: Args> {
-    /// Left [`Args`] deriver.
+    /// Left [`clap::Args`] deriver.
     #[clap(flatten)]
     pub left: L,
 
-    /// Right [`Args`] deriver.
+    /// Right [`clap::Args`] deriver.
     #[clap(flatten)]
     pub right: R,
 }
@@ -293,8 +307,8 @@ impl<L: Args, R: Args> Compose<L, R> {
 
 impl<L, R> Colored for Compose<L, R>
 where
-    L: Colored + Args,
-    R: Colored + Args,
+    L: Args + Colored,
+    R: Args + Colored,
 {
     fn coloring(&self) -> Coloring {
         // Basically, founds "maximum" `Coloring` of CLI options.

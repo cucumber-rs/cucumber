@@ -26,7 +26,6 @@ pub mod summarize;
 pub mod tee;
 
 use async_trait::async_trait;
-use clap::Args;
 use sealed::sealed;
 
 use crate::{event, parser, Event};
@@ -73,7 +72,7 @@ pub trait Writer<World> {
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Parser`]: crate::Parser
     /// [`Runner`]: crate::Runner
-    type Cli: Args;
+    type Cli: clap::Args;
 
     /// Handles the given [`Cucumber`] event.
     ///

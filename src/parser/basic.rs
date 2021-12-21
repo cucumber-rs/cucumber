@@ -18,7 +18,6 @@ use std::{
     vec,
 };
 
-use clap::Parser as ClapParser;
 use derive_more::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
@@ -36,7 +35,7 @@ use super::{Error as ParseError, Parser};
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Debug, ClapParser)]
+#[derive(Debug, clap::Parser)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.

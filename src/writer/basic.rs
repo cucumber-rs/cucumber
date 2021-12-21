@@ -19,7 +19,6 @@ use std::{
 };
 
 use async_trait::async_trait;
-use clap::Args;
 use derive_more::{Deref, DerefMut};
 use itertools::Itertools as _;
 use regex::CaptureLocations;
@@ -43,7 +42,7 @@ use crate::{
     not(doc),
     allow(missing_docs, clippy::missing_docs_in_private_items)
 )]
-#[derive(Clone, Copy, Debug, Args)]
+#[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
     /// Increased verbosity of an output: additionally outputs step's doc
     /// string (if present).

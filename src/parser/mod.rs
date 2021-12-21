@@ -14,10 +14,10 @@
 
 pub mod basic;
 
-use clap::Args;
+use std::sync::Arc;
+
 use derive_more::{Display, Error};
 use futures::Stream;
-use std::sync::Arc;
 
 use crate::feature::ExpandExamplesError;
 
@@ -37,7 +37,7 @@ pub trait Parser<I> {
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Runner`]: crate::Runner
     /// [`Writer`]: crate::Writer
-    type Cli: Args;
+    type Cli: clap::Args;
 
     /// Output [`Stream`] of parsed [`Feature`]s.
     ///

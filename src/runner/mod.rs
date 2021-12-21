@@ -16,7 +16,6 @@
 
 pub mod basic;
 
-use clap::Args;
 use futures::Stream;
 
 use crate::{event, parser, Event};
@@ -66,7 +65,7 @@ pub trait Runner<World> {
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Parser`]: crate::Parser
     /// [`Writer`]: crate::Writer
-    type Cli: Args;
+    type Cli: clap::Args;
 
     /// Output events [`Stream`].
     type EventStream: Stream<

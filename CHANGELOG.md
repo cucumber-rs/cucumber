@@ -19,6 +19,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
+- Switched CLI to `clap` from `structopt`. ([#188])
 
 ### Added
 
@@ -60,6 +61,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#178]: /../../pull/178
 [#181]: /../../pull/181
 [#182]: /../../pull/182
+[#188]: /../../pull/188
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit

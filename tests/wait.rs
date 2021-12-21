@@ -1,13 +1,12 @@
 use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
 
 use async_trait::async_trait;
-use clap::{Args, Parser as _};
 use cucumber::{cli, given, then, when, Parameter, WorldInit};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
-#[derive(Args)]
+#[derive(cli::Args)]
 struct CustomCli {
     /// Additional time to wait in before and after hooks.
     #[clap(
@@ -20,7 +19,7 @@ struct CustomCli {
 
 #[tokio::main]
 async fn main() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::parse();
+    let cli = cli::Opts::<_, _, _, CustomCli>::parsed();
 
     let res = World::cucumber()
         .before(move |_, _, _, w| {

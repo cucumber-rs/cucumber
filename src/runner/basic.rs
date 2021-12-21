@@ -23,7 +23,6 @@ use std::{
     },
 };
 
-use clap::Parser as ClapParser;
 use futures::{
     channel::mpsc,
     future::{self, Either, LocalBoxFuture},
@@ -49,7 +48,7 @@ use crate::{
     not(doc),
     allow(clippy::missing_docs_in_private_items, missing_docs)
 )]
-#[derive(Clone, Copy, Debug, ClapParser)]
+#[derive(Clone, Copy, Debug, clap::Parser)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
