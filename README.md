@@ -104,14 +104,14 @@ For more examples check out the Book ([current][1] | [edge][2]).
 
 ## Supporting crates
 
-The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin-rust`](https://github.com/bbqsrc/gherkin-rust) crate. Most features of the [Gherkin] language are parsed already and accessible via the relevant structs.
+The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin`](https://github.com/cucumber-rs/gherkin) crate. Most features of the [Gherkin] language are parsed already and accessible via the relevant structs.
 
 
 
 
 ## Known issues
 
-- `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/bbqsrc/gherkin-rust/issues/19)).
+- `Scenario Outline` is treated the same as `Outline` or `Example` in the parser ([gherkin/#19](https://github.com/cucumber-rs/gherkin/issues/19)).
 
 
 
