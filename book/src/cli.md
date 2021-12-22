@@ -14,37 +14,38 @@ cucumber
 Run the tests, pet a dog!
 
 USAGE:
-    cucumber [FLAGS] [OPTIONS]
-
-FLAGS:
-    -h, --help       
-            Prints help information
-
-    -V, --version    
-            Prints version information
-
-    -v, --verbose    
-            Increased verbosity of an output: additionally outputs step's doc string (if present)
-
+    cucumber [OPTIONS]
 
 OPTIONS:
-        --color <auto|always|never>    
-            Coloring policy for a console output [default: auto]
+    -c, --concurrency <int>
+            Number of scenarios to run concurrently. If not specified, uses the value configured in
+            tests runner, or 64 by default
 
-    -i, --input <glob>                 
-            Glob pattern to look for feature files with. By default, looks for `*.feature`s in the path configured tests
-            runner
-    -c, --concurrency <int>            
-            Number of scenarios to run concurrently. If not specified, uses the value configured in tests runner, or 64
-            by default
-    -n, --name <regex>                 
-            Regex to filter scenarios by their name [aliases: scenario-name]
+        --color <auto|always|never>
+            Coloring policy for a console output
+            
+            [default: auto]
 
-    -t, --tags <tagexpr>               
+    -h, --help
+            Print help information
+
+    -i, --input <glob>
+            Glob pattern to look for feature files with. By default, looks for `*.feature`s in the
+            path configured tests runner
+
+    -n, --name <regex>
+            Regex to filter scenarios by their name
+            
+            [aliases: scenario-name]
+
+    -t, --tags <tagexpr>
             Tag expression to filter scenarios by.
             
-            Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be careful about conflicting
-            tags on different levels. 
+            Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be
+            careful about conflicting tags on different levels.
+
+    -v, --verbose
+            Increased verbosity of an output: additionally outputs step's doc string (if present)
 ```
 
 ![record](rec/cli.gif)
@@ -66,7 +67,6 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 # use async_trait::async_trait;
 # use cucumber::{cli, given, then, when, World, WorldInit};
 # use futures::FutureExt as _;
-# use structopt::StructOpt;
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -115,10 +115,10 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 #     assert!(!world.cat.hungry);
 # }
 #
-#[derive(StructOpt)]
+#[derive(cli::Args)] // re-export of `clap::Args`
 struct CustomOpts {
     /// Additional time to wait in before hook.
-    #[structopt(
+    #[clap(
         long,
         parse(try_from_str = humantime::parse_duration)
     )]
@@ -127,7 +127,7 @@ struct CustomOpts {
 
 #[tokio::main]
 async fn main() {
-    let opts = cli::Opts::<_, _, _, CustomOpts>::from_args();
+    let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
     let pre_pause = opts.custom.pre_pause.unwrap_or_default();
 
     AnimalWorld::cucumber()
@@ -137,12 +137,17 @@ async fn main() {
         .await;
 }
 ```
-
 ![record](rec/cli_custom.gif)
 
+> __NOTE__: For extending CLI options of exising [`Parser`], [`Runner`] or [`Writer`] when wrapping it, consider using [`cli::Compose`].
+
+> __NOTE__: If a custom [`Parser`], [`Runner`] or [`Writer`] implementation doesn't expose any CLI options, then [`cli::Empty`] should be used.
 
 
 
+
+[`cli::Compose`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Compose.html
+[`cli::Empty`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Empty.html
 [`cucumber`]: https://docs.rs/cucumber
 [`Cucumber::with_cli()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli
 [`Parser`]: architecture/parser.md

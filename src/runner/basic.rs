@@ -41,14 +41,8 @@ use crate::{
     parser, step, Event, Runner, Step, World,
 };
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Runner`].")]
-#[cfg_attr(
-    not(doc),
-    allow(clippy::missing_docs_in_private_items, missing_docs)
-)]
-#[derive(Clone, Copy, Debug, clap::Parser)]
+/// CLI options of a [`Basic`] [`Runner`].
+#[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
