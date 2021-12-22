@@ -4,13 +4,12 @@ use async_trait::async_trait;
 use cucumber::{cli, given, then, when, Parameter, WorldInit};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
-use structopt::StructOpt;
 use tokio::time;
 
-#[derive(StructOpt)]
+#[derive(cli::Args)]
 struct CustomCli {
     /// Additional time to wait in before and after hooks.
-    #[structopt(
+    #[clap(
         long,
         default_value = "10ms",
         parse(try_from_str = humantime::parse_duration)
@@ -20,7 +19,7 @@ struct CustomCli {
 
 #[tokio::main]
 async fn main() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::from_args();
+    let cli = cli::Opts::<_, _, _, CustomCli>::parsed();
 
     let res = World::cucumber()
         .before(move |_, _, _, w| {

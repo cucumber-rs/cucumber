@@ -17,7 +17,6 @@
 pub mod basic;
 
 use futures::Stream;
-use structopt::StructOptInternal;
 
 use crate::{event, parser, Event};
 
@@ -65,12 +64,8 @@ pub trait Runner<World> {
     ///
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Parser`]: crate::Parser
-    /// [`StructOpt`]: structopt::StructOpt
     /// [`Writer`]: crate::Writer
-    // We do use `StructOptInternal` here only because `StructOpt::from_args()`
-    // requires exactly this trait bound. We don't touch any `StructOptInternal`
-    // details being a subject of instability.
-    type Cli: StructOptInternal;
+    type Cli: clap::Args;
 
     /// Output events [`Stream`].
     type EventStream: Stream<

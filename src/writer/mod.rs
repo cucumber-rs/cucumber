@@ -27,7 +27,6 @@ pub mod tee;
 
 use async_trait::async_trait;
 use sealed::sealed;
-use structopt::StructOptInternal;
 
 use crate::{event, parser, Event};
 
@@ -73,11 +72,7 @@ pub trait Writer<World> {
     /// [`cli::Empty`]: crate::cli::Empty
     /// [`Parser`]: crate::Parser
     /// [`Runner`]: crate::Runner
-    /// [`StructOpt`]: structopt::StructOpt
-    // We do use `StructOptInternal` here only because `StructOpt::from_args()`
-    // requires exactly this trait bound. We don't touch any `StructOptInternal`
-    // details being a subject of instability.
-    type Cli: StructOptInternal;
+    type Cli: clap::Args;
 
     /// Handles the given [`Cucumber`] event.
     ///

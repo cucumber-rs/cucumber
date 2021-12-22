@@ -34,7 +34,6 @@ use futures::{
 };
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
-use structopt::StructOpt;
 
 use crate::{
     event::{self, HookType, Info},
@@ -49,11 +48,11 @@ use crate::{
     not(doc),
     allow(clippy::missing_docs_in_private_items, missing_docs)
 )]
-#[derive(Clone, Copy, Debug, StructOpt)]
+#[derive(Clone, Copy, Debug, clap::Parser)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
-    #[structopt(long, short, name = "int")]
+    #[clap(long, short, name = "int")]
     pub concurrency: Option<usize>,
 }
 
