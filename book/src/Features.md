@@ -67,7 +67,7 @@ Feature: Animal feature
 
 <script id="asciicast-ZQyfL8gVHD932rskDDESqlsD9" src="https://asciinema.org/a/ZQyfL8gVHD932rskDDESqlsD9.js" async data-autoplay="true" data-rows="18"></script>
 
-`Background` `Step`s indicated by `>` sign in the output by default.
+`Background` `Step`s are indicated by the `>` sign in the output by default.
 
 In case `Background` is declared outside any `Rule`, it will be run on any `Scenario`. Otherwise, if `Background` is declared inside `Rule`, it will be run only for `Scenario`s inside this `Rule` and only after top-level `Background` statements, if any.
 
