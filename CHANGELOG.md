@@ -38,6 +38,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 - `writer::AssertNormalized` forcing `Normalized` implementation. ([#182])
 - `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189])
+- `skip-world` CLI option to the `writer::Basic` ([#193])
 
 ### Fixed
 
@@ -62,6 +63,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#181]: /../../pull/181
 [#182]: /../../pull/182
 [#188]: /../../pull/188
+[#193]: /../../pull/193
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit
