@@ -351,6 +351,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             WritableString(String::new()),
             Coloring::Never,
             false,
+            false,
         );
         let output = events
             .iter()

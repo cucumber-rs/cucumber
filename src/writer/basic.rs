@@ -49,6 +49,10 @@ pub struct Cli {
     #[clap(long, short)]
     pub verbose: bool,
 
+    /// Skips outputting World on failed Steps.
+    #[clap(long)]
+    pub skip_world: bool,
+
     /// Coloring policy for a console output.
     #[clap(long, name = "auto|always|never", default_value = "auto")]
     pub color: Coloring,
@@ -123,6 +127,12 @@ pub struct Basic<Out: io::Write = io::Stdout> {
     ///
     /// [1]: gherkin::Step::docstring
     verbose: bool,
+
+    /// Skips outputting [`World`] on [`Failed`] [`Step`]s.
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Step`]: gherkin::Step
+    skip_world_on_fail: bool,
 }
 
 #[async_trait(?Send)]
@@ -183,7 +193,7 @@ impl Basic {
     /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn stdout<W>() -> writer::Normalize<W, Self> {
-        Self::new(io::stdout(), Coloring::Auto, false)
+        Self::new(io::stdout(), Coloring::Auto, false, false)
     }
 }
 
@@ -197,8 +207,9 @@ impl<Out: io::Write> Basic<Out> {
         output: Out,
         color: Coloring,
         verbose: bool,
+        skip_world_on_fail: bool,
     ) -> writer::Normalize<W, Self> {
-        Self::raw(output, color, verbose).normalized()
+        Self::raw(output, color, verbose, skip_world_on_fail).normalized()
     }
 
     /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`] outputting to the
@@ -210,15 +221,25 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn raw(output: Out, color: Coloring, verbose: bool) -> Self {
+    pub fn raw(
+        output: Out,
+        color: Coloring,
+        verbose: bool,
+        skip_world_on_fail: bool,
+    ) -> Self {
         let mut basic = Self {
             output,
             styles: Styles::new(),
             indent: 0,
             lines_to_clear: 0,
             verbose: false,
+            skip_world_on_fail: false,
         };
-        basic.apply_cli(Cli { verbose, color });
+        basic.apply_cli(Cli {
+            verbose,
+            color,
+            skip_world: skip_world_on_fail,
+        });
         basic
     }
 
@@ -226,6 +247,9 @@ impl<Out: io::Write> Basic<Out> {
     pub fn apply_cli(&mut self, cli: Cli) {
         if cli.verbose {
             self.verbose = true;
+        }
+        if cli.skip_world {
+            self.skip_world_on_fail = true;
         }
         self.styles.apply_coloring(cli.color);
     }
@@ -625,6 +649,7 @@ impl<Out: io::Write> Basic<Out> {
                     format!("{:#?}", w),
                     self.indent.saturating_sub(3) + 3,
                 ))
+                .filter(|_| !self.skip_world_on_fail)
                 .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));

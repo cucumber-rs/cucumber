@@ -45,6 +45,7 @@ where
     Wr: Writer<W> + ?Sized,
 {
     /// Does nothing.
+    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn write(&mut self, _: Val)
     where
         'val: 'async_trait,
