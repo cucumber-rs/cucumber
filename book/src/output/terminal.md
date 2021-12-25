@@ -321,6 +321,8 @@ async fn main() {
 ```
 ![record](../rec/output_terminal_custom.gif)
 
+> __NOTE__: The custom print is still output before its [step], because is printed during the [step] execution. 
+
 
 
 
