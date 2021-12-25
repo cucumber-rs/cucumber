@@ -1,0 +1,440 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Custom Runner - Cucumber Rust Book</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="User guide for Cucumber Rust">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="../writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="../writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="../writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="../writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="../writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="../writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="../writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="../writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="../writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="../writing/modules.html"><strong aria-hidden="true">3.11.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="../cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="../output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="../output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="../output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="../output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li></ol></li><li class="chapter-item expanded "><a href="../architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="../architecture/runner.html" class="active"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="../architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Cucumber Rust Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="custom-runner"><a class="header" href="#custom-runner">Custom <code>Runner</code></a></h1>
+<p>Now, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> which simply executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s in <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s sequentially, without considering <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s, <a href="https://cucumber.io/docs/gherkin/reference#rule">rule</a>s, <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a>s or other extras, and specifically suitable for our <code>AnimalWorld</code> (for implementation simplicity).</p>
+<p><a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> represents anything that transforms a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s into a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{
+</span><span class="boring">    convert::Infallible,
+</span><span class="boring">    panic::{self, AssertUnwindSafe},
+</span><span class="boring">    path::PathBuf,
+</span><span class="boring">    sync::Arc,
+</span><span class="boring">    time::Duration,
+</span><span class="boring">};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::{
+</span><span class="boring">    cli, event, gherkin, given, parser, step, then, when, Event, World,
+</span><span class="boring">    WorldInit,
+</span><span class="boring">};
+</span><span class="boring">use futures::{
+</span><span class="boring">    future::{self, FutureExt as _},
+</span><span class="boring">    stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
+</span><span class="boring">};
+</span><span class="boring">use once_cell::sync::Lazy;
+</span><span class="boring">use tokio::time::sleep;
+</span><span class="boring">
+</span><span class="boring">#[derive(Clone, Copy, Debug, Default)]
+</span><span class="boring">struct Animal {
+</span><span class="boring">    pub hungry: bool,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Animal {
+</span><span class="boring">    fn feed(&amp;mut self) {
+</span><span class="boring">        self.hungry = false;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Clone, Debug, WorldInit)]
+</span><span class="boring">pub struct AnimalWorld {
+</span><span class="boring">    cat: Animal,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl World for AnimalWorld {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
+</span><span class="boring">        Ok(Self {
+</span><span class="boring">            cat: Animal::default(),
+</span><span class="boring">        })
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
+</span><span class="boring">    sleep(Duration::from_secs(2)).await;
+</span><span class="boring">
+</span><span class="boring">    match state.as_str() {
+</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
+</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        _ =&gt; unreachable!(),
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
+</span><span class="boring">    sleep(Duration::from_secs(2)).await;
+</span><span class="boring">
+</span><span class="boring">    world.cat.feed();
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
+</span><span class="boring">    sleep(Duration::from_secs(2)).await;
+</span><span class="boring">
+</span><span class="boring">    assert!(!world.cat.hungry);
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct CustomParser;
+</span><span class="boring">
+</span><span class="boring">impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
+</span><span class="boring">    type Cli = cli::Empty;
+</span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
+</span><span class="boring">
+</span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
+</span><span class="boring">        let keyword = &quot;Feature&quot;;
+</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        stream::once(future::ok(gherkin::Feature {
+</span><span class="boring">            keyword: keyword.into(),
+</span><span class="boring">            name: name.into(),
+</span><span class="boring">            description: None,
+</span><span class="boring">            background: None,
+</span><span class="boring">            scenarios: vec![gherkin::Scenario {
+</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
+</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                steps: vec![
+</span><span class="boring">                    gherkin::Step {
+</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        ty: gherkin::StepType::Given,
+</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        docstring: None,
+</span><span class="boring">                        table: None,
+</span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
+</span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
+</span><span class="boring">                    },
+</span><span class="boring">                    gherkin::Step {
+</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        ty: gherkin::StepType::When,
+</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        docstring: None,
+</span><span class="boring">                        table: None,
+</span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
+</span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
+</span><span class="boring">                    },
+</span><span class="boring">                    gherkin::Step {
+</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        ty: gherkin::StepType::Then,
+</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        docstring: None,
+</span><span class="boring">                        table: None,
+</span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
+</span><span class="boring">                        position: gherkin::LineCol { line: 5, col: 5 },
+</span><span class="boring">                    },
+</span><span class="boring">                ],
+</span><span class="boring">                examples: vec![],
+</span><span class="boring">                tags: vec![],
+</span><span class="boring">                span: gherkin::Span { start: 3, end: 52 },
+</span><span class="boring">                position: gherkin::LineCol { line: 2, col: 3 },
+</span><span class="boring">            }],
+</span><span class="boring">            rules: vec![],
+</span><span class="boring">            tags: vec![],
+</span><span class="boring">            span: gherkin::Span { start: 1, end: 23 },
+</span><span class="boring">            position: gherkin::LineCol { line: 1, col: 1 },
+</span><span class="boring">            path: Some(PathBuf::from(file!())),
+</span><span class="boring">        }))
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct CustomRunner;
+
+impl CustomRunner {
+    fn steps_fns() -&gt; &amp;'static step::Collection&lt;AnimalWorld&gt; {
+        // Wire the static collection of step matching functions.
+        static STEPS: Lazy&lt;step::Collection&lt;AnimalWorld&gt;&gt; =
+            Lazy::new(AnimalWorld::collection);
+        &amp;STEPS
+    }
+
+    async fn execute_step(
+        mut world: AnimalWorld,
+        step: gherkin::Step,
+    ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
+        let ev = if let Some((step_fn, captures, ctx)) =
+            Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
+        {
+            // Panic represents a failed assertion in a step matching
+            // function.
+            match AssertUnwindSafe(step_fn(&amp;mut world, ctx))
+                .catch_unwind()
+                .await
+            {
+                Ok(()) =&gt; event::Step::Passed(captures),
+                Err(e) =&gt; event::Step::Failed(
+                    Some(captures),
+                    Some(Arc::new(world.clone())),
+                    event::StepError::Panic(e.into()),
+                ),
+            }
+        } else {
+            event::Step::Skipped
+        };
+        (world, ev)
+    }
+
+    async fn execute_scenario(
+        scenario: gherkin::Scenario,
+    ) -&gt; impl Stream&lt;Item = event::Feature&lt;AnimalWorld&gt;&gt; {
+        // Those panic hook shenanigans are done to avoid console messages like
+        // &quot;thread 'main' panicked at ...&quot;
+        //
+        // 1. We obtain the current panic hook and replace it with an empty one.
+        // 2. We run tests, which can panic. In that case we pass all panic info
+        //    down the line to the `Writer`, which will print it at right time.
+        // 3. We restore original panic hook, because suppressing all panics
+        //    doesn't sound like a very good idea.
+        let hook = panic::take_hook();
+        panic::set_hook(Box::new(|_| {}));
+
+        let mut world = AnimalWorld::new().await.unwrap();
+        let mut steps = Vec::with_capacity(scenario.steps.len());
+
+        for step in scenario.steps.clone() {
+            let (w, ev) = Self::execute_step(world, step.clone()).await;
+            world = w;
+            let should_stop = matches!(ev, event::Step::Failed(..));
+            steps.push((step, ev));
+            if should_stop {
+                break;
+            }
+        }
+
+        panic::set_hook(hook);
+
+        let scenario = Arc::new(scenario);
+        stream::once(future::ready(event::Scenario::Started))
+            .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
+                let step = Arc::new(step);
+                [
+                    event::Scenario::Step(step.clone(), event::Step::Started),
+                    event::Scenario::Step(step, ev),
+                ]
+            })))
+            .chain(stream::once(future::ready(event::Scenario::Finished)))
+            .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
+    }
+
+    fn execute_feature(
+        feature: gherkin::Feature,
+    ) -&gt; impl Stream&lt;Item = event::Cucumber&lt;AnimalWorld&gt;&gt; {
+        let feature = Arc::new(feature);
+        stream::once(future::ready(event::Feature::Started))
+            .chain(
+                stream::iter(feature.scenarios.clone())
+                    .then(Self::execute_scenario)
+                    .flatten(),
+            )
+            .chain(stream::once(future::ready(event::Feature::Finished)))
+            .map(move |ev| event::Cucumber::Feature(feature.clone(), ev))
+    }
+}
+
+impl cucumber::Runner&lt;AnimalWorld&gt; for CustomRunner {
+    type Cli = cli::Empty; // we provide no CLI options
+    type EventStream = LocalBoxStream&lt;
+        'static,
+        parser::Result&lt;Event&lt;event::Cucumber&lt;AnimalWorld&gt;&gt;&gt;,
+    &gt;;
+
+    fn run&lt;S&gt;(self, features: S, _: Self::Cli) -&gt; Self::EventStream
+    where
+        S: Stream&lt;Item = parser::Result&lt;gherkin::Feature&gt;&gt; + 'static,
+    {
+        stream::once(future::ok(event::Cucumber::Started))
+            .chain(
+                features
+                    .map_ok(|f| Self::execute_feature(f).map(Ok))
+                    .try_flatten(),
+            )
+            .chain(stream::once(future::ok(event::Cucumber::Finished)))
+            .map_ok(Event::new)
+            .boxed_local()
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference for `CustomParser`
+        .with_parser(CustomParser)
+        .with_runner(CustomRunner)
+        .run_and_exit(&quot;/tests/features/book&quot;)
+        .await;
+}
+</code></pre></pre>
+<p><img src="../rec/architecture_runner.gif" alt="record" /></p>
+<blockquote>
+<p><strong>NOTE</strong>: Output is printed only after all the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s were executed, because we have implemented the <code>CustomRunner</code> in the way to emit <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html"><code>event::Cucumber</code></a>s only after executing all the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s (see <code>execute_scenario()</code> function).</p>
+</blockquote>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../architecture/parser.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="../architecture/writer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../architecture/parser.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="../architecture/writer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+    </body>
+</html>

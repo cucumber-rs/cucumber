@@ -3,10 +3,10 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Cucumber</title>
+        <title>Introduction - Cucumber Rust Book</title>
         <!-- Custom HTML head -->
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <meta name="description" content="">
+        <meta name="description" content="User guide for Cucumber Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="Getting_Started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="Features.html"><strong aria-hidden="true">3.</strong> Features</a></li><li class="chapter-item expanded "><a href="Test_Modules_Organization.html"><strong aria-hidden="true">4.</strong> Test Modules Organization</a></li><li class="chapter-item expanded "><a href="Running_Against_A_Process.html"><strong aria-hidden="true">5.</strong> Running Against a Process (WIP)</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="writing/modules.html"><strong aria-hidden="true">3.11.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li></ol></li><li class="chapter-item expanded "><a href="architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="architecture/runner.html"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -104,7 +104,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Cucumber</h1>
+                    <h1 class="menu-title">Cucumber Rust Book</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -134,39 +134,75 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="cucumber"><a class="header" href="#cucumber">Cucumber</a></h1>
-<p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a behavioral driven development style workflow (<a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a>). It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a>. A typical feature could look something like this:</p>
-<pre><code class="language-gherkin">Feature: User login
-
-  Scenario: User tries to log in with an incorrect password
-    Given a user portal where one can login
-    When a user types in the correct username but incorrect password
-    Then the user will see a messagebox with an alert that their password is wrong
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a> (behavior-driven development) style workflow. </p>
+<p>It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a>. A typical feature could look something like this:</p>
+<pre><code class="language-gherkin">Feature: Eating too much cucumbers may not be good for you
+    
+  Scenario: Eating a few isn't a problem
+    Given Alice is hungry
+    When she eats 3 cucumbers
+    Then she is full
 </code></pre>
-<p>These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (<code>Given</code>, <code>When</code>, <code>Then</code>). </p>
-<p><a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> offers support for languages other than English, as well. <a href="https://cucumber.io">Cucumber</a> implementations then simply hook into these keywords and execute the logic that corresponds to the keywords. <a href="https://docs.rs/cucumber-rust"><code>cucumber-rust</code></a> is one of such implementations and is the subject of this book.</p>
-<pre><code class="language-rust ignore">#[given(&quot;a user portal where one can login&quot;)]
-fn portal(w: &amp;mut World) {
-    /* initial setup of the feature being tested */
+<p>These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (<code>Given</code>, <code>When</code>, <code>Then</code>). <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> offers support for <a href="https://cucumber.io/docs/gherkin/languages">languages other than English</a>, as well.</p>
+<p><a href="https://cucumber.io">Cucumber</a> implementations then simply hook into these keywords and execute the logic corresponding to the keywords. <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate is one of such implementations and is the subject of this book.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::{given, then, when, WorldInit};
+</span><span class="boring">use tokio::time::sleep;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">struct World {
+</span><span class="boring">    user: Option&lt;String&gt;,
+</span><span class="boring">    capacity: usize,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl cucumber::World for World {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">        Ok(Self { user: None, capacity: 0 })
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span>#[given(expr = &quot;{word} is hungry&quot;)] // Cucumber Expression
+async fn someone_is_hungry(w: &amp;mut World, user: String) {
+    sleep(Duration::from_secs(2)).await;
+    
+    w.user = Some(user);
 }
 
-#[when(&quot;a user types in the correct username but incorrect password&quot;)]
-fn incorrect_password(w: &amp;mut World) {
-    /* performing the relevant actions against the feature */
+#[when(regex = r&quot;^(?:he|she|they) eats? (\d+) cucumbers?$&quot;)]
+async fn eat_cucumbers(w: &amp;mut World, count: usize) {
+    sleep(Duration::from_secs(2)).await;
+
+    w.capacity += count;
+    
+    assert!(w.capacity &lt; 4, &quot;{} exploded!&quot;, w.user.as_ref().unwrap());
 }
 
-#[then(&quot;the user will see a messagebox with an alert that their password is wrong&quot;)]
-fn alert(w: &amp;mut World) {
-    /* assertions and validation that the feature is working as intended */
+#[then(&quot;she is full&quot;)]
+async fn is_full(w: &amp;mut World) {
+    sleep(Duration::from_secs(2)).await;
+
+    assert_eq!(w.capacity, 3, &quot;{} isn't full!&quot;, w.user.as_ref().unwrap());
 }
-</code></pre>
+<span class="boring">
+</span><span class="boring">#[tokio::main]
+</span><span class="boring">async fn main() {
+</span><span class="boring">    World::run(&quot;/tests/features/readme&quot;).await;
+</span><span class="boring">}
+</span></code></pre></pre>
+<p><img src="rec/readme.gif" alt="record" /></p>
 <p>Since the goal is the testing of externally identifiable behavior of some feature, it would be a misnomer to use <a href="https://cucumber.io">Cucumber</a> to test specific private aspects or isolated modules. <a href="https://cucumber.io">Cucumber</a> tests are more likely to take the form of integration, functional or E2E testing.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="next" href="Getting_Started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="quickstart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         <div style="clear: both"></div>
@@ -175,7 +211,7 @@ fn alert(w: &amp;mut World) {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="next" href="Getting_Started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="quickstart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
