@@ -1,9 +1,9 @@
 Custom `Parser`
 ===============
 
-[`Parser`] represents anything that emits a [`Stream`] of [feature]s.
-
 Let's start by implementing a custom [`Parser`] which statically emits a single [feature] for execution.
+
+[`Parser`] represents anything that emits a [`Stream`] of [feature]s.
 
 ```rust
 # use std::{convert::Infallible, path::PathBuf, time::Duration};
