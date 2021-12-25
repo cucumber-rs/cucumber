@@ -33,7 +33,7 @@ use cucumber::writer;
 let file = fs::File::create(dbg!(format!("{}/target/report.json", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
-    .run_and_exit("tests/features/book")
+    .run("tests/features/book")
     .await;
 # Ok(())
 # }

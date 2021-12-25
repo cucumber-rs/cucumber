@@ -26,7 +26,7 @@ It's better to avoid writing similar [step] matching functions, as they can lead
 
 As the test suit grows, it may become harder to notice how minimal changes to regular expressions can lead to mismatched [step]s. 
 
-> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow.skipped` [tag]. The latter allows marking the [scenario]s which [step]s are allowed to be skipped.
+> __TIP__: We recommend using [`Cucumber::fail_on_skipped()`] method in combination with `@allow.skipped` [tag]. The latter allows marking the [scenario]s which [step]s are explicitly allowed to be skipped.
 
 
 

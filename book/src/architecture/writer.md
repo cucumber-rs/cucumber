@@ -1,7 +1,7 @@
 Custom `Writer`
 ===============
 
-Finally, we will implement a custom [`Writer`] which simply outputs [cucumber events][`event::Cucumber`] to STDOUT in the order of receiving.
+Finally, let's implement a custom [`Writer`] which simply outputs [cucumber events][`event::Cucumber`] to [STDOUT] in the order of receiving.
 
 [`Writer`] represents anything that consumes a [`Stream`] of [cucumber events][`event::Cucumber`].
 

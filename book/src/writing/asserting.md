@@ -11,7 +11,7 @@ There are two ways of doing [assertion]s in a [step] matching function:
 ## Panic
 
 Throwing a panic in a [step] matching function makes the appropriate [step] failed:
-```rust
+```rust,should_panic
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
@@ -65,7 +65,7 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/asserting.feature").await;
+#     AnimalWorld::run_and_exit("/tests/features/book/writing/asserting.feature").await;
 # }
 ```
 ![record](../rec/writing_asserting_panic.gif)
@@ -78,7 +78,7 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 ## `Result` and `?`
 
 Similarly to [using the `?` operator in Rust tests][1], we may also return a `Result<()>` from a [step] matching function, so returning an `Err` will cause the [step] to fail (anything implementing [`Display`] is sufficient).
-```rust
+```rust,should_panic
 # use std::convert::Infallible;
 #
 # use async_trait::async_trait;
@@ -87,12 +87,6 @@ Similarly to [using the `?` operator in Rust tests][1], we may also return a `Re
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
-# }
-#
-# impl Cat {
-#     fn feed(&mut self) {
-#         self.hungry = false;
-#     }
 # }
 #
 # #[derive(Debug, WorldInit)]
@@ -130,7 +124,7 @@ fn cat_is_fed(world: &mut AnimalWorld) -> Result<(), &'static str> {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/asserting.feature").await;
+#     AnimalWorld::run_and_exit("/tests/features/book/writing/asserting.feature").await;
 # }
 ```
 ![record](../rec/writing_asserting_result.gif)
