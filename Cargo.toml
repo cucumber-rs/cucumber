@@ -39,7 +39,7 @@ timestamps = []
 [dependencies]
 async-trait = "0.1.40"
 atty = "0.2.14"
-clap = { version = "3.0.0-rc.7", features = ["derive"] }
+clap = { version = "3.0.0-rc.8", features = ["derive"] }
 console = "0.15"
 derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
 either = "1.6"
