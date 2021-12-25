@@ -11,8 +11,11 @@ publish = false
 
 [dependencies]
 async-trait = "0.1"
+clap = { version = "3.0.0-rc.7", features = ["derive"] }
 cucumber = { version = "0.11.0-dev", path = "../..", features = ["output-json", "output-junit"] }
 futures = "0.3"
+humantime = "2.1"
+once_cell = { version = "1.8", features = ["parking_lot"] }
 skeptic = "0.13"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 

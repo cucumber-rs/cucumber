@@ -34,70 +34,66 @@ use crate::writer::Coloring;
 
 pub use clap::{Args, Parser};
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(
-    doc,
-    doc = r#"
-Root CLI (command line interface) of a top-level [`Cucumber`] executor.
-
-It combines all the nested CLIs of [`Parser`], [`Runner`] and [`Writer`],
-and may be extended with custom CLI options additionally.
-
-# Example
-
-```rust
-# use std::{convert::Infallible, time::Duration};
-#
-# use async_trait::async_trait;
-# use cucumber::{cli, WorldInit};
-# use futures::FutureExt as _;
-# use tokio::time;
-#
-# #[derive(Debug, WorldInit)]
-# struct MyWorld;
-#
-# #[async_trait(?Send)]
-# impl cucumber::World for MyWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(Self)
-#     }
-# }
-#
-# #[tokio::main(flavor = "current_thread")]
-# async fn main() {
-#[derive(clap::Args)]
-struct CustomOpts {
-    /// Additional time to wait in before hook.
-    #[clap(
-        long,
-        parse(try_from_str = humantime::parse_duration)
-    )]
-    pre_pause: Option<Duration>,
-}
-
-let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
-let pre_pause = opts.custom.pre_pause.unwrap_or_default();
-
-MyWorld::cucumber()
-    .before(move |_, _, _, _| time::sleep(pre_pause).boxed_local())
-    .with_cli(opts)
-    .run_and_exit("tests/features/readme")
-    .await;
-# }
-```
-
-[`Cucumber`]: crate::Cucumber
-[`Parser`]: crate::Parser
-[`Runner`]: crate::Runner
-[`Writer`]: crate::Writer
-"#
-)]
-#[cfg_attr(not(doc), doc = "Run the tests, pet a dog!.")]
+/// Root CLI (command line interface) of a top-level [`Cucumber`] executor.
+///
+/// It combines all the nested CLIs of [`Parser`], [`Runner`] and [`Writer`],
+/// and may be extended with custom CLI options additionally.
+///
+/// # Example
+///
+/// ```rust
+/// # use std::{convert::Infallible, time::Duration};
+/// #
+/// # use async_trait::async_trait;
+/// # use cucumber::{cli, WorldInit};
+/// # use futures::FutureExt as _;
+/// # use tokio::time;
+/// #
+/// # #[derive(Debug, WorldInit)]
+/// # struct MyWorld;
+/// #
+/// # #[async_trait(?Send)]
+/// # impl cucumber::World for MyWorld {
+/// #     type Error = Infallible;
+/// #
+/// #     async fn new() -> Result<Self, Self::Error> {
+/// #         Ok(Self)
+/// #     }
+/// # }
+/// #
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() {
+/// #[derive(clap::Args)] // also re-exported as `cli::Args`
+/// struct CustomOpts {
+///     /// Additional time to wait in before hook.
+///     #[clap(
+///         long,
+///         parse(try_from_str = humantime::parse_duration)
+///     )]
+///     pre_pause: Option<Duration>,
+/// }
+///
+/// let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
+/// let pre_pause = opts.custom.pre_pause.unwrap_or_default();
+///
+/// MyWorld::cucumber()
+///     .before(move |_, _, _, _| time::sleep(pre_pause).boxed_local())
+///     .with_cli(opts)
+///     .run_and_exit("tests/features/readme")
+///     .await;
+/// # }
+/// ```
+///
+/// [`Cucumber`]: crate::Cucumber
+/// [`Parser`]: crate::Parser
+/// [`Runner`]: crate::Runner
+/// [`Writer`]: crate::Writer
 #[derive(Debug, Clone, clap::Parser)]
-#[clap(name = "cucumber", about = "Run the tests, pet a dog!.")]
+#[clap(
+    name = "cucumber",
+    about = "Run the tests, pet a dog!",
+    long_about = "Run the tests, pet a dog!"
+)]
 pub struct Opts<Parser, Runner, Writer, Custom = Empty>
 where
     Parser: Args,
@@ -178,113 +174,96 @@ pub trait Colored {
     }
 }
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "Empty CLI options.")]
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
+/// Empty CLI options.
 #[derive(Args, Clone, Copy, Debug)]
 pub struct Empty;
 
 impl Colored for Empty {}
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(
-    doc,
-    doc = r#"
-Composes two [`clap::Args`] derivers together.
-
-# Example
-
-This struct is especially useful, when implementing custom [`Writer`] wrapping
-another one:
-```rust
-# use async_trait::async_trait;
-# use cucumber::{cli, event, parser, writer, Event, World, Writer};
-#
-struct CustomWriter<Wr>(Wr);
-
-#[derive(clap::Args)]
-struct Cli {
-    #[clap(long)]
-    custom_option: Option<String>,
-}
-
-#[async_trait(?Send)]
-impl<W, Wr> Writer<W> for CustomWriter<Wr>
-where
-    W: World,
-    Wr: Writer<W>,
-{
-    type Cli = cli::Compose<Cli, Wr::Cli>;
-
-    async fn handle_event(
-        &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
-        cli: &Self::Cli,
-    ) {
-        // Some custom logic including `cli.left.custom_option`.
-        // ...
-        self.0.handle_event(ev, &cli.right).await;
-    }
-}
-
-// Useful blanket impls:
-
-impl cli::Colored for Cli {}
-
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
-where
-    W: World,
-    Self: Writer<W>,
-    Wr: writer::Arbitrary<'val, W, Val>,
-    Val: 'val,
-{
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
-        self.0.write(val).await;
-    }
-}
-
-impl<W, Wr> writer::Failure<W> for CustomWriter<Wr>
-where
-    W: World,
-    Self: Writer<W>,
-    Wr: writer::Failure<W>,
-{
-    fn failed_steps(&self) -> usize {
-        self.0.failed_steps()
-    }
-
-    fn parsing_errors(&self) -> usize {
-        self.0.parsing_errors()
-    }
-
-    fn hook_errors(&self) -> usize {
-        self.0.hook_errors()
-    }
-}
-
-impl<Wr: writer::Normalized> writer::Normalized for CustomWriter<Wr> {}
-
-impl<Wr: writer::NonTransforming> writer::NonTransforming
-    for CustomWriter<Wr>
-{}
-```
-
-[`Writer`]: crate::Writer
-"#
-)]
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
+/// Composes two [`clap::Args`] derivers together.
+///
+/// # Example
+///
+/// This struct is especially useful, when implementing custom [`Writer`]
+/// wrapping another one:
+/// ```rust
+/// # use async_trait::async_trait;
+/// # use cucumber::{cli, event, parser, writer, Event, World, Writer};
+/// #
+/// struct CustomWriter<Wr>(Wr);
+///
+/// #[derive(cli::Args)] // re-export of `clap::Args`
+/// struct Cli {
+///     #[clap(long)]
+///     custom_option: Option<String>,
+/// }
+///
+/// #[async_trait(?Send)]
+/// impl<W, Wr> Writer<W> for CustomWriter<Wr>
+/// where
+///     W: World,
+///     Wr: Writer<W>,
+/// {
+///     type Cli = cli::Compose<Cli, Wr::Cli>;
+///
+///     async fn handle_event(
+///         &mut self,
+///         ev: parser::Result<Event<event::Cucumber<W>>>,
+///         cli: &Self::Cli,
+///     ) {
+///         // Some custom logic including `cli.left.custom_option`.
+///         // ...
+///         self.0.handle_event(ev, &cli.right).await;
+///     }
+/// }
+///
+/// // Useful blanket impls:
+///
+/// impl cli::Colored for Cli {}
+///
+/// #[async_trait(?Send)]
+/// impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
+/// where
+///     W: World,
+///     Self: Writer<W>,
+///     Wr: writer::Arbitrary<'val, W, Val>,
+///     Val: 'val,
+/// {
+///     async fn write(&mut self, val: Val)
+///     where
+///         'val: 'async_trait,
+///     {
+///         self.0.write(val).await;
+///     }
+/// }
+///
+/// impl<W, Wr> writer::Failure<W> for CustomWriter<Wr>
+/// where
+///     W: World,
+///     Self: Writer<W>,
+///     Wr: writer::Failure<W>,
+/// {
+///     fn failed_steps(&self) -> usize {
+///         self.0.failed_steps()
+///     }
+///
+///     fn parsing_errors(&self) -> usize {
+///         self.0.parsing_errors()
+///     }
+///
+///     fn hook_errors(&self) -> usize {
+///         self.0.hook_errors()
+///     }
+/// }
+///
+/// impl<Wr: writer::Normalized> writer::Normalized for CustomWriter<Wr> {}
+///
+/// impl<Wr: writer::NonTransforming> writer::NonTransforming
+///     for CustomWriter<Wr>
+/// {}
+/// ```
+///
+/// [`Writer`]: crate::Writer
 #[derive(Args, Debug)]
 pub struct Compose<L: Args, R: Args> {
     /// Left [`clap::Args`] deriver.
