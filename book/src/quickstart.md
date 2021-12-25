@@ -100,6 +100,8 @@ There are 3 types of [step]s:
 
 These various [step] matching functions are executed to transform the `World`. As such, mutable reference to the world must always be passed in. The `Step` itself is also made available.
 
+> __NOTE__: [Unlike official Cucumber implementation][step] the [`cucumber`] crate makes explicit separation between `given`, `when` and `then` [step]s. This allows to prevent ambiguity problems when running tests (i.e. to avoid accidental uses of a `then` [step] as a `given` one). To remain compliant with existing [scenario]s abusing this, it will be enough to place multiple attributes on the same [step] matching function.
+
 We can add a `when` [step] matcher:
 ```rust
 # use std::convert::Infallible;
@@ -527,6 +529,7 @@ Feature: Animal feature
 
 
 
+[`cucumber`]: https://docs.rs/cucumber
 [`regex`]: https://docs.rs/regex
 
 [CLI]: cli.md
@@ -537,3 +540,4 @@ Feature: Animal feature
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [tag]: https://cucumber.io/docs/cucumber/api#tags
+[1]: 
