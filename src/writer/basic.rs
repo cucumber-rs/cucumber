@@ -596,7 +596,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.output.write_line(&self.styles.skipped(format!(
-                "{indent}?  {} {}{}{}\n\
+            "{indent}?  {} {}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
                 step.keyword,
                 step.value,
@@ -839,7 +839,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.output.write_line(&self.styles.skipped(format!(
-                "{indent}?> {} {}{}{}\n\
+            "{indent}?> {} {}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
                 step.keyword,
                 step.value,
