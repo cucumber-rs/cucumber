@@ -20,6 +20,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
 - Switched CLI to `clap` from `structopt`. ([#188])
+- Reworked `verbose` CLI option of `writer::Basic`: ([#193], [#192])
+    - Removed long form.
+    - Made `-v` default behavior (no additional output). 
+    - Made `-vv` additionally output `World` on failed steps. 
+    - Made `-vvv` additionally output docstrings (old behavior). 
 
 ### Added
 
@@ -62,6 +67,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#181]: /../../pull/181
 [#182]: /../../pull/182
 [#188]: /../../pull/188
+[#192]: /../../pull/192
+[#193]: /../../pull/193
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 [rev]: /../../commit/rev-full
 [0110-1]: https://llg.cubic.org/docs/junit

@@ -44,8 +44,11 @@ OPTIONS:
             Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be
             careful about conflicting tags on different levels.
 
-    -v, --verbose
-            Increased verbosity of an output: additionally outputs step's doc string (if present)
+    -v
+            Verbosity of an output.
+            
+            `-v` is default verbosity, `-vv` additionally outputs world on failed steps, `-vvv`
+            additionally outputs step's doc string (if present).
 ```
 
 ![record](rec/cli.gif)

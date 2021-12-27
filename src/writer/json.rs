@@ -60,6 +60,7 @@ pub struct Json<Out: io::Write> {
 impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     type Cli = cli::Empty;
 
+    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,

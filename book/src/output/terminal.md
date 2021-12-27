@@ -8,7 +8,79 @@ By [default][1], [`cucumber`] crate outputs tests result to [STDOUT]. It provide
 
 ## Verbosity
 
-By [default][1], [`cucumber`] crate omits outputting [doc strings][doc] of [step]s. To include them into the output use `--verbose` CLI option:
+By [default][1], [`cucumber`] crate tries to keep the output quite minimal, but its verbosity may be increased with `-v` CLI option.
+
+Just specifying `-v` makes no difference, as it refers to the default verbosity level (no additional info).
+
+
+### Output `World` on failures (`-vv`)
+
+Increasing verbosity level with `-vv` CLI option, makes the state of the `World` being printed at the moment of failure.
+
+```rust,should_panic
+# use std::{convert::Infallible, time::Duration};
+#
+# use async_trait::async_trait;
+# use cucumber::{given, then, when, World, WorldInit};
+# use tokio::time::sleep;
+#
+# #[derive(Debug, Default)]
+# struct Animal {
+#     pub hungry: bool,
+# }
+#
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Animal,
+# }
+#
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Animal::default(),
+#         })
+#     }
+# }
+#
+# #[given(regex = r"^a (hungry|satiated) cat$")]
+# async fn hungry_cat(world: &mut AnimalWorld, state: String) {
+#     sleep(Duration::from_secs(2)).await;
+#
+#     match state.as_str() {
+#         "hungry" => world.cat.hungry = true,
+#         "satiated" => world.cat.hungry = false,
+#         _ => unreachable!(),
+#     }
+# }
+#
+#[when("I feed the cat")]
+async fn feed_cat(_: &mut AnimalWorld) {}
+#
+# #[then("the cat is not hungry")]
+# async fn cat_is_fed(world: &mut AnimalWorld) {
+#     sleep(Duration::from_secs(2)).await;
+#
+#     assert!(!world.cat.hungry);
+# }
+#
+# #[tokio::main]
+# async fn main() {
+#     AnimalWorld::cucumber()
+#         .run_and_exit("/tests/features/book/output/terminal_verbose.feature")
+#         .await;
+# }
+```
+![record](../rec/output_terminal_verbose_1.gif)
+
+This is intended to help debugging failed tests. 
+
+
+### Output [doc strings][doc] (`-vvv`)
+
+By [default][1], outputting [doc strings][doc] of [step]s is omitted. To include them into the output use `-vvv` CLI option:
 ```gherkin
 Feature: Animal feature
     
@@ -87,7 +159,7 @@ async fn main() {
         .await;
 }
 ```
-![record](../rec/output_terminal_verbose.gif)
+![record](../rec/output_terminal_verbose_2.gif)
 
 
 
@@ -311,7 +383,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .max_concurrent_scenarios(1)
         .with_writer(
-            writer::Basic::raw(io::stdout(), writer::Coloring::Never, false)
+            writer::Basic::raw(io::stdout(), writer::Coloring::Never, 0)
                 .summarized()
                 .assert_normalized(),
         )

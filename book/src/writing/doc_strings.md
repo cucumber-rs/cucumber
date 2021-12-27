@@ -115,7 +115,9 @@ async fn hungry_cat(world: &mut AnimalWorld, step: &Step, state: String) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/doc_strings.feature").await;
+#     AnimalWorld::cucumber()
+#         .run_and_exit("/tests/features/book/writing/doc_strings.feature")
+#         .await;
 # }
 ```
 ![record](../rec/writing_doc_strings.gif)

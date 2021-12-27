@@ -20,13 +20,13 @@ use junit_report::{
 };
 
 use crate::{
-    cli, event, parser,
+    event, parser,
     writer::{
         self,
         basic::{coerce_error, Coloring},
         discard,
         out::WritableString,
-        Ext as _,
+        Ext as _, Verbosity,
     },
     Event, World, Writer,
 };
@@ -35,6 +35,17 @@ use crate::{
 ///
 /// [1]: event::Scenario
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
+
+/// CLI options of a [`JUnit`] [`Writer`].
+#[derive(clap::Args, Clone, Copy, Debug)]
+pub struct Cli {
+    /// Verbosity of JUnit XML report output.
+    ///
+    /// `0` is default verbosity, `1` additionally outputs world on failed
+    /// steps.
+    #[clap(long = "junit-v", name = "0|1")]
+    pub verbose: Option<u8>,
+}
 
 /// [JUnit XML report][1] [`Writer`] implementation outputting XML to an
 /// [`io::Write`] implementor.
@@ -72,6 +83,9 @@ pub struct JUnit<W, Out: io::Write> {
     /// [`Scenario`]: gherkin::Scenario
     /// [1]: event::Scenario
     events: Vec<event::Scenario<W>>,
+
+    /// [`Verbosity`] of this [`Writer`].
+    verbosity: Verbosity,
 }
 
 #[async_trait(?Send)]
@@ -80,15 +94,17 @@ where
     W: World + Debug,
     Out: io::Write,
 {
-    type Cli = cli::Empty;
+    type Cli = Cli;
 
     #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         ev: parser::Result<Event<event::Cucumber<W>>>,
-        _: &Self::Cli,
+        opts: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
+
+        self.apply_cli(*opts);
 
         match ev.map(Event::split) {
             Err(err) => self.handle_error(&err),
@@ -143,8 +159,11 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     ///
     /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn new(output: Out) -> writer::Normalize<W, Self> {
-        Self::raw(output).normalized()
+    pub fn new(
+        output: Out,
+        verbosity: impl Into<Verbosity>,
+    ) -> writer::Normalize<W, Self> {
+        Self::raw(output, verbosity).normalized()
     }
 
     /// Creates a new non-[`Normalized`] [`JUnit`] [`Writer`] outputting XML
@@ -155,8 +174,11 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// [1]: https://llg.cubic.org/docs/junit
     /// [2]: crate::event::Cucumber
     #[must_use]
-    pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Failure<Self>> {
-        Self::raw(output)
+    pub fn for_tee(
+        output: Out,
+        verbosity: impl Into<Verbosity>,
+    ) -> discard::Arbitrary<discard::Failure<Self>> {
+        Self::raw(output, verbosity)
             .discard_failure_writes()
             .discard_arbitrary_writes()
     }
@@ -172,14 +194,24 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// [1]: https://llg.cubic.org/docs/junit
     /// [2]: crate::event::Cucumber
     #[must_use]
-    pub fn raw(output: Out) -> Self {
+    pub fn raw(output: Out, verbosity: impl Into<Verbosity>) -> Self {
         Self {
             output,
             report: Report::new(),
             suit: None,
             scenario_started_at: None,
             events: Vec::new(),
+            verbosity: verbosity.into(),
         }
+    }
+
+    /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
+    pub fn apply_cli(&mut self, cli: Cli) {
+        match cli.verbose {
+            None => {}
+            Some(0) => self.verbosity = Verbosity::Default,
+            _ => self.verbosity = Verbosity::ShowWorld,
+        };
     }
 
     /// Handles the given [`parser::Error`].
@@ -251,7 +283,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             Scenario::Finished => {
                 let dur = self.scenario_duration(meta.at, sc);
                 let events = mem::take(&mut self.events);
-                let case = Self::test_case(feat, rule, sc, &events, dur);
+                let case = self.test_case(feat, rule, sc, &events, dur);
 
                 self.suit
                     .as_mut()
@@ -268,6 +300,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
 
     /// Forms a [`TestCase`] on [`event::Scenario::Finished`].
     fn test_case(
+        &self,
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
@@ -350,7 +383,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,
-            false,
+            self.verbosity,
         );
         let output = events
             .iter()

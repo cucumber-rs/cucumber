@@ -418,3 +418,66 @@ impl<T> Ext for T {
 /// [`FailOnSkipped`]: crate::writer::FailOnSkipped
 /// [`Skipped`]: event::Step::Skipped
 pub trait NonTransforming {}
+
+/// Standard verbosity levels of a [`Writer`].
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum Verbosity {
+    /// None additional info.
+    Default = 0,
+
+    /// Outputs the whole [`World`] on [`Failed`] [`Step`]s whenever is
+    /// possible.
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Step`]: gherkin::Step
+    /// [`World`]: crate::World
+    ShowWorld = 1,
+
+    /// Additionally to [`Verbosity::ShowWorld`] outputs [Doc Strings].
+    ///
+    /// [Doc Strings]: https://cucumber.io/docs/gherkin/reference#doc-strings
+    ShowWorldAndDocString = 2,
+}
+
+impl From<u8> for Verbosity {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => Self::Default,
+            1 => Self::ShowWorld,
+            _ => Self::ShowWorldAndDocString,
+        }
+    }
+}
+
+impl From<Verbosity> for u8 {
+    fn from(v: Verbosity) -> Self {
+        match v {
+            Verbosity::Default => 0,
+            Verbosity::ShowWorld => 1,
+            Verbosity::ShowWorldAndDocString => 2,
+        }
+    }
+}
+
+impl Verbosity {
+    /// Indicates whether [`World`] should be outputted on [`Failed`] [`Step`]s
+    /// implying this [`Verbosity`].
+    ///
+    /// [`Failed`]: event::Step::Failed
+    /// [`Step`]: gherkin::Step
+    /// [`World`]: crate::World
+    #[must_use]
+    pub const fn shows_world(&self) -> bool {
+        matches!(self, Self::ShowWorld | Self::ShowWorldAndDocString)
+    }
+
+    /// Indicates whether [`Step::docstring`]s should be outputted implying this
+    /// [`Verbosity`].
+    ///
+    /// [`Step::docstring`]: gherkin::Step::docstring
+    #[must_use]
+    pub const fn shows_docstring(&self) -> bool {
+        matches!(self, Self::ShowWorldAndDocString)
+    }
+}
