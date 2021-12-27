@@ -311,9 +311,13 @@ async fn main() {
     AnimalWorld::cucumber()
         .max_concurrent_scenarios(1)
         .with_writer(
-            writer::Basic::raw(io::stdout(), writer::Coloring::Never, false)
-                .summarized()
-                .assert_normalized(),
+            writer::Basic::raw(
+                io::stdout(), 
+                writer::Coloring::Never, 
+                writer::basic::Verbosity::None,
+            )
+            .summarized()
+            .assert_normalized(),
         )
         .run_and_exit("/tests/features/book/output/terminal.feature")
         .await;
