@@ -41,14 +41,8 @@ use crate::{
     parser, step, Event, Runner, Step, World,
 };
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Runner`].")]
-#[cfg_attr(
-    not(doc),
-    allow(clippy::missing_docs_in_private_items, missing_docs)
-)]
-#[derive(Clone, Copy, Debug, clap::Parser)]
+/// CLI options of a [`Basic`] [`Runner`].
+#[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
@@ -501,7 +495,7 @@ async fn execute<W, Before, After>(
     // 1. We obtain the current panic hook and replace it with an empty one.
     // 2. We run tests, which can panic. In that case we pass all panic info
     //    down the line to the Writer, which will print it at a right time.
-    // 3. We return original panic hook, because suppressing all panics doesn't
+    // 3. We restore original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
     let hook = panic::take_hook();
     panic::set_hook(Box::new(|_| {}));

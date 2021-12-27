@@ -35,13 +35,7 @@ use crate::{
     Event, World, Writer,
 };
 
-// Workaround for overwritten doc-comments.
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Writer`].")]
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
+/// CLI options of a [`Basic`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
     /// Increased verbosity of an output.

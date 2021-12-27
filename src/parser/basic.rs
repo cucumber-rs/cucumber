@@ -28,14 +28,8 @@ use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
 
-// Workaround for overwritten doc comments:
-// https://github.com/TeXitoi/structopt/issues/333#issuecomment-712265332
-#[cfg_attr(doc, doc = "CLI options of a [`Basic`] [`Parser`].")]
-#[cfg_attr(
-    not(doc),
-    allow(missing_docs, clippy::missing_docs_in_private_items)
-)]
-#[derive(Debug, clap::Parser)]
+/// CLI options of a [`Basic`] [`Parser`].
+#[derive(clap::Args, Debug)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.

@@ -1,15 +1,15 @@
-Getting Started
-===============
+Quickstart
+==========
 
-Adding [Cucumber] to your project requires some groundwork. [Cucumber] tests are run along with other tests via `cargo test`, but rely on `.feature` files corresponding to the given test, as well as a set of step matchers described in code corresponding to the steps in those `.feature` files.
+Adding [Cucumber] to a project requires some groundwork. [Cucumber] tests are run along with other tests via `cargo test`, but rely on `.feature` files corresponding to the given test, as well as a set of [step] matchers (described in code) corresponding to the [step]s in those `.feature` files.
 
-To start, create a directory called `tests/` in the root of your project and add a file to represent your test target (in this walkthrough we use `example.rs`).
+To start, let's create a directory called `tests/` in the root of the project and add a file to represent the test target (in this walkthrough it's `example.rs`).
 
-Add this to your `Cargo.toml`:
+Add this to `Cargo.toml`:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber = "0.10"
+cucumber = "0.11.0-dev"
 futures = "0.3"
 
 [[test]]
@@ -17,9 +17,9 @@ name = "example" # this should be the same as the filename of your test target
 harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-At this point, while it won't do anything, you should be able to successfully run `cargo test --test example` without errors, as long as your `example.rs` has at least a `main()` function defined.
+At this point, while it won't do anything, it should successfully run `cargo test --test example` without errors, as long as the `example.rs` file has at least a `main()` function defined.
 
-Create a directory to store `.feature` files somewhere in your project (in this walkthrough we use `tests/features/book/` directory), and put a `.feature` file there (such as `animal.feature`). This should contain the [Gherkin] spec for a scenario that you want to test. Here's a very simple example:
+Now, let's create a directory to store `.feature` files somewhere in the project (in this walkthrough it's `tests/features/book/` directory), and put a `.feature` file there (such as `animal.feature`). It should contain a [Gherkin] spec for the [scenario] we want to test. Here's a very simple example:
 ```gherkin
 Feature: Animal feature
 
@@ -29,9 +29,9 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-Here is how we actually relate the text in this `.feature` file to the tests themselves: every test scenario needs a `World` object. Often `World` holds a state that is changing as [Cucumber] goes through each step in a scenario. The basic requirement for a `World` object is a `new()` function.
+To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario]. The basic requirement for a `World` object is to provide a `new()` function.
 
-To enable testing of our `animal.feature`, add this code to `example.rs`:
+To enable testing of our `animal.feature`, let's add this code to `example.rs`:
 ```rust
 use std::convert::Infallible;
 
@@ -57,11 +57,11 @@ pub struct AnimalWorld {
     cat: Cat,
 }
 
-// `World` needs to be implemented, so Cucumber knows how to construct it on
-// each `Scenario`.
+// `World` needs to be implemented, so Cucumber knows how to construct it
+// for each scenario.
 #[async_trait(?Send)]
 impl World for AnimalWorld {
-    // We require some error type.
+    // We do require some error type.
     type Error = Infallible;
 
     async fn new() -> Result<Self, Infallible> {
@@ -71,7 +71,7 @@ impl World for AnimalWorld {
     }
 }
 
-// Steps are defined with `given`, `when` and `then` macros.
+// Steps are defined with `given`, `when` and `then` attributes.
 #[given("a hungry cat")]
 fn hungry_cat(world: &mut AnimalWorld) {
     world.cat.hungry = true;
@@ -86,27 +86,26 @@ fn main() {
 }
 ```
 
-If you run this, you should see an output like:
+If we run this, we should see an output like this:  
+![record](rec/quickstart_simple_1.gif)
 
-<script id="asciicast-loqmDmLvKdp4CG7URpVsLJgkB" src="https://asciinema.org/a/loqmDmLvKdp4CG7URpVsLJgkB.js" async data-autoplay="true" data-rows="23"></script>
+A checkmark `✔` next to the `Given a hungry cat` [step] means that it has been matched, executed and passed.
 
-You will see a checkmark next to `Given A hungry cat`, which means that test step has been matched and executed.
+But then, for the next `When I feed the cat` [step] there is a question mark `?`, meaning that we have nothing in our tests matching this sentence. The remaining [step]s in the [scenario] are not looked and run at all, since they depend on the skipped one.
 
-But then for the next step `I feed the cat` there is a `? ... (skipped)`. This is because we have nothing in our steps that matches this sentence. The remaining steps in the scenario, since they depend on this skipped one, are not looked and run at all.
+There are 3 types of [step]s:
+- `given`: for defining [scenario] starting conditions and often initializing the data in the `World`;
+- `when`: for events or actions triggering the tested changes in the `World` representing the [scenario];
+- `then`: to validate that the `World` has changed in the way expected by the [scenario].
 
-There are 3 types of steps:
-- `given`: for defining the starting conditions and often initializing the data in the `World`;
-- `when`: for events or actions that are may trigger certain changes in the `World`;
-- `then`: to validate that the `World` has changed the way we would expect.
+These various [step] matching functions are executed to transform the `World`. As such, mutable reference to the world must always be passed in. The `Step` itself is also made available.
 
-These various `Step` functions are executed to transform the `World`. As such, mutable reference to the world must always be passed in. The `Step` itself is also made available.
+> __NOTE__: [Unlike official Cucumber implementation][step] the [`cucumber`] crate makes explicit separation between `given`, `when` and `then` [step]s. This allows to prevent ambiguity problems when running tests (i.e. to avoid accidental uses of a `then` [step] as a `given` one). To remain compliant with existing [scenario]s abusing this, it will be enough to place multiple attributes on the same [step] matching function.
 
-The steps matchers take a string, which is the name of the given `Step` (i.e., the literal string, such as `A hungry cat`), and then a function closure that takes a `World` and then the `Step` itself.
-
-We can add a `when` step after our `given` step:
+We can add a `when` [step] matcher:
 ```rust
 # use std::convert::Infallible;
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, when, World, WorldInit};
 #
@@ -114,7 +113,7 @@ We can add a `when` step after our `given` step:
 # struct Cat {
 #     pub hungry: bool,
 # }
-# 
+#
 # impl Cat {
 #     fn feed(&mut self) {
 #         self.hungry = false;
@@ -129,7 +128,7 @@ We can add a `when` step after our `given` step:
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     type Error = Infallible;
-# 
+#
 #     async fn new() -> Result<Self, Infallible> {
 #         Ok(Self {
 #             cat: Cat { hungry: false },
@@ -141,7 +140,7 @@ We can add a `when` step after our `given` step:
 # fn hungry_cat(world: &mut AnimalWorld) {
 #     world.cat.hungry = true;
 # }
-# 
+#
 // Don't forget to additionally `use cucumber::when;`.
 
 #[when("I feed the cat")]
@@ -150,15 +149,14 @@ fn feed_cat(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
-If you run the tests again, you'll see that two lines are green now and the next one is marked as not yet implemented:
+Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:  
+![record](rec/quickstart_simple_2.gif)
 
-<script id="asciicast-iyhXabbOv7jdKvbcsyhzqPMfo" src="https://asciinema.org/a/iyhXabbOv7jdKvbcsyhzqPMfo.js" async data-autoplay="true" data-rows="15"></script>
-
-Finally: how do we validate our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then()` step follows to assert this, as our feature says:
+Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then` [step] matcher follows to assert this, as our [feature] says:
 ```rust
 # use std::convert::Infallible;
 #
@@ -210,17 +208,16 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
-If you run the test now, you'll see that all steps are accounted for and the test succeeds:
+Once we run the tests, now we see all steps being accounted for and the whole [scenario] passing:  
+![record](rec/quickstart_simple_3.gif)
 
-<script id="asciicast-fHuIXkWrIk1AOFFqF0MYmY0m0" src="https://asciinema.org/a/fHuIXkWrIk1AOFFqF0MYmY0m0.js" async data-autoplay="true" data-rows="16"></script>
+> __TIP__: In addition to assertions, we may also return a `Result<()>` from a [step] matching function. Returning `Err` will cause the [step] to fail. This lets using the `?` operator for more concise step implementations just like in [unit tests](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-).
 
-In addition to assertions, you can also return a `Result<()>` from your step function. Returning `Err` will cause the step to fail. This lets you use the `?` operator for more concise step implementations just like in [unit tests](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-).
-
-If you want to be assured that your validation is indeed happening, you can change the assertion for the cat being hungry from `true` to `false` temporarily:
+To assure that assertion is indeed happening, let's reverse it temporarily:
 ```rust,should_panic
 # use std::convert::Infallible;
 #
@@ -270,15 +267,14 @@ fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
-And you should see the test failing:
+And see the test failing:  
+![record](rec/quickstart_simple_fail.gif)
 
-<script id="asciicast-XTikmqirO7mAFZ97MNfKvnD5p" src="https://asciinema.org/a/XTikmqirO7mAFZ97MNfKvnD5p.js" async data-autoplay="true" data-rows="24"></script>
-
-What if we also wanted to validate that even if the cat was never hungry to begin with, it wouldn't end up hungry after it was fed? We can add another scenario that looks quite similar:
+What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add an another [scenario] that looks quite similar:
 ```gherkin
 Feature: Animal feature
 
@@ -291,10 +287,9 @@ Feature: Animal feature
     Given a satiated cat
     When I feed the cat
     Then the cat is not hungry
-
 ```
 
-The only thing that is different is the `Given` step. But we don't have to write a new matcher! We can leverage regex support:
+The only thing that is different is the `Given` [step]. But we don't have to write a new matcher here! We can leverage [`regex`] support:
 ```rust
 # use std::convert::Infallible;
 #
@@ -348,19 +343,18 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/concurrent.feature"));
 # }
 ```
 
-We surround regex with `^..$` to ensure the __exact__ match. This is much more useful as you add more and more steps, so they wouldn't interfere with each other.
+> __NOTE__: We surround the regex with `^..$` to ensure an __exact__ match. This is much more useful when adding more and more [step]s, so they won't accidentally interfere with each other.
 
-[Cucumber] will reuse these steps:
+[Cucumber] will reuse these [step] matchers:  
+![record](rec/quickstart_concurrent_sync.gif)
 
-<script id="asciicast-ao6LdWsrtdsgg8tOi9cQgPfyz" src="https://asciinema.org/a/ao6LdWsrtdsgg8tOi9cQgPfyz.js" async data-autoplay="true" data-rows="18"></script>
+> __NOTE__: Captured values are __bold__ to indicate which part of a [step] is actually captured.
 
-Captured groups are __bold__ to indicate which part of step could be dynamically changed.  
-
-Alternatively, you may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
+Alternatively, we also may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
 ```rust
 # use std::convert::Infallible;
 #
@@ -414,122 +408,59 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
-A contrived example, but this demonstrates that steps can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` step was `The cat is no longer hungry`, it'd imply something about the expected initial state, when that is not the purpose of a `Then` step, but rather of the `Given` step.
-
-<details>
-<summary>Full example so far:</summary>
-<br>
-
-```rust
-use std::convert::Infallible;
-
-use async_trait::async_trait;
-use cucumber::{given, then, when, World, WorldInit};
-
-#[derive(Debug)]
-struct Cat {
-    pub hungry: bool,
-}
-
-impl Cat {
-    fn feed(&mut self) {
-        self.hungry = false;
-    }
-}
-
-#[derive(Debug, WorldInit)]
-pub struct AnimalWorld {
-    cat: Cat,
-}
-
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Infallible> {
-        Ok(Self {
-            cat: Cat { hungry: false },
-        })
-    }
-}
-
-#[given(regex = r"^a (hungry|satiated) cat$")]
-fn hungry_cat(world: &mut AnimalWorld, state: String) {
-    match state.as_str() {
-        "hungry" => world.cat.hungry = true,
-        "satiated" => world.cat.hungry = false,
-        _ => unreachable!(),
-    }
-}
-
-#[when("I feed the cat")]
-fn feed_cat(world: &mut AnimalWorld) {
-    world.cat.feed();
-}
-
-#[then("the cat is not hungry")]
-fn cat_is_fed(world: &mut AnimalWorld) {
-    assert!(!world.cat.hungry);
-}
-
-fn main() {
-    futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
-}
-```
-</details>
+A contrived example, but it demonstrates that [step]s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our `Then` [step] was `The cat is no longer hungry`, it would imply something about the expected initial state, when that is not the purpose of a `Then` [step], but rather of the `Given` [step].
 
 
 
 
 ## Asyncness
 
-Let's play with `async` support a bit!
+`async` execution is supported naturally.
 
-For that switch `futures` for `tokio` in dependencies:
-
+Let's switch our runtime to `tokio`:
 ```toml
 [dev-dependencies]
 async-trait = "0.1"
-cucumber = "0.10"
+cucumber = "0.11.0-dev"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
-name = "cucumber" # this should be the same as the filename of your test target
-harness = false   # allows Cucumber to print output instead of libtest
+name = "example" # this should be the same as the filename of your test target
+harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-And simply `sleep` on each step to test the `async` support. In the real world you of course will switch it up to web/database requests, etc.
+And, simply `sleep` on each [step] to test the `async` support (in the real world, of course, there will be web/database requests, etc.):
 ```rust
 # use std::{convert::Infallible, time::Duration};
-# 
+#
 # use async_trait::async_trait;
 # use cucumber::{given, then, when, World, WorldInit};
 # use tokio::time::sleep;
-# 
+#
 # #[derive(Debug)]
 # struct Cat {
 #     pub hungry: bool,
 # }
-# 
+#
 # impl Cat {
 #     fn feed(&mut self) {
 #         self.hungry = false;
 #     }
 # }
-# 
+#
 # #[derive(Debug, WorldInit)]
 # pub struct AnimalWorld {
 #     cat: Cat,
 # }
-# 
+#
 # #[async_trait(?Send)]
 # impl World for AnimalWorld {
 #     type Error = Infallible;
-# 
+#
 #     async fn new() -> Result<Self, Infallible> {
 #         Ok(Self {
 #             cat: Cat { hungry: false },
@@ -564,18 +495,16 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("/tests/features/book").await;
+    AnimalWorld::run("/tests/features/book/quickstart").await;
 }
 ```
+![record](rec/quickstart_concurrent_async.gif)
 
-<script id="asciicast-tz9ApYZgsET9k8jjIa9HpnQ8p" src="https://asciinema.org/a/tz9ApYZgsET9k8jjIa9HpnQ8p.js" async data-autoplay="true" data-rows="18"></script>
+Hm, it looks like the runtime waited only for the first `Feature`, while the second was printed instantly. What's going on? 🤔
 
-Hm, it looks like the executor waited only for the first `Feature` 🤔, what's going on?
+By default, [Cucumber] executes [scenario]s [concurrently](https://en.wikipedia.org/wiki/Concurrent_computing)! That means that runtime actually did wait for all the [step]s, but overlapped! This allows us to execute tests much faster!
 
-By default `Cucumber` executes `Scenarios` [concurrently](https://en.wikipedia.org/wiki/Concurrent_computing)! That means executor actually did wait for all the steps, but overlapped! This allows you to execute tests much faster!
-
-If for some reason you don't want to run your `Scenarios` concurrently, use `@serial` tag on them:
-
+If for some reason we don't want to run [scenario]s concurrently, we may use `@serial` [tag] on them:
 ```gherkin
 Feature: Animal feature
 
@@ -591,12 +520,24 @@ Feature: Animal feature
     When I feed the cat
     Then the cat is not hungry
 ```
+![record](rec/quickstart_serial.gif)
 
-<script id="asciicast-MDXpZf8vcOTssmlU4rgSSfR0E" src="https://asciinema.org/a/MDXpZf8vcOTssmlU4rgSSfR0E.js" async data-autoplay="true" data-rows="18"></script>
+> __NOTE__: Any [scenario] marked with `@serial` [tag] will be executed in isolation, ensuring that there are no other [scenario]s running concurrently at the moment.
+
+> __TIP__: To run the whole test suite serially, consider using `--concurrency=1` [CLI] option, rather than marking evey single [feature] with a `@serial` [tag].
 
 
 
 
+[`cucumber`]: https://docs.rs/cucumber
+[`regex`]: https://docs.rs/regex
+
+[CLI]: cli.md
 [Cucumber]: https://cucumber.io
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+[feature]: https://cucumber.io/docs/gherkin/reference#feature
 [Gherkin]: https://cucumber.io/docs/gherkin/reference
+[scenario]: https://cucumber.io/docs/gherkin/reference#example
+[step]: https://cucumber.io/docs/gherkin/reference#steps
+[tag]: https://cucumber.io/docs/cucumber/api#tags
+[1]: 
