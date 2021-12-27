@@ -350,8 +350,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let mut basic_wr = writer::Basic::raw(
             WritableString(String::new()),
             Coloring::Never,
-            false,
-            false,
+            writer::basic::Verbosity::OutputWorld,
         );
         let output = events
             .iter()
