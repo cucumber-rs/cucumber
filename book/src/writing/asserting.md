@@ -65,12 +65,16 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run_and_exit("/tests/features/book/writing/asserting.feature").await;
+#     AnimalWorld::cucumber()
+#         .run_and_exit("/tests/features/book/writing/asserting.feature")
+#         .await;
 # }
 ```
 ![record](../rec/writing_asserting_panic.gif)
 
-> __NOTE__: Failed [step] prints its location in a `.feature` file, the captured [assertion] message, and state of the `World` at the moment of failure.
+> __NOTE__: Failed [step] prints its location in a `.feature` file and the captured [assertion] message.
+
+> __TIP__: To additionally print the state of the `World` at the moment of failure, increase output verbosity via `-vv` [CLI] option.
 
 
 
@@ -124,7 +128,9 @@ fn cat_is_fed(world: &mut AnimalWorld) -> Result<(), &'static str> {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run_and_exit("/tests/features/book/writing/asserting.feature").await;
+#     AnimalWorld::cucumber()
+#         .run_and_exit("/tests/features/book/writing/asserting.feature")
+#         .await;
 # }
 ```
 ![record](../rec/writing_asserting_result.gif)
@@ -134,5 +140,6 @@ fn cat_is_fed(world: &mut AnimalWorld) -> Result<(), &'static str> {
 
 [`Display`]: https://doc.rust-lang.org/stable/std/fmt/trait.Display.html
 [assertion]: https://en.wikipedia.org/wiki/Assertion_(software_development)
+[CLI]: ../cli.md
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [1]: https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-

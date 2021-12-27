@@ -85,6 +85,10 @@ harness = false
 name = "wait"
 harness = false
 
+[[test]]
+name = "example"
+harness = false
+
 [workspace]
 members = ["codegen"]
 exclude = ["book/tests"]

@@ -20,6 +20,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
 - Switched CLI to `clap` from `structopt`. ([#188])
+- Reworked `verbose` CLI option of `writer::Basic`: ([#193], [#192])
+    - Removed long form.
+    - Made `-v` default behavior (no additional output). 
+    - Made `-vv` additionally output `World` on failed steps. 
+    - Made `-vvv` additionally output docstrings (old behavior). 
 
 ### Added
 
@@ -38,7 +43,6 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 - `writer::AssertNormalized` forcing `Normalized` implementation. ([#182])
 - `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189])
-- `verbose` CLI option to the `writer::Basic` ([#193], [#192])
 
 ### Fixed
 

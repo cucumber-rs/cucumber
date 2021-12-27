@@ -32,7 +32,7 @@ use cucumber::writer;
 # async fn main() -> io::Result<()> {
 let file = fs::File::create(dbg!(format!("{}/target/junit.xml", env!("CARGO_MANIFEST_DIR"))))?;
 World::cucumber()
-    .with_writer(writer::JUnit::new(file))
+    .with_writer(writer::JUnit::new(file, 0))
     .run("tests/features/book")
     .await;
 # Ok(())

@@ -20,7 +20,7 @@ async fn main() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
-            .with_writer(writer::JUnit::new(file.reopen().unwrap()))
+            .with_writer(writer::JUnit::new(file.reopen().unwrap(), 1))
             .run("tests/features/wait")
             .await,
     );

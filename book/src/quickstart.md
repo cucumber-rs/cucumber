@@ -540,4 +540,3 @@ Feature: Animal feature
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [tag]: https://cucumber.io/docs/cucumber/api#tags
-[1]: 

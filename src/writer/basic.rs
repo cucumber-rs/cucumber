@@ -30,7 +30,7 @@ use crate::{
     writer::{
         self,
         out::{Styles, WriteStrExt as _},
-        Ext as _,
+        Ext as _, Verbosity,
     },
     Event, World, Writer,
 };
@@ -38,10 +38,10 @@ use crate::{
 /// CLI options of a [`Basic`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
-    /// Increased verbosity of an output.
+    /// Verbosity of an output.
     ///
-    /// '-v' outputs World on failed Steps.
-    /// '-vv' additionally outputs Docstring.
+    /// `-v` is default verbosity, `-vv` additionally outputs world on failed
+    /// steps, `-vvv` additionally outputs step's doc string (if present).
     #[clap(short, parse(from_occurrences))]
     pub verbose: u8,
 
@@ -83,64 +83,6 @@ impl FromStr for Coloring {
     }
 }
 
-/// Verbosity level of the output.
-#[derive(Clone, Copy, Debug)]
-pub enum Verbosity {
-    /// Doesn't output additional info.
-    None,
-
-    /// Outputs [`World`] on [`Failed`] [`Step`]s.
-    ///
-    /// [`Failed`]: event::Step::Failed
-    /// [`Step`]: gherkin::Step
-    OutputWorld,
-
-    /// Additionally to the [`OutputWorld`] outputs docstring.
-    ///
-    /// [`OutputWorld`]: Self::OutputWorld
-    OutputWorldAndDocString,
-}
-
-impl From<u8> for Verbosity {
-    fn from(v: u8) -> Self {
-        match v {
-            0 => Self::None,
-            1 => Self::OutputWorld,
-            _ => Self::OutputWorldAndDocString,
-        }
-    }
-}
-
-impl From<Verbosity> for u8 {
-    fn from(v: Verbosity) -> Self {
-        match v {
-            Verbosity::None => 0,
-            Verbosity::OutputWorld => 1,
-            Verbosity::OutputWorldAndDocString => 2,
-        }
-    }
-}
-
-impl Verbosity {
-    /// Indicates, whether [`World`] should be outputted on the [`Failed`]
-    /// [`Step`]s.
-    ///
-    /// [`Failed`]: event::Step::Failed
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub const fn output_world(&self) -> bool {
-        matches!(self, Self::OutputWorld | Self::OutputWorldAndDocString)
-    }
-
-    /// Indicates, whether [`Step::docstring`][1]s should be outputted.
-    ///
-    /// [1]: gherkin::Step::docstring
-    #[must_use]
-    pub const fn output_docstring(&self) -> bool {
-        matches!(self, Self::OutputWorldAndDocString)
-    }
-}
-
 /// Default [`Writer`] implementation outputting to an [`io::Write`] implementor
 /// ([`io::Stdout`] by default).
 ///
@@ -172,8 +114,8 @@ pub struct Basic<Out: io::Write = io::Stdout> {
     /// Number of lines to clear.
     lines_to_clear: usize,
 
-    /// [`Verbosity`] of the output.
-    verbose: Verbosity,
+    /// [`Verbosity`] of this [`Writer`].
+    verbosity: Verbosity,
 }
 
 #[async_trait(?Send)]
@@ -234,7 +176,7 @@ impl Basic {
     /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn stdout<W>() -> writer::Normalize<W, Self> {
-        Self::new(io::stdout(), Coloring::Auto, Verbosity::None)
+        Self::new(io::stdout(), Coloring::Auto, Verbosity::Default)
     }
 }
 
@@ -247,9 +189,9 @@ impl<Out: io::Write> Basic<Out> {
     pub fn new<W>(
         output: Out,
         color: Coloring,
-        verbose: Verbosity,
+        verbosity: impl Into<Verbosity>,
     ) -> writer::Normalize<W, Self> {
-        Self::raw(output, color, verbose).normalized()
+        Self::raw(output, color, verbosity).normalized()
     }
 
     /// Creates a new non-[`Normalized`] [`Basic`] [`Writer`] outputting to the
@@ -261,16 +203,20 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn raw(output: Out, color: Coloring, verbosity: Verbosity) -> Self {
+    pub fn raw(
+        output: Out,
+        color: Coloring,
+        verbosity: impl Into<Verbosity>,
+    ) -> Self {
         let mut basic = Self {
             output,
             styles: Styles::new(),
             indent: 0,
             lines_to_clear: 0,
-            verbose: verbosity,
+            verbosity: verbosity.into(),
         };
         basic.apply_cli(Cli {
-            verbose: verbosity.into(),
+            verbose: u8::from(basic.verbosity) + 1,
             color,
         });
         basic
@@ -279,8 +225,9 @@ impl<Out: io::Write> Basic<Out> {
     /// Applies the given [`Cli`] options to this [`Basic`] [`Writer`].
     pub fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
-            1 => self.verbose = Verbosity::OutputWorld,
-            2 => self.verbose = Verbosity::OutputWorldAndDocString,
+            1 => self.verbosity = Verbosity::Default,
+            2 => self.verbosity = Verbosity::ShowWorld,
+            3 => self.verbosity = Verbosity::ShowWorldAndDocString,
             _ => {}
         };
         self.styles.apply_coloring(cli.color);
@@ -517,7 +464,7 @@ impl<Out: io::Write> Basic<Out> {
                 step.value,
                 step.docstring
                     .as_ref()
-                    .and_then(|doc| self.verbose.output_docstring().then(
+                    .and_then(|doc| self.verbosity.shows_docstring().then(
                         || {
                             format_str_with_indent(
                                 doc,
@@ -561,7 +508,7 @@ impl<Out: io::Write> Basic<Out> {
             .docstring
             .as_ref()
             .and_then(|doc| {
-                self.verbose.output_docstring().then(|| {
+                self.verbosity.shows_docstring().then(|| {
                     format_str_with_indent(
                         doc,
                         self.indent.saturating_sub(3) + 3,
@@ -598,29 +545,29 @@ impl<Out: io::Write> Basic<Out> {
         self.output.write_line(&self.styles.skipped(format!(
             "{indent}?  {} {}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
-                step.keyword,
-                step.value,
-                step.docstring
-                    .as_ref()
-                    .and_then(|doc| self.verbose.output_docstring().then(
-                        || format_str_with_indent(
-                            doc,
-                            self.indent.saturating_sub(3) + 3,
-                        )
-                    ))
-                    .unwrap_or_default(),
-                step.table
-                    .as_ref()
-                    .map(|t| format_table(t, self.indent))
-                    .unwrap_or_default(),
-                feat.path
-                    .as_ref()
-                    .and_then(|p| p.to_str())
-                    .unwrap_or(&feat.name),
-                step.position.line,
-                step.position.col,
-                indent = " ".repeat(self.indent.saturating_sub(3)),
-            )))
+            step.keyword,
+            step.value,
+            step.docstring
+                .as_ref()
+                .and_then(|doc| self.verbosity.shows_docstring().then(|| {
+                    format_str_with_indent(
+                        doc,
+                        self.indent.saturating_sub(3) + 3,
+                    )
+                }))
+                .unwrap_or_default(),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            indent = " ".repeat(self.indent.saturating_sub(3)),
+        )))
     }
 
     /// Outputs the [failed] [`Step`].
@@ -661,7 +608,7 @@ impl<Out: io::Write> Basic<Out> {
              {indent}   Captured output: {}{}",
             step.docstring
                 .as_ref()
-                .and_then(|doc| self.verbose.output_docstring().then(|| {
+                .and_then(|doc| self.verbosity.shows_docstring().then(|| {
                     format_str_with_indent(
                         doc,
                         self.indent.saturating_sub(3) + 3,
@@ -687,7 +634,7 @@ impl<Out: io::Write> Basic<Out> {
                     format!("{:#?}", w),
                     self.indent.saturating_sub(3) + 3,
                 ))
-                .filter(|_| self.verbose.output_world())
+                .filter(|_| self.verbosity.shows_world())
                 .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
@@ -758,7 +705,7 @@ impl<Out: io::Write> Basic<Out> {
                 step.value,
                 step.docstring
                     .as_ref()
-                    .and_then(|doc| self.verbose.output_docstring().then(
+                    .and_then(|doc| self.verbosity.shows_docstring().then(
                         || {
                             format_str_with_indent(
                                 doc,
@@ -803,7 +750,7 @@ impl<Out: io::Write> Basic<Out> {
             .docstring
             .as_ref()
             .and_then(|doc| {
-                self.verbose.output_docstring().then(|| {
+                self.verbosity.shows_docstring().then(|| {
                     format_str_with_indent(
                         doc,
                         self.indent.saturating_sub(3) + 3,
@@ -841,29 +788,29 @@ impl<Out: io::Write> Basic<Out> {
         self.output.write_line(&self.styles.skipped(format!(
             "{indent}?> {} {}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
-                step.keyword,
-                step.value,
-                step.docstring
-                    .as_ref()
-                    .and_then(|doc| self.verbose.output_docstring().then(
-                        || format_str_with_indent(
-                            doc,
-                            self.indent.saturating_sub(3) + 3,
-                        )
-                    ))
-                    .unwrap_or_default(),
-                step.table
-                    .as_ref()
-                    .map(|t| format_table(t, self.indent))
-                    .unwrap_or_default(),
-                feat.path
-                    .as_ref()
-                    .and_then(|p| p.to_str())
-                    .unwrap_or(&feat.name),
-                step.position.line,
-                step.position.col,
-                indent = " ".repeat(self.indent.saturating_sub(3)),
-            )))
+            step.keyword,
+            step.value,
+            step.docstring
+                .as_ref()
+                .and_then(|doc| self.verbosity.shows_docstring().then(|| {
+                    format_str_with_indent(
+                        doc,
+                        self.indent.saturating_sub(3) + 3,
+                    )
+                }))
+                .unwrap_or_default(),
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+            feat.path
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(&feat.name),
+            step.position.line,
+            step.position.col,
+            indent = " ".repeat(self.indent.saturating_sub(3)),
+        )))
     }
 
     /// Outputs the [failed] [`Background`] [`Step`].
@@ -905,7 +852,7 @@ impl<Out: io::Write> Basic<Out> {
              {indent}   Captured output: {}{}",
             step.docstring
                 .as_ref()
-                .and_then(|doc| self.verbose.output_docstring().then(|| {
+                .and_then(|doc| self.verbosity.shows_docstring().then(|| {
                     format_str_with_indent(
                         doc,
                         self.indent.saturating_sub(3) + 3,
