@@ -195,12 +195,17 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run_and_exit(&quot;/tests/features/book/writing/asserting.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::cucumber()
+</span><span class="boring">        .run_and_exit(&quot;/tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <p><img src="../rec/writing_asserting_panic.gif" alt="record" /></p>
 <blockquote>
-<p><strong>NOTE</strong>: Failed <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> prints its location in a <code>.feature</code> file, the captured <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a> message, and state of the <code>World</code> at the moment of failure.</p>
+<p><strong>NOTE</strong>: Failed <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> prints its location in a <code>.feature</code> file and the captured <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a> message.</p>
+</blockquote>
+<blockquote>
+<p><strong>TIP</strong>: To additionally print the state of the <code>World</code> at the moment of failure, increase output verbosity via <code>-vv</code> <a href="../cli.html">CLI</a> option.</p>
 </blockquote>
 <h2 id="result-and-"><a class="header" href="#result-and-"><code>Result</code> and <code>?</code></a></h2>
 <p>Similarly to <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">using the <code>?</code> operator in Rust tests</a>, we may also return a <code>Result&lt;()&gt;</code> from a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, so returning an <code>Err</code> will cause the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to fail (anything implementing <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Display.html"><code>Display</code></a> is sufficient).</p>
@@ -249,7 +254,9 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run_and_exit(&quot;/tests/features/book/writing/asserting.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::cucumber()
+</span><span class="boring">        .run_and_exit(&quot;/tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <p><img src="../rec/writing_asserting_result.gif" alt="record" /></p>

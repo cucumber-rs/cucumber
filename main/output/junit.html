@@ -162,7 +162,7 @@
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
 </span>let file = fs::File::create(dbg!(format!(&quot;{}/target/junit.xml&quot;, env!(&quot;CARGO_MANIFEST_DIR&quot;))))?;
 World::cucumber()
-    .with_writer(writer::JUnit::new(file))
+    .with_writer(writer::JUnit::new(file, 0))
     .run(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
