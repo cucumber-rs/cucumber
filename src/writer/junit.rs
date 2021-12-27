@@ -44,7 +44,7 @@ pub struct Cli {
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
     #[clap(long = "junit-v", name = "0|1")]
-    pub verbose: u8,
+    pub verbose: Option<u8>,
 }
 
 /// [JUnit XML report][1] [`Writer`] implementation outputting XML to an
@@ -208,7 +208,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
     pub fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
-            0 => self.verbosity = Verbosity::Default,
+            None => {}
+            Some(0) => self.verbosity = Verbosity::Default,
             _ => self.verbosity = Verbosity::ShowWorld,
         };
     }
