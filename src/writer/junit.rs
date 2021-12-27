@@ -39,11 +39,11 @@ const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 /// CLI options of a [`JUnit`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
 pub struct Cli {
-    /// Verbosity of an output.
+    /// Verbosity of JUnit XML report output.
     ///
-    /// `-v` is default verbosity, `-vv` additionally outputs world on failed
+    /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[clap(short, parse(from_occurrences))]
+    #[clap(long = "junit-v", name = "0|1")]
     pub verbose: u8,
 }
 
@@ -100,9 +100,11 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<Event<event::Cucumber<W>>>,
-        _: &Self::Cli,
+        opts: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
+
+        self.apply_cli(*opts);
 
         match ev.map(Event::split) {
             Err(err) => self.handle_error(&err),
@@ -206,9 +208,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
     pub fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
-            1 => self.verbosity = Verbosity::Default,
-            2 => self.verbosity = Verbosity::ShowWorld,
-            _ => {}
+            0 => self.verbosity = Verbosity::Default,
+            _ => self.verbosity = Verbosity::ShowWorld,
         };
     }
 

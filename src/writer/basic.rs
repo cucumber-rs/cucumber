@@ -130,11 +130,11 @@ where
     async fn handle_event(
         &mut self,
         ev: parser::Result<Event<event::Cucumber<W>>>,
-        cli: &Self::Cli,
+        opts: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};
 
-        self.apply_cli(*cli);
+        self.apply_cli(*opts);
 
         match ev.map(Event::into_inner) {
             Err(err) => self.parsing_failed(&err),
@@ -225,10 +225,10 @@ impl<Out: io::Write> Basic<Out> {
     /// Applies the given [`Cli`] options to this [`Basic`] [`Writer`].
     pub fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
+            0 => {}
             1 => self.verbosity = Verbosity::Default,
             2 => self.verbosity = Verbosity::ShowWorld,
-            3 => self.verbosity = Verbosity::ShowWorldAndDocString,
-            _ => {}
+            _ => self.verbosity = Verbosity::ShowWorldAndDocString,
         };
         self.styles.apply_coloring(cli.color);
     }
