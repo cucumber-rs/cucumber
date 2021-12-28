@@ -6,14 +6,14 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
-## [0.11.0] · 2021-??-??
-[0.11.0]: /../../tree/v0.11.0/codegen
+## [0.11.0-rc.1] · 2021-12-28
+[0.11.0-rc.1]: /../../tree/v0.11.0-rc.1/codegen
 
 [Milestone](/../../milestone/3)
 
 ### BC Breaks
 
-- Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([rev])
+- Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 
 ### Added
 
@@ -24,7 +24,7 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 [#151]: /../../pull/151
 [#157]: /../../pull/157
 [#168]: /../../pull/168
-[rev]: /../../commit/rev-full
+[cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
 
 
 

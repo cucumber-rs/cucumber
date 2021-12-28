@@ -5,7 +5,7 @@ Cucumber JSON format
 
 This requires `output-json` feature to be enabled in `Cargo.toml`:
 ```toml
-cucumber = { version = "0.11", features = ["output-json"] }
+cucumber = { version = "0.11.0-rc.1", features = ["output-json"] }
 ```
 
 And configuring output to [`writer::Json`]:

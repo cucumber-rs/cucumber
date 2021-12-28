@@ -10,6 +10,10 @@ on:
 env:
   RUST_BACKTRACE: 1
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   ##########################
@@ -53,8 +57,7 @@ jobs:
   # Testing #
   ###########
 
-  cargo-feature:
-    name: Cargo feature
+  feature:
     if: ${{ github.ref == 'refs/heads/main'
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -152,6 +155,7 @@ jobs:
       - run: make test.cargo crate=${{ matrix.crate }}
 
   test-book:
+    name: Test Book
     if: ${{ github.ref == 'refs/heads/main'
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -196,8 +200,8 @@ jobs:
   release-github:
     name: Release on GitHub
     needs:
-      - cargo-feature
       - clippy
+      - feature
       - msrv
       - rustdoc
       - rustfmt

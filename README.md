@@ -85,7 +85,7 @@ name = "readme"
 harness = false  # allows Cucumber to print output instead of libtest
 ```
 
-![asciicast]
+![](book/src/rec/readme.gif)![][asciicast]
 
 For more examples check out the Book ([current][1] | [edge][2]).
 

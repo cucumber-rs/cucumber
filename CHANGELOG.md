@@ -6,10 +6,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.11.0] · 2021-??-??
-[0.11.0]: /../../tree/v0.11.0
+## [0.11.0-rc.1] · 2021-12-28
+[0.11.0-rc.1]: /../../tree/v0.11.0-rc.1
 
-[Diff](/../../compare/v0.10.2...v0.11.0) | [Milestone](/../../milestone/3)
+[Diff](/../../compare/v0.10.2...v0.11.0-rc.1) | [Milestone](/../../milestone/3)
 
 ### BC Breaks
 
@@ -17,9 +17,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Renamed `Normalized` and `Summarized` `Writer`s to `Normalize` and `Summarize`. ([#162])
 - Removed `writer::Basic` `Default` impl and change `writer::Basic::new()` return type to `writer::Normalize<writer::Basic>`. ([#162])
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
-- Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([rev])
+- Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([e2a41ab0])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
-- Switched CLI to `clap` from `structopt`. ([#188])
+- Switched CLI to `clap` from `structopt`. ([#188], [#155])
 - Reworked `verbose` CLI option of `writer::Basic`: ([#193], [#192])
     - Removed long form.
     - Made `-v` default behavior (no additional output). 
@@ -42,17 +42,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Support for custom parameters in [Cucumber Expressions] via `#[derive(cucumber::Parameter)]` macro. ([#168])
 - Merging tags from `Feature` and `Rule` with `Scenario` when filtering with `--tags` CLI option. ([#166])
 - `writer::AssertNormalized` forcing `Normalized` implementation. ([#182])
-- `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189])
+- `cli::Colored` trait for propagating `Coloring` to arbitrary `Writer`s. ([#189], [#186])
 
 ### Fixed
 
 - Template regex in `Scenario Outline` expansion from `<(\S+)>` to `<([^>\s]+)>`. ([#163])
 - Multiple `Examples` in `Scenario Outline`. ([#165], [#164])
 - Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
-- `writer::Summarized` ignoring `Coloring` options. ([#189], [#188])
+- `writer::Summarized` ignoring `Coloring` options. ([#189], [#186])
 
 [#147]: /../../pull/147
 [#151]: /../../pull/151
+[#155]: /../../issues/155
 [#157]: /../../pull/157
 [#159]: /../../pull/159
 [#160]: /../../pull/160
@@ -62,15 +63,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#165]: /../../pull/165
 [#166]: /../../pull/166
 [#168]: /../../pull/168
-[#172]: /../../pull/172
+[#172]: /../../issues/172
 [#178]: /../../pull/178
 [#181]: /../../pull/181
 [#182]: /../../pull/182
+[#186]: /../../issues/186
 [#188]: /../../pull/188
-[#192]: /../../pull/192
+[#189]: /../../pull/189
+[#192]: /../../issues/192
 [#193]: /../../pull/193
 [cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
-[rev]: /../../commit/rev-full
+[e2a41ab0]: /../../commit/e2a41ab0a4398fe26075f0b066cc67e6e8a19e6c
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
