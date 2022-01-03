@@ -12,7 +12,7 @@ publish = false
 [dependencies]
 async-trait = "0.1"
 clap = { version = "3.0", features = ["derive"] }
-cucumber = { version = "0.11.0-rc.1", path = "../..", features = ["output-json", "output-junit"] }
+cucumber = { version = "0.11", path = "../..", features = ["output-json", "output-junit"] }
 futures = "0.3"
 humantime = "2.1"
 once_cell = { version = "1.8", features = ["parking_lot"] }

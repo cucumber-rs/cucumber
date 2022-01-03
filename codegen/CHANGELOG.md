@@ -6,8 +6,8 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
-## [0.11.0-rc.1] · 2021-12-28
-[0.11.0-rc.1]: /../../tree/v0.11.0-rc.1/codegen
+## [0.11.0] · 2022-01-03
+[0.11.0]: /../../tree/v0.11.0/codegen
 
 [Milestone](/../../milestone/3)
 
