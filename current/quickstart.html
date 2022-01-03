@@ -140,7 +140,7 @@
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber = &quot;0.11.0-rc.1&quot;
+cucumber = &quot;0.11&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -527,7 +527,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber = &quot;0.11.0-rc.1&quot;
+cucumber = &quot;0.11&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
