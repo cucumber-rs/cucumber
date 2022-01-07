@@ -468,7 +468,7 @@ async fn insert_features<W, S, F>(
 ///
 /// - [`Scenario`] events are emitted by [`Executor`].
 /// - If [`Scenario`] was first or last for particular [`Rule`] or [`Feature`],
-/// emits starting or finishing events for them.
+///   emits starting or finishing events for them.
 ///
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
@@ -559,7 +559,6 @@ async fn execute<W, Before, After>(
                     executor.send_event(f);
                 }
             }
-
             if let Some(f) = storage.feature_scenario_finished(feat) {
                 executor.send_event(f);
             }
@@ -1041,7 +1040,7 @@ where
     }
 }
 
-/// Stores currently ran [`Rule`]s and [`Feature`]s and notifies about their
+/// Stores currently running [`Rule`]s and [`Feature`]s and notifies about their
 /// state of completion.
 ///
 /// [`Feature`]: gherkin::Feature
@@ -1072,7 +1071,7 @@ struct FinishedRulesAndFeatures {
 }
 
 impl FinishedRulesAndFeatures {
-    /// Creates a new [`Executor`].
+    /// Creates a new [`FinishedRulesAndFeatures`] store.
     fn new(
         finished_receiver: mpsc::UnboundedReceiver<(
             Arc<gherkin::Feature>,
