@@ -552,23 +552,16 @@ async fn execute<W, Before, After>(
 
         while let Ok(Some((feat, rule))) = storage.finished_receiver.try_next()
         {
-            let mut cleanup = false;
             if let Some(r) = rule {
                 if let Some(f) =
                     storage.rule_scenario_finished(Arc::clone(&feat), r)
                 {
                     executor.send_event(f);
-                    cleanup = true;
                 }
             }
 
             if let Some(f) = storage.feature_scenario_finished(feat) {
                 executor.send_event(f);
-                cleanup = true;
-            }
-
-            if cleanup {
-                storage.cleanup_finished_rules_and_features();
             }
         }
     }
@@ -1109,8 +1102,12 @@ impl FinishedRulesAndFeatures {
             .get_mut(&(feature.path.clone(), Arc::clone(&rule)))
             .unwrap_or_else(|| panic!("No Rule {}", rule.name));
         *finished_scenarios += 1;
-        (rule.scenarios.len() == *finished_scenarios)
-            .then(|| event::Cucumber::rule_finished(feature, rule))
+        (rule.scenarios.len() == *finished_scenarios).then(|| {
+            let _ = self
+                .rule_scenarios_count
+                .remove(&(feature.path.clone(), Arc::clone(&rule)));
+            event::Cucumber::rule_finished(feature, rule)
+        })
     }
 
     /// Marks [`Feature`]'s [`Scenario`] as finished and returns
@@ -1129,8 +1126,10 @@ impl FinishedRulesAndFeatures {
             .unwrap_or_else(|| panic!("No Feature {}", feature.name));
         *finished_scenarios += 1;
         let scenarios = feature.count_scenarios();
-        (scenarios == *finished_scenarios)
-            .then(|| event::Cucumber::feature_finished(feature))
+        (scenarios == *finished_scenarios).then(|| {
+            let _ = self.features_scenarios_count.remove(&feature);
+            event::Cucumber::feature_finished(feature)
+        })
     }
 
     /// Marks [`Scenario`]s as started and returns [`Rule::Started`] and
@@ -1190,25 +1189,6 @@ impl FinishedRulesAndFeatures {
                     .into_iter()
                     .map(|(f, r)| event::Cucumber::rule_started(f, r)),
             )
-    }
-
-    /// Removes all finished [`Rule`]s and [`Feature`]s as all their events are
-    /// emitted already.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Rule`]: gherkin::Rule
-    fn cleanup_finished_rules_and_features(&mut self) {
-        self.features_scenarios_count = self
-            .features_scenarios_count
-            .drain()
-            .filter(|(f, count)| f.count_scenarios() != *count)
-            .collect();
-
-        self.rule_scenarios_count = self
-            .rule_scenarios_count
-            .drain()
-            .filter(|((_, r), count)| r.scenarios.len() != *count)
-            .collect();
     }
 }
 
