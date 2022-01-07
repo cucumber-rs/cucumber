@@ -503,7 +503,7 @@ async fn insert_features<W, S, F>(
 ///
 /// - [`Scenario`] events are emitted by [`Executor`].
 /// - If [`Scenario`] was first or last for particular [`Rule`] or [`Feature`],
-/// emits starting or finishing events for them.
+///   emits starting or finishing events for them.
 ///
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
@@ -1104,7 +1104,7 @@ where
     }
 }
 
-/// Stores currently ran [`Rule`]s and [`Feature`]s and notifies about their
+/// Stores currently running [`Rule`]s and [`Feature`]s and notifies about their
 /// state of completion.
 ///
 /// [`Feature`]: gherkin::Feature

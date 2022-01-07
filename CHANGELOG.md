@@ -6,14 +6,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.11.1] · ???
+## [0.11.1] · 2022-01-??
 [0.11.1]: /../../tree/v0.11.1
 
 [Diff](/../../compare/v0.11.0...v0.11.1) | [Milestone](/../../milestone/6)
 
-### Added
+### Changed
 
-- Make `runner::Basic` execute `Scenario`s as they are available, not in batches. ([#195])
+- Optimized `runner::Basic` to not wait the whole batch to complete before executing next `Scenario`s. ([#195])
  
 [#195]: /../../pull/195
 
