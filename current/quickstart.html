@@ -388,6 +388,9 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span></code></pre></pre>
 <p>And see the test failing:<br />
 <img src="rec/quickstart_simple_fail.gif" alt="record" /></p>
+<blockquote>
+<p><strong>TIP</strong>: By default, unlike <a href="https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options">unit tests</a>, failed <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use <code>--fail-fast</code> <a href="cli.html">CLI</a> option to stop execution on first failure.</p>
+</blockquote>
 <p>What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add an another <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> that looks quite similar:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
 
