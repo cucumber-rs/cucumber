@@ -49,7 +49,7 @@ pub struct Cli {
     #[clap(long, short, name = "int")]
     pub concurrency: Option<usize>,
 
-    /// Runs tests until first failure.
+    /// Runs tests until a first failure.
     #[clap(long)]
     pub fail_fast: bool,
 }
