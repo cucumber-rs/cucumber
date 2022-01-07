@@ -11,11 +11,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [Diff](/../../compare/v0.11.0...v0.11.1) | [Milestone](/../../milestone/6)
 
+### Added
+
+- `--fail-fast` CLI option to `runner::Basic`. ([#196])
+
 ### Changed
 
 - Optimized `runner::Basic` to not wait the whole batch to complete before executing next `Scenario`s. ([#195])
  
 [#195]: /../../pull/195
+[#196]: /../../pull/196
 
 
 

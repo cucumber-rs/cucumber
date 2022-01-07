@@ -25,6 +25,9 @@ OPTIONS:
             Coloring policy for a console output
             
             [default: auto]
+            
+        --fail-fast
+            Run tests until the first failure
 
     -h, --help
             Print help information

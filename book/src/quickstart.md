@@ -274,6 +274,8 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 And see the test failing:  
 ![record](rec/quickstart_simple_fail.gif)
 
+> __TIP__: By default, unlike [unit tests](https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options), failed [step]s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use `--fail-fast` [CLI] option to stop execution on first failure.
+
 What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add an another [scenario] that looks quite similar:
 ```gherkin
 Feature: Animal feature
