@@ -207,6 +207,9 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 <blockquote>
 <p><strong>TIP</strong>: To additionally print the state of the <code>World</code> at the moment of failure, increase output verbosity via <code>-vv</code> <a href="../cli.html">CLI</a> option.</p>
 </blockquote>
+<blockquote>
+<p><strong>TIP</strong>: By default, unlike <a href="https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options">unit tests</a>, failed <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use <code>--fail-fast</code> <a href="../cli.html">CLI</a> option to stop execution on first failure.</p>
+</blockquote>
 <h2 id="result-and-"><a class="header" href="#result-and-"><code>Result</code> and <code>?</code></a></h2>
 <p>Similarly to <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">using the <code>?</code> operator in Rust tests</a>, we may also return a <code>Result&lt;()&gt;</code> from a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, so returning an <code>Err</code> will cause the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to fail (anything implementing <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Display.html"><code>Display</code></a> is sufficient).</p>
 <pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::convert::Infallible;
