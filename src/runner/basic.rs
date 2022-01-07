@@ -15,8 +15,8 @@ use std::{
     collections::HashMap,
     convert::identity,
     fmt, mem,
+    ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
-    path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -48,6 +48,10 @@ pub struct Cli {
     /// value configured in tests runner, or 64 by default.
     #[clap(long, short, name = "int")]
     pub concurrency: Option<usize>,
+
+    /// Runs tests until first failure.
+    #[clap(long)]
+    pub fail_fast: bool,
 }
 
 /// Type determining whether [`Scenario`]s should run concurrently or
@@ -101,6 +105,11 @@ pub type AfterHookFn<World> = for<'a> fn(
     Option<&'a mut World>,
 ) -> LocalBoxFuture<'a, ()>;
 
+/// Alias for a failed [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
+type Failed = bool;
+
 /// Default [`Runner`] implementation which follows [_order guarantees_][1] from
 /// the [`Runner`] trait docs.
 ///
@@ -148,6 +157,12 @@ pub struct Basic<
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     after_hook: Option<After>,
+
+    /// Indicates, whether execution should be stopped after the first failure.
+    /// But all already started [`Scenario`]s will be finished.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    fail_fast: bool,
 }
 
 // Implemented manually to omit redundant trait bounds on `World` and to omit
@@ -171,6 +186,7 @@ impl<World> Basic<World, ()> {
             which_scenario: (),
             before_hook: None,
             after_hook: None,
+            fail_fast: false,
         }
     }
 }
@@ -192,6 +208,7 @@ impl<World> Default for Basic<World> {
             which_scenario,
             before_hook: None,
             after_hook: None,
+            fail_fast: false,
         }
     }
 }
@@ -207,6 +224,13 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         max: impl Into<Option<usize>>,
     ) -> Self {
         self.max_concurrent_scenarios = max.into();
+        self
+    }
+
+    /// Run tests until the first failure.
+    #[must_use]
+    pub const fn fail_fast(mut self) -> Self {
+        self.fail_fast = true;
         self
     }
 
@@ -231,6 +255,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             steps,
             before_hook,
             after_hook,
+            fail_fast,
             ..
         } = self;
         Basic {
@@ -239,6 +264,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             which_scenario: func,
             before_hook,
             after_hook,
+            fail_fast,
         }
     }
 
@@ -263,6 +289,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             steps,
             which_scenario,
             after_hook,
+            fail_fast,
             ..
         } = self;
         Basic {
@@ -271,6 +298,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             which_scenario,
             before_hook: Some(func),
             after_hook,
+            fail_fast,
         }
     }
 
@@ -304,6 +332,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             steps,
             which_scenario,
             before_hook,
+            fail_fast,
             ..
         } = self;
         Basic {
@@ -312,6 +341,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             which_scenario,
             before_hook,
             after_hook: Some(func),
+            fail_fast,
         }
     }
 
@@ -392,8 +422,10 @@ where
             which_scenario,
             before_hook,
             after_hook,
+            fail_fast,
         } = self;
 
+        let fail_fast = if cli.fail_fast { true } else { fail_fast };
         let buffer = Features::default();
         let (sender, receiver) = mpsc::unbounded();
 
@@ -402,6 +434,7 @@ where
             features,
             which_scenario,
             sender.clone(),
+            fail_fast,
         );
         let execute = execute(
             buffer,
@@ -410,6 +443,7 @@ where
             sender,
             before_hook,
             after_hook,
+            fail_fast,
         );
 
         stream::select(
@@ -436,6 +470,7 @@ async fn insert_features<W, S, F>(
     features: S,
     which_scenario: F,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
+    fail_fast: bool,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     F: Fn(
@@ -452,7 +487,7 @@ async fn insert_features<W, S, F>(
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
             Err(e) => {
-                if sender.unbounded_send(Err(e)).is_err() {
+                if sender.unbounded_send(Err(e)).is_err() || fail_fast {
                     break;
                 }
             }
@@ -482,6 +517,7 @@ async fn execute<W, Before, After>(
     >,
     before_hook: Option<Before>,
     after_hook: Option<After>,
+    fail_fast: bool,
 ) where
     W: World,
     Before: 'static
@@ -522,10 +558,16 @@ async fn execute<W, Before, After>(
 
     executor.send_event(event::Cucumber::Started);
 
-    let mut started_scenarios = max_concurrent_scenarios;
+    // TODO: replace with ControlFlow::map_break once stabilized.
+    let map_break = |cf| match cf {
+        ControlFlow::Continue(cont) => cont,
+        ControlFlow::Break(()) => Some(0),
+    };
+
+    let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        let runnable = features.get(started_scenarios).await;
+        let runnable = features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
             if features.is_finished() {
                 break;
@@ -536,7 +578,7 @@ async fn execute<W, Before, After>(
         let started = storage.start_scenarios(&runnable);
         executor.send_all_events(started);
 
-        if let Some(sc) = started_scenarios.as_mut() {
+        if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
             *sc -= runnable.len();
         }
 
@@ -545,12 +587,13 @@ async fn execute<W, Before, After>(
         }
 
         if run_scenarios.next().await.is_some() {
-            if let Some(sc) = started_scenarios.as_mut() {
+            if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
                 *sc += 1;
             }
         }
 
-        while let Ok(Some((feat, rule))) = storage.finished_receiver.try_next()
+        while let Ok(Some((feat, rule, scenario_failed))) =
+            storage.finished_receiver.try_next()
         {
             if let Some(r) = rule {
                 if let Some(f) =
@@ -563,8 +606,16 @@ async fn execute<W, Before, After>(
             if let Some(f) = storage.feature_scenario_finished(feat) {
                 executor.send_event(f);
             }
+
+            if fail_fast && scenario_failed {
+                started_scenarios = ControlFlow::Break(());
+            }
         }
     }
+
+    // This is done in case because of `fail_fast` not all Scenarios were
+    // executed.
+    executor.send_all_events(storage.finish_all_rules_and_features());
 
     executor.send_event(event::Cucumber::Finished);
 
@@ -608,6 +659,7 @@ struct Executor<W, Before, After> {
     finished_sender: mpsc::UnboundedSender<(
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
+        Failed,
     )>,
 }
 
@@ -639,6 +691,7 @@ where
         finished_sender: mpsc::UnboundedSender<(
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
+            Failed,
         )>,
     ) -> Self {
         Self {
@@ -711,6 +764,7 @@ where
             event::Scenario::Started,
         ));
 
+        let mut is_failed = false;
         let world = async {
             let before_hook = self
                 .run_before_hook(&feature, rule.as_ref(), &scenario)
@@ -757,12 +811,17 @@ where
                 })
                 .await
         }
+        .inspect_err(|e| {
+            if e.is_none() {
+                is_failed = true;
+            }
+        })
         .await
         .unwrap_or_else(identity);
 
         self.run_after_hook(world, &feature, rule.as_ref(), &scenario)
             .await
-            .map_or((), drop);
+            .map_or_else(|_| is_failed = true, drop);
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),
@@ -771,7 +830,7 @@ where
             event::Scenario::Finished,
         ));
 
-        self.scenario_finished(feature, rule);
+        self.scenario_finished(feature, rule, is_failed);
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1009,10 +1068,14 @@ where
         &self,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
+        is_failed: Failed,
     ) {
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
-        drop(self.finished_sender.unbounded_send((feature, rule)));
+        drop(
+            self.finished_sender
+                .unbounded_send((feature, rule, is_failed)),
+        );
     }
 
     /// Notifies with the given [`Cucumber`] event.
@@ -1055,12 +1118,14 @@ struct FinishedRulesAndFeatures {
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
-    /// We also store path to `.feature` file so [`Rule`]s with same names and
-    /// spans in different files will have different hashes.
+    /// We also store path to [`Feature`] so [`Rule`]s with same names and
+    /// spans in different `.feature` files will have different hashes.
     ///
+    /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
-    rule_scenarios_count: HashMap<(Option<PathBuf>, Arc<gherkin::Rule>), usize>,
+    rule_scenarios_count:
+        HashMap<(Arc<gherkin::Feature>, Arc<gherkin::Rule>), usize>,
 
     /// Receiver for notifying state of [`Scenario`]s completion.
     ///
@@ -1068,6 +1133,7 @@ struct FinishedRulesAndFeatures {
     finished_receiver: mpsc::UnboundedReceiver<(
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
+        Failed,
     )>,
 }
 
@@ -1077,6 +1143,7 @@ impl FinishedRulesAndFeatures {
         finished_receiver: mpsc::UnboundedReceiver<(
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
+            Failed,
         )>,
     ) -> Self {
         Self {
@@ -1099,13 +1166,13 @@ impl FinishedRulesAndFeatures {
     ) -> Option<event::Cucumber<W>> {
         let finished_scenarios = self
             .rule_scenarios_count
-            .get_mut(&(feature.path.clone(), Arc::clone(&rule)))
+            .get_mut(&(Arc::clone(&feature), Arc::clone(&rule)))
             .unwrap_or_else(|| panic!("No Rule {}", rule.name));
         *finished_scenarios += 1;
         (rule.scenarios.len() == *finished_scenarios).then(|| {
             let _ = self
                 .rule_scenarios_count
-                .remove(&(feature.path.clone(), Arc::clone(&rule)));
+                .remove(&(Arc::clone(&feature), Arc::clone(&rule)));
             event::Cucumber::rule_finished(feature, rule)
         })
     }
@@ -1130,6 +1197,24 @@ impl FinishedRulesAndFeatures {
             let _ = self.features_scenarios_count.remove(&feature);
             event::Cucumber::feature_finished(feature)
         })
+    }
+
+    /// Marks all [`Rule`]s and [`Feature`]s as finished and returns
+    /// finished events.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Rule`]: gherkin::Rule
+    fn finish_all_rules_and_features<W>(
+        &mut self,
+    ) -> impl Iterator<Item = event::Cucumber<W>> + '_ {
+        self.rule_scenarios_count
+            .drain()
+            .map(|((feat, rule), _)| event::Cucumber::rule_finished(feat, rule))
+            .chain(
+                self.features_scenarios_count
+                    .drain()
+                    .map(|(feat, _)| event::Cucumber::feature_finished(feat)),
+            )
     }
 
     /// Marks [`Scenario`]s as started and returns [`Rule::Started`] and
@@ -1174,7 +1259,7 @@ impl FinishedRulesAndFeatures {
         {
             let _ = self
                 .rule_scenarios_count
-                .entry((feat.path.clone(), Arc::clone(&rule)))
+                .entry((Arc::clone(&feat), Arc::clone(&rule)))
                 .or_insert_with(|| {
                     started_rules.push((feat, rule));
                     0
