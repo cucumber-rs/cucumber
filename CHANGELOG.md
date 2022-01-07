@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Add `--fail-fast` CLI option to `runner::Basic`. ([#196])
+- `--fail-fast` CLI option to `runner::Basic`. ([#196])
 
 ### Changed
 

@@ -76,6 +76,8 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 
 > __TIP__: To additionally print the state of the `World` at the moment of failure, increase output verbosity via `-vv` [CLI] option.
 
+> __TIP__: By default, unlike [unit tests](https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options), failed [step]s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use `--fail-fast` [CLI] option to stop execution on first failure.
+
 
 
 

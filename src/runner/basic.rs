@@ -49,7 +49,7 @@ pub struct Cli {
     #[clap(long, short, name = "int")]
     pub concurrency: Option<usize>,
 
-    /// Runs tests until a first failure.
+    /// Run tests until the first failure.
     #[clap(long)]
     pub fail_fast: bool,
 }
@@ -158,10 +158,7 @@ pub struct Basic<
     /// [`Step`]: gherkin::Step
     after_hook: Option<After>,
 
-    /// Indicates, whether execution should be stopped after the first failure.
-    /// But all already started [`Scenario`]s will be finished.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
+    /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
 }
 
@@ -228,6 +225,11 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     }
 
     /// Run tests until the first failure.
+    ///
+    /// __NOTE__: All the already started [`Scenario`]s at the moment of failure
+    ///           will be finished.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub const fn fail_fast(mut self) -> Self {
         self.fail_fast = true;
@@ -558,7 +560,8 @@ async fn execute<W, Before, After>(
 
     executor.send_event(event::Cucumber::Started);
 
-    // TODO: replace with ControlFlow::map_break once stabilized.
+    // TODO: Replace with `ControlFlow::map_break()` once stabilized:
+    //       https://github.com/rust-lang/rust/issues/75744
     let map_break = |cf| match cf {
         ControlFlow::Continue(cont) => cont,
         ControlFlow::Break(()) => Some(0),
@@ -602,7 +605,6 @@ async fn execute<W, Before, After>(
                     executor.send_event(f);
                 }
             }
-
             if let Some(f) = storage.feature_scenario_finished(feat) {
                 executor.send_event(f);
             }
@@ -613,8 +615,8 @@ async fn execute<W, Before, After>(
         }
     }
 
-    // This is done in case because of `fail_fast` not all Scenarios were
-    // executed.
+    // This is done in case of `fail_fast: true`, when not all `Scenario`s might
+    // be executed.
     executor.send_all_events(storage.finish_all_rules_and_features());
 
     executor.send_event(event::Cucumber::Finished);
@@ -1118,7 +1120,7 @@ struct FinishedRulesAndFeatures {
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
-    /// We also store path to [`Feature`] so [`Rule`]s with same names and
+    /// We also store path to a [`Feature`], so [`Rule`]s with same names and
     /// spans in different `.feature` files will have different hashes.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -1138,7 +1140,7 @@ struct FinishedRulesAndFeatures {
 }
 
 impl FinishedRulesAndFeatures {
-    /// Creates a new [`Executor`].
+    /// Creates a new [`FinishedRulesAndFeatures`] store.
     fn new(
         finished_receiver: mpsc::UnboundedReceiver<(
             Arc<gherkin::Feature>,
@@ -1199,8 +1201,8 @@ impl FinishedRulesAndFeatures {
         })
     }
 
-    /// Marks all [`Rule`]s and [`Feature`]s as finished and returns
-    /// finished events.
+    /// Marks all the unfinished [`Rule`]s and [`Feature`]s as finished, and
+    /// returns all the appropriate finished events.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule

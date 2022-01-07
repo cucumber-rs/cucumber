@@ -27,7 +27,7 @@ OPTIONS:
             [default: auto]
             
         --fail-fast
-            Runs tests until a first failure
+            Run tests until the first failure
 
     -h, --help
             Print help information
