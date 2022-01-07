@@ -1017,6 +1017,8 @@ where
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
     ) {
+        // If the receiver end is dropped, then no one listens for events
+        // so we can just ignore it.
         drop(self.finished_sender.unbounded_send((feature, rule)));
     }
 

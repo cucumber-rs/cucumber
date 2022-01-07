@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Make `runner::Basic` execute Scenarios as they are available, not in batches. ([#195])
+- Make `runner::Basic` execute `Scenario`s as they are available, not in batches. ([#195])
  
 [#195]: /../../pull/195
 
