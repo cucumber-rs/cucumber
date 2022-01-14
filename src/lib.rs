@@ -40,6 +40,7 @@
     clippy::filetype_is_file,
     clippy::float_cmp_const,
     clippy::fn_to_numeric_cast,
+    clippy::fn_to_numeric_cast_any,
     clippy::get_unwrap,
     clippy::if_then_some_else_none,
     clippy::imprecise_flops,
@@ -65,11 +66,14 @@
     clippy::str_to_string,
     clippy::string_add,
     clippy::string_lit_as_bytes,
+    clippy::string_slice,
     clippy::string_to_string,
     clippy::suboptimal_flops,
     clippy::suspicious_operation_groupings,
     clippy::todo,
+    clippy::trailing_empty_array,
     clippy::trivial_regex,
+    clippy::undocumented_unsafe_blocks,
     clippy::unimplemented,
     clippy::unnecessary_self_imports,
     clippy::unneeded_field_pattern,
@@ -111,6 +115,14 @@ pub mod writer;
 
 #[cfg(feature = "macros")]
 pub mod codegen;
+
+// TODO: Remove once tests run without complains about it.
+#[cfg(test)]
+mod actually_used_crates_in_tests {
+    use humantime as _;
+    use tempfile as _;
+    use tokio as _;
+}
 
 use std::error::Error as StdError;
 

@@ -853,6 +853,8 @@ where
                 .map_err(Info::from)
                 .and_then(|r| {
                     r.map_err(|e| {
+                        // TODO: Use "{step:p}" syntax once MSRV bumps above
+                        //       1.58.
                         coerce_into_info(format!(
                             "failed to initialize World: {}",
                             e,
@@ -1018,6 +1020,8 @@ where
                     Ok(Ok(w)) => w,
                     Ok(Err(e)) => {
                         let e = event::StepError::Panic(coerce_into_info(
+                            // TODO: Use "{step:p}" syntax once MSRV bumps above
+                            //       1.58.
                             format!("failed to initialize World: {}", e),
                         ));
                         return Err((e, None, None));

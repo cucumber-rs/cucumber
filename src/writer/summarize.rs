@@ -486,6 +486,7 @@ impl Styles {
             .then(|| self.err(", "))
             .unwrap_or_default();
 
+        // TODO: Use "{features}" syntax once MSRV bumps above 1.58.
         format!(
             "{}\n{}\n{}{}{}\n{}{}\n{}{}{}",
             self.bold(self.header("[Summary]")),
@@ -529,6 +530,7 @@ impl Styles {
 
         (!formatted.is_empty())
             .then(|| {
+                // TODO: Use "{formatted}" syntax once MSRV bumps above 1.58.
                 self.bold(format!(
                     " {}{}{}",
                     self.bold("("),
@@ -545,6 +547,7 @@ impl Styles {
         singular: impl Into<Cow<'static, str>>,
         num: usize,
     ) -> Cow<'static, str> {
+        // TODO: Use "{num}" syntax once MSRV bumps above 1.58.
         self.bold(format!(
             "{} {}{}",
             num,

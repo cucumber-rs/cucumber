@@ -1273,6 +1273,7 @@ where
 
             let failed_steps = writer.failed_steps();
             if failed_steps > 0 {
+                // TODO: Use "{failed_steps}" syntax once MSRV bumps above 1.58.
                 msg.push(format!(
                     "{} step{} failed",
                     failed_steps,
@@ -1282,6 +1283,8 @@ where
 
             let parsing_errors = writer.parsing_errors();
             if parsing_errors > 0 {
+                // TODO: Use "{parsing_errors}" syntax once MSRV bumps above
+                //       1.58.
                 msg.push(format!(
                     "{} parsing error{}",
                     parsing_errors,
@@ -1291,6 +1294,7 @@ where
 
             let hook_errors = writer.hook_errors();
             if hook_errors > 0 {
+                // TODO: Use "{hook_errors}" syntax once MSRV bumps above 1.58.
                 msg.push(format!(
                     "{} hook error{}",
                     hook_errors,

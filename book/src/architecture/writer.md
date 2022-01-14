@@ -271,7 +271,7 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                             event::Step::Passed(_) => println!("ok"),
                             event::Step::Skipped => println!("skip"),
                             event::Step::Failed(_, _, err) => {
-                                println!("failed: {}", err)
+                                println!("failed: {err}")
                             }
                         },
                         _ => {}
@@ -280,7 +280,7 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                 },
                 _ => {}
             },
-            Err(e) => println!("Error: {}", e),
+            Err(e) => println!("Error: {e}"),
         }
     }
 }
@@ -450,7 +450,7 @@ async fn main() {
 #                             event::Step::Passed(_) => println!("ok"),
 #                             event::Step::Skipped => println!("skip"),
 #                             event::Step::Failed(_, _, err) => {
-#                                 println!("failed: {}", err)
+#                                 println!("failed: {err}", )
 #                             }
 #                         },
 #                         _ => {}
@@ -459,7 +459,7 @@ async fn main() {
 #                 },
 #                 _ => {}
 #             },
-#             Err(e) => println!("Error: {}", e),
+#             Err(e) => println!("Error: {e}"),
 #         }
 #     }
 # }

@@ -113,9 +113,11 @@ impl Step {
 
         let regex = self.gen_regex()?;
 
+        // TODO: Use "{func_name}" syntax once MSRV bumps above 1.58.
         let caller_name =
             format_ident!("__cucumber_{}_{}", self.attr_name, func_name);
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
+        // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
         let unwrapping = (!self.returns_unit())
             .then(|| quote! { .unwrap_or_else(|e| panic!("{}", e)) });
         let step_caller = quote! {
@@ -302,6 +304,7 @@ impl Step {
                 return Err(syn::Error::new(ty.span(), "Type path expected"));
             };
 
+            // TODO: Use "{ident}" syntax once MSRV bumps above 1.58.
             let not_found_err = format!("{} not found", ident);
             let parsing_err = format!(
                 "{} can not be parsed to {}",
@@ -371,6 +374,7 @@ impl Step {
             }
             AttributeArgument::Regex(re) => {
                 drop(Regex::new(re.value().as_str()).map_err(|e| {
+                    // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                     syn::Error::new(re.span(), format!("Invalid regex: {}", e))
                 })?);
 
@@ -455,6 +459,7 @@ impl<'p> Parameters<'p> {
         let expr = Expression::parse(expr).map_err(|e| {
             syn::Error::new(
                 expr.span(),
+                // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                 format!("Incorrect cucumber expression: {}", e),
             )
         })?;
@@ -580,6 +585,7 @@ impl<'p> Parameters<'p> {
                 } else {
                     // Here we use double escaping to properly render `{name}`
                     // in the assertion message of the generated code.
+                    // TODO: Use "{name}" syntax once MSRV bumps above 1.58.
                     let assert_msg = format!(
                         "Type `{}` doesn't implement a custom parameter \
                          `{{{{{}}}}}`",

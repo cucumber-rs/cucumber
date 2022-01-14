@@ -116,6 +116,8 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                         .case_insensitive(true)
                         .build()
                         .unwrap_or_else(|e| {
+                            // TODO: Use "{e}" syntax once MSRV bumps above
+                            //       1.58.
                             unreachable!("GlobWalkerBuilder panicked: {}", e)
                         });
                     walk(w)

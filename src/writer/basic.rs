@@ -146,7 +146,10 @@ where
                 Feature::Finished => Ok(()),
             },
         }
-        .unwrap_or_else(|e| panic!("Failed to write into terminal: {}", e));
+        .unwrap_or_else(|e| {
+            // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
+            panic!("Failed to write into terminal: {}", e)
+        });
     }
 }
 
@@ -162,6 +165,7 @@ where
     where
         'val: 'async_trait,
     {
+        // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
         self.write_line(val.as_ref())
             .unwrap_or_else(|e| panic!("Failed to write: {}", e));
     }
@@ -249,6 +253,7 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         error: impl Display,
     ) -> io::Result<()> {
+        // TODO: Use "{error}" syntax once MSRV bumps above 1.58.
         self.output
             .write_line(&self.styles.err(format!("Failed to parse: {}", error)))
     }
@@ -369,7 +374,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         self.output.write_line(&self.styles.err(format!(
-            "{indent}\u{2718}  Scenario's {} hook failed {}:{}:{}\n\
+            "{indent}✘  Scenario's {} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             which,
             feat.path
@@ -381,6 +386,7 @@ impl<Out: io::Write> Basic<Out> {
             coerce_error(info),
             world
                 .map(|w| format_str_with_indent(
+                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
                     format!("{:#?}", w),
                     self.indent.saturating_sub(3) + 3,
                 ))
@@ -496,8 +502,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword =
-            self.styles.ok(format!("\u{2714}  {}", step.keyword));
+        let step_keyword = self.styles.ok(format!("✔  {}", step.keyword));
         let step_value = format_captures(
             &step.value,
             captures,
@@ -522,6 +527,7 @@ impl<Out: io::Write> Basic<Out> {
             .map(|t| format_table(t, self.indent))
             .unwrap_or_default());
 
+        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
             "{indent}{} {}{}{}",
             step_keyword,
@@ -585,7 +591,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let step_keyword = self.styles.err(format!(
-            "{indent}\u{2718}  {}",
+            "{indent}✘  {}",
             step.keyword,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         ));
@@ -626,11 +632,12 @@ impl<Out: io::Write> Basic<Out> {
             step.position.line,
             step.position.col,
             format_str_with_indent(
-                format!("{}", err),
+                err.to_string(),
                 self.indent.saturating_sub(3) + 3,
             ),
             world
                 .map(|w| format_str_with_indent(
+                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
                     format!("{:#?}", w),
                     self.indent.saturating_sub(3) + 3,
                 ))
@@ -639,6 +646,7 @@ impl<Out: io::Write> Basic<Out> {
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
+        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.write_line(&format!(
             "{} {}{}",
             step_keyword, step_value, diagnostics,
@@ -738,8 +746,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword =
-            self.styles.ok(format!("\u{2714}> {}", step.keyword));
+        let step_keyword = self.styles.ok(format!("✔> {}", step.keyword));
         let step_value = format_captures(
             &step.value,
             captures,
@@ -764,6 +771,7 @@ impl<Out: io::Write> Basic<Out> {
             .map(|t| format_table(t, self.indent))
             .unwrap_or_default());
 
+        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
             "{indent}{} {}{}{}",
             step_keyword,
@@ -829,7 +837,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let step_keyword = self.styles.err(format!(
-            "{indent}\u{2718}> {}{}",
+            "{indent}✘> {}{}",
             step.keyword,
             indent = " ".repeat(self.indent.saturating_sub(3)),
         ));
@@ -870,11 +878,12 @@ impl<Out: io::Write> Basic<Out> {
             step.position.line,
             step.position.col,
             format_str_with_indent(
-                format!("{}", err),
+                err.to_string(),
                 self.indent.saturating_sub(3) + 3,
             ),
             world
                 .map(|w| format_str_with_indent(
+                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
                     format!("{:#?}", w),
                     self.indent.saturating_sub(3) + 3,
                 ))
@@ -882,6 +891,7 @@ impl<Out: io::Write> Basic<Out> {
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
+        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.write_line(&format!(
             "{} {}{}",
             step_keyword, step_value, diagnostics,
@@ -906,11 +916,13 @@ pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
 /// Formats the given [`str`] by adding `indent`s to each line to prettify the
 /// output.
 fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
+    // TODO: Use "{line}" syntax once MSRV bumps above 1.58.
     let str = str
         .as_ref()
         .lines()
         .map(|line| format!("{}{}", " ".repeat(indent), line))
         .join("\n");
+    // TODO: Use "{str}" syntax once MSRV bumps above 1.58.
     (!str.is_empty())
         .then(|| format!("\n{}", str))
         .unwrap_or_default()
@@ -935,6 +947,7 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         })
         .unwrap_or_default();
 
+    // TODO: Use "{cell:len$}" and "{row}" syntax once MSRV bumps above 1.58.
     let mut table = table
         .rows
         .iter()
@@ -967,6 +980,9 @@ where
     D: for<'a> Fn(&'a str) -> Cow<'a, str>,
     A: for<'a> Fn(&'a str) -> Cow<'a, str>,
 {
+    // All indices here are obtained from the source string.
+    #![allow(clippy::string_slice)]
+
     let value = value.as_ref();
 
     let (mut formatted, end) = (1..captures.len())

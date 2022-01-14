@@ -60,6 +60,7 @@ impl<World> fmt::Debug for Collection<World> {
         f.debug_struct("Collection")
             .field(
                 "given",
+                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .given
                     .iter()
@@ -68,6 +69,7 @@ impl<World> fmt::Debug for Collection<World> {
             )
             .field(
                 "when",
+                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .when
                     .iter()
@@ -76,6 +78,7 @@ impl<World> fmt::Debug for Collection<World> {
             )
             .field(
                 "then",
+                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .then
                     .iter()
@@ -184,6 +187,8 @@ impl<World> Collection<World> {
             }
         };
 
+        // All indices here are obtained from the source string.
+        #[allow(clippy::string_slice)]
         let matches = iter::once(whole_match.as_str().to_owned())
             .chain((1..captures.len()).map(|group_id| {
                 captures

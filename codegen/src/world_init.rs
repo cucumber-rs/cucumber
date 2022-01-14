@@ -46,6 +46,7 @@ pub(crate) fn derive(
 ///
 /// [`syn::Ident`]: struct@syn::Ident
 fn step_types(steps: &[&str], world: &syn::Ident) -> Vec<syn::Ident> {
+    // TODO: Use "{world}" syntax once MSRV bumps above 1.58.
     steps
         .iter()
         .map(|step| format_ident!("Cucumber{}{}", to_pascal_case(step), world))

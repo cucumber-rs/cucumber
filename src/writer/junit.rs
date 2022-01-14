@@ -115,6 +115,8 @@ where
                         TestSuiteBuilder::new(&format!(
                             "Feature: {}{}",
                             &feat.name,
+                            // TODO: Use "{path}" syntax once MSRV bumps above
+                            //       1.58.
                             feat.path
                                 .as_deref()
                                 .and_then(Path::to_str)
@@ -134,6 +136,8 @@ where
                 }
                 Feature::Finished => {
                     let suite = self.suit.take().unwrap_or_else(|| {
+                        // TODO: Use "{WRAP_ADVICE}" syntax once MSRV bumps
+                        //       above 1.58.
                         panic!(
                             "No `TestSuit` for `Feature` \"{}\"\n{}",
                             feat.name, WRAP_ADVICE,
@@ -143,6 +147,7 @@ where
                 }
             },
             Ok((Cucumber::Finished, _)) => {
+                // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                 self.report
                     .write_xml(&mut self.output)
                     .unwrap_or_else(|e| panic!("Failed to write XML: {}", e));
@@ -225,6 +230,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 (
                     format!(
                         "Feature{}",
+                        // TODO: Use "{p}" syntax once MSRV bumps above 1.58.
                         path.to_str()
                             .map(|p| format!(": {}", p))
                             .unwrap_or_default(),
@@ -235,6 +241,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             parser::Error::ExampleExpansion(err) => (
                 format!(
                     "Feature: {}{}:{}",
+                    // TODO: Use "{p}" syntax once MSRV bumps above 1.58.
                     err.path
                         .as_deref()
                         .and_then(Path::to_str)
@@ -253,7 +260,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     &name,
                     Duration::ZERO,
                     ty,
-                    &format!("{}", err),
+                    &err.to_string(),
                 ))
                 .build(),
         );
@@ -288,6 +295,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 self.suit
                     .as_mut()
                     .unwrap_or_else(|| {
+                        // TODO: Use "{WRAP_ADVICE}" syntax once MSRV bumps
+                        //       above 1.58.
                         panic!(
                             "No `TestSuit` for `Scenario` \"{}\"\n{}",
                             sc.name, WRAP_ADVICE,
@@ -322,6 +331,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 )
             })
             .unwrap_or_else(|| {
+                // TODO: Use "{WRAP_ADVICE}" syntax once MSRV bumps above 1.58.
                 panic!(
                     "No events for `Scenario` \"{}\"\n{}",
                     sc.name, WRAP_ADVICE,
@@ -333,6 +343,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             rule.map(|r| format!("Rule: {}: ", r.name))
                 .unwrap_or_default(),
             sc.name,
+            // TODO: Use "{path}" syntax once MSRV bumps above 1.58.
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -371,6 +382,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 .build()
             }
             Scenario::Finished => {
+                // TODO: Use "{WRAP_ADVICE}" syntax once MSRV bumps above 1.58.
                 panic!(
                     "Duplicated `Finished` event for `Scenario`: \"{}\"\n{}",
                     sc.name, WRAP_ADVICE,
@@ -393,6 +405,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             })
             .collect::<io::Result<String>>()
             .unwrap_or_else(|e| {
+                // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                 panic!("Failed to write with `writer::Basic`: {}", e)
             });
 
@@ -410,6 +423,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         sc: &gherkin::Scenario,
     ) -> Duration {
         let started_at = self.scenario_started_at.take().unwrap_or_else(|| {
+            // TODO: Use "{WRAP_ADVICE}" syntax once MSRV bumps above 1.58.
             panic!(
                 "No `Started` event for `Scenario` \"{}\"\n{}",
                 sc.name, WRAP_ADVICE,
@@ -417,6 +431,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         });
         Duration::try_from(ended.duration_since(started_at).unwrap_or_else(
             |e| {
+                // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                 panic!(
                     "Failed to compute duration between {:?} and {:?}: {}",
                     ended, started_at, e,
@@ -424,6 +439,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             },
         ))
         .unwrap_or_else(|e| {
+            // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
             panic!(
                 "Cannot covert `std::time::Duration` to `time::Duration`: {}",
                 e,

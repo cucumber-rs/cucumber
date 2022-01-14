@@ -111,7 +111,7 @@ impl FromStr for State {
         Ok(match s {
             "hungry" => Self::Hungry,
             "satiated" => Self::Satiated,
-            invalid => return Err(format!("Invalid `State`: {}", invalid)),
+            invalid => return Err(format!("Invalid `State`: {invalid}")),
         })
     }
 }
@@ -194,7 +194,7 @@ Alternatively, a [Cucumber Expression][expr] may be used to capture values. This
 #         Ok(match s {
 #             "hungry" => Self::Hungry,
 #             "satiated" => Self::Satiated,
-#             invalid => return Err(format!("Invalid `State`: {}", invalid)),
+#             invalid => return Err(format!("Invalid `State`: {invalid}")),
 #         })
 #     }
 # }
@@ -285,7 +285,7 @@ impl FromStr for State {
         Ok(match s {
             "hungry" => Self::Hungry,
             "satiated" => Self::Satiated,
-            invalid => return Err(format!("Invalid `State`: {}", invalid)),
+            invalid => return Err(format!("Invalid `State`: {invalid}")),
         })
     }
 }
