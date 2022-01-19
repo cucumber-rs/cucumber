@@ -70,7 +70,7 @@ where
             Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
         };
 
-        let map_failed_bg = |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: _| {
+        let map_failed_bg = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
             let ev = if (self.should_fail)(&f, r.as_deref(), &sc) {
                 Step::Failed(None, None, Panic(Arc::new("not allowed to skip")))
             } else {
@@ -79,7 +79,7 @@ where
 
             Cucumber::scenario(f, r, sc, Scenario::Background(st, ev))
         };
-        let map_failed_step = |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: _| {
+        let map_failed_step = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
             let ev = if (self.should_fail)(&f, r.as_deref(), &sc) {
                 Step::Failed(None, None, Panic(Arc::new("not allowed to skip")))
             } else {
@@ -95,12 +95,18 @@ where
                     f,
                     Feature::Rule(
                         r,
-                        Rule::Scenario(sc, Scenario::Background(st, Step::Skipped)),
+                        Rule::Scenario(
+                            sc,
+                            Scenario::Background(st, Step::Skipped),
+                        ),
                     ),
                 ) => map_failed_bg(f, Some(r), sc, st),
                 Cucumber::Feature(
                     f,
-                    Feature::Scenario(sc, Scenario::Background(st, Step::Skipped)),
+                    Feature::Scenario(
+                        sc,
+                        Scenario::Background(st, Step::Skipped),
+                    ),
                 ) => map_failed_bg(f, None, sc, st),
                 Cucumber::Feature(
                     f,
