@@ -7,12 +7,12 @@ on:
   pull_request:
     branches: ["main"]
 
-env:
-  RUST_BACKTRACE: 1
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
 
 jobs:
 
