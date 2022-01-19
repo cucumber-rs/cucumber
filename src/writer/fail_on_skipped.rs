@@ -70,13 +70,19 @@ where
             Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
         };
 
-        let map_failed = |f: Arc<_>, r: Option<Arc<_>>, sc: Arc<_>, st: _| {
-            let ev = if (self.should_fail)(&f, r.as_deref(), &sc) {
+        let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
+            if (self.should_fail)(f, r.as_deref(), sc) {
                 Step::Failed(None, None, Panic(Arc::new("not allowed to skip")))
             } else {
                 Step::Skipped
-            };
-
+            }
+        };
+        let map_failed_bg = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
+            let ev = map_failed(&f, &r, &sc);
+            Cucumber::scenario(f, r, sc, Scenario::Background(st, ev))
+        };
+        let map_failed_step = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
+            let ev = map_failed(&f, &r, &sc);
             Cucumber::scenario(f, r, sc, Scenario::Step(st, ev))
         };
 
@@ -86,13 +92,30 @@ where
                     f,
                     Feature::Rule(
                         r,
+                        Rule::Scenario(
+                            sc,
+                            Scenario::Background(st, Step::Skipped),
+                        ),
+                    ),
+                ) => map_failed_bg(f, Some(r), sc, st),
+                Cucumber::Feature(
+                    f,
+                    Feature::Scenario(
+                        sc,
+                        Scenario::Background(st, Step::Skipped),
+                    ),
+                ) => map_failed_bg(f, None, sc, st),
+                Cucumber::Feature(
+                    f,
+                    Feature::Rule(
+                        r,
                         Rule::Scenario(sc, Scenario::Step(st, Step::Skipped)),
                     ),
-                ) => map_failed(f, Some(r), sc, st),
+                ) => map_failed_step(f, Some(r), sc, st),
                 Cucumber::Feature(
                     f,
                     Feature::Scenario(sc, Scenario::Step(st, Step::Skipped)),
-                ) => map_failed(f, None, sc, st),
+                ) => map_failed_step(f, None, sc, st),
                 Cucumber::Started
                 | Cucumber::Feature(..)
                 | Cucumber::Finished => ev,

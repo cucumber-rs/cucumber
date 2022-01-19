@@ -6,6 +6,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.11.2] · 2022-01-??
+[0.11.2]: /../../tree/v0.11.2
+
+[Diff](/../../compare/v0.11.1...v0.11.2) | [Milestone](/../../milestone/7)
+
+### Fixed
+
+- Skipped `Background` steps not failing in `writer::FailOnSkipped`. ([#199], [#198])
+
+[#198]: /../../issues/198
+[#199]: /../../pull/199
+
+
+
+
 ## [0.11.1] · 2022-01-07
 [0.11.1]: /../../tree/v0.11.1
 

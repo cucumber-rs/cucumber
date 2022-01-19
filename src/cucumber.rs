@@ -438,8 +438,8 @@ where
     Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
     Cli: clap::Args,
 {
-    /// Consider [`Skipped`] steps as [`Failed`] if their [`Scenario`] isn't
-    /// marked with `@allow.skipped` tag.
+    /// Consider [`Skipped`] [`Background`] or regular [`Step`]s as [`Failed`]
+    /// if their [`Scenario`] isn't marked with `@allow.skipped` tag.
     ///
     /// It's useful option for ensuring that all the steps were covered.
     ///
@@ -502,9 +502,11 @@ where
     ///     Then the dog is not hungry
     /// ```
     ///
+    /// [`Background`]: gherkin::Background
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: crate::event::Step::Skipped
+    /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn fail_on_skipped(
         self,
@@ -519,8 +521,8 @@ where
         }
     }
 
-    /// Consider [`Skipped`] steps as [`Failed`] if the given `filter` predicate
-    /// returns `true`.
+    /// Consider [`Skipped`] [`Background`] or regular [`Step`]s as [`Failed`]
+    /// if the given `filter` predicate returns `true`.
     ///
     /// # Example
     ///
@@ -594,9 +596,11 @@ where
     ///     Then the dog is not hungry
     /// ```
     ///
+    /// [`Background`]: gherkin::Background
     /// [`Failed`]: crate::event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: crate::event::Step::Skipped
+    /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn fail_on_skipped_with<Filter>(
         self,
