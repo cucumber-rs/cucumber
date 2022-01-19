@@ -93,6 +93,10 @@ where
                     f,
                     Feature::Scenario(sc, Scenario::Step(st, Step::Skipped)),
                 ) => map_failed(f, None, sc, st),
+                Cucumber::Feature(
+                    f,
+                    Feature::Scenario(sc, Scenario::Background(st, Step::Skipped)),
+                ) => map_failed(f, None, sc, st),
                 Cucumber::Started
                 | Cucumber::Feature(..)
                 | Cucumber::Finished => ev,
