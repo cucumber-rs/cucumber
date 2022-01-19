@@ -236,7 +236,7 @@ impl FromStr for State {
         Ok(match s {
             &quot;hungry&quot; =&gt; Self::Hungry,
             &quot;satiated&quot; =&gt; Self::Satiated,
-            invalid =&gt; return Err(format!(&quot;Invalid `State`: {}&quot;, invalid)),
+            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
         })
     }
 }
@@ -313,7 +313,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">        Ok(match s {
 </span><span class="boring">            &quot;hungry&quot; =&gt; Self::Hungry,
 </span><span class="boring">            &quot;satiated&quot; =&gt; Self::Satiated,
-</span><span class="boring">            invalid =&gt; return Err(format!(&quot;Invalid `State`: {}&quot;, invalid)),
+</span><span class="boring">            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
 </span><span class="boring">        })
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -398,7 +398,7 @@ impl FromStr for State {
         Ok(match s {
             &quot;hungry&quot; =&gt; Self::Hungry,
             &quot;satiated&quot; =&gt; Self::Satiated,
-            invalid =&gt; return Err(format!(&quot;Invalid `State`: {}&quot;, invalid)),
+            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
         })
     }
 }
