@@ -13,9 +13,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Skipped `Background` steps don't fail with `FailOnSkipped` writer. ([#199], [#198])
+- Skipped `Background` steps not failing in `writer::FailOnSkipped`. ([#199], [#198])
 
-[#198]: /../../pull/198
+[#198]: /../../issues/198
 [#199]: /../../pull/199
 
 
