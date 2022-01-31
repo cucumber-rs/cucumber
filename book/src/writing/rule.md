@@ -83,7 +83,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("tests/features/book/writing/rule.feature").await;
+#     AnimalWorld::run("/tests/features/book/writing/rule.feature").await;
 # }
 ```
 ![record](../rec/writing_rule.gif)

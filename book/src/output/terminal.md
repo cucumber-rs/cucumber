@@ -69,7 +69,7 @@ async fn feed_cat(_: &mut AnimalWorld) {}
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::cucumber()
-#         .run_and_exit("tests/features/book/output/terminal_verbose.feature")
+#         .run_and_exit("/tests/features/book/output/terminal_verbose.feature")
 #         .await;
 # }
 ```
@@ -155,7 +155,7 @@ Feature: Animal feature
 #[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit("tests/features/book/output/terminal_verbose.feature")
+        .run_and_exit("/tests/features/book/output/terminal_verbose.feature")
         .await;
 }
 ```
@@ -229,7 +229,7 @@ Coloring may be disabled by specifying `--color` CLI option:
 #[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit("tests/features/book/output/terminal.feature")
+        .run_and_exit("/tests/features/book/output/terminal.feature")
         .await;
 }
 ```
@@ -308,7 +308,7 @@ async fn feed_cat(world: &mut AnimalWorld) {
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::cucumber()
-#         .run_and_exit("tests/features/book/output/terminal.feature")
+#         .run_and_exit("/tests/features/book/output/terminal.feature")
 #         .await;
 # }
 ```
@@ -387,7 +387,7 @@ async fn main() {
                 .summarized()
                 .assert_normalized(),
         )
-        .run_and_exit("tests/features/book/output/terminal.feature")
+        .run_and_exit("/tests/features/book/output/terminal.feature")
         .await;
 }
 ```
@@ -465,7 +465,7 @@ As a number of [scenario]s grows, it may become quite difficult to find failed/s
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_failed()
-        .run_and_exit("tests/features/book/output/terminal_repeat_failed.feature")
+        .run_and_exit("/tests/features/book/output/terminal_repeat_failed.feature")
         .await;
 }
 ```
@@ -534,7 +534,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_skipped()
-        .run_and_exit("tests/features/book/output/terminal_repeat_skipped.feature")
+        .run_and_exit("/tests/features/book/output/terminal_repeat_skipped.feature")
         .await;
 }
 ```

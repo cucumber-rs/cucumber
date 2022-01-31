@@ -259,7 +259,7 @@ async fn main() {
     AnimalWorld::cucumber::<&str>() // aiding type inference for `CustomParser`
         .with_parser(CustomParser)
         .with_runner(CustomRunner)
-        .run_and_exit("tests/features/book")
+        .run_and_exit("/tests/features/book")
         .await;
 }
 ```

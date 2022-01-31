@@ -291,7 +291,7 @@ async fn main() {
         .with_parser(CustomParser)
         .with_runner(CustomRunner)
         .with_writer(CustomWriter.assert_normalized()) // OK because of `CustomRunner`
-        .run("tests/features/book")
+        .run("/tests/features/book")
         .await;
 }
 ```
@@ -469,7 +469,7 @@ async fn main() {
     AnimalWorld::cucumber::<&str>() // aiding type inference for `CustomParser`
         .with_parser(CustomParser)
         .with_writer(CustomWriter.normalized()) // wrapping into `writer::Normalize`,
-        .run("tests/features/book")             // so it works OK with the default
+        .run("/tests/features/book")            // so it works OK with the default
         .await;                                 // concurrent `Runner`
 }
 ```

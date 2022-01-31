@@ -86,7 +86,7 @@ async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("tests/features/book/writing/scenario_outline.feature").await;
+#     AnimalWorld::run("/tests/features/book/writing/scenario_outline.feature").await;
 # }
 ```
 

@@ -98,7 +98,7 @@ impl World for AnimalWorld {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("tests/features/book/writing/data_tables.feature").await;
+#     AnimalWorld::run("/tests/features/book/writing/data_tables.feature").await;
 # }
 ```
 

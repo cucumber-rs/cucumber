@@ -82,7 +82,7 @@ fn main() {
     // You may choose any executor you like (`tokio`, `async-std`, etc.).
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
-    futures::executor::block_on(AnimalWorld::run("tests/features/book"));
+    futures::executor::block_on(AnimalWorld::run("/tests/features/book"));
 }
 ```
 
@@ -149,7 +149,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("tests/features/book/quickstart/simple.feature"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -208,7 +208,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("tests/features/book/quickstart/simple.feature"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -267,7 +267,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("tests/features/book/quickstart/simple.feature"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -345,7 +345,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("tests/features/book/quickstart/concurrent.feature"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/concurrent.feature"));
 # }
 ```
 
@@ -410,7 +410,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 # }
 #
 # fn main() {
-#     futures::executor::block_on(AnimalWorld::run("tests/features/book/quickstart/simple.feature"));
+#     futures::executor::block_on(AnimalWorld::run("/tests/features/book/quickstart/simple.feature"));
 # }
 ```
 
@@ -497,7 +497,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("tests/features/book/quickstart").await;
+    AnimalWorld::run("/tests/features/book/quickstart").await;
 }
 ```
 ![record](rec/quickstart_concurrent_async.gif)
