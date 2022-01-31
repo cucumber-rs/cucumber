@@ -14,10 +14,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - `parser::Basic` skipping files named `.feature`. ([#201])
-- Book examples failing on Windows. ([#201], [#200])
+- Book examples failing on Windows. ([#202], [#200])
 
-[#201]: /../../issues/201
 [#200]: /../../issues/200
+[#201]: /../../issues/201
+[#202]: /../../issues/202
 
 
 
