@@ -160,8 +160,8 @@ jobs:
             || startsWith(github.ref, 'refs/tags/v')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
+      fail-fast: false
       matrix:
-        fail-fast: false
         os:
           - ubuntu
           - macOS
