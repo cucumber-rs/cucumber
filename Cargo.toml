@@ -50,7 +50,7 @@ itertools = "0.10"
 linked-hash-map = "0.5.3"
 once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5"
-sealed = "0.3"
+sealed = "0.4"
 
 # "macros" feature dependencies.
 cucumber-codegen = { version = "0.11", path = "./codegen", optional = true }
