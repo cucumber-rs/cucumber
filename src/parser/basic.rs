@@ -60,12 +60,6 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             walker
                 .filter_map(Result::ok)
                 .sorted_by(|l, r| Ord::cmp(l.path(), r.path()))
-                .filter(|file| {
-                    file.path()
-                        .extension()
-                        .map(|ext| ext == "feature")
-                        .unwrap_or_default()
-                })
                 .map(|file| {
                     let env = self
                         .language

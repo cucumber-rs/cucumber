@@ -165,6 +165,11 @@ mod spec {
             .map(|entry| entry.file_name().to_str().unwrap().to_owned())
             .collect::<Vec<String>>();
 
+        assert_eq!(
+            files.len(),
+            fs::read_dir("tests/features/output").unwrap().count() / 2,
+        );
+
         for file in files {
             // TODO: Use "{file}" syntax once MSRV bumps above 1.58.
             let out = fs::read_to_string(format!(

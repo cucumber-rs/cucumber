@@ -6,6 +6,19 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.11.3] · 2022-01-31
+[0.11.3]: /../../tree/v0.11.3
+
+[Diff](/../../compare/v0.11.2...v0.11.3) | [Milestone](/../../milestone/8)
+
+### Fixed
+
+- Skipped files named `.feature`. ([#201])
+
+[#201]: /../../issues/198
+
+
+
 ## [0.11.2] · 2022-01-19
 [0.11.2]: /../../tree/v0.11.2
 

@@ -193,7 +193,7 @@ Feature: Animal feature
 async fn main() {
     AnimalWorld::cucumber()
         .fail_on_skipped()
-        .run_and_exit("/tests/features/book/writing/tags_skip_failed.feature")
+        .run_and_exit("tests/features/book/writing/tags_skip_failed.feature")
         .await;
 }
 ```
