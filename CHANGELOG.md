@@ -16,7 +16,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Book examples failing on Windows. ([#202], [#200])
 
 [#200]: /../../issues/200
-[#202]: /../../issues/202
+[#202]: /../../pull/202
 
 
 
@@ -30,7 +30,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `parser::Basic` skipping files named `.feature`. ([#201])
 
-[#201]: /../../issues/201
+[#201]: /../../pull/201
 
 
 
