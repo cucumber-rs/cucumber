@@ -192,7 +192,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;/tests/features/book/output/terminal_verbose.feature&quot;)
+</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
 </span><span class="boring">        .await;
 </span><span class="boring">}
 </span></code></pre></pre>
@@ -272,7 +272,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;/tests/features/book/output/terminal_verbose.feature&quot;)
+        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
         .await;
 }
 </code></pre></pre>
@@ -340,7 +340,7 @@ async fn main() {
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;/tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
 }
 </code></pre></pre>
@@ -414,7 +414,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;/tests/features/book/output/terminal.feature&quot;)
+</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
 </span><span class="boring">        .await;
 </span><span class="boring">}
 </span></code></pre></pre>
@@ -492,7 +492,7 @@ async fn main() {
                 .summarized()
                 .assert_normalized(),
         )
-        .run_and_exit(&quot;/tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
 }
 </code></pre></pre>
@@ -564,7 +564,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_failed()
-        .run_and_exit(&quot;/tests/features/book/output/terminal_repeat_failed.feature&quot;)
+        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_failed.feature&quot;)
         .await;
 }
 </code></pre></pre>
@@ -631,7 +631,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_skipped()
-        .run_and_exit(&quot;/tests/features/book/output/terminal_repeat_skipped.feature&quot;)
+        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_skipped.feature&quot;)
         .await;
 }
 </code></pre></pre>
