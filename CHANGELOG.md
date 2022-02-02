@@ -6,6 +6,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.11.4] · 2022-02-??
+[0.11.4]: /../../tree/v0.11.4
+
+[Diff](/../../compare/v0.11.3...v0.11.4) | [Milestone](/../../milestone/9)
+
+### Fixed
+
+- Book examples failing on Windows. ([#202], [#200])
+
+[#202]: /../../issues/202
+[#200]: /../../issues/200
+
+
+
+
 ## [0.11.3] · 2022-01-31
 [0.11.3]: /../../tree/v0.11.3
 
@@ -14,11 +29,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - `parser::Basic` skipping files named `.feature`. ([#201])
-- Book examples failing on Windows. ([#202], [#200])
 
-[#200]: /../../issues/200
 [#201]: /../../issues/201
-[#202]: /../../issues/202
 
 
 

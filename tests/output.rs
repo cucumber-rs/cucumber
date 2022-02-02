@@ -168,6 +168,7 @@ mod spec {
         assert_eq!(
             files.len(),
             fs::read_dir("tests/features/output").unwrap().count() / 2,
+            "Not all `.feature` files were collected",
         );
 
         for file in files {
