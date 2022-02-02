@@ -66,7 +66,7 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::cucumber()
-#         .run_and_exit("/tests/features/book/writing/asserting.feature")
+#         .run_and_exit("tests/features/book/writing/asserting.feature")
 #         .await;
 # }
 ```
@@ -131,7 +131,7 @@ fn cat_is_fed(world: &mut AnimalWorld) -> Result<(), &'static str> {
 # #[tokio::main]
 # async fn main() {
 #     AnimalWorld::cucumber()
-#         .run_and_exit("/tests/features/book/writing/asserting.feature")
+#         .run_and_exit("tests/features/book/writing/asserting.feature")
 #         .await;
 # }
 ```

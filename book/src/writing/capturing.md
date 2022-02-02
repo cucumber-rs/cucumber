@@ -65,7 +65,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/capturing.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 # }
 ```
 > __NOTE__: We surround the [regex] with `^..$` to ensure an __exact__ match. This is much more useful when adding more and more [step]s, so they won't accidentally interfere with each other.
@@ -153,7 +153,7 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/capturing.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 # }
 ```
 ![record](../rec/writing_capturing_both.gif)
@@ -236,7 +236,7 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/capturing.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 # }
 ```
 
@@ -327,7 +327,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/capturing.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 # }
 ```
 

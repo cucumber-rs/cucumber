@@ -71,7 +71,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("/tests/features/book/writing/languages.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/languages.feature").await;
 # }
 ```
 ![record](../rec/writing_languages.gif)

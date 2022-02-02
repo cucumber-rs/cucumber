@@ -129,8 +129,8 @@ impl<I> cucumber::Parser<I> for CustomParser {
 async fn main() {
     AnimalWorld::cucumber::<&str>() // aiding type inference
         .with_parser(CustomParser)
-        .run_and_exit("/tests/features/book") // path doesn't actually matter 
-        .await;                               // here due to our implementation
+        .run_and_exit("tests/features/book") // path doesn't actually matter 
+        .await;                              // here due to our implementation
 }
 ```
 ![record](../rec/architecture_parser.gif)

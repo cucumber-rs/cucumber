@@ -139,7 +139,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .before(move |_, _, _, _| sleep(pre_pause).boxed_local())
         .with_cli(opts)
-        .run_and_exit("/tests/features/book/cli.feature")
+        .run_and_exit("tests/features/book/cli.feature")
         .await;
 }
 ```
