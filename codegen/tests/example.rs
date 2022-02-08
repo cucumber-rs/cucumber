@@ -82,9 +82,9 @@ fn test_return_result_read(
     what: String,
 ) -> io::Result<()> {
     let mut path = w.dir.path().to_path_buf();
-    path.push(filename.trim_matches('\''));
+    path.push(filename);
 
-    assert_eq!(what.trim_matches('"'), fs::read_to_string(path)?);
+    assert_eq!(what, fs::read_to_string(path)?);
 
     Ok(())
 }

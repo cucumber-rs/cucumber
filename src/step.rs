@@ -168,12 +168,14 @@ impl<World> Collection<World> {
             .iter()
             .filter_map(|((re, loc), step_fn)| {
                 let mut captures = re.capture_locations();
+                let names = re.capture_names();
                 re.captures_read(&mut captures, &step.value)
-                    .map(|m| (re, loc, m, captures, step_fn))
+                    .map(|m| (re, loc, m, captures, names, step_fn))
             })
             .collect::<Vec<_>>();
 
-        let (_, _, whole_match, captures, step_fn) = match captures.len() {
+        let (_, _, whole_match, captures, names, step_fn) = match captures.len()
+        {
             0 => return Ok(None),
             // Instead of `.unwrap()` to avoid documenting `# Panics` section.
             1 => captures.pop().unwrap_or_else(|| unreachable!()),
@@ -189,13 +191,16 @@ impl<World> Collection<World> {
 
         // All indices here are obtained from the source string.
         #[allow(clippy::string_slice)]
-        let matches = iter::once(whole_match.as_str().to_owned())
-            .chain((1..captures.len()).map(|group_id| {
-                captures
-                    .get(group_id)
-                    .map_or("", |(s, e)| &step.value[s..e])
-                    .to_owned()
-            }))
+        let matches = names
+            .map(|opt| opt.map(str::to_owned))
+            .zip(iter::once(whole_match.as_str().to_owned()).chain(
+                (1..captures.len()).map(|group_id| {
+                    captures
+                        .get(group_id)
+                        .map_or("", |(s, e)| &step.value[s..e])
+                        .to_owned()
+                }),
+            ))
             .collect();
 
         Ok(Some((
@@ -209,6 +214,9 @@ impl<World> Collection<World> {
     }
 }
 
+/// Name of the [`regex`] capture group.
+pub type CaptureName = Option<String>;
+
 /// Context for a [`Step`] function execution.
 #[derive(Debug)]
 pub struct Context {
@@ -220,7 +228,7 @@ pub struct Context {
     /// [`Regex`] matches of a [`Step::value`].
     ///
     /// [`Step::value`]: gherkin::Step::value
-    pub matches: Vec<String>,
+    pub matches: Vec<(CaptureName, String)>,
 }
 
 /// Error of a [`gherkin::Step`] matching multiple [`Step`] [`Regex`]es inside a

@@ -218,7 +218,28 @@ impl Step {
                         .iter()
                         .skip(1)
                         .enumerate()
-                        .map(|(i, s)| {
+                        .map(|(i, (cap_name, s))| {
+                            // Special handling of `cucumber-expressions`
+                            // `string` parameter: removes leading and trailing
+                            // quotes.
+                            // See https://bit.ly/35XkDsp for more info.
+                            let is_string_group = cap_name
+                                .as_ref()
+                                .map(|n| n.starts_with("string_"))
+                                .unwrap_or_default();
+
+                            let s = if is_string_group && s.starts_with("\"") {
+                                s.strip_prefix("\"")
+                                    .and_then(|s| s.strip_suffix("\""))
+                                    .unwrap_or(s)
+                            } else if is_string_group && s.starts_with("'") {
+                                s.strip_prefix("'")
+                                    .and_then(|s| s.strip_suffix("'"))
+                                    .unwrap_or(s)
+                            } else {
+                                s
+                            };
+
                             s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
                                 "Failed to parse element at {} '{}': {}",
                                 i, s, e,
@@ -319,11 +340,32 @@ impl Step {
             );
 
             quote! {
-                let #ident = __cucumber_iter
-                    .next()
-                    .expect(#not_found_err)
-                    .parse::<#ty>()
-                    .expect(#parsing_err);
+                let #ident = {
+                    // Special handling of `cucumber-expressions` `string`
+                    // parameter: removes leading and trailing quotes.
+                    // See https://bit.ly/35XkDsp for more info.
+                    let (cap_name, s) = __cucumber_iter
+                        .next()
+                        .expect(#not_found_err);
+
+                    let is_string_group = cap_name
+                        .as_ref()
+                        .map(|n| n.starts_with("string_"))
+                        .unwrap_or_default();
+
+                    if is_string_group && s.starts_with("\"") {
+                        s.strip_prefix("\"")
+                            .and_then(|s| s.strip_suffix("\""))
+                            .unwrap_or(s)
+                    } else if is_string_group && s.starts_with("'") {
+                        s.strip_prefix("'")
+                            .and_then(|s| s.strip_suffix("'"))
+                            .unwrap_or(s)
+                    } else {
+                        s
+                    }
+                };
+                let #ident = #ident.parse::<#ty>().expect(#parsing_err);
             }
         };
 
@@ -533,7 +575,7 @@ impl<'p> Parameters<'p> {
         self.0
             .iter()
             .map(|par| {
-                let name = par.param.0.fragment();
+                let name = par.param.input.fragment();
                 let ty = &par.ty;
 
                 if DEFAULT_PARAMETERS.contains(name) {
@@ -619,7 +661,7 @@ impl<'p> Parameters<'p> {
             .0
             .iter()
             .filter_map(|par| {
-                let name = par.param.0.fragment();
+                let name = par.param.input.fragment();
                 (!DEFAULT_PARAMETERS.contains(name)).then(|| (*name, &par.ty))
             })
             .unzip();
