@@ -14,11 +14,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - Book examples failing on Windows. ([#202], [#200])
-- Remove leading and trailing quotes for `cucumber-expressions` `string` parameter ([#203], [cucumber-rs/cucumber-expressions#7])
+- Remove leading and trailing quotes for `cucumber-expressions` `string` parameter ([#204], [cucumber-rs/cucumber-expressions#7])
 
 [#200]: /../../issues/200
 [#202]: /../../pull/202
-[#203]: /../../pull/203
+[#204]: /../../pull/204
 [cucumber-rs/cucumber-expressions#7]: https://github.com/cucumber-rs/cucumber-expressions/issues/7
 
 
