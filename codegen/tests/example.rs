@@ -89,6 +89,19 @@ fn test_return_result_read(
     Ok(())
 }
 
+#[then(expr = "{string} contains {string}")]
+fn test_return_result_read_slice(
+    w: &mut MyWorld,
+    inputs: &[String],
+) -> io::Result<()> {
+    let mut path = w.dir.path().to_path_buf();
+    path.push(inputs[0].clone());
+
+    assert_eq!(inputs[1], fs::read_to_string(path)?);
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let res = MyWorld::cucumber()

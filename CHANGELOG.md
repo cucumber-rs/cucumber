@@ -11,10 +11,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [Diff](/../../compare/v0.11.3...v0.11.4) | [Milestone](/../../milestone/9)
 
+### Added
+
+- Support for capturing groups in `Parameter` regex ([#204], [cucumber-rs/cucumber-expressions#7])
+
 ### Fixed
 
 - Book examples failing on Windows. ([#202], [#200])
-- Remove leading and trailing quotes for `cucumber-expressions` `string` parameter ([#204], [cucumber-rs/cucumber-expressions#7])
 
 [#200]: /../../issues/200
 [#202]: /../../pull/202
