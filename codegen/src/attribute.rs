@@ -213,13 +213,14 @@ impl Step {
         if is_regex_or_expr {
             if let Some(elem_ty) = find_first_slice(&func.sig) {
                 let addon_parsing = Some(quote! {
+                    let mut __cucumber_matches = ::std::vec::Vec::with_capacity(
+                        __cucumber_ctx.matches.len().saturating_sub(1),
+                    );
                     let mut __cucumber_iter = __cucumber_ctx
                         .matches
                         .iter()
                         .skip(1)
                         .enumerate();
-
-                    let mut __cucumber_matches = Vec::new();
                     while let Some((i, (cap_name, s))) =
                         __cucumber_iter.next()
                     {
@@ -249,7 +250,7 @@ impl Step {
                             })
                             .count();
 
-                        let s = std::iter::once(s.as_str())
+                        let s = ::std::iter::once(s.as_str())
                             .chain(
                                 __cucumber_iter
                                     .by_ref()
@@ -259,7 +260,8 @@ impl Step {
                             .fold(None, |acc, s| {
                                 acc.or_else(|| (!s.is_empty()).then(|| s))
                             })
-                            .unwrap_or("");
+                            .unwrap_or_default();
+
                         __cucumber_matches.push(
                             s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
                                 "Failed to parse element at {} '{}': {}",
@@ -390,18 +392,18 @@ impl Step {
                         })
                         .count();
 
-                    std::iter::once(s.as_str())
+                    ::std::iter::once(s.as_str())
                         .chain(
                             __cucumber_iter
                                 .by_ref()
                                 .take(to_take)
-                                .map(|(_, s)| s.as_str())
+                                .map(|(_, s)| s.as_str()),
                         )
                         .fold(
                             None,
                             |acc, s| acc.or_else(|| (!s.is_empty()).then(|| s)),
                         )
-                        .unwrap_or("")
+                        .unwrap_or_default()
                 };
                 let #ident = #ident.parse::<#ty>().expect(#parsing_err);
             }

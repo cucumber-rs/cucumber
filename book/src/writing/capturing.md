@@ -249,7 +249,7 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 
 ### Custom [parameters]
 
-Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse  [custom parameters] in addition to [default ones][parameters].
+Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse [custom parameters] in addition to [default ones][parameters].
 
 ```rust
 # use std::{convert::Infallible, str::FromStr};
@@ -335,8 +335,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 
 ![record](../rec/writing_capturing_both.gif)
 
-
-In case [custom parameters] regex consists of several capture groups, only first non-empty match will be returned. 
+> __TIP__: In case [regex] of a [custom parameter][custom parameters] consists of several capturing groups, only the first non-empty match will be returned. 
 
 ```rust
 # use std::{convert::Infallible, str::FromStr};
@@ -347,29 +346,26 @@ use cucumber::Parameter;
 
 # #[derive(Debug)]
 # struct Cat {
-#     pub hungry: State,
+#     pub hungry: Hungriness,
 # }
 #
 # impl Cat {
 #     fn feed(&mut self) {
-#         self.hungry = State::Satiated;
+#         self.hungry = Hungriness::Satiated;
 #     }
 # }
 #
-#[derive(Debug, Parameter)]
-#[param(
-    name = "hungriness", 
-    regex = "(hungry)|(satiated)|'([^']*)'",
-//  Captures value without quotes ^^^^^^^
-)]
-enum State {
+#[derive(Debug, Eq, Parameter, PartialEq)]
+#[param(regex = "(hungry)|(satiated)|'([^']*)'")]
+// We want to capture without quotes  ^^^^^^^
+enum Hungriness {
     Hungry,
     Satiated,
     Other(String),
 }
 
 // NOTE: `Parameter` requires `FromStr` being implemented.
-impl FromStr for State {
+impl FromStr for Hungriness {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -393,20 +389,20 @@ impl FromStr for State {
 #     async fn new() -> Result<Self, Infallible> {
 #         Ok(Self {
 #             cat: Cat {
-#                 hungry: State::Satiated,
+#                 hungry: Hungriness::Satiated,
 #             },
 #         })
 #     }
 # }
 
 #[given(expr = "a {hungriness} cat")]
-fn hungry_cat(world: &mut AnimalWorld, state: State) {
-    world.cat.hungry = state;
+fn hungry_cat(world: &mut AnimalWorld, hungry: Hungriness) {
+    world.cat.hungry = hungry;
 }
 
 #[then(expr = "the cat is {string}")]
 fn cat_is(world: &mut AnimalWorld, other: String) {
-    assert!(matches!(&world.cat.hungry, State::Other(other)));
+    assert_eq!(world.cat.hungry, Hungriness::Other(other));
 }
 #
 # #[when(expr = "I feed the cat {int} time(s)")]
@@ -418,16 +414,16 @@ fn cat_is(world: &mut AnimalWorld, other: String) {
 # 
 # #[then("the cat is not hungry")]
 # fn cat_is_fed(world: &mut AnimalWorld) {
-#     assert!(matches!(world.cat.hungry, State::Satiated));
+#     assert_eq!(world.cat.hungry, Hungriness::Satiated);
 # }
 #
 # #[tokio::main]
 # async fn main() {
-#     AnimalWorld::run("tests/features/book/writing/capturing_multiple_capture_groups.feature").await;
+#     AnimalWorld::run("tests/features/book/writing/capturing_multiple_groups.feature").await;
 # }
 ```
 
-![record](../rec/writing_capturing_multiple_capture_groups.gif)
+![record](../rec/writing_capturing_multiple_groups.gif)
 
 
 

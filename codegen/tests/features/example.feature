@@ -19,7 +19,7 @@ Feature: Example feature
     When I write "abc" to 'myfile.txt'
     Then the file 'myfile.txt' should contain "abc"
 
-  Scenario: Steps to test slices
+  Scenario: Steps capturing into slices
     When I write "abc" to 'myfile.txt'
     Then "myfile.txt" contains 'abc'
 

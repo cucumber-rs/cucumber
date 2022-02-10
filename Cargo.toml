@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.11.3"
+version = "0.12.0-dev"
 edition = "2021"
 rust-version = "1.57"
 description = """\
@@ -53,7 +53,7 @@ regex = "1.5"
 sealed = "0.4"
 
 # "macros" feature dependencies.
-cucumber-codegen = { version = "0.11", path = "./codegen", optional = true }
+cucumber-codegen = { version = "0.12.0-dev", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.2", features = ["into-regex"], optional = true }
 inventory = { version = "0.2", optional = true }
 
@@ -83,6 +83,10 @@ harness = false
 
 [[test]]
 name = "wait"
+harness = false
+
+[[test]]
+name = "example"
 harness = false
 
 [workspace]

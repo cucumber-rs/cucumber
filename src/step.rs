@@ -214,7 +214,7 @@ impl<World> Collection<World> {
     }
 }
 
-/// Name of the [`regex`] capture group.
+/// Name of a capturing group inside a [`regex`].
 pub type CaptureName = Option<String>;
 
 /// Context for a [`Step`] function execution.
