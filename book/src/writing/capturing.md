@@ -406,7 +406,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 
 #[then(expr = "the cat is {string}")]
 fn cat_is(world: &mut AnimalWorld, other: String) {
-    assert!(matches!(world.cat.hungry, State::Other(other)));
+    assert!(matches!(&world.cat.hungry, State::Other(other)));
 }
 #
 # #[when(expr = "I feed the cat {int} time(s)")]
