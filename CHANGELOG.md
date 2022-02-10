@@ -6,22 +6,23 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.12.0] · 2022-02-??
+## [0.12.0] · 2022-02-10
 [0.12.0]: /../../tree/v0.12.0
 
 [Diff](/../../compare/v0.11.3...v0.12.0) | [Milestone](/../../milestone/9)
 
 ### BC Breaks
 
-- `step::Context::matches` now has regex group name in addition to captured value. ([#204])
+- `step::Context::matches` now containes regex capturing group names in addition to captured values. ([#204])
 
 ### Added
 
-- Support for capturing groups in `Parameter` regex. ([#204], [cucumber-rs/cucumber-expressions#7])
+- Support for multiple capturing groups in `Parameter` regex (previously was forbidden). ([#204])
 
 ### Fixed
 
 - Book examples failing on Windows. ([#202], [#200])
+- `{string}` parameter in [Cucumber Expressions] returning its enclosing quotes. ([cucumber-rs/cucumber-expressions#7])
 
 [#200]: /../../issues/200
 [#202]: /../../pull/202
