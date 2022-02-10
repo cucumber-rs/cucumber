@@ -195,7 +195,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <blockquote>
@@ -278,7 +278,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <p><img src="../rec/writing_capturing_both.gif" alt="record" /></p>
@@ -355,7 +355,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <p><a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> are less powerful in terms of parsing and capturing values, but are much more readable than <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, so it's worth to prefer using them for simple matching.</p>
@@ -364,7 +364,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 <p><strong>NOTE</strong>: Captured <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a> are <strong>bold</strong> to indicate which part of a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> is actually captured.</p>
 </blockquote>
 <h3 id="custom-parameters"><a class="header" href="#custom-parameters">Custom <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a></a></h3>
-<p>Another useful advantage of using <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> is an ability to declare and reuse  <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> in addition to <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">default ones</a>.</p>
+<p>Another useful advantage of using <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> is an ability to declare and reuse <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> in addition to <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">default ones</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, str::FromStr};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
@@ -440,13 +440,101 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;/tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
 </span><span class="boring">}
 </span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: Using <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> allows declaring and reusing complicated and precise matches without a need to repeat them in different <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching functions.</p>
 </blockquote>
 <p><img src="../rec/writing_capturing_both.gif" alt="record" /></p>
+<blockquote>
+<p><strong>TIP</strong>: In case <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> of a <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameter</a> consists of several capturing groups, only the first non-empty match will be returned. </p>
+</blockquote>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, str::FromStr};
+</span><span class="boring">
+</span><span class="boring">use async_trait::async_trait;
+</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span>use cucumber::Parameter;
+
+<span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Cat {
+</span><span class="boring">    pub hungry: Hungriness,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Cat {
+</span><span class="boring">    fn feed(&amp;mut self) {
+</span><span class="boring">        self.hungry = Hungriness::Satiated;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span>#[derive(Debug, Eq, Parameter, PartialEq)]
+#[param(regex = &quot;(hungry)|(satiated)|'([^']*)'&quot;)]
+// We want to capture without quotes  ^^^^^^^
+enum Hungriness {
+    Hungry,
+    Satiated,
+    Other(String),
+}
+
+// NOTE: `Parameter` requires `FromStr` being implemented.
+impl FromStr for Hungriness {
+    type Err = String;
+
+    fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt; {
+        Ok(match s {
+            &quot;hungry&quot; =&gt; Self::Hungry,
+            &quot;satiated&quot; =&gt; Self::Satiated,
+            other =&gt; Self::Other(other.to_owned()),
+        })
+    }
+}
+<span class="boring">
+</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">pub struct AnimalWorld {
+</span><span class="boring">    cat: Cat,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[async_trait(?Send)]
+</span><span class="boring">impl World for AnimalWorld {
+</span><span class="boring">    type Error = Infallible;
+</span><span class="boring">
+</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
+</span><span class="boring">        Ok(Self {
+</span><span class="boring">            cat: Cat {
+</span><span class="boring">                hungry: Hungriness::Satiated,
+</span><span class="boring">            },
+</span><span class="boring">        })
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
+#[given(expr = &quot;a {hungriness} cat&quot;)]
+fn hungry_cat(world: &amp;mut AnimalWorld, hungry: Hungriness) {
+    world.cat.hungry = hungry;
+}
+
+#[then(expr = &quot;the cat is {string}&quot;)]
+fn cat_is(world: &amp;mut AnimalWorld, other: String) {
+    assert_eq!(world.cat.hungry, Hungriness::Other(other));
+}
+<span class="boring">
+</span><span class="boring">#[when(expr = &quot;I feed the cat {int} time(s)&quot;)]
+</span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
+</span><span class="boring">    for _ in 0..times {
+</span><span class="boring">        world.cat.feed();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
+</span><span class="boring">    assert_eq!(world.cat.hungry, Hungriness::Satiated);
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[tokio::main]
+</span><span class="boring">async fn main() {
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing_multiple_groups.feature&quot;).await;
+</span><span class="boring">}
+</span></code></pre></pre>
+<p><img src="../rec/writing_capturing_multiple_groups.gif" alt="record" /></p>
 
                     </main>
 
