@@ -82,9 +82,22 @@ fn test_return_result_read(
     what: String,
 ) -> io::Result<()> {
     let mut path = w.dir.path().to_path_buf();
-    path.push(filename.trim_matches('\''));
+    path.push(filename);
 
-    assert_eq!(what.trim_matches('"'), fs::read_to_string(path)?);
+    assert_eq!(what, fs::read_to_string(path)?);
+
+    Ok(())
+}
+
+#[then(expr = "{string} contains {string}")]
+fn test_return_result_read_slice(
+    w: &mut MyWorld,
+    inputs: &[String],
+) -> io::Result<()> {
+    let mut path = w.dir.path().to_path_buf();
+    path.push(inputs[0].clone());
+
+    assert_eq!(inputs[1], fs::read_to_string(path)?);
 
     Ok(())
 }

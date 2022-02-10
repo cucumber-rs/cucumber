@@ -309,7 +309,9 @@ steps!(given, when, then);
 ///
 /// - `#[param(regex = "regex")]`
 ///
-///   [`Regex`] to match this parameter. Shouldn't contain any capturing groups.
+///   [`Regex`] to match this parameter. Usually shouldn't contain any capturing
+///   groups, but in case it requires to do so, only the first non-empty group
+///   will be matched as the result.
 ///
 /// - `#[param(name = "name")]` (optional)
 ///
