@@ -44,7 +44,7 @@ console = "0.15"
 derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
 either = "1.6"
 futures = "0.3.17"
-gherkin = "0.11.1"
+gherkin = { git = "https://github.com/cucumber-rs/gherkin", branch = "fix-line-number" }
 globwalk = "0.8.1"
 itertools = "0.10"
 linked-hash-map = "0.5.3"

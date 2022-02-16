@@ -170,7 +170,7 @@ fn expand_scenario(
             // This is done to differentiate `Hash`es of
             // scenario outlines with the same examples.
             expanded.position = position;
-            expanded.position.line += id + 1;
+            expanded.position.line += id + 2;
 
             expanded.tags.extend(tags.cloned());
 

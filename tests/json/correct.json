@@ -296,22 +296,22 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "outline/wait",
-        "line": 12,
+        "line": 14,
         "name": "wait",
         "tags": [
           {
             "name": "tag",
-            "line": 12
+            "line": 14
           },
           {
             "name": "fail_after",
-            "line": 12
+            "line": 14
           }
         ],
         "steps": [
           {
             "keyword": "Given",
-            "line": 6,
+            "line": 5,
             "name": "2 secs",
             "result": {
               "status": "Passed",
@@ -320,7 +320,7 @@
           },
           {
             "keyword": "When",
-            "line": 7,
+            "line": 6,
             "name": "2 secs",
             "result": {
               "status": "Passed",
@@ -329,7 +329,7 @@
           },
           {
             "keyword": "Then",
-            "line": 8,
+            "line": 7,
             "name": "2 secs",
             "result": {
               "status": "Passed",
@@ -359,22 +359,22 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "outline/wait",
-        "line": 13,
+        "line": 15,
         "name": "wait",
         "tags": [
           {
             "name": "tag",
-            "line": 13
+            "line": 15
           },
           {
             "name": "fail_after",
-            "line": 13
+            "line": 15
           }
         ],
         "steps": [
           {
             "keyword": "Given",
-            "line": 6,
+            "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -383,7 +383,7 @@
           },
           {
             "keyword": "When",
-            "line": 7,
+            "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -392,7 +392,7 @@
           },
           {
             "keyword": "Then",
-            "line": 8,
+            "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -422,22 +422,22 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "outline/wait",
-        "line": 14,
+        "line": 16,
         "name": "wait",
         "tags": [
           {
             "name": "tag",
-            "line": 14
+            "line": 16
           },
           {
             "name": "fail_after",
-            "line": 14
+            "line": 16
           }
         ],
         "steps": [
           {
             "keyword": "Given",
-            "line": 6,
+            "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -446,7 +446,7 @@
           },
           {
             "keyword": "When",
-            "line": 7,
+            "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -455,7 +455,7 @@
           },
           {
             "keyword": "Then",
-            "line": 8,
+            "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
@@ -485,26 +485,26 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "outline/wait",
-        "line": 19,
+        "line": 21,
         "name": "wait",
         "tags": [
           {
             "name": "tag",
-            "line": 19
+            "line": 21
           },
           {
             "name": "fail_after",
-            "line": 19
+            "line": 21
           },
           {
             "name": "long",
-            "line": 19
+            "line": 21
           }
         ],
         "steps": [
           {
             "keyword": "Given",
-            "line": 6,
+            "line": 5,
             "name": "5 secs",
             "result": {
               "status": "Passed",
@@ -513,7 +513,7 @@
           },
           {
             "keyword": "When",
-            "line": 7,
+            "line": 6,
             "name": "5 secs",
             "result": {
               "status": "Passed",
@@ -522,7 +522,7 @@
           },
           {
             "keyword": "Then",
-            "line": 8,
+            "line": 7,
             "name": "5 secs",
             "result": {
               "status": "Passed",
@@ -559,7 +559,7 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "rule-outline/to-them-all/wait",
-        "line": 10,
+        "line": 11,
         "name": "To them all wait",
         "tags": [],
         "steps": [
@@ -612,7 +612,7 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "rule-outline/to-them-all/wait",
-        "line": 11,
+        "line": 12,
         "name": "To them all wait",
         "tags": [],
         "steps": [
@@ -665,7 +665,7 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "rule-outline/to-them-all/wait",
-        "line": 12,
+        "line": 13,
         "name": "To them all wait",
         "tags": [],
         "steps": [
@@ -718,7 +718,7 @@
         "keyword": "Scenario Outline",
         "type": "scenario",
         "id": "rule-outline/to-them-all/wait",
-        "line": 13,
+        "line": 14,
         "name": "To them all wait",
         "tags": [],
         "steps": [
