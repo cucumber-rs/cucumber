@@ -6,6 +6,20 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.12.0] · 2022-02-10
+[0.12.0]: /../../tree/v0.12.0/codegen
+
+[Milestone](/../../milestone/9)
+
+### Added
+
+- Support for multiple capturing groups in `Parameter` regex (previously was forbidden). ([#204])
+
+[#204]: /../../pull/204
+
+
+
+
 ## [0.11.3] · 2022-01-31
 [0.11.3]: /../../tree/v0.11.3/codegen
 

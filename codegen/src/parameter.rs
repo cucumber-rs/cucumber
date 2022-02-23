@@ -68,12 +68,6 @@ impl TryFrom<syn::DeriveInput> for Definition {
             // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
             syn::Error::new(attrs.regex.span(), format!("Invalid regex: {}", e))
         })?;
-        if regex.captures_len() > 1 {
-            return Err(syn::Error::new(
-                attrs.regex.span(),
-                "Regex shouldn't contain any capturing groups",
-            ));
-        }
 
         let name = attrs.name.as_ref().map_or_else(
             || to_lower_case(&input.ident.to_string()),
@@ -157,6 +151,27 @@ mod spec {
     }
 
     #[test]
+    fn derives_impl_with_capturing_group() {
+        let input = parse_quote! {
+            #[param(regex = "(cat)|(dog)")]
+            struct Animal;
+        };
+
+        let output = quote! {
+            #[automatically_derived]
+            impl ::cucumber::Parameter for Animal {
+                const REGEX: &'static str = "(cat)|(dog)";
+                const NAME: &'static str = "animal";
+            }
+        };
+
+        assert_eq!(
+            super::derive(input).unwrap().to_string(),
+            output.to_string(),
+        );
+    }
+
+    #[test]
     fn derives_impl_with_generics() {
         let input = parse_quote! {
             #[param(regex = "cat|dog", name = "custom")]
@@ -215,9 +230,9 @@ mod spec {
     }
 
     #[test]
-    fn errors_on_capture_groups_in_regex() {
+    fn invalid_regex() {
         let input = parse_quote! {
-            #[param(regex = "(cat|dog)")]
+            #[param(regex = "(cat|dog")]
             struct Parameter;
         };
 
@@ -225,7 +240,11 @@ mod spec {
 
         assert_eq!(
             err.to_string(),
-            "Regex shouldn't contain any capturing groups",
+            "\
+Invalid regex: regex parse error:
+    (cat|dog
+    ^
+error: unclosed group",
         );
     }
 }

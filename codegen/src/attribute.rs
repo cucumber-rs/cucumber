@@ -213,18 +213,62 @@ impl Step {
         if is_regex_or_expr {
             if let Some(elem_ty) = find_first_slice(&func.sig) {
                 let addon_parsing = Some(quote! {
-                    let __cucumber_matches = __cucumber_ctx
+                    let mut __cucumber_matches = ::std::vec::Vec::with_capacity(
+                        __cucumber_ctx.matches.len().saturating_sub(1),
+                    );
+                    let mut __cucumber_iter = __cucumber_ctx
                         .matches
                         .iter()
                         .skip(1)
-                        .enumerate()
-                        .map(|(i, s)| {
+                        .enumerate();
+                    while let Some((i, (cap_name, s))) =
+                        __cucumber_iter.next()
+                    {
+                        // Special handling of `cucumber-expressions`
+                        // `parameter` with multiple capturing groups.
+                        let prefix = cap_name
+                            .as_ref()
+                            .filter(|n| n.starts_with("__"))
+                            .map(|n| {
+                                let num_len = n
+                                    .chars()
+                                    .skip(2)
+                                    .take_while(|&c| c != '_')
+                                    .map(char::len_utf8)
+                                    .sum::<usize>();
+                                let len = num_len + b"__".len();
+                                n.split_at(len).0
+                            });
+
+                        let to_take = __cucumber_iter
+                            .clone()
+                            .take_while(|(_, (n, _))| {
+                                prefix
+                                    .zip(n.as_ref())
+                                    .filter(|(prefix, n)| n.starts_with(prefix))
+                                    .is_some()
+                            })
+                            .count();
+
+                        let s = ::std::iter::once(s.as_str())
+                            .chain(
+                                __cucumber_iter
+                                    .by_ref()
+                                    .take(to_take)
+                                    .map(|(_, (_, s))| s.as_str()),
+                            )
+                            .fold(None, |acc, s| {
+                                acc.or_else(|| (!s.is_empty()).then(|| s))
+                            })
+                            .unwrap_or_default();
+
+                        __cucumber_matches.push(
                             s.parse::<#elem_ty>().unwrap_or_else(|e| panic!(
                                 "Failed to parse element at {} '{}': {}",
                                 i, s, e,
                             ))
-                        })
-                        .collect::<Vec<_>>();
+                        );
+                    }
                 });
                 let func_args = func
                     .sig
@@ -319,11 +363,49 @@ impl Step {
             );
 
             quote! {
-                let #ident = __cucumber_iter
-                    .next()
-                    .expect(#not_found_err)
-                    .parse::<#ty>()
-                    .expect(#parsing_err);
+                let #ident = {
+                    let (cap_name, s) = __cucumber_iter
+                        .next()
+                        .expect(#not_found_err);
+                    // Special handling of `cucumber-expressions` `parameter`
+                    // with multiple capturing groups.
+                    let prefix = cap_name
+                        .as_ref()
+                        .filter(|n| n.starts_with("__"))
+                        .map(|n| {
+                            let num_len = n
+                                .chars()
+                                .skip(2)
+                                .take_while(|&c| c != '_')
+                                .map(char::len_utf8)
+                                .sum::<usize>();
+                            let len = num_len + b"__".len();
+                            n.split_at(len).0
+                        });
+
+                    let to_take = __cucumber_iter
+                        .clone()
+                        .take_while(|(n, _)| {
+                            prefix.zip(n.as_ref())
+                                .filter(|(prefix, n)| n.starts_with(prefix))
+                                .is_some()
+                        })
+                        .count();
+
+                    ::std::iter::once(s.as_str())
+                        .chain(
+                            __cucumber_iter
+                                .by_ref()
+                                .take(to_take)
+                                .map(|(_, s)| s.as_str()),
+                        )
+                        .fold(
+                            None,
+                            |acc, s| acc.or_else(|| (!s.is_empty()).then(|| s)),
+                        )
+                        .unwrap_or_default()
+                };
+                let #ident = #ident.parse::<#ty>().expect(#parsing_err);
             }
         };
 
@@ -533,7 +615,7 @@ impl<'p> Parameters<'p> {
         self.0
             .iter()
             .map(|par| {
-                let name = par.param.0.fragment();
+                let name = par.param.input.fragment();
                 let ty = &par.ty;
 
                 if DEFAULT_PARAMETERS.contains(name) {
@@ -619,7 +701,7 @@ impl<'p> Parameters<'p> {
             .0
             .iter()
             .filter_map(|par| {
-                let name = par.param.0.fragment();
+                let name = par.param.input.fragment();
                 (!DEFAULT_PARAMETERS.contains(name)).then(|| (*name, &par.ty))
             })
             .unzip();

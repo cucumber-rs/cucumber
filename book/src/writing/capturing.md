@@ -249,7 +249,7 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 
 ### Custom [parameters]
 
-Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse  [custom parameters] in addition to [default ones][parameters].
+Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse [custom parameters] in addition to [default ones][parameters].
 
 ```rust
 # use std::{convert::Infallible, str::FromStr};
@@ -334,6 +334,96 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 > __NOTE__: Using [custom parameters] allows declaring and reusing complicated and precise matches without a need to repeat them in different [step] matching functions.
 
 ![record](../rec/writing_capturing_both.gif)
+
+> __TIP__: In case [regex] of a [custom parameter][custom parameters] consists of several capturing groups, only the first non-empty match will be returned. 
+
+```rust
+# use std::{convert::Infallible, str::FromStr};
+#
+# use async_trait::async_trait;
+# use cucumber::{given, then, when, World, WorldInit};
+use cucumber::Parameter;
+
+# #[derive(Debug)]
+# struct Cat {
+#     pub hungry: Hungriness,
+# }
+#
+# impl Cat {
+#     fn feed(&mut self) {
+#         self.hungry = Hungriness::Satiated;
+#     }
+# }
+#
+#[derive(Debug, Eq, Parameter, PartialEq)]
+#[param(regex = "(hungry)|(satiated)|'([^']*)'")]
+// We want to capture without quotes  ^^^^^^^
+enum Hungriness {
+    Hungry,
+    Satiated,
+    Other(String),
+}
+
+// NOTE: `Parameter` requires `FromStr` being implemented.
+impl FromStr for Hungriness {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "hungry" => Self::Hungry,
+            "satiated" => Self::Satiated,
+            other => Self::Other(other.to_owned()),
+        })
+    }
+}
+#
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Cat,
+# }
+#
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Cat {
+#                 hungry: Hungriness::Satiated,
+#             },
+#         })
+#     }
+# }
+
+#[given(expr = "a {hungriness} cat")]
+fn hungry_cat(world: &mut AnimalWorld, hungry: Hungriness) {
+    world.cat.hungry = hungry;
+}
+
+#[then(expr = "the cat is {string}")]
+fn cat_is(world: &mut AnimalWorld, other: String) {
+    assert_eq!(world.cat.hungry, Hungriness::Other(other));
+}
+#
+# #[when(expr = "I feed the cat {int} time(s)")]
+# fn feed_cat(world: &mut AnimalWorld, times: u8) {
+#     for _ in 0..times {
+#         world.cat.feed();
+#     }
+# }
+# 
+# #[then("the cat is not hungry")]
+# fn cat_is_fed(world: &mut AnimalWorld) {
+#     assert_eq!(world.cat.hungry, Hungriness::Satiated);
+# }
+#
+# #[tokio::main]
+# async fn main() {
+#     AnimalWorld::run("tests/features/book/writing/capturing_multiple_groups.feature").await;
+# }
+```
+
+![record](../rec/writing_capturing_multiple_groups.gif)
 
 
 
