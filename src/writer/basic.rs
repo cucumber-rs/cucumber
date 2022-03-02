@@ -904,13 +904,10 @@ impl<Out: io::Write> Basic<Out> {
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
 pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
-    if let Some(string) = err.downcast_ref::<String>() {
-        string.clone().into()
-    } else if let Some(&string) = err.downcast_ref::<&str>() {
-        string.to_owned().into()
-    } else {
-        "(Could not resolve panic payload)".into()
-    }
+    err.downcast_ref::<String>()
+        .map(|s| s.clone().into())
+        .or_else(|| err.downcast_ref::<&str>().map(|s| s.to_owned().into()))
+        .unwrap_or_else(|| "(Could not resolve panic payload)".into())
 }
 
 /// Formats the given [`str`] by adding `indent`s to each line to prettify the
@@ -935,6 +932,8 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .fold(None, |mut acc: Option<Vec<_>>, row| {
+            // false positive due to mut borrowing
+            #[allow(clippy::option_if_let_else)]
             if let Some(existing_len) = acc.as_mut() {
                 for (cell, max_len) in row.iter().zip(existing_len) {
                     *max_len = cmp::max(*max_len, cell.len());
@@ -942,7 +941,6 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
             } else {
                 acc = Some(row.iter().map(String::len).collect::<Vec<_>>());
             }
-
             acc
         })
         .unwrap_or_default();
