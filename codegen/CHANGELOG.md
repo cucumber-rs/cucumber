@@ -6,6 +6,18 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.12.1] · 2022-03-09
+[0.12.1]: /../../tree/v0.12.1/codegen
+
+### Security updated
+
+- `regex` crate to 1.5.5 version to fix [CVE-2022-24713].
+
+[CVE-2022-24713]: https://blog.rust-lang.org/2022/03/08/cve-2022-24713.html
+
+
+
+
 ## [0.12.0] · 2022-02-10
 [0.12.0]: /../../tree/v0.12.0/codegen
 

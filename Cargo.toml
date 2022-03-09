@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.12.0"
+version = "0.12.1"
 edition = "2021"
 rust-version = "1.57"
 description = """\
@@ -49,12 +49,12 @@ globwalk = "0.8.1"
 itertools = "0.10"
 linked-hash-map = "0.5.3"
 once_cell = { version = "1.8", features = ["parking_lot"] }
-regex = "1.5"
+regex = "1.5.5"
 sealed = "0.4"
 
 # "macros" feature dependencies.
-cucumber-codegen = { version = "0.12", path = "./codegen", optional = true }
-cucumber-expressions = { version = "0.2", features = ["into-regex"], optional = true }
+cucumber-codegen = { version = "0.12.1", path = "./codegen", optional = true }
+cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional = true }
 inventory = { version = "0.2", optional = true }
 
 # "output-json" feature dependencies.
