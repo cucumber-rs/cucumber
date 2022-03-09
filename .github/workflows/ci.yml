@@ -165,7 +165,7 @@ jobs:
         os:
           - ubuntu
           - macOS
-          - windows
+          #- windows  TODO: fix
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
