@@ -19,5 +19,10 @@ once_cell = { version = "1.8", features = ["parking_lot"] }
 skeptic = { path = "../../skeptic" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = "0.32"
+windows_x86_64_msvc = "0.32"
+windows-sys = "0.32"
+
 [build-dependencies]
 skeptic = { path = "../../skeptic" }
