@@ -125,34 +125,34 @@ jobs:
 #
 #      - run: make test.cargo crate=${{ matrix.crate }}
 #
-#  test:
-#    if: ${{ github.ref == 'refs/heads/main'
-#            || startsWith(github.ref, 'refs/tags/v')
-#            || !contains(github.event.head_commit.message, '[skip ci]') }}
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        crate:
-#          - cucumber-codegen
-#          - cucumber
-#        os:
+  test:
+    if: ${{ github.ref == 'refs/heads/main'
+            || startsWith(github.ref, 'refs/tags/v')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - cucumber-codegen
+          - cucumber
+        os:
 #          - ubuntu
 #          - macOS
-#          - windows
-#        toolchain:
-#          - stable
+          - windows
+        toolchain:
+          - stable
 #          - beta
 #          - nightly
-#    runs-on: ${{ matrix.os }}-latest
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          profile: minimal
-#          toolchain: ${{ matrix.toolchain }}
-#          override: true
-#
-#      - run: make test.cargo crate=${{ matrix.crate }}
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+
+      - run: make test.cargo crate=${{ matrix.crate }}
 
   test-book:
     name: Test Book

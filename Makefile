@@ -85,7 +85,7 @@ cargo.lint:
 #	make test.cargo [crate=<crate-name>]
 
 test.cargo:
-	cargo test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features
+	cargo test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features --verbose
 
 
 # Run Rust tests of Book.
