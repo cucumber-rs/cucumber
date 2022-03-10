@@ -114,7 +114,8 @@ fn handle_test(
         return;
     }
 
-    let mut cmd = Command::new(dbg!(binary_path));
+    panic!("{}", binary_path.to_str().unwrap());
+    let mut cmd = Command::new(binary_path);
     cmd.current_dir(out_dir.path());
     interpret_output(cmd);
 }
