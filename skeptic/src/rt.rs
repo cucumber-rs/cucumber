@@ -114,7 +114,7 @@ fn handle_test(
         return;
     }
 
-    panic!("{}", binary_path.to_str().unwrap());
+    // panic!("{}", binary_path.to_str().unwrap());
     let mut cmd = Command::new(binary_path);
     cmd.current_dir(out_dir.path());
     interpret_output(cmd);
