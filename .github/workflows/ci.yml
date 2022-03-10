@@ -166,7 +166,7 @@ jobs:
 #          - ubuntu
 #          - macOS
           - windows
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}-2016
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
