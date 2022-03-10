@@ -86,5 +86,5 @@ name = "wait"
 harness = false
 
 [workspace]
-members = ["codegen"]
+members = ["codegen", "skeptic"]
 exclude = ["book/tests"]
