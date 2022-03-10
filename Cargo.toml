@@ -67,6 +67,8 @@ junit-report = { version = "0.7", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = "0.27"
+windows_x86_64_msvc = "0.27"
+windows-sys = "0.27"
 
 [dev-dependencies]
 derive_more = "0.99.17"
