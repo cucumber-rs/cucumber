@@ -20,9 +20,9 @@ skeptic = { path = "../../skeptic" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = "0.28"
-windows_x86_64_msvc = "0.28"
-windows-sys = "0.28"
+windows = "0.29"
+windows_x86_64_msvc = "0.29"
+windows-sys = "0.29"
 
 [build-dependencies]
 skeptic = { path = "../../skeptic" }
