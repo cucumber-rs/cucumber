@@ -83,41 +83,43 @@ fn handle_test(
         cmd.arg(format!("--edition={}", edition));
     }
 
-    cmd.arg("-L")
-        .arg(&target_dir)
-        .arg("-L")
-        .arg(&deps_dir)
-        .arg("--target")
-        .arg(&target_triple);
+    panic!("{}", fs::read_to_string(&format!("{}\\..\\.\\Cargo.lock", target_dir.to_str().unwrap())).unwrap());
 
-    for dep in get_rlib_dependencies(root_dir, target_dir).expect("failed to read dependencies") {
-        cmd.arg("--extern");
-        cmd.arg(format!(
-            "{}={}",
-            dep.libname,
-            dep.rlib.to_str().expect("filename not utf8"),
-        ));
-    }
-
-    let binary_path = out_dir.path().join("out.exe");
-    match compile_type {
-        CompileType::Full => cmd.arg("-o").arg(&binary_path),
-        CompileType::Check => cmd.arg(format!(
-            "--emit=dep-info={0}.d,metadata={0}.m",
-            binary_path.display()
-        )),
-    };
-
-    interpret_output(cmd);
-
-    if let CompileType::Check = compile_type {
-        return;
-    }
-
-    // panic!("{}", binary_path.to_str().unwrap());
-    let mut cmd = Command::new(binary_path);
-    cmd.current_dir(out_dir.path());
-    interpret_output(cmd);
+    // cmd.arg("-L")
+    //     .arg(&target_dir)
+    //     .arg("-L")
+    //     .arg(&deps_dir)
+    //     .arg("--target")
+    //     .arg(&target_triple);
+    //
+    // for dep in get_rlib_dependencies(root_dir, target_dir).expect("failed to read dependencies") {
+    //     cmd.arg("--extern");
+    //     cmd.arg(format!(
+    //         "{}={}",
+    //         dep.libname,
+    //         dep.rlib.to_str().expect("filename not utf8"),
+    //     ));
+    // }
+    //
+    // let binary_path = out_dir.path().join("out.exe");
+    // match compile_type {
+    //     CompileType::Full => cmd.arg("-o").arg(&binary_path),
+    //     CompileType::Check => cmd.arg(format!(
+    //         "--emit=dep-info={0}.d,metadata={0}.m",
+    //         binary_path.display()
+    //     )),
+    // };
+    //
+    // interpret_output(cmd);
+    //
+    // if let CompileType::Check = compile_type {
+    //     return;
+    // }
+    //
+    // // panic!("{}", binary_path.to_str().unwrap());
+    // let mut cmd = Command::new(binary_path);
+    // cmd.current_dir(out_dir.path());
+    // interpret_output(cmd);
 }
 
 fn interpret_output(mut command: Command) {

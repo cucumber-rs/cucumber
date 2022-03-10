@@ -166,13 +166,13 @@ jobs:
 #          - ubuntu
 #          - macOS
           - windows
-    runs-on: ${{ matrix.os }}-2016
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.58.0
+          toolchain: stable
 
       - run: make test.book
 
