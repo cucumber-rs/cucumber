@@ -16,13 +16,11 @@ cucumber = { version = "0.12", path = "../..", features = ["output-json", "outpu
 futures = "0.3"
 humantime = "2.1"
 once_cell = { version = "1.8", features = ["parking_lot"] }
-skeptic = { path = "../../skeptic" }
+skeptic = "0.13.7"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 
-#[target.'cfg(target_os = "windows")'.dependencies]
-#windows = "0.33"
-#windows_x86_64_msvc = "0.33"
-#windows-sys = "0.33"
+# See https://github.com/cucumber-rs/cucumber/pull/208#issuecomment-1063851474
+parking_lot = "0.11"
 
 [build-dependencies]
-skeptic = { path = "../../skeptic" }
+skeptic = "0.13.7"

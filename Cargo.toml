@@ -48,7 +48,7 @@ gherkin = "0.11.2"
 globwalk = "0.8.1"
 itertools = "0.10"
 linked-hash-map = "0.5.3"
-once_cell = { version = "1.9.0", features = ["parking_lot"] }
+once_cell = { version = "1.8", features = ["parking_lot"] }
 regex = "1.5.5"
 sealed = "0.4"
 
@@ -64,11 +64,6 @@ Inflector = { version = "0.11", default-features = false, optional = true }
 
 # "output-junit" feature dependencies.
 junit-report = { version = "0.7", optional = true }
-
-#[target.'cfg(target_os = "windows")'.dependencies]
-#windows = "0.27"
-#windows_x86_64_msvc = "0.27"
-#windows-sys = "0.27"
 
 [dev-dependencies]
 derive_more = "0.99.17"
@@ -91,5 +86,5 @@ name = "wait"
 harness = false
 
 [workspace]
-members = ["codegen", "skeptic"]
+members = ["codegen"]
 exclude = ["book/tests"]

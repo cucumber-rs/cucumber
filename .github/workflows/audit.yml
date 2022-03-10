@@ -1,0 +1,25 @@
+name: Security audit
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+    paths: ["**/Cargo.toml"]
+  pull_request:
+    branches: ["main"]
+    paths: ["**/Cargo.toml"]
+  schedule:
+    - cron: "7 7 * * *"
+
+jobs:
+  cargo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

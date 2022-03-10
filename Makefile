@@ -85,7 +85,7 @@ cargo.lint:
 #	make test.cargo [crate=<crate-name>]
 
 test.cargo:
-	cargo test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features --verbose
+	cargo test $(if $(call eq,$(crate),),--workspace,-p $(crate)) --all-features
 
 
 # Run Rust tests of Book.
@@ -94,7 +94,7 @@ test.cargo:
 #	make test.book
 
 test.book:
-	cargo test --manifest-path book/tests/Cargo.toml --verbose
+	cargo test --manifest-path book/tests/Cargo.toml
 
 
 
