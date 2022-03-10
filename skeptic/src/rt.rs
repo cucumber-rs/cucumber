@@ -84,7 +84,7 @@ fn handle_test(
     }
 
     let path = format!("{}\\..\\.\\Cargo.lock", target_dir.to_str().unwrap());
-    panic!("{path}");
+    panic!("{}", path);
     panic!("{}", fs::read_to_string(&path).unwrap());
 
     // cmd.arg("-L")
