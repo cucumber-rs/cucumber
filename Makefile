@@ -94,7 +94,7 @@ test.cargo:
 #	make test.book
 
 test.book:
-	cargo test --manifest-path book/tests/Cargo.toml
+	cargo test --manifest-path book/tests/Cargo.toml --verbose
 
 
 
