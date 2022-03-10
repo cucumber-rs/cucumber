@@ -204,71 +204,71 @@ jobs:
   # Releasing #
   #############
 
-  release-github:
-    name: Release on GitHub
-    needs:
-      - clippy
-      - feature
-      - msrv
-      - rustdoc
-      - rustfmt
-      - test
-      - test-book
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Parse release version
-        id: release
-        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
-
-      - name: Verify release version matches `cucumber-codegen` Cargo manifest
-        run: >-
-          test "${{ steps.release.outputs.VERSION }}" \
-            == "$(grep -m1 'version = "' codegen/Cargo.toml | cut -d '"' -f2)"
-      - name: Verify release version matches `cucumber` Cargo manifest
-        run: >-
-          test "${{ steps.release.outputs.VERSION }}" \
-            == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
-
-      - name: Parse CHANGELOG link
-        id: changelog
-        run: echo ::set-output
-          name=LINK::https://github.com/${{ github.repository }}/blob/v${{ steps.release.outputs.VERSION }}/CHANGELOG.md#$(sed -n '/^## \[${{ steps.release.outputs.VERSION }}\]/{s/^## \[\(.*\)\][^0-9]*\([0-9].*\)/\1--\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
-
-      - uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          name: ${{ steps.release.outputs.VERSION }}
-          body: |
-            [API docs](https://docs.rs/cucumber/${{ steps.release.outputs.VERSION }})
-            [Changelog](${{ steps.changelog.outputs.LINK }})
-          prerelease: ${{ contains(steps.release.outputs.VERSION, '-') }}
-
-  release-crate:
-    name: Release on crates.io
-    needs: ["release-github"]
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-
-      - name: Publish `cucumber-codegen` crate
-        run: cargo publish -p cucumber-codegen
-                           --token ${{ secrets.CRATESIO_TOKEN }}
-
-      - name: Wait crates.io index is updated
-        run: sleep 120
-
-      - name: Publish `cucumber` crate
-        run: cargo publish -p cucumber
-                           --token ${{ secrets.CRATESIO_TOKEN }}
+#  release-github:
+#    name: Release on GitHub
+#    needs:
+#      - clippy
+#      - feature
+#      - msrv
+#      - rustdoc
+#      - rustfmt
+#      - test
+#      - test-book
+#    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Parse release version
+#        id: release
+#        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/v}
+#
+#      - name: Verify release version matches `cucumber-codegen` Cargo manifest
+#        run: >-
+#          test "${{ steps.release.outputs.VERSION }}" \
+#            == "$(grep -m1 'version = "' codegen/Cargo.toml | cut -d '"' -f2)"
+#      - name: Verify release version matches `cucumber` Cargo manifest
+#        run: >-
+#          test "${{ steps.release.outputs.VERSION }}" \
+#            == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
+#
+#      - name: Parse CHANGELOG link
+#        id: changelog
+#        run: echo ::set-output
+#          name=LINK::https://github.com/${{ github.repository }}/blob/v${{ steps.release.outputs.VERSION }}/CHANGELOG.md#$(sed -n '/^## \[${{ steps.release.outputs.VERSION }}\]/{s/^## \[\(.*\)\][^0-9]*\([0-9].*\)/\1--\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)
+#
+#      - uses: softprops/action-gh-release@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          name: ${{ steps.release.outputs.VERSION }}
+#          body: |
+#            [API docs](https://docs.rs/cucumber/${{ steps.release.outputs.VERSION }})
+#            [Changelog](${{ steps.changelog.outputs.LINK }})
+#          prerelease: ${{ contains(steps.release.outputs.VERSION, '-') }}
+#
+#  release-crate:
+#    name: Release on crates.io
+#    needs: ["release-github"]
+#    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: stable
+#
+#      - name: Publish `cucumber-codegen` crate
+#        run: cargo publish -p cucumber-codegen
+#                           --token ${{ secrets.CRATESIO_TOKEN }}
+#
+#      - name: Wait crates.io index is updated
+#        run: sleep 120
+#
+#      - name: Publish `cucumber` crate
+#        run: cargo publish -p cucumber
+#                           --token ${{ secrets.CRATESIO_TOKEN }}
 
 
 
@@ -277,25 +277,25 @@ jobs:
   # Deploy #
   ##########
 
-  deploy-book:
-    name: Deploy Book
-    needs: ["test-book"]
-    if: ${{ github.ref == 'refs/heads/main'
-            || startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: peaceiris/actions-mdbook@v1
-
-      - run: make book.build out=gh-pages/main
-        if: ${{ github.ref == 'refs/heads/main' }}
-
-      - run: make book.build out=gh-pages/current
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          keep_files: true
-          publish_dir: book/gh-pages
+#  deploy-book:
+#    name: Deploy Book
+#    needs: ["test-book"]
+#    if: ${{ github.ref == 'refs/heads/main'
+#            || startsWith(github.ref, 'refs/tags/v') }}
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: peaceiris/actions-mdbook@v1
+#
+#      - run: make book.build out=gh-pages/main
+#        if: ${{ github.ref == 'refs/heads/main' }}
+#
+#      - run: make book.build out=gh-pages/current
+#        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+#
+#      - name: Deploy to GitHub Pages
+#        uses: peaceiris/actions-gh-pages@v3
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          keep_files: true
+#          publish_dir: book/gh-pages
