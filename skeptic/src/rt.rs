@@ -83,7 +83,9 @@ fn handle_test(
         cmd.arg(format!("--edition={}", edition));
     }
 
-    panic!("{}", fs::read_to_string(&format!("{}\\..\\.\\Cargo.lock", target_dir.to_str().unwrap())).unwrap());
+    let path = format!("{}\\..\\.\\Cargo.lock", target_dir.to_str().unwrap());
+    panic!("{path}");
+    panic!("{}", fs::read_to_string(&path).unwrap());
 
     // cmd.arg("-L")
     //     .arg(&target_dir)
