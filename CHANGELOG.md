@@ -6,6 +6,22 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.13.0] · ???
+[0.13.0]: /../../tree/v0.13.0
+
+[Diff](/../../compare/v0.12.1...v0.13.0)
+
+### BC Breaks
+
+- [`Cucumber::after`][after_hook] now gets the `World` instance even if a `Step` before it has failed, but accepts a shared reference to it instance instead of a mutable one. ([#209], [#207])
+
+[#207]: /../../issues/207
+[#209]: /../../pull/209
+[after_hook]: https://docs.rs/cucumber/latest/cucumber/struct.Cucumber.html#method.after
+
+
+
+
 ## [0.12.1] · 2022-03-09
 [0.12.1]: /../../tree/v0.12.1
 
@@ -27,7 +43,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- `step::Context::matches` now containes regex capturing group names in addition to captured values. ([#204])
+- `step::Context::matches` now contains regex capturing group names in addition to captured values. ([#204])
 
 ### Added
 
