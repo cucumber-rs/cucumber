@@ -102,7 +102,7 @@ pub type AfterHookFn<World> = for<'a> fn(
     &'a gherkin::Feature,
     Option<&'a gherkin::Rule>,
     &'a gherkin::Scenario,
-    Option<&'a mut World>,
+    Option<&'a World>,
 ) -> LocalBoxFuture<'a, ()>;
 
 /// Alias for a failed [`Scenario`].
@@ -308,11 +308,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] ones.
     ///
     /// Last `World` argument is supplied to the function, in case it was
-    /// initialized before by running [`before`] hook or any non-failed
-    /// [`Step`]. In case the last [`Scenario`]'s [`Step`] failed, we want to
-    /// return event with an exact `World` state. Also, we don't want to impose
-    /// additional [`Clone`] bounds on `World`, so the only option left is to
-    /// pass [`None`] to the function.
+    /// initialized before by running [`before`] hook or any [`Step`].
     ///
     /// [`before`]: Self::before()
     /// [`Failed`]: event::Step::Failed
@@ -326,7 +322,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
-            Option<&'a mut World>,
+            Option<&'a World>,
         ) -> LocalBoxFuture<'a, ()>,
     {
         let Self {
@@ -405,7 +401,7 @@ where
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
-            Option<&'a mut W>,
+            Option<&'a W>,
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
@@ -534,7 +530,7 @@ async fn execute<W, Before, After>(
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
-            Option<&'a mut W>,
+            Option<&'a W>,
         ) -> LocalBoxFuture<'a, ()>,
 {
     // Those panic hook shenanigans are done to avoid console messages like
@@ -679,7 +675,7 @@ where
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
-            Option<&'a mut W>,
+            Option<&'a W>,
         ) -> LocalBoxFuture<'a, ()>,
 {
     /// Creates a new [`Executor`].
@@ -767,7 +763,7 @@ where
         ));
 
         let mut is_failed = false;
-        let world = async {
+        let world: Option<Arc<W>> = async {
             let before_hook = self
                 .run_before_hook(&feature, rule.as_ref(), &scenario)
                 .await
@@ -812,6 +808,7 @@ where
                     self.run_step(world, step, into_step_ev).map_ok(Some)
                 })
                 .await
+                .map(|world| world.map(Arc::new))
         }
         .inspect_err(|e| {
             if e.is_none() {
@@ -921,11 +918,11 @@ where
     /// - Emits [`HookType::After`] event.
     async fn run_after_hook(
         &self,
-        mut world: Option<W>,
+        world: Option<Arc<W>>,
         feature: &Arc<gherkin::Feature>,
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
-    ) -> Result<Option<W>, ()> {
+    ) -> Result<Option<Arc<W>>, ()> {
         if let Some(hook) = self.after_hook.as_ref() {
             self.send_event(event::Cucumber::scenario(
                 Arc::clone(feature),
@@ -939,7 +936,7 @@ where
                     feature.as_ref(),
                     rule.as_ref().map(AsRef::as_ref),
                     scenario.as_ref(),
-                    world.as_mut(),
+                    world.as_ref().map(Arc::as_ref),
                 );
                 match AssertUnwindSafe(fut).catch_unwind().await {
                     Ok(()) => Ok(world),
@@ -965,7 +962,7 @@ where
                         Arc::clone(scenario),
                         event::Scenario::hook_failed(
                             HookType::After,
-                            world.map(Arc::new),
+                            world,
                             info.into(),
                         ),
                     ));
@@ -989,7 +986,7 @@ where
         world: Option<W>,
         step: Arc<gherkin::Step>,
         (started, passed, skipped, failed): (St, Ps, Sk, F),
-    ) -> Result<W, Option<W>>
+    ) -> Result<W, Option<Arc<W>>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
         Ps: FnOnce(Arc<gherkin::Step>, CaptureLocations) -> event::Cucumber<W>,
@@ -1053,16 +1050,12 @@ where
             }
             Ok((_, world)) => {
                 self.send_event(skipped(step));
-                Err(world)
+                Err(world.map(Arc::new))
             }
             Err((err, captures, world)) => {
-                self.send_event(failed(
-                    step,
-                    captures,
-                    world.map(Arc::new),
-                    err,
-                ));
-                Err(None)
+                let world = world.map(Arc::new);
+                self.send_event(failed(step, captures, world.clone(), err));
+                Err(world)
             }
         }
     }

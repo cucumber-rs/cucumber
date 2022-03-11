@@ -11,9 +11,7 @@ use tempfile::NamedTempFile;
 #[then(regex = r"(\d+) secs?")]
 fn step(world: &mut World) {
     world.0 += 1;
-    if world.0 > 3 {
-        panic!("Too much!");
-    }
+    assert!(world.0 < 4, "Too much!");
 }
 
 #[tokio::main]
@@ -23,17 +21,16 @@ async fn main() {
         World::cucumber()
             .before(|_, _, sc, _| {
                 async {
-                    if sc.tags.iter().any(|t| t == "fail_before") {
-                        panic!("Tag!");
-                    }
+                    assert!(
+                        !sc.tags.iter().any(|t| t == "fail_before"),
+                        "Tag!",
+                    );
                 }
                 .boxed_local()
             })
             .after(|_, _, sc, _| {
                 async {
-                    if sc.tags.iter().any(|t| t == "fail_after") {
-                        panic!("Tag!");
-                    }
+                    assert!(!sc.tags.iter().any(|t| t == "fail_after"), "Tag!");
                 }
                 .boxed_local()
             })

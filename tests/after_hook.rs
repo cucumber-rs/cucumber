@@ -1,36 +1,32 @@
-use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
+use std::{
+    convert::Infallible,
+    panic::AssertUnwindSafe,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
 use async_trait::async_trait;
-use cucumber::{cli, given, then, when, Parameter, WorldInit};
+use cucumber::{given, then, when, Parameter, WorldInit};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
-#[derive(cli::Args)]
-struct CustomCli {
-    /// Additional time to wait in before and after hooks.
-    #[clap(
-        long,
-        default_value = "10ms",
-        parse(try_from_str = humantime::parse_duration)
-    )]
-    pause: Duration,
-}
-
 #[tokio::main]
 async fn main() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::parsed();
+    static NUMBER_OF_WORLDS: AtomicUsize = AtomicUsize::new(0);
 
     let res = World::cucumber()
-        .before(move |_, _, _, w| {
+        .after(move |_, _, _, w| {
             async move {
-                w.0 = 0;
-                time::sleep(cli.custom.pause).await;
+                if w.is_some() {
+                    NUMBER_OF_WORLDS.fetch_add(1, Ordering::SeqCst);
+                }
             }
-            .boxed_local()
+            .boxed()
         })
-        .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
-        .with_cli(cli)
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
@@ -40,6 +36,7 @@ async fn main() {
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "2 steps failed, 1 parsing error");
+    assert_eq!(NUMBER_OF_WORLDS.load(Ordering::SeqCst), 12);
 }
 
 #[given(regex = r"(\d+) secs?")]
