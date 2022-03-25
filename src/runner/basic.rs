@@ -109,70 +109,6 @@ pub type AfterHookFn<World> = for<'a> fn(
 /// [`Scenario`]: gherkin::Scenario
 type Failed = bool;
 
-/// Failure encountered during execution of [`HookType::Before`] or [`Step`].
-/// See [`Executor::emit_failed_events()`] for more info.
-///
-/// [`Step`]: gherkin::Step
-enum ExecutionFailure<World> {
-    /// [`HookType::Before`] panicked.
-    BeforeHookPanicked {
-        /// [`World`] at the time [`HookType::Before`] has panicked.
-        world: Option<World>,
-
-        /// [`catch_unwind()`] of the [`HookType::Before`] panic.
-        ///
-        /// [`catch_unwind()`]: std::panic::catch_unwind()
-        panic_info: Info,
-    },
-
-    /// [`Step`] was skipped.
-    ///
-    /// [`Step`]: gherkin::Step.
-    StepSkipped(Option<World>),
-
-    /// [`Step`] failed.
-    ///
-    /// [`Step`]: gherkin::Step.
-    StepPanicked {
-        /// [`World`] at the time [`Step`] has failed.
-        ///
-        /// [`Step`]: gherkin::Step
-        world: Option<World>,
-
-        /// [`Step`] itself.
-        ///
-        /// [`Step`]: gherkin::Step
-        step: Arc<gherkin::Step>,
-
-        /// [`Step`]s [`regex`] [`CaptureLocations`].
-        ///
-        /// [`Step`]: gherkin::Step
-        captures: Option<CaptureLocations>,
-
-        /// [`StepError`] of the [`Step`].
-        ///
-        /// [`Step`]: gherkin::Step
-        /// [`StepError`]: event::StepError
-        err: event::StepError,
-
-        /// Indicates, whether [`Step`] was background or not.
-        ///
-        /// [`Step`]: gherkin::Step
-        is_background: bool,
-    },
-}
-
-impl<W> ExecutionFailure<W> {
-    /// Takes the [`World`], leaving a [`None`] in its place.
-    fn take_world(&mut self) -> Option<W> {
-        match self {
-            Self::BeforeHookPanicked { world, .. }
-            | Self::StepSkipped(world)
-            | Self::StepPanicked { world, .. } => world.take(),
-        }
-    }
-}
-
 /// Default [`Runner`] implementation which follows [_order guarantees_][1] from
 /// the [`Runner`] trait docs.
 ///
@@ -912,8 +848,8 @@ where
     ///
     /// # Events
     ///
-    /// - Emits all [`HookType::Before`] events, except [`Hook::Failed`]. See
-    ///   [`Self::emit_failed_events()`] for more details.
+    /// - Emits all the [`HookType::Before`] events, except [`Hook::Failed`].
+    ///   See [`Self::emit_failed_events()`] for more details.
     ///
     /// [`Hook::Failed`]: event::Hook::Failed
     async fn run_before_hook(
@@ -987,7 +923,7 @@ where
     ///
     /// # Events
     ///
-    /// - Emits all [`Step`] events, except [`Step::Failed`]. See
+    /// - Emits all the [`Step`] events, except [`Step::Failed`]. See
     ///   [`Self::emit_failed_events()`] for more details.
     ///
     /// [`Step`]: gherkin::Step
@@ -1070,23 +1006,24 @@ where
         }
     }
 
-    /// Emits failure events of [`HookType::Before`] or [`Step`] after executing
-    /// [`Self::run_after_hook()`].
+    /// Emits all the failure events of [`HookType::Before`] or [`Step`] after
+    /// executing the [`Self::run_after_hook()`].
     ///
-    /// This is done, because [`HookType::After`] requires a mutable reference
-    /// to the [`World`] while on the other hand we store immutable reference to
-    /// it inside failure events for easier debugging. So to avoid imposing
-    /// additional [`Clone`] bound on the [`World`], we run [`HookType::After`]
-    /// first without emitting any events about it's execution, then emit
-    /// failure event of [`HookType::Before`] or [`Step`], if present, and
-    /// finally emit all [`HookType::After`] events. This allows us to ensure
-    /// [order guarantees][1] while not restricting [`HookType::After`] to the
-    /// immutable reference. The only downside to this approach is that we may
-    /// emit failure events of [`HookType::Before`] or [`Step`] with [`World`]
-    /// state changed by [`HookType::After`].
+    /// This is done because [`HookType::After`] requires a mutable reference to
+    /// the [`World`] while on the other hand we store immutable reference to it
+    /// inside failure events for easier debugging. So, to avoid imposing
+    /// additional [`Clone`] bounds on the [`World`], we run the
+    /// [`HookType::After`] first without emitting any events about its
+    /// execution, then emit failure event of the [`HookType::Before`] or
+    /// [`Step`], if present, and finally emit all the [`HookType::After`]
+    /// events. This allows us to ensure [order guarantees][1] while not
+    /// restricting the [`HookType::After`] to the immutable reference. The only
+    /// downside of this approach is that we may emit failure events of
+    /// [`HookType::Before`] or [`Step`] with the [`World`] state being changed
+    /// by the [`HookType::After`].
     ///
-    /// [1]: crate::Runner#order-guarantees
     /// [`Step`]: gherkin::Step
+    /// [1]: crate::Runner#order-guarantees
     fn emit_failed_events(
         &self,
         feature: Arc<gherkin::Feature>,
@@ -1138,8 +1075,10 @@ where
         }
     }
 
-    /// Executes [`HookType::After`], if present. Doesn't emit any events, see
-    /// [`Self::emit_failed_events()`] for more details.
+    /// Executes the [`HookType::After`], if present.
+    ///
+    /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
+    /// details.
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
@@ -1163,9 +1102,10 @@ where
         }
     }
 
-    /// Emits all [`HookType::After`] events. See [`Self::emit_failed_events()`]
-    /// for the explanation why we don't do that inside
-    /// [`Self::run_after_hook()`].
+    /// Emits all the [`HookType::After`] events.
+    ///
+    /// See [`Self::emit_failed_events()`] for the explanation why we don't do
+    /// that inside [`Self::run_after_hook()`].
     fn emit_after_hook_events(
         &self,
         feature: Arc<gherkin::Feature>,
@@ -1554,4 +1494,68 @@ impl Features {
 /// Coerces the given `value` into a type-erased [`Info`].
 fn coerce_into_info<T: std::any::Any + Send + 'static>(val: T) -> Info {
     Arc::new(val)
+}
+
+/// Failure encountered during execution of [`HookType::Before`] or [`Step`].
+/// See [`Executor::emit_failed_events()`] for more info.
+///
+/// [`Step`]: gherkin::Step
+enum ExecutionFailure<World> {
+    /// [`HookType::Before`] panicked.
+    BeforeHookPanicked {
+        /// [`World`] at the time [`HookType::Before`] has panicked.
+        world: Option<World>,
+
+        /// [`catch_unwind()`] of the [`HookType::Before`] panic.
+        ///
+        /// [`catch_unwind()`]: std::panic::catch_unwind
+        panic_info: Info,
+    },
+
+    /// [`Step`] was skipped.
+    ///
+    /// [`Step`]: gherkin::Step.
+    StepSkipped(Option<World>),
+
+    /// [`Step`] failed.
+    ///
+    /// [`Step`]: gherkin::Step.
+    StepPanicked {
+        /// [`World`] at the time when [`Step`] has failed.
+        ///
+        /// [`Step`]: gherkin::Step
+        world: Option<World>,
+
+        /// [`Step`] itself.
+        ///
+        /// [`Step`]: gherkin::Step
+        step: Arc<gherkin::Step>,
+
+        /// [`Step`]s [`regex`] [`CaptureLocations`].
+        ///
+        /// [`Step`]: gherkin::Step
+        captures: Option<CaptureLocations>,
+
+        /// [`StepError`] of the [`Step`].
+        ///
+        /// [`Step`]: gherkin::Step
+        /// [`StepError`]: event::StepError
+        err: event::StepError,
+
+        /// Indicator whether the [`Step`] was background or not.
+        ///
+        /// [`Step`]: gherkin::Step
+        is_background: bool,
+    },
+}
+
+impl<W> ExecutionFailure<W> {
+    /// Takes the [`World`] leaving a [`None`] in its place.
+    fn take_world(&mut self) -> Option<W> {
+        match self {
+            Self::BeforeHookPanicked { world, .. }
+            | Self::StepSkipped(world)
+            | Self::StepPanicked { world, .. } => world.take(),
+        }
+    }
 }

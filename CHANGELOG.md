@@ -6,18 +6,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.12.2] · ???
+## [0.12.2] · 2022-???
 [0.12.2]: /../../tree/v0.12.2
 
 [Diff](/../../compare/v0.12.1...v0.12.2)
 
 ### Changed
 
-- [`Cucumber::after`][after_hook] now gets the `World` instance even if a `Step` or `Hook` before it has failed. ([#209], [#207])
+- [`Cucumber::after`][0122-1] now gets the `World` instance even if some `Step` or a `Hook` before it has failed. ([#209], [#207])
 
 [#207]: /../../issues/207
 [#209]: /../../pull/209
-[after_hook]: https://docs.rs/cucumber/latest/cucumber/struct.Cucumber.html#method.after
+[0122-1]: https://docs.rs/cucumber/0.12.2/cucumber/struct.Cucumber.html#method.after
 
 
 

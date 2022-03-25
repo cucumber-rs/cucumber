@@ -21,7 +21,7 @@ async fn main() {
             async move {
                 let before =
                     NUMBER_OF_BEFORE_WORLDS.fetch_add(1, Ordering::SeqCst);
-                assert_ne!(before, 8, "Too much before Worlds!");
+                assert_ne!(before, 8, "Too much before `World`s!");
             }
             .boxed()
         })
@@ -30,7 +30,7 @@ async fn main() {
                 if w.is_some() {
                     let after =
                         NUMBER_OF_AFTER_WORLDS.fetch_add(1, Ordering::SeqCst);
-                    assert_ne!(after, 8, "Too much after Worlds!");
+                    assert_ne!(after, 8, "Too much after `World`s!");
                 } else {
                     panic!("No World received");
                 }
@@ -75,7 +75,7 @@ impl cucumber::World for World {
         assert_ne!(
             NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst),
             11,
-            "Failed to initialize World",
+            "Failed to initialize `World`",
         );
 
         Ok(World(0))
