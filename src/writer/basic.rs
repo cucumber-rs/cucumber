@@ -383,7 +383,10 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or(&feat.name),
             sc.position.line,
             sc.position.col,
-            coerce_error(info),
+            format_str_with_indent(
+                coerce_error(info),
+                self.indent.saturating_sub(3) + 3
+            ),
             world
                 .map(|w| format_str_with_indent(
                     // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.

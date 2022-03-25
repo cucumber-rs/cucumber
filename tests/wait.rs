@@ -49,9 +49,7 @@ async fn step(world: &mut World, secs: CustomU64) {
     time::sleep(Duration::from_secs(*secs)).await;
 
     world.0 += 1;
-    if world.0 > 3 {
-        panic!("Too much!");
-    }
+    assert!(world.0 < 4, "Too much!");
 }
 
 #[derive(Deref, FromStr, Parameter)]

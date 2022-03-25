@@ -1091,12 +1091,7 @@ where
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] [`Step`]s.
     ///
     /// Last `World` argument is supplied to the function, in case it was
-    /// initialized before by running [`before`] hook or any non-failed
-    /// [`Step`]. In case the last [`Scenario`]'s [`Step`] failed, we want to
-    /// return event with an exact `World` state. Also, we don't want to impose
-    /// additional [`Clone`] bounds on `World`, so the only option left is to
-    /// pass [`None`] to the function.
-    ///
+    /// initialized before by running [`before`] hook or any [`Step`].
     ///
     /// [`before`]: Self::before()
     /// [`Failed`]: event::Step::Failed
