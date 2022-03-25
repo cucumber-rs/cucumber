@@ -10,9 +10,7 @@ use tempfile::NamedTempFile;
 #[then(regex = r"(\d+) secs?")]
 fn step(world: &mut World) {
     world.0 += 1;
-    if world.0 > 3 {
-        panic!("Too much!");
-    }
+    assert!(world.0 < 4, "Too much!");
 }
 
 #[tokio::main]

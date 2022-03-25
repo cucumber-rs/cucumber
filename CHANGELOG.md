@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- [`Cucumber::after`][after_hook] now gets the `World` instance even if a `Step` before it has failed, but accepts a shared reference to it instance instead of a mutable one. ([#209], [#207])
+- [`Cucumber::after`][after_hook] now gets the `World` instance even if a `Step` or `Hook` before it has failed. ([#209], [#207])
 
 [#207]: /../../issues/207
 [#209]: /../../pull/209

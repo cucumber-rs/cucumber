@@ -1,10 +1,7 @@
 use std::{
     convert::Infallible,
     panic::AssertUnwindSafe,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+    sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
 
@@ -14,15 +11,28 @@ use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
+static NUMBER_OF_BEFORE_WORLDS: AtomicUsize = AtomicUsize::new(0);
+static NUMBER_OF_AFTER_WORLDS: AtomicUsize = AtomicUsize::new(0);
+
 #[tokio::main]
 async fn main() {
-    static NUMBER_OF_WORLDS: AtomicUsize = AtomicUsize::new(0);
-
     let res = World::cucumber()
+        .before(move |_, _, _, _| {
+            async move {
+                let before =
+                    NUMBER_OF_BEFORE_WORLDS.fetch_add(1, Ordering::SeqCst);
+                assert_ne!(before, 8, "Too much before Worlds!");
+            }
+            .boxed()
+        })
         .after(move |_, _, _, w| {
             async move {
                 if w.is_some() {
-                    NUMBER_OF_WORLDS.fetch_add(1, Ordering::SeqCst);
+                    let after =
+                        NUMBER_OF_AFTER_WORLDS.fetch_add(1, Ordering::SeqCst);
+                    assert_ne!(after, 8, "Too much after Worlds!");
+                } else {
+                    panic!("No World received");
                 }
             }
             .boxed()
@@ -35,8 +45,9 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error");
-    assert_eq!(NUMBER_OF_WORLDS.load(Ordering::SeqCst), 12);
+    assert_eq!(err, "2 steps failed, 1 parsing error, 4 hook errors");
+    assert_eq!(NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst), 11);
+    assert_eq!(NUMBER_OF_AFTER_WORLDS.load(Ordering::SeqCst), 11);
 }
 
 #[given(regex = r"(\d+) secs?")]
@@ -61,6 +72,12 @@ impl cucumber::World for World {
     type Error = Infallible;
 
     async fn new() -> Result<Self, Self::Error> {
+        assert_ne!(
+            NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst),
+            11,
+            "Failed to initialize World",
+        );
+
         Ok(World(0))
     }
 }
