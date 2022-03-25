@@ -110,7 +110,7 @@ pub type AfterHookFn<World> = for<'a> fn(
 type Failed = bool;
 
 /// Failure encountered during execution of [`HookType::Before`] or [`Step`].
-/// See [`Self::emit_failed_events()`] for more info.
+/// See [`Executor::emit_failed_events()`] for more info.
 ///
 /// [`Step`]: gherkin::Step
 enum ExecutionFailure<World> {
