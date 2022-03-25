@@ -6,12 +6,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.13.0] · ???
-[0.13.0]: /../../tree/v0.13.0
+## [0.12.2] · ???
+[0.12.2]: /../../tree/v0.12.2
 
-[Diff](/../../compare/v0.12.1...v0.13.0)
+[Diff](/../../compare/v0.12.1...v0.12.2)
 
-### BC Breaks
+### Changed
 
 - [`Cucumber::after`][after_hook] now gets the `World` instance even if a `Step` or `Hook` before it has failed. ([#209], [#207])
 
