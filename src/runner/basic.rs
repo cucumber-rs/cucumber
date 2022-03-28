@@ -806,12 +806,12 @@ where
             Err(exec_err) => exec_err.take_world(),
         };
 
-        let (world, after_hook_error) = self
+        let (world, after_hook_meta, after_hook_error) = self
             .run_after_hook(world, &feature, rule.as_ref(), &scenario)
             .await
             .map_or_else(
-                |(w, info)| (w.map(Arc::new), Some(info)),
-                |w| (w.map(Arc::new), None),
+                |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
+                |(w, meta)| (w.map(Arc::new), meta, None),
             );
 
         let is_failed = result.is_err() || after_hook_error.is_some();
@@ -831,6 +831,7 @@ where
             rule.clone(),
             Arc::clone(&scenario),
             world,
+            after_hook_meta,
             after_hook_error,
         );
 
@@ -911,6 +912,7 @@ where
                     Err(ExecutionFailure::BeforeHookPanicked {
                         world,
                         panic_info,
+                        meta: event::Metadata::new(()),
                     })
                 }
             }
@@ -1000,6 +1002,7 @@ where
                     step,
                     captures,
                     err,
+                    meta: event::Metadata::new(()),
                     is_background,
                 })
             }
@@ -1034,44 +1037,57 @@ where
     ) {
         match err {
             ExecutionFailure::StepSkipped(_) => {}
-            ExecutionFailure::BeforeHookPanicked { panic_info, .. } => {
-                self.send_event(event::Cucumber::scenario(
-                    feature,
-                    rule,
-                    scenario,
-                    event::Scenario::hook_failed(
-                        HookType::Before,
-                        world,
-                        panic_info,
+            ExecutionFailure::BeforeHookPanicked {
+                panic_info, meta, ..
+            } => {
+                self.send_event_with_meta(
+                    event::Cucumber::scenario(
+                        feature,
+                        rule,
+                        scenario,
+                        event::Scenario::hook_failed(
+                            HookType::Before,
+                            world,
+                            panic_info,
+                        ),
                     ),
-                ));
+                    meta,
+                );
             }
             ExecutionFailure::StepPanicked {
                 step,
                 captures,
                 err: error,
+                meta,
                 is_background: true,
                 ..
-            } => self.send_event(event::Cucumber::scenario(
-                feature,
-                rule,
-                scenario,
-                event::Scenario::background_step_failed(
-                    step, captures, world, error,
+            } => self.send_event_with_meta(
+                event::Cucumber::scenario(
+                    feature,
+                    rule,
+                    scenario,
+                    event::Scenario::background_step_failed(
+                        step, captures, world, error,
+                    ),
                 ),
-            )),
+                meta,
+            ),
             ExecutionFailure::StepPanicked {
                 step,
                 captures,
                 err: error,
+                meta,
                 is_background: false,
                 ..
-            } => self.send_event(event::Cucumber::scenario(
-                feature,
-                rule,
-                scenario,
-                event::Scenario::step_failed(step, captures, world, error),
-            )),
+            } => self.send_event_with_meta(
+                event::Cucumber::scenario(
+                    feature,
+                    rule,
+                    scenario,
+                    event::Scenario::step_failed(step, captures, world, error),
+                ),
+                meta,
+            ),
         }
     }
 
@@ -1085,7 +1101,10 @@ where
         feature: &Arc<gherkin::Feature>,
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
-    ) -> Result<Option<W>, (Option<W>, Info)> {
+    ) -> Result<
+        (Option<W>, Option<AfterHookEventsMeta>),
+        (Option<W>, AfterHookEventsMeta, Info),
+    > {
         if let Some(hook) = self.after_hook.as_ref() {
             let fut = (hook)(
                 feature.as_ref(),
@@ -1093,12 +1112,18 @@ where
                 scenario.as_ref(),
                 world.as_mut(),
             );
-            match AssertUnwindSafe(fut).catch_unwind().await {
-                Ok(()) => Ok(world),
-                Err(info) => Err((world, info.into())),
+
+            let started = event::Metadata::new(());
+            let res = AssertUnwindSafe(fut).catch_unwind().await;
+            let finished = event::Metadata::new(());
+            let meta = AfterHookEventsMeta { started, finished };
+
+            match res {
+                Ok(()) => Ok((world, Some(meta))),
+                Err(info) => Err((world, meta, info.into())),
             }
         } else {
-            Ok(world)
+            Ok((world, None))
         }
     }
 
@@ -1112,36 +1137,39 @@ where
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         world: Option<Arc<W>>,
+        meta: Option<AfterHookEventsMeta>,
         err: Option<Info>,
     ) {
-        if self.after_hook.is_some() {
-            // TODO: This `Hook::Started` event is emitted after
-            //       `HookType::After` is executed, so it can slightly mess up
-            //       timing if `timestamps` feature is enabled. Fix it by
-            //       passing here `event::Metadata` at the time
-            //       `HookType::After` was started.
-            self.send_event(event::Cucumber::scenario(
-                Arc::clone(&feature),
-                rule.clone(),
-                Arc::clone(&scenario),
-                event::Scenario::hook_started(HookType::After),
-            ));
+        debug_assert_eq!(self.after_hook.is_some(), meta.is_some());
 
-            if let Some(err) = err {
-                self.send_event(event::Cucumber::scenario(
+        if let Some(meta) = meta {
+            self.send_event_with_meta(
+                event::Cucumber::scenario(
+                    Arc::clone(&feature),
+                    rule.clone(),
+                    Arc::clone(&scenario),
+                    event::Scenario::hook_started(HookType::After),
+                ),
+                meta.started,
+            );
+
+            let ev = if let Some(err) = err {
+                event::Cucumber::scenario(
                     feature,
                     rule,
                     scenario,
                     event::Scenario::hook_failed(HookType::After, world, err),
-                ));
+                )
             } else {
-                self.send_event(event::Cucumber::scenario(
+                event::Cucumber::scenario(
                     feature,
                     rule,
                     scenario,
                     event::Scenario::hook_passed(HookType::After),
-                ));
-            }
+                )
+            };
+
+            self.send_event_with_meta(ev, meta.finished);
         }
     }
 
@@ -1169,6 +1197,21 @@ where
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
         drop(self.event_sender.unbounded_send(Ok(Event::new(event))));
+    }
+
+    /// Notifies with the given [`Cucumber`] event with the provided
+    /// [`Metadata`].
+    ///
+    /// [`Cucumber`]: event::Cucumber
+    /// [`Metadata`]: event::Metadata
+    fn send_event_with_meta(
+        &self,
+        event: event::Cucumber<W>,
+        meta: event::Metadata,
+    ) {
+        // If the receiver end is dropped, then no one listens for events
+        // so we can just ignore it.
+        drop(self.event_sender.unbounded_send(Ok(meta.wrap(event))));
     }
 
     /// Notifies with the given [`Cucumber`] events.
@@ -1510,6 +1553,11 @@ enum ExecutionFailure<World> {
         ///
         /// [`catch_unwind()`]: std::panic::catch_unwind
         panic_info: Info,
+
+        /// [`Metadata`] at the time [`HookType::Before`] panicked.
+        ///
+        /// [`Metadata`]: event::Metadata
+        meta: event::Metadata,
     },
 
     /// [`Step`] was skipped.
@@ -1542,11 +1590,32 @@ enum ExecutionFailure<World> {
         /// [`StepError`]: event::StepError
         err: event::StepError,
 
+        /// [`Metadata`] at the time [`Step`] failed.
+        ///
+        /// [`Metadata`]: event::Metadata
+        /// [`Step`]: gherkin::Step.
+        meta: event::Metadata,
+
         /// Indicator whether the [`Step`] was background or not.
         ///
         /// [`Step`]: gherkin::Step
         is_background: bool,
     },
+}
+
+/// [`Metadata`] of [`HookType::After`] events.
+///
+/// [`Metadata`]: event::Metadata
+struct AfterHookEventsMeta {
+    /// [`Metadata`] at the time [`HookType::After`] started.
+    ///
+    /// [`Metadata`]: event::Metadata
+    started: event::Metadata,
+
+    /// [`Metadata`] at the time [`HookType::After`] finished.
+    ///
+    /// [`Metadata`]: event::Metadata
+    finished: event::Metadata,
 }
 
 impl<W> ExecutionFailure<W> {
