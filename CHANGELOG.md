@@ -6,10 +6,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.12.2] · 2022-???
+## [0.12.2] · 2022-03-28
 [0.12.2]: /../../tree/v0.12.2
 
-[Diff](/../../compare/v0.12.1...v0.12.2)
+[Diff](/../../compare/v0.12.1...v0.12.2) | [Milestone](/../../milestone/10)
 
 ### Changed
 
@@ -25,7 +25,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ## [0.12.1] · 2022-03-09
 [0.12.1]: /../../tree/v0.12.1
 
-[Diff](/../../compare/v0.12.0...v0.12.1)
+[Diff](/../../compare/v0.12.0...v0.12.1) | [Milestone](/../../milestone/11)
 
 ### Security updated
 
