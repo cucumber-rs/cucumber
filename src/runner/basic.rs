@@ -1194,13 +1194,12 @@ where
     ///
     /// [`Cucumber`]: event::Cucumber
     fn send_event(&self, event: event::Cucumber<W>) {
-        // If the receiver end is dropped, then no one listens for events
+        // If the receiver end is dropped, then no one listens for events,
         // so we can just ignore it.
         drop(self.event_sender.unbounded_send(Ok(Event::new(event))));
     }
 
-    /// Notifies with the given [`Cucumber`] event with the provided
-    /// [`Metadata`].
+    /// Notifies with the given [`Cucumber`] event along with its [`Metadata`].
     ///
     /// [`Cucumber`]: event::Cucumber
     /// [`Metadata`]: event::Metadata
@@ -1209,7 +1208,7 @@ where
         event: event::Cucumber<W>,
         meta: event::Metadata,
     ) {
-        // If the receiver end is dropped, then no one listens for events
+        // If the receiver end is dropped, then no one listens for events,
         // so we can just ignore it.
         drop(self.event_sender.unbounded_send(Ok(meta.wrap(event))));
     }
@@ -1222,7 +1221,7 @@ where
         events: impl Iterator<Item = event::Cucumber<W>>,
     ) {
         for v in events {
-            // If the receiver end is dropped, then no one listens for events
+            // If the receiver end is dropped, then no one listens for events,
             // so we can just stop from here.
             if self.event_sender.unbounded_send(Ok(Event::new(v))).is_err() {
                 break;
@@ -1590,7 +1589,7 @@ enum ExecutionFailure<World> {
         /// [`StepError`]: event::StepError
         err: event::StepError,
 
-        /// [`Metadata`] at the time [`Step`] failed.
+        /// [`Metadata`] at the time when [`Step`] failed.
         ///
         /// [`Metadata`]: event::Metadata
         /// [`Step`]: gherkin::Step.
