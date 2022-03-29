@@ -204,7 +204,7 @@ async fn is_full(w: &amp;mut World) {
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber = &quot;0.11&quot;
+cucumber = &quot;0.13&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -594,7 +594,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
 async-trait = &quot;0.1&quot;
-cucumber = &quot;0.11&quot;
+cucumber = &quot;0.13&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -2731,7 +2731,7 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.11&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, fs, io};
@@ -2765,7 +2765,7 @@ World::cucumber()
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.11&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, fs, io};
@@ -2925,6 +2925,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
             scenarios: vec![gherkin::Scenario {
                 keyword: &quot;Scenario&quot;.into(),
                 name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+                description: None,
                 steps: vec![
                     gherkin::Step {
                         keyword: &quot;Given&quot;.into(),
@@ -3069,6 +3070,7 @@ async fn main() {
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
 </span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
 </span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
 </span><span class="boring">                        keyword: &quot;Given&quot;.into(),
@@ -3333,6 +3335,7 @@ async fn main() {
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
 </span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
 </span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
 </span><span class="boring">                        keyword: &quot;Given&quot;.into(),
@@ -3616,6 +3619,7 @@ async fn main() {
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
 </span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
 </span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
 </span><span class="boring">                        keyword: &quot;Given&quot;.into(),

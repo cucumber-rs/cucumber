@@ -213,6 +213,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
             scenarios: vec![gherkin::Scenario {
                 keyword: &quot;Scenario&quot;.into(),
                 name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+                description: None,
                 steps: vec![
                     gherkin::Step {
                         keyword: &quot;Given&quot;.into(),
