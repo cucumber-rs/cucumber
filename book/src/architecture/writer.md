@@ -95,6 +95,7 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #             scenarios: vec![gherkin::Scenario {
 #                 keyword: "Scenario".into(),
 #                 name: "If we feed a hungry cat it won't be hungry".into(),
+#                 description: None,
 #                 steps: vec![
 #                     gherkin::Step {
 #                         keyword: "Given".into(),
@@ -379,6 +380,7 @@ async fn main() {
 #             scenarios: vec![gherkin::Scenario {
 #                 keyword: "Scenario".into(),
 #                 name: "If we feed a hungry cat it won't be hungry".into(),
+#                 description: None,
 #                 steps: vec![
 #                     gherkin::Step {
 #                         keyword: "Given".into(),
