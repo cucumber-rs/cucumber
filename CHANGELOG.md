@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.13.0] · ???
+[0.13.0]: /../../tree/v0.13.0
+
+[Diff](/../../compare/v0.12.2...v0.13.0) | [Milestone](/../../milestone/12)
+
+### BC Breaks
+
+- Update [`gherkin`] to `0.12`. ([#211])
+
+[#211]: /../../pull/211
+
+
+
+
 ## [0.12.2] · 2022-03-28
 [0.12.2]: /../../tree/v0.12.2
 
