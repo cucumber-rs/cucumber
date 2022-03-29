@@ -135,7 +135,13 @@ fn expand_scenario(
     scenario
         .examples
         .iter()
-        .filter_map(|ex| ex.table.rows.split_first().map(|(h, v)| (h, v, ex)))
+        .filter_map(|ex| {
+            ex.table
+                .as_ref()?
+                .rows
+                .split_first()
+                .map(|(h, v)| (h, v, ex))
+        })
         .flat_map(|(header, vals, example)| {
             vals.iter()
                 .map(|v| header.iter().zip(v))

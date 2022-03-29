@@ -95,6 +95,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #             scenarios: vec![gherkin::Scenario {
 #                 keyword: "Scenario".into(),
 #                 name: "If we feed a hungry cat it won't be hungry".into(),
+#                 description: None,
 #                 steps: vec![
 #                     gherkin::Step {
 #                         keyword: "Given".into(),

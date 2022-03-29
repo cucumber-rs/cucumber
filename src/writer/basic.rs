@@ -468,7 +468,7 @@ impl<Out: io::Write> Basic<Out> {
         self.indent += 4;
         if self.styles.is_present {
             let output = format!(
-                "{indent}{} {}{}{}",
+                "{indent}{}{}{}{}",
                 step.keyword,
                 step.value,
                 step.docstring
@@ -532,7 +532,7 @@ impl<Out: io::Write> Basic<Out> {
 
         // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
-            "{indent}{} {}{}{}",
+            "{indent}{}{}{}{}",
             step_keyword,
             step_value,
             doc_str,
@@ -552,7 +552,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.output.write_line(&self.styles.skipped(format!(
-            "{indent}?  {} {}{}{}\n\
+            "{indent}?  {}{}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
             step.value,
@@ -651,7 +651,7 @@ impl<Out: io::Write> Basic<Out> {
 
         // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.write_line(&format!(
-            "{} {}{}",
+            "{}{}{}",
             step_keyword, step_value, diagnostics,
         ))
     }
@@ -711,7 +711,7 @@ impl<Out: io::Write> Basic<Out> {
         self.indent += 4;
         if self.styles.is_present {
             let output = format!(
-                "{indent}> {} {}{}{}",
+                "{indent}> {}{}{}{}",
                 step.keyword,
                 step.value,
                 step.docstring
@@ -776,7 +776,7 @@ impl<Out: io::Write> Basic<Out> {
 
         // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
-            "{indent}{} {}{}{}",
+            "{indent}{}{}{}{}",
             step_keyword,
             step_value,
             doc_str,
@@ -797,7 +797,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
         self.output.write_line(&self.styles.skipped(format!(
-            "{indent}?> {} {}{}{}\n\
+            "{indent}?> {}{}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,
             step.value,
@@ -896,7 +896,7 @@ impl<Out: io::Write> Basic<Out> {
 
         // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.write_line(&format!(
-            "{} {}{}",
+            "{}{}{}",
             step_keyword, step_value, diagnostics,
         ))
     }

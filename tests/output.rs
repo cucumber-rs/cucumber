@@ -139,6 +139,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
 static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
         "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+         |, col: (\\d+)\
          | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
     )
     .unwrap()
