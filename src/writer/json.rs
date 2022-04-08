@@ -60,7 +60,6 @@ pub struct Json<Out: io::Write> {
 impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     type Cli = cli::Empty;
 
-    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
@@ -97,16 +96,11 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                     .write_all(
                         serde_json::to_string(&self.features)
                             .unwrap_or_else(|e| {
-                                // TODO: Use "{e}" syntax once MSRV bumps above
-                                //       1.58.
-                                panic!("Failed to serialize JSON: {}", e)
+                                panic!("Failed to serialize JSON: {e}")
                             })
                             .as_bytes(),
                     )
-                    .unwrap_or_else(|e| {
-                        // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
-                        panic!("Failed to write JSON: {}", e)
-                    });
+                    .unwrap_or_else(|e| panic!("Failed to write JSON: {e}"));
             }
             _ => {}
         }
@@ -209,16 +203,15 @@ impl<Out: io::Write> Json<Out> {
 
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                // TODO: Use "{hook_ty}" syntax once MSRV bumps above 1.58.
-                panic!("No `Started` event for `{} Hook`", hook_ty)
+                panic!("No `Started` event for `{hook_ty} Hook`")
             });
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
-                    // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                     panic!(
-                        "Failed to compute duration between {:?} and {:?}: {}",
-                        meta.at, started, e,
+                        "Failed to compute duration between {:?} and \
+                         {started:?}: {e}",
+                        meta.at,
                     );
                 })
                 .as_nanos()
@@ -272,10 +265,10 @@ impl<Out: io::Write> Json<Out> {
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
-                    // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
                     panic!(
-                        "Failed to compute duration between {:?} and {:?}: {}",
-                        meta.at, started, e,
+                        "Failed to compute duration between {:?} and \
+                         {started:?}: {e}",
+                        meta.at,
                     );
                 })
                 .as_nanos()
@@ -534,7 +527,7 @@ impl Element {
             name: format!(
                 "{}{}",
                 rule.map(|r| format!("{} ", r.name)).unwrap_or_default(),
-                scenario.name.clone()
+                scenario.name.clone(),
             ),
             tags: scenario
                 .tags

@@ -6,6 +6,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.14.0] · 2022-??-?? (unreleased)
+[0.14.0]: /../../tree/v0.14.0
+
+[Diff](/../../compare/v0.13.0...v0.14.0) | [Milestone](/../../milestone/13)
+
+### BC Breaks
+
+- Bump up [MSRV] to 1.60 for more clever support of [Cargo feature]s.
+
+
+
+
 ## [0.13.0] · 2022-03-29
 [0.13.0]: /../../tree/v0.13.0
 
@@ -416,6 +428,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [`gherkin`]: https://docs.rs/gherkin
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
 
+[Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org

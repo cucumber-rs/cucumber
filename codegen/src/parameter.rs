@@ -65,8 +65,7 @@ impl TryFrom<syn::DeriveInput> for Definition {
         let attrs: Attrs = Attrs::parse_attrs("param", &input)?;
 
         let regex = Regex::new(&attrs.regex.value()).map_err(|e| {
-            // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
-            syn::Error::new(attrs.regex.span(), format!("Invalid regex: {}", e))
+            syn::Error::new(attrs.regex.span(), format!("Invalid regex: {e}"))
         })?;
 
         let name = attrs.name.as_ref().map_or_else(

@@ -1,8 +1,8 @@
 [package]
 name = "cucumber"
-version = "0.13.0"
+version = "0.14.0-dev"
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\
@@ -28,11 +28,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["macros"]
 # Enables step attributes and auto-wiring.
-macros = ["cucumber-codegen", "cucumber-expressions", "inventory"]
+macros = ["dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
 # Enables support for outputting in Cucumber JSON format.
-output-json = ["Inflector", "serde", "serde_json", "timestamps"]
+output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
-output-junit = ["junit-report", "timestamps"]
+output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
 
@@ -53,7 +53,7 @@ regex = "1.5.5"
 sealed = "0.4"
 
 # "macros" feature dependencies.
-cucumber-codegen = { version = "0.13", path = "./codegen", optional = true }
+cucumber-codegen = { version = "0.14.0-dev", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional = true }
 inventory = { version = "0.2", optional = true }
 

@@ -153,6 +153,9 @@ fn expand_scenario(
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
                     .replace_all(str, |cap: &regex::Captures<'_>| {
+                        // PANIC: Unwrapping is OK here as `TEMPLATE_REGEX`
+                        //        contains this capture group.
+                        #[allow(clippy::unwrap_used)]
                         let name = cap.get(1).unwrap().as_str();
 
                         row.clone()

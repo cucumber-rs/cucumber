@@ -100,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ['1.57.0']
+        msrv: ["1.60.0"]
         crate:
           - cucumber-codegen
           - cucumber

@@ -155,9 +155,8 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_up(&mut self, n: usize) -> io::Result<()> {
-        // TODO: Use "{n}" syntax once MSRV bumps above 1.58.
         (n > 0)
-            .then(|| self.write_str(format!("\x1b[{}A", n)))
+            .then(|| self.write_str(format!("\x1b[{n}A")))
             .unwrap_or(Ok(()))
     }
 
@@ -168,9 +167,8 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_down(&mut self, n: usize) -> io::Result<()> {
-        // TODO: Use "{n}" syntax once MSRV bumps above 1.58.
         (n > 0)
-            .then(|| self.write_str(format!("\x1b[{}B", n)))
+            .then(|| self.write_str(format!("\x1b[{n}B")))
             .unwrap_or(Ok(()))
     }
 

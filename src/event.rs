@@ -356,8 +356,7 @@ pub enum HookType {
 
 impl fmt::Display for HookType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: Use "{self}" syntax once MSRV bumps above 1.58.
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

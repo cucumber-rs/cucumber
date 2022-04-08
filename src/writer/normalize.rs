@@ -591,11 +591,11 @@ impl<World> FeatureQueue<World> {
     /// [`Rule`]: gherkin::Rule
     fn rule_finished(&mut self, rule: Event<Arc<gherkin::Rule>>) {
         let (rule, meta) = rule.split();
-        match self.queue.get_mut(&Either::Left(rule)).unwrap() {
-            Either::Left(ev) => {
+        match self.queue.get_mut(&Either::Left(rule)) {
+            Some(Either::Left(ev)) => {
                 ev.finished(meta);
             }
-            Either::Right(_) => unreachable!(),
+            Some(Either::Right(_)) | None => unreachable!(),
         }
     }
 

@@ -60,29 +60,26 @@ impl<World> fmt::Debug for Collection<World> {
         f.debug_struct("Collection")
             .field(
                 "given",
-                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .given
                     .iter()
-                    .map(|(re, step)| (re, format!("{:p}", step)))
+                    .map(|(re, step)| (re, format!("{step:p}")))
                     .collect::<HashMap<_, _>>(),
             )
             .field(
                 "when",
-                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .when
                     .iter()
-                    .map(|(re, step)| (re, format!("{:p}", step)))
+                    .map(|(re, step)| (re, format!("{step:p}")))
                     .collect::<HashMap<_, _>>(),
             )
             .field(
                 "then",
-                // TODO: Use "{step:p}" syntax once MSRV bumps above 1.58.
                 &self
                     .then
                     .iter()
-                    .map(|(re, step)| (re, format!("{:p}", step)))
+                    .map(|(re, step)| (re, format!("{step:p}")))
                     .collect::<HashMap<_, _>>(),
             )
             .finish()

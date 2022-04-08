@@ -94,8 +94,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                     ),
                 );
 
-                // TODO: Use "{ev:?}" syntax once MSRV bumps above 1.58.
-                format!("{:?}", ev).into()
+                format!("{ev:?}").into()
             }
             Ok(Cucumber::Feature(
                 feat,
@@ -121,11 +120,9 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                     ),
                 );
 
-                // TODO: Use "{ev:?}" syntax once MSRV bumps above 1.58.
-                format!("{:?}", ev).into()
+                format!("{ev:?}").into()
             }
-            // TODO: Use "{ev:?}" syntax once MSRV bumps above 1.58.
-            Ok(ev) => format!("{:?}", ev).into(),
+            Ok(ev) => format!("{ev:?}").into(),
         };
 
         let without_span = SPAN_OR_PATH_RE.replace_all(ev.as_ref(), "");
@@ -173,22 +170,18 @@ mod spec {
         );
 
         for file in files {
-            // TODO: Use "{file}" syntax once MSRV bumps above 1.58.
             let out = fs::read_to_string(format!(
-                "tests/features/output/{}.out",
-                file,
+                "tests/features/output/{file}.out",
             ))
             .unwrap_or_default()
             .lines()
             .collect::<String>();
-            // TODO: Use "{file}" syntax once MSRV bumps above 1.58.
             let normalized = World::cucumber()
                 .with_writer(DebugWriter::default().normalized())
-                .run(format!("tests/features/output/{}", file))
+                .run(format!("tests/features/output/{file}"))
                 .await;
 
-            // TODO: Use "{file}" syntax once MSRV bumps above 1.58.
-            assert_eq!(normalized.0, out, "file: {}", file);
+            assert_eq!(normalized.0, out, "file: {file}");
         }
     }
 }

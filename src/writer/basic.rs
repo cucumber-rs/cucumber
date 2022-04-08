@@ -126,7 +126,6 @@ where
 {
     type Cli = Cli;
 
-    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn handle_event(
         &mut self,
         ev: parser::Result<Event<event::Cucumber<W>>>,
@@ -146,10 +145,7 @@ where
                 Feature::Finished => Ok(()),
             },
         }
-        .unwrap_or_else(|e| {
-            // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
-            panic!("Failed to write into terminal: {}", e)
-        });
+        .unwrap_or_else(|e| panic!("Failed to write into terminal: {e}"));
     }
 }
 
@@ -160,14 +156,12 @@ where
     Val: AsRef<str> + 'val,
     Out: io::Write,
 {
-    #[allow(clippy::unused_async)] // false positive: #[async_trait]
     async fn write(&mut self, val: Val)
     where
         'val: 'async_trait,
     {
-        // TODO: Use "{e}" syntax once MSRV bumps above 1.58.
         self.write_line(val.as_ref())
-            .unwrap_or_else(|e| panic!("Failed to write: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to write: {e}"));
     }
 }
 
@@ -253,9 +247,8 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         error: impl Display,
     ) -> io::Result<()> {
-        // TODO: Use "{error}" syntax once MSRV bumps above 1.58.
         self.output
-            .write_line(&self.styles.err(format!("Failed to parse: {}", error)))
+            .write_line(&self.styles.err(format!("Failed to parse: {error}")))
     }
 
     /// Outputs the [started] [`Feature`].
@@ -374,9 +367,8 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         self.output.write_line(&self.styles.err(format!(
-            "{indent}✘  Scenario's {} hook failed {}:{}:{}\n\
+            "{indent}✘  Scenario's {which} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
-            which,
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -389,8 +381,7 @@ impl<Out: io::Write> Basic<Out> {
             ),
             world
                 .map(|w| format_str_with_indent(
-                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
-                    format!("{:#?}", w),
+                    format!("{w:#?}"),
                     self.indent.saturating_sub(3) + 3,
                 ))
                 .unwrap_or_default(),
@@ -530,13 +521,8 @@ impl<Out: io::Write> Basic<Out> {
             .map(|t| format_table(t, self.indent))
             .unwrap_or_default());
 
-        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
-            "{indent}{}{}{}{}",
-            step_keyword,
-            step_value,
-            doc_str,
-            step_table,
+            "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
     }
@@ -640,8 +626,7 @@ impl<Out: io::Write> Basic<Out> {
             ),
             world
                 .map(|w| format_str_with_indent(
-                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
-                    format!("{:#?}", w),
+                    format!("{w:#?}"),
                     self.indent.saturating_sub(3) + 3,
                 ))
                 .filter(|_| self.verbosity.shows_world())
@@ -649,11 +634,7 @@ impl<Out: io::Write> Basic<Out> {
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
-        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
-        self.write_line(&format!(
-            "{}{}{}",
-            step_keyword, step_value, diagnostics,
-        ))
+        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}",))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -774,13 +755,8 @@ impl<Out: io::Write> Basic<Out> {
             .map(|t| format_table(t, self.indent))
             .unwrap_or_default());
 
-        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
         self.output.write_line(&self.styles.ok(format!(
-            "{indent}{}{}{}{}",
-            step_keyword,
-            step_value,
-            doc_str,
-            step_table,
+            "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
     }
@@ -886,19 +862,14 @@ impl<Out: io::Write> Basic<Out> {
             ),
             world
                 .map(|w| format_str_with_indent(
-                    // TODO: Use "{w:#?}" syntax once MSRV bumps above 1.58.
-                    format!("{:#?}", w),
+                    format!("{w:#?}"),
                     self.indent.saturating_sub(3) + 3,
                 ))
                 .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
-        // TODO: Use "{step_keyword}" syntax once MSRV bumps above 1.58.
-        self.write_line(&format!(
-            "{}{}{}",
-            step_keyword, step_value, diagnostics,
-        ))
+        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}",))
     }
 }
 
@@ -916,15 +887,13 @@ pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
 /// Formats the given [`str`] by adding `indent`s to each line to prettify the
 /// output.
 fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
-    // TODO: Use "{line}" syntax once MSRV bumps above 1.58.
     let str = str
         .as_ref()
         .lines()
-        .map(|line| format!("{}{}", " ".repeat(indent), line))
+        .map(|line| format!("{}{line}", " ".repeat(indent)))
         .join("\n");
-    // TODO: Use "{str}" syntax once MSRV bumps above 1.58.
     (!str.is_empty())
-        .then(|| format!("\n{}", str))
+        .then(|| format!("\n{str}"))
         .unwrap_or_default()
 }
 
@@ -948,17 +917,16 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         })
         .unwrap_or_default();
 
-    // TODO: Use "{cell:len$}" and "{row}" syntax once MSRV bumps above 1.58.
     let mut table = table
         .rows
         .iter()
         .map(|row| {
             row.iter()
                 .zip(&max_row_len)
-                .map(|(cell, len)| format!("| {:1$} ", cell, len))
+                .map(|(cell, len)| format!("| {cell:len$} "))
                 .collect::<String>()
         })
-        .map(|row| format!("{}{}", " ".repeat(indent + 1), row))
+        .map(|row| format!("{}{row}", " ".repeat(indent + 1)))
         .join("|\n");
 
     if !table.is_empty() {

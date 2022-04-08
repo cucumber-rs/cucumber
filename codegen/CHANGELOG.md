@@ -6,6 +6,18 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.14.0] · 2022-??-?? (unreleased)
+[0.14.0]: /../../tree/v0.14.0/codegen
+
+[Milestone](/../../milestone/13)
+
+### BC Breaks
+
+- Bump up [MSRV] to 1.60 for more clever support of [Cargo feature]s.
+
+
+
+
 ## [0.13.0] · 2022-03-29
 [0.13.0]: /../../tree/v0.13.0/codegen
 
@@ -173,6 +185,7 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 
+[Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org

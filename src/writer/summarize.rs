@@ -486,19 +486,10 @@ impl Styles {
             .then(|| self.err(", "))
             .unwrap_or_default();
 
-        // TODO: Use "{features}" syntax once MSRV bumps above 1.58.
         format!(
-            "{}\n{}\n{}{}{}\n{}{}\n{}{}{}",
-            self.bold(self.header("[Summary]")),
-            features,
-            rules,
-            scenarios,
-            scenarios_stats,
-            steps,
-            steps_stats,
-            parsing_errors,
-            comma,
-            hook_errors
+            "{summary}\n{features}\n{rules}{scenarios}{scenarios_stats}\n\
+             {steps}{steps_stats}\n{parsing_errors}{comma}{hook_errors}",
+            summary = self.bold(self.header("[Summary]")),
         )
         .trim_end_matches('\n')
         .to_owned()
@@ -530,12 +521,10 @@ impl Styles {
 
         (!formatted.is_empty())
             .then(|| {
-                // TODO: Use "{formatted}" syntax once MSRV bumps above 1.58.
                 self.bold(format!(
-                    " {}{}{}",
+                    " {}{formatted}{}",
                     self.bold("("),
-                    formatted,
-                    self.bold(")")
+                    self.bold(")"),
                 ))
             })
             .unwrap_or_default()
@@ -547,10 +536,8 @@ impl Styles {
         singular: impl Into<Cow<'static, str>>,
         num: usize,
     ) -> Cow<'static, str> {
-        // TODO: Use "{num}" syntax once MSRV bumps above 1.58.
         self.bold(format!(
-            "{} {}{}",
-            num,
+            "{num} {}{}",
             singular.into(),
             (num != 1).then(|| "s").unwrap_or_default(),
         ))
