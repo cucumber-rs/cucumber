@@ -570,7 +570,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
         &quot;hungry&quot; =&gt;  world.cat.hungry = true,
         &quot;satiated&quot; =&gt;  world.cat.hungry = false,
-        s =&gt; panic!(&quot;expected 'hungry' or 'satiated', found: {}&quot;, s),
+        s =&gt; panic!(&quot;expected 'hungry' or 'satiated', found: {s}&quot;),
     }
 }
 <span class="boring">
