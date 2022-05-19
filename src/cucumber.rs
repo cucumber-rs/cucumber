@@ -24,8 +24,12 @@ use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
-    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
+    cli, event, parser,
+    runner::{self, basic::RetryOrder},
+    step,
+    tag::Ext as _,
+    writer, Event, Parser, Runner, ScenarioType, Step, World, Writer,
+    WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -973,19 +977,26 @@ where
     }
 }
 
-impl<W, I, P, Wr, F, B, A, Cli>
-    Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr, Cli>
+impl<W, I, P, Wr, Wf, Rf, B, A, Cli>
+    Cucumber<W, P, I, runner::Basic<W, Wf, Rf, B, A>, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
     Wr: Writer<W>,
     Cli: clap::Args,
-    F: Fn(
+    Wf: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
         + 'static,
+    Rf: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> (RetryOrder, usize)
+        + 'static
+        + Clone,
     B: for<'a> Fn(
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
@@ -1024,7 +1035,7 @@ where
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which, Rf, B, A>, Wr, Cli>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -1060,7 +1071,7 @@ where
     pub fn before<Before>(
         self,
         func: Before,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Wf, Rf, Before, A>, Wr, Cli>
     where
         Before: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1102,7 +1113,7 @@ where
     pub fn after<After>(
         self,
         func: After,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Wf, Rf, B, After>, Wr, Cli>
     where
         After: for<'a> Fn(
                 &'a gherkin::Feature,

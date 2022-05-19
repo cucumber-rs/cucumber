@@ -82,6 +82,27 @@ pub type WhichScenarioFn = fn(
     &gherkin::Scenario,
 ) -> ScenarioType;
 
+/// Type determining the order in which a [`Scenario`] should be retried.
+///
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Copy, Debug)]
+pub enum RetryOrder {
+    /// Retries `Scenario` right after the failure.
+    Immediate,
+    /// Retries `Scenario` at the end of the run.
+    Postponed,
+}
+
+/// Alias for [`fn`] used to determine when and how many times a [`Scenario`]
+/// should be retried.
+///
+/// [`Scenario`]: gherkin::Scenario
+pub type RetryableFn = fn(
+    &gherkin::Feature,
+    Option<&gherkin::Rule>,
+    &gherkin::Scenario,
+) -> (RetryOrder, RetriesLeft);
+
 /// Alias for [`fn`] executed on each [`Scenario`] before running all [`Step`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
@@ -120,7 +141,8 @@ type Failed = bool;
 /// [`Scenario`]: gherkin::Scenario
 pub struct Basic<
     World,
-    F = WhichScenarioFn,
+    WhichFn = WhichScenarioFn,
+    RetryFn = RetryableFn,
     Before = BeforeHookFn<World>,
     After = AfterHookFn<World>,
 > {
@@ -140,7 +162,9 @@ pub struct Basic<
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
-    which_scenario: F,
+    which_scenario: WhichFn,
+
+    retryable: RetryFn,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
     /// including [`Background`] ones.
@@ -172,7 +196,7 @@ impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
     }
 }
 
-impl<World> Basic<World, ()> {
+impl<World> Basic<World, (), ()> {
     /// Creates a new empty [`Runner`].
     #[must_use]
     pub fn custom() -> Self {
@@ -180,6 +204,7 @@ impl<World> Basic<World, ()> {
             max_concurrent_scenarios: None,
             steps: step::Collection::new(),
             which_scenario: (),
+            retryable: (),
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -198,10 +223,34 @@ impl<World> Default for Basic<World> {
                 .unwrap_or(ScenarioType::Concurrent)
         };
 
+        // TODO : handle feature + current scenario if retry(x) on feature
+        let retryable: RetryableFn = |_feature, _rule, scenario| {
+            use once_cell::sync::Lazy;
+            #[allow(clippy::expect_used)]
+            static RETRY_REGEX: Lazy<Regex> = Lazy::new(|| {
+                Regex::new(r"retry\((?P<retries>[\d])\)")
+                    .expect("incorrect Regex")
+            });
+
+            let retries = scenario
+                .tags
+                .iter()
+                .find(|tag| RETRY_REGEX.is_match(tag))
+                .and_then(|tag| RETRY_REGEX.captures(tag))
+                .and_then(|caps| {
+                    caps.name("retries").and_then(|retries| {
+                        retries.as_str().parse::<usize>().ok()
+                    })
+                });
+
+            (RetryOrder::Immediate, retries.unwrap_or(0))
+        };
+
         Self {
             max_concurrent_scenarios: Some(64),
             steps: step::Collection::new(),
             which_scenario,
+            retryable,
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -209,7 +258,9 @@ impl<World> Default for Basic<World> {
     }
 }
 
-impl<World, Which, Before, After> Basic<World, Which, Before, After> {
+impl<World, Which, Retry, Before, After>
+    Basic<World, Which, Retry, Before, After>
+{
     /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
     /// will be limited.
     ///
@@ -242,9 +293,12 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
+    pub fn which_scenario<WhichFn>(
+        self,
+        func: WhichFn,
+    ) -> Basic<World, WhichFn, Retry, Before, After>
     where
-        F: Fn(
+        WhichFn: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
@@ -257,12 +311,50 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            retryable,
             ..
         } = self;
         Basic {
             max_concurrent_scenarios,
             steps,
             which_scenario: func,
+            retryable,
+            before_hook,
+            after_hook,
+            fail_fast,
+        }
+    }
+
+    /// Function determining when to retry a [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retryable<RetryFn>(
+        self,
+        func: RetryFn,
+    ) -> Basic<World, Which, RetryFn, Before, After>
+    where
+        RetryFn: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> (RetryOrder, RetriesLeft)
+            + 'static,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            steps,
+            before_hook,
+            after_hook,
+            fail_fast,
+            which_scenario,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            retryable: func,
             before_hook,
             after_hook,
             fail_fast,
@@ -276,7 +368,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
+    pub fn before<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Retry, Func, After>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -289,6 +384,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retryable,
             after_hook,
             fail_fast,
             ..
@@ -297,6 +393,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retryable,
             before_hook: Some(func),
             after_hook,
             fail_fast,
@@ -315,7 +412,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
+    pub fn after<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Retry, Before, Func>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -328,6 +428,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retryable,
             before_hook,
             fail_fast,
             ..
@@ -336,6 +437,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retryable,
             before_hook,
             after_hook: Some(func),
             fail_fast,
@@ -380,7 +482,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     }
 }
 
-impl<W, Which, Before, After> Runner<W> for Basic<W, Which, Before, After>
+impl<W, Which, Retry, Before, After> Runner<W>
+    for Basic<W, Which, Retry, Before, After>
 where
     W: World,
     Which: Fn(
@@ -389,6 +492,13 @@ where
             &gherkin::Scenario,
         ) -> ScenarioType
         + 'static,
+    Retry: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> (RetryOrder, RetriesLeft)
+        + 'static
+        + Clone,
     Before: for<'a> Fn(
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
@@ -417,9 +527,11 @@ where
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retryable,
             before_hook,
             after_hook,
             fail_fast,
+            ..
         } = self;
 
         let fail_fast = if cli.fail_fast { true } else { fail_fast };
@@ -430,6 +542,7 @@ where
             buffer.clone(),
             features,
             which_scenario,
+            retryable.clone(),
             sender.clone(),
             fail_fast,
         );
@@ -437,6 +550,7 @@ where
             buffer,
             cli.concurrency.or(max_concurrent_scenarios),
             steps,
+            retryable,
             sender,
             before_hook,
             after_hook,
@@ -462,25 +576,32 @@ where
 /// Stores [`Feature`]s for later use by [`execute()`].
 ///
 /// [`Feature`]: gherkin::Feature
-async fn insert_features<W, S, F>(
+async fn insert_features<W, S, Wf, Rf>(
     into: Features,
     features: S,
-    which_scenario: F,
+    which_scenario: Wf,
+    retryable: Rf,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
     fail_fast: bool,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
-    F: Fn(
+    Wf: Fn(
             &gherkin::Feature,
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
         + 'static,
+    Rf: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> (RetryOrder, RetriesLeft)
+        + 'static,
 {
     pin_mut!(features);
     while let Some(feat) = features.next().await {
         match feat {
-            Ok(f) => into.insert(f, &which_scenario).await,
+            Ok(f) => into.insert(f, &which_scenario, &retryable).await,
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
             Err(e) => {
@@ -505,10 +626,11 @@ async fn insert_features<W, S, F>(
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-async fn execute<W, Before, After>(
+async fn execute<'r, W, Before, After, Retry>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
+    retryable: Retry,
     event_sender: mpsc::UnboundedSender<
         parser::Result<Event<event::Cucumber<W>>>,
     >,
@@ -517,6 +639,12 @@ async fn execute<W, Before, After>(
     fail_fast: bool,
 ) where
     W: World,
+    Retry: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> (RetryOrder, RetriesLeft)
+        + 'static,
     Before: 'static
         + for<'a> Fn(
             &'a gherkin::Feature,
@@ -580,7 +708,7 @@ async fn execute<W, Before, After>(
             *sc -= runnable.len();
         }
 
-        for (f, r, s) in runnable {
+        for (f, r, s, _) in runnable {
             run_scenarios.push(executor.run_scenario(f, r, s));
         }
 
@@ -590,22 +718,87 @@ async fn execute<W, Before, After>(
             }
         }
 
-        while let Ok(Some((feat, rule, scenario_failed))) =
+        while let Ok(Some((feature, rule, scenario, scenario_failed))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(r) = rule {
+            if let Some(r) = rule.clone() {
                 if let Some(f) =
-                    storage.rule_scenario_finished(Arc::clone(&feat), r)
+                    storage.rule_scenario_finished(feature.clone(), r)
                 {
                     executor.send_event(f);
                 }
             }
-            if let Some(f) = storage.feature_scenario_finished(feat) {
+            if let Some(f) = storage.feature_scenario_finished(feature.clone())
+            {
                 executor.send_event(f);
             }
 
-            if fail_fast && scenario_failed {
-                started_scenarios = ControlFlow::Break(());
+            if scenario_failed {
+                if fail_fast {
+                    started_scenarios = ControlFlow::Break(());
+                } else {
+                    // For some reason features.scenarios contains an empty vector for the storage.
+                    // It will fail the rest of the execution. How to access the storage so we can
+                    // read and update the retries?
+                    let mut scenarios = features.scenarios.lock().await;
+                    let mut storage_list: Vec<(
+                        Arc<gherkin::Feature>,
+                        Option<Arc<gherkin::Rule>>,
+                        Arc<gherkin::Scenario>,
+                        RetryMetadata,
+                    )> = Vec::new();
+
+                    // Merge all types of scenario into a list of storage
+                    for (_, storage) in scenarios.iter_mut() {
+                        storage_list.append(storage);
+                    }
+
+                    println!("{:?}", storage_list.get(0));
+
+                    // TODO : see how to improve this part
+                    // Retrieving the failed scenario in the storage is considered infaillible
+                    let (_, _, failed_scenario, metadata) = storage_list
+                        .iter()
+                        .find(|(_, _, sc, _)| sc == &scenario)
+                        .unwrap();
+
+                    // Retrieve the current retry metadata for the failing scenario.
+                    // let (retry_order, retries_left) = retryable(
+                    //     &feature,
+                    //     rule.as_ref().map(AsRef::as_ref),
+                    //     &scenario,
+                    // );
+
+                    // Return early if there is no retry left
+                    if metadata.retries_left < 1 {
+                        return;
+                    }
+
+                    // Search for the failing scenario in the storage and update
+                    // its metadata for future retries.
+                    scenarios.iter_mut().for_each(|(_, storage)| {
+                        for (feat, _, sc, retry_metadata) in storage {
+                            if feat == &feature && sc == &scenario {
+                                retry_metadata.is_retried = true;
+                                retry_metadata.retries_left -= 1;
+                            }
+                        }
+                    });
+
+                    // Replace this part by insert since we need to update the retry metadata
+                    match metadata.retry_order {
+                        RetryOrder::Immediate => {
+                            executor
+                                .run_scenario(feature, rule, scenario)
+                                .await;
+                        }
+                        RetryOrder::Postponed => {
+                            run_scenarios.push(
+                                executor.run_scenario(feature, rule, scenario),
+                            );
+                        }
+                    }
+                }
             }
         }
     }
@@ -656,6 +849,7 @@ struct Executor<W, Before, After> {
     finished_sender: mpsc::UnboundedSender<(
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
         Failed,
     )>,
 }
@@ -688,6 +882,7 @@ where
         finished_sender: mpsc::UnboundedSender<(
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
+            Arc<gherkin::Scenario>,
             Failed,
         )>,
     ) -> Self {
@@ -842,7 +1037,7 @@ where
             event::Scenario::Finished,
         ));
 
-        self.scenario_finished(feature, rule, is_failed);
+        self.scenario_finished(feature, rule, scenario, is_failed);
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1175,13 +1370,14 @@ where
         &self,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         is_failed: Failed,
     ) {
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
         drop(
             self.finished_sender
-                .unbounded_send((feature, rule, is_failed)),
+                .unbounded_send((feature, rule, scenario, is_failed)),
         );
     }
 
@@ -1254,6 +1450,7 @@ struct FinishedRulesAndFeatures {
     finished_receiver: mpsc::UnboundedReceiver<(
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
         Failed,
     )>,
 }
@@ -1264,6 +1461,7 @@ impl FinishedRulesAndFeatures {
         finished_receiver: mpsc::UnboundedReceiver<(
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
+            Arc<gherkin::Scenario>,
             Failed,
         )>,
     ) -> Self {
@@ -1354,6 +1552,7 @@ impl FinishedRulesAndFeatures {
                 Arc<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
+                RetryMetadata,
             )],
         >,
     ) -> impl Iterator<Item = event::Cucumber<W>> {
@@ -1373,7 +1572,7 @@ impl FinishedRulesAndFeatures {
         let mut started_rules = Vec::new();
         for (feat, rule) in runnable
             .iter()
-            .filter_map(|(feat, rule, _)| {
+            .filter_map(|(feat, rule, _, _)| {
                 rule.clone().map(|r| (Arc::clone(feat), r))
             })
             .dedup()
@@ -1398,6 +1597,21 @@ impl FinishedRulesAndFeatures {
     }
 }
 
+/// Alias type for the number of retries left for a [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
+type RetriesLeft = usize;
+
+/// The retry metadata attached to a [`Scenario`].
+///
+/// /// [`Scenario`]: gherkin::Scenario
+#[derive(Debug)]
+struct RetryMetadata {
+    retries_left: RetriesLeft,
+    retry_order: RetryOrder,
+    is_retried: bool,
+}
+
 /// [`Scenario`]s storage.
 ///
 /// [`Scenario`]: gherkin::Scenario
@@ -1407,6 +1621,7 @@ type Scenarios = HashMap<
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
+        RetryMetadata,
     )>,
 >;
 
@@ -1431,16 +1646,23 @@ impl Features {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    async fn insert<Which>(
+    async fn insert<Which, Retry>(
         &self,
         feature: gherkin::Feature,
         which_scenario: &Which,
+        retryable: &Retry,
     ) where
         Which: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> ScenarioType
+            + 'static,
+        Retry: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> (RetryOrder, RetriesLeft)
             + 'static,
     {
         let local = feature
@@ -1454,13 +1676,21 @@ impl Features {
                     .collect::<Vec<_>>()
             }))
             .map(|(feat, rule, scenario)| {
+                let (retry_order, retries_left) =
+                    retryable(feat, rule, scenario);
+
                 (
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
+                    RetryMetadata {
+                        retries_left,
+                        retry_order,
+                        is_retried: false,
+                    },
                 )
             })
-            .into_group_map_by(|(f, r, s)| {
+            .into_group_map_by(|(f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
 
@@ -1494,6 +1724,7 @@ impl Features {
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
+        RetryMetadata,
     )> {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
