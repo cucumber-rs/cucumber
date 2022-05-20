@@ -277,6 +277,7 @@ pub struct Compose<L: Args, R: Args> {
 
 impl<L: Args, R: Args> Compose<L, R> {
     /// Unpacks this [`Compose`] into the underlying CLIs.
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn into_inner(self) -> (L, R) {
         let Compose { left, right } = self;

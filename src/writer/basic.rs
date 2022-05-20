@@ -949,7 +949,8 @@ where
     D: for<'a> Fn(&'a str) -> Cow<'a, str>,
     A: for<'a> Fn(&'a str) -> Cow<'a, str>,
 {
-    // All indices here are obtained from the source string.
+    // PANIC: Slicing is OK here, as all indices are obtained from the source
+    //        string.
     #![allow(clippy::string_slice)]
 
     let value = value.as_ref();

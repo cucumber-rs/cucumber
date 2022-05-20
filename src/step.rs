@@ -186,7 +186,8 @@ impl<World> Collection<World> {
             }
         };
 
-        // All indices here are obtained from the source string.
+        // PANIC: Slicing is OK here, as all indices are obtained from the
+        //        source string.
         #[allow(clippy::string_slice)]
         let matches = names
             .map(|opt| opt.map(str::to_owned))

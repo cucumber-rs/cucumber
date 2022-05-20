@@ -318,7 +318,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
     /// Checks whether this [`Queue`] transited to [`FinishedAndEmitted`] state.
     ///
     /// [`FinishedAndEmitted`]: FinishedState::FinishedAndEmitted
-    fn is_finished_and_emitted(&self) -> bool {
+    const fn is_finished_and_emitted(&self) -> bool {
         matches!(self.state, FinishedState::FinishedAndEmitted)
     }
 

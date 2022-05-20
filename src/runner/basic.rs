@@ -241,6 +241,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
     where
@@ -275,6 +276,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
     where
@@ -314,6 +316,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
     where
@@ -678,7 +681,7 @@ where
         ) -> LocalBoxFuture<'a, ()>,
 {
     /// Creates a new [`Executor`].
-    fn new(
+    const fn new(
         collection: step::Collection<W>,
         before_hook: Option<Before>,
         after_hook: Option<After>,

@@ -189,7 +189,10 @@ impl<Writer> FailOnSkipped<Writer> {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn with<P>(writer: Writer, predicate: P) -> FailOnSkipped<Writer, P>
+    pub const fn with<P>(
+        writer: Writer,
+        predicate: P,
+    ) -> FailOnSkipped<Writer, P>
     where
         P: Fn(
             &gherkin::Feature,

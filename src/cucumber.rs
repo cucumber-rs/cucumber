@@ -92,7 +92,7 @@ where
     /// Creates a custom [`Cucumber`] executor with the provided [`Parser`],
     /// [`Runner`] and [`Writer`].
     #[must_use]
-    pub fn custom(parser: P, runner: R, writer: Wr) -> Self {
+    pub const fn custom(parser: P, runner: R, writer: Wr) -> Self {
         Self {
             parser,
             runner,
@@ -104,6 +104,7 @@ where
     }
 
     /// Replaces [`Parser`].
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_parser<NewP, NewI>(
         self,
@@ -124,6 +125,7 @@ where
     }
 
     /// Replaces [`Runner`].
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_runner<NewR>(
         self,
@@ -144,6 +146,7 @@ where
     }
 
     /// Replaces [`Writer`].
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_writer<NewWr>(
         self,
@@ -716,6 +719,7 @@ where
     /// Also, specifying `--help` flag will describe `--before-time` now.
     ///
     /// [`Feature`]: gherkin::Feature
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     pub fn with_cli<CustomCli>(
         self,
         cli: cli::Opts<P::Cli, R::Cli, Wr::Cli, CustomCli>,

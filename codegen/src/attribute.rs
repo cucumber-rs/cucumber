@@ -113,31 +113,9 @@ impl Step {
 
         let regex = self.gen_regex()?;
 
-        let caller_name =
-            format_ident!("__cucumber_{}_{func_name}", self.attr_name);
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
         let unwrapping = (!self.returns_unit())
             .then(|| quote! { .unwrap_or_else(|e| panic!("{}", e)) });
-        let step_caller = quote! {
-            {
-                #[automatically_derived]
-                fn #caller_name<'w>(
-                    __cucumber_world: &'w mut #world,
-                    __cucumber_ctx: ::cucumber::step::Context,
-                ) -> ::cucumber::codegen::LocalBoxFuture<'w, ()> {
-                    let f = async move {
-                        #addon_parsing
-                        let _ = #func_name(__cucumber_world, #func_args)
-                            #awaiting
-                            #unwrapping;
-                    };
-                    ::std::boxed::Box::pin(f)
-                }
-
-                let f: ::cucumber::Step<#world> = #caller_name;
-                f
-            }
-        };
 
         Ok(quote! {
             #func
@@ -156,26 +134,20 @@ impl Step {
                         line: ::std::line!(),
                         column: ::std::column!(),
                     },
-                    regex: {
-                        // This hack exists, as `fn item` to `fn pointer`
-                        // coercion can be done inside `const`, but not
-                        // `const fn`.
-                        let lazy: ::cucumber::codegen::LazyRegex = || {
-                            static LAZY: ::cucumber::codegen::Lazy<
-                                ::cucumber::codegen::Regex
-                            > = ::cucumber::codegen::Lazy::new(|| {
-                                #regex
-                            });
-                            LAZY.clone()
-                        };
-                        lazy
+                    regex: || {
+                        static LAZY: ::cucumber::codegen::Lazy<
+                            ::cucumber::codegen::Regex
+                        > = ::cucumber::codegen::Lazy::new(|| { #regex });
+                        LAZY.clone()
                     },
-                    func: {
-                        // This hack exists, as `fn item` to `fn pointer`
-                        // coercion can be done inside `const`, but not
-                        // `const fn`.
-                        const F: ::cucumber::Step<#world> = #step_caller;
-                        F
+                    func: |__cucumber_world, __cucumber_ctx| {
+                        let f = async move {
+                            #addon_parsing
+                            let _ = #func_name(__cucumber_world, #func_args)
+                                #awaiting
+                                #unwrapping;
+                        };
+                        ::std::boxed::Box::pin(f)
                     },
                 }
             });

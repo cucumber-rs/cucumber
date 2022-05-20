@@ -146,7 +146,7 @@ impl<Out: io::Write> Json<Out> {
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: crate::event::Cucumber
     #[must_use]
-    pub fn raw(output: Out) -> Self {
+    pub const fn raw(output: Out) -> Self {
         Self {
             output,
             features: Vec::new(),
@@ -371,30 +371,42 @@ pub struct Tag {
     pub line: usize,
 }
 
-/// Possible statuses of running [`gherkin::Step`].
-#[derive(Clone, Copy, Debug, Serialize)]
-pub enum Status {
-    /// [`event::Step::Passed`].
-    Passed,
+pub use self::status::Status;
 
-    /// [`event::Step::Failed`] with an [`event::StepError::Panic`].
-    Failed,
+/// TODO: Only because of [`Serialize`] deriving, try to remove on next
+///       [`serde`] update.
+#[allow(clippy::use_self, clippy::wildcard_imports)]
+mod status {
+    use super::*;
 
-    /// [`event::Step::Skipped`].
-    Skipped,
+    /// Possible statuses of running [`gherkin::Step`].
+    #[derive(Clone, Copy, Debug, Serialize)]
+    pub enum Status {
+        /// [`event::Step::Passed`].
+        Passed,
 
-    /// [`event::Step::Failed`] with an [`event::StepError::AmbiguousMatch`].
-    Ambiguous,
+        /// [`event::Step::Failed`] with an [`event::StepError::Panic`].
+        Failed,
 
-    /// Never constructed and is here only to fully describe [JSON schema][1].
-    ///
-    /// [1]: https://github.com/cucumber/cucumber-json-schema
-    Undefined,
+        /// [`event::Step::Skipped`].
+        Skipped,
 
-    /// Never constructed and is here only to fully describe [JSON schema][1].
-    ///
-    /// [1]: https://github.com/cucumber/cucumber-json-schema
-    Pending,
+        /// [`event::Step::Failed`] with an
+        /// [`event::StepError::AmbiguousMatch`].
+        Ambiguous,
+
+        /// Never constructed and is here only to fully describe
+        /// [JSON schema][1].
+        ///
+        /// [1]: https://github.com/cucumber/cucumber-json-schema
+        Undefined,
+
+        /// Never constructed and is here only to fully describe
+        /// [JSON schema][1].
+        ///
+        /// [1]: https://github.com/cucumber/cucumber-json-schema
+        Pending,
+    }
 }
 
 /// [`Serialize`]able result of running something.
