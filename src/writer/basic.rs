@@ -42,11 +42,16 @@ pub struct Cli {
     ///
     /// `-v` is default verbosity, `-vv` additionally outputs world on failed
     /// steps, `-vvv` additionally outputs step's doc string (if present).
-    #[clap(short, parse(from_occurrences))]
+    #[clap(short, parse(from_occurrences), global = true)]
     pub verbose: u8,
 
     /// Coloring policy for a console output.
-    #[clap(long, name = "auto|always|never", default_value = "auto")]
+    #[clap(
+        long,
+        name = "auto|always|never",
+        default_value = "auto",
+        global = true
+    )]
     pub color: Coloring,
 }
 

@@ -106,7 +106,8 @@ where
         short = 'n',
         long = "name",
         name = "regex",
-        visible_alias = "scenario-name"
+        visible_alias = "scenario-name",
+        global = true
     )]
     pub re_filter: Option<Regex>,
 
@@ -118,7 +119,8 @@ where
         short = 't',
         long = "tags",
         name = "tagexpr",
-        conflicts_with = "regex"
+        conflicts_with = "regex",
+        global = true
     )]
     pub tags_filter: Option<TagOperation>,
 

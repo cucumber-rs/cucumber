@@ -45,11 +45,11 @@ use crate::{
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
-    #[clap(long, short, name = "int")]
+    #[clap(long, short, name = "int", global = true)]
     pub concurrency: Option<usize>,
 
     /// Run tests until the first failure.
-    #[clap(long)]
+    #[clap(long, global = true)]
     pub fail_fast: bool,
 }
 
