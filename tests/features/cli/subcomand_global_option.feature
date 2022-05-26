@@ -1,11 +1,10 @@
-Feature: Test global option --tags with subcommands
+Feature: Global option `--tags` with subcommands
 
   @scenario-1 @all
-  Scenario: A scenario with two invalid steps
+  Scenario: Two invalid steps
     Given an invalid step
     And an invalid step
 
   @scenario-2 @all
-  Scenario: A scenario with one invalid step
+  Scenario: One invalid step
     Given an invalid step
-

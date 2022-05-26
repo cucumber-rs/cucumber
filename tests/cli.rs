@@ -2,25 +2,22 @@ use std::{convert::Infallible, panic::AssertUnwindSafe};
 
 use async_trait::async_trait;
 use clap::Parser;
-use cucumber::{
-    cli::{self, Args},
-    given, WorldInit,
-};
+use cucumber::{cli, given, WorldInit};
 use futures::FutureExt as _;
 
-#[derive(Args)]
+#[derive(cli::Args)]
 struct CustomCli {
     #[clap(subcommand)]
     command: Option<SubCommand>,
 }
 
 #[derive(clap::Subcommand)]
-pub enum SubCommand {
+enum SubCommand {
     Smoke(Smoke),
 }
 
-#[derive(Args)]
-pub struct Smoke {
+#[derive(cli::Args)]
+struct Smoke {
     #[clap(long)]
     report_name: String,
 }
@@ -42,11 +39,10 @@ fn invalid_step(_world: &mut World) {
     assert!(false);
 }
 
+// This test uses a subcommand with the global option `--tags` to filter on two
+// failing tests and verifies that the error output contains 2 failing steps.
 #[tokio::test]
-// This test uses a subcommand with the global option --tags to filter
-// on two failing tests and verifies that the error output contains
-// 2 failing steps.
-async fn tags_option_filter_all_with_subcommand() {
+async fn tags_option_filters_all_scenarios_with_subcommand() {
     let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
         "test",
         "smoke",
@@ -63,17 +59,15 @@ async fn tags_option_filter_all_with_subcommand() {
         .catch_unwind()
         .await
         .expect_err("should err");
-
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "2 steps failed");
 }
 
+// This test uses a subcommand with the global option `--tags` to filter on one
+// failing test and verifies that the error output contains 1 failing step.
 #[tokio::test]
-// This test uses a subcommand with the global option --tags to filter
-// on one failing test and verifies that the error output contains
-// 1 failing step.
-async fn tags_option_filter_scenario1_with_subcommand() {
+async fn tags_option_filters_scenario1_with_subcommand() {
     let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
         "test",
         "smoke",
@@ -90,16 +84,15 @@ async fn tags_option_filter_scenario1_with_subcommand() {
         .catch_unwind()
         .await
         .expect_err("should err");
-
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");
 }
 
+// This test verifies that the global option `--tags` is still available without
+// subcommands and that the error output contains 1 failing step.
 #[tokio::test]
-// This test verifies that the global option --tags is still available
-// without subcommands and that the error output contains 1 failing step.
-async fn tags_option_filter_scenario1_without_subcommand() {
+async fn tags_option_filters_scenario1_no_subcommand() {
     let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
         "test",
         "--tags=@scenario-1",
@@ -114,7 +107,6 @@ async fn tags_option_filter_scenario1_without_subcommand() {
         .catch_unwind()
         .await
         .expect_err("should err");
-
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");
