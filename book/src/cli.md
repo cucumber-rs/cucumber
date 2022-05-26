@@ -152,6 +152,123 @@ async fn main() {
 
 
 
+## Aliasing
+
+[Cargo alias] is a neat way to define shortcuts for regularly used customized tests running commands.
+
+```rust
+# use std::{convert::Infallible, time::Duration};
+#
+# use async_trait::async_trait;
+# use cucumber::{cli, given, then, when, World, WorldInit};
+# use futures::FutureExt as _;
+# use tokio::time::sleep;
+#
+# #[derive(Debug, Default)]
+# struct Animal {
+#     pub hungry: bool,
+# }
+#
+# impl Animal {
+#     fn feed(&mut self) {
+#         self.hungry = false;
+#     }
+# }
+#
+# #[derive(Debug, WorldInit)]
+# pub struct AnimalWorld {
+#     cat: Animal,
+# }
+#
+# #[async_trait(?Send)]
+# impl World for AnimalWorld {
+#     type Error = Infallible;
+#
+#     async fn new() -> Result<Self, Infallible> {
+#         Ok(Self {
+#             cat: Animal::default(),
+#         })
+#     }
+# }
+#
+# #[given(regex = r"^a (hungry|satiated) cat$")]
+# async fn hungry_cat(world: &mut AnimalWorld, state: String) {
+#     match state.as_str() {
+#         "hungry" => world.cat.hungry = true,
+#         "satiated" => world.cat.hungry = false,
+#         _ => unreachable!(),
+#     }
+# }
+#
+# #[when("I feed the cat")]
+# async fn feed_cat(world: &mut AnimalWorld) {
+#     world.cat.feed();
+# }
+#
+# #[then("the cat is not hungry")]
+# async fn cat_is_fed(world: &mut AnimalWorld) {
+#     assert!(!world.cat.hungry);
+# }
+#
+#[derive(clap::Args)]
+struct CustomOpts {
+    #[clap(subcommand)]
+    command: Option<SubCommand>,
+}
+
+#[derive(clap::Subcommand)]
+enum SubCommand {
+    Smoke(Smoke),
+}
+
+#[derive(clap::Args)]
+struct Smoke {
+    /// Additional time to wait in before hook.
+    #[clap(
+        long,
+        parse(try_from_str = humantime::parse_duration)
+    )]
+    pre_pause: Option<Duration>,
+}
+
+#[tokio::main]
+async fn main() {
+    let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
+    
+    let pre_pause = if let Some(SubCommand::Smoke(Smoke { pre_pause })) =
+        opts.custom.command
+    {
+        pre_pause
+    } else {
+        None
+    }
+    .unwrap_or_default();
+
+    AnimalWorld::cucumber()
+        .before(move |_, _, _, _| sleep(pre_pause).boxed_local())
+        .with_cli(opts)
+        .run_and_exit("tests/features/book/cli.feature")
+        .await;
+}
+```
+
+The alias should be specified in `.cargo/config.toml` file of the project:
+```yaml
+[alias]
+smoke = "test -p cucumber --test cli -- smoke --pre-pause=5s -vv --fail-fast"
+```
+
+Now it can be used as:
+```bash
+cargo smoke
+cargo smoke --tags=@hungry
+```
+
+> __NOTE__: The default CLI options may be specified after a custom subcommand, because they are defined as [global][1] ones. This may be applied to custom CLI options too, if necessary.
+
+
+
+
 [`cli::Compose`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Compose.html
 [`cli::Empty`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Empty.html
 [`cucumber`]: https://docs.rs/cucumber
@@ -162,3 +279,7 @@ async fn main() {
 [`Runner::Cli`]: https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli
 [`Writer`]: architecture/writer.md
 [`Writer::Cli`]: https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli
+
+[Cargo alias]: https://doc.rust-lang.org/cargo/reference/config.html#alias
+
+[1]: https://docs.rs/clap/latest/clap/struct.Arg.html#method.global

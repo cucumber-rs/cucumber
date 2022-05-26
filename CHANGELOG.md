@@ -13,7 +13,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bump up [MSRV] to 1.61 for more clever support of [Cargo feature]s and simplified codegen.
+- Bump up [MSRV] to 1.61 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0])
+
+### Changed
+
+- Provided default CLI options are now global (allowed to be specified after custom subcommands). ([#216], [#215])
+
+[#215]: /../../issues/215
+[#216]: /../../pull/216
+[cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
+[fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
 
 
 
