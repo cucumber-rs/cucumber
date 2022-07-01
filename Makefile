@@ -30,7 +30,7 @@ lint: cargo.lint
 record: record.gif
 
 
-test: test.cargo test.book
+test: test.cargo
 
 
 
@@ -97,7 +97,7 @@ test.cargo:
 #	make test.book
 
 test.book:
-	cargo test --manifest-path book/tests/Cargo.toml
+	@make test.cargo crate=cucumber-book-tests
 
 
 
@@ -122,6 +122,12 @@ book.build:
 
 book.serve:
 	mdbook serve book/ -p=$(or $(port),3000)
+
+
+book.test: test.book
+
+
+book.tests: test.book
 
 
 
@@ -167,6 +173,6 @@ endif
 
 .PHONY: book docs fmt lint record test \
         cargo.doc cargo.fmt cargo.lint \
-        book.build book.serve \
+        book.build book.serve book.test book.tests \
         record.gif \
         test.cargo test.book

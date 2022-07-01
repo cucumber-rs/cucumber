@@ -51,6 +51,9 @@ cd tests/
 cargo test
 
 # or from project root dir:
+cargo test -p cucumber-book-tests
+
+# or via shortcut from project root dir:
 make test.book
 ```
 

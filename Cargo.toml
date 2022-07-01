@@ -90,5 +90,4 @@ name = "wait"
 harness = false
 
 [workspace]
-members = ["codegen"]
-exclude = ["book/tests"]
+members = ["book/tests", "codegen"]

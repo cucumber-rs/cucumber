@@ -24,7 +24,7 @@ use cucumber::{writer, WriterExt as _};
 #
 # #[tokio::main]
 # async fn main() -> io::Result<()> {
-let file = fs::File::create(dbg!(format!("{}/target/report.json", env!("CARGO_MANIFEST_DIR"))))?;
+let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
 World::cucumber()
     .with_writer(
         // NOTE: `Writer`s pipeline is constructed in a reversed order.
