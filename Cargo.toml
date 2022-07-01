@@ -55,7 +55,7 @@ sealed = "0.4"
 # "macros" feature dependencies.
 cucumber-codegen = { version = "0.14.0-dev", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional = true }
-inventory = { version = "0.2", optional = true }
+inventory = { version = "0.3", optional = true }
 
 # "output-json" feature dependencies.
 serde = { version = "1.0.103", features = ["derive"], optional = true }
