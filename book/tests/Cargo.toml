@@ -15,7 +15,7 @@ clap = { version = "3.0", features = ["derive"] }
 cucumber = { version = "0.14.0-dev", path = "../..", features = ["output-json", "output-junit"] }
 futures = "0.3"
 humantime = "2.1"
-once_cell = { version = "1.8", features = ["parking_lot"] }
+once_cell = "1.8"
 skeptic = "0.13.7"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
 
