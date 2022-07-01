@@ -252,7 +252,7 @@ fn feed_cat(_: &amp;mut AnimalWorld) {}
 
 #[then(&quot;the cat is not hungry&quot;)]
 fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&gt; {
-    (!world.cat.hungry).then(|| ()).ok_or(&quot;Cat is still hungry!&quot;)
+    (!world.cat.hungry).then_some(()).ok_or(&quot;Cat is still hungry!&quot;)
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]

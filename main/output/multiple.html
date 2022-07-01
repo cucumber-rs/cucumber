@@ -156,7 +156,7 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!(&quot;{}/target/report.json&quot;, env!(&quot;CARGO_MANIFEST_DIR&quot;))))?;
+</span>let file = fs::File::create(dbg!(format!(&quot;{}/report.json&quot;, env!(&quot;OUT_DIR&quot;))))?;
 World::cucumber()
     .with_writer(
         // NOTE: `Writer`s pipeline is constructed in a reversed order.
