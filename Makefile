@@ -42,14 +42,17 @@ test: test.cargo test.book
 # Generate crates documentation from Rust sources.
 #
 # Usage:
-#	make cargo.doc [crate=<crate-name>] [private=(yes|no)]
+#	make cargo.doc [crate=<crate-name>]
+#	               [private=(yes|no)] [docsrs=(no|yes)]
 #	               [open=(yes|no)] [clean=(no|yes)]
 
 cargo.doc:
 ifeq ($(clean),yes)
 	@rm -rf target/doc/
 endif
-	cargo doc $(if $(call eq,$(crate),),--workspace,-p $(crate)) \
+	$(if $(call eq,$(docsrs),yes),RUSTDOCFLAGS='--cfg docsrs',) \
+	cargo $(if $(call eq,$(docsrs),yes),+nightly,) doc \
+		$(if $(call eq,$(crate),),--workspace,-p $(crate)) \
 		--all-features \
 		$(if $(call eq,$(private),no),,--document-private-items) \
 		$(if $(call eq,$(open),no),,--open)

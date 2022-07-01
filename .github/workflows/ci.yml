@@ -193,9 +193,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: nightly
 
-      - run: make cargo.doc private=yes open=no
+      - run: make cargo.doc private=yes docsrs=yes open=no
 
 
 
