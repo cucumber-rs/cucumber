@@ -86,6 +86,8 @@ impl<World> fmt::Debug for Collection<World> {
     }
 }
 
+// Implemented manually to omit redundant `World: Default` trait bound, imposed
+// by `#[derive(Default)]`.
 impl<World> Default for Collection<World> {
     fn default() -> Self {
         Self {

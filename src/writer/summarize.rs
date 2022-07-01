@@ -539,7 +539,7 @@ impl Styles {
         self.bold(format!(
             "{num} {}{}",
             singular.into(),
-            (num != 1).then(|| "s").unwrap_or_default(),
+            (num != 1).then_some("s").unwrap_or_default(),
         ))
     }
 }

@@ -194,7 +194,7 @@ impl<World> Default for Basic<World> {
                 .tags
                 .iter()
                 .any(|tag| tag == "serial")
-                .then(|| ScenarioType::Serial)
+                .then_some(ScenarioType::Serial)
                 .unwrap_or(ScenarioType::Concurrent)
         };
 

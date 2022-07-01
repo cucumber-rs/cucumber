@@ -420,10 +420,11 @@ impl<T> Ext for T {
 pub trait NonTransforming {}
 
 /// Standard verbosity levels of a [`Writer`].
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(u8)]
 pub enum Verbosity {
     /// None additional info.
+    #[default]
     Default = 0,
 
     /// Outputs the whole [`World`] on [`Failed`] [`Step`]s whenever is

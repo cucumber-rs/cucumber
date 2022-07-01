@@ -909,7 +909,7 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .fold(None, |mut acc: Option<Vec<_>>, row| {
-            // false positive due to mut borrowing
+            // false positive: due to mut borrowing
             #[allow(clippy::option_if_let_else)]
             if let Some(existing_len) = acc.as_mut() {
                 for (cell, max_len) in row.iter().zip(existing_len) {

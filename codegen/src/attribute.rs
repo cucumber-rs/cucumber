@@ -228,7 +228,7 @@ impl Step {
                                     .map(|(_, (_, s))| s.as_str()),
                             )
                             .fold(None, |acc, s| {
-                                acc.or_else(|| (!s.is_empty()).then(|| s))
+                                acc.or_else(|| (!s.is_empty()).then_some(s))
                             })
                             .unwrap_or_default();
 
@@ -367,10 +367,9 @@ impl Step {
                                 .take(to_take)
                                 .map(|(_, s)| s.as_str()),
                         )
-                        .fold(
-                            None,
-                            |acc, s| acc.or_else(|| (!s.is_empty()).then(|| s)),
-                        )
+                        .fold(None, |acc, s| {
+                            acc.or_else(|| (!s.is_empty()).then_some(s))
+                        })
                         .unwrap_or_default()
                 };
                 let #ident = #ident.parse::<#ty>().expect(#parsing_err);
@@ -523,7 +522,7 @@ impl<'p> Parameters<'p> {
                     Err(err) => return Some(Err(err)),
                 };
                 let is_step = step.map(|s| s == ident).unwrap_or_default();
-                (!is_step).then(|| Ok(ty))
+                (!is_step).then_some(Ok(ty))
             })
             .collect::<syn::Result<Vec<_>>>()?;
 
@@ -666,7 +665,7 @@ impl<'p> Parameters<'p> {
             .iter()
             .filter_map(|par| {
                 let name = par.param.input.fragment();
-                (!DEFAULT_PARAMETERS.contains(name)).then(|| (*name, &par.ty))
+                (!DEFAULT_PARAMETERS.contains(name)).then_some((*name, &par.ty))
             })
             .unzip();
 

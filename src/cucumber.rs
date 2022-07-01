@@ -1278,7 +1278,7 @@ where
             if failed_steps > 0 {
                 msg.push(format!(
                     "{failed_steps} step{} failed",
-                    (failed_steps > 1).then(|| "s").unwrap_or_default(),
+                    (failed_steps > 1).then_some("s").unwrap_or_default(),
                 ));
             }
 
@@ -1286,7 +1286,7 @@ where
             if parsing_errors > 0 {
                 msg.push(format!(
                     "{parsing_errors} parsing error{}",
-                    (parsing_errors > 1).then(|| "s").unwrap_or_default(),
+                    (parsing_errors > 1).then_some("s").unwrap_or_default(),
                 ));
             }
 
@@ -1294,7 +1294,7 @@ where
             if hook_errors > 0 {
                 msg.push(format!(
                     "{hook_errors} hook error{}",
-                    (hook_errors > 1).then(|| "s").unwrap_or_default(),
+                    (hook_errors > 1).then_some("s").unwrap_or_default(),
                 ));
             }
 

@@ -125,7 +125,7 @@ fn feed_cat(_: &mut AnimalWorld) {}
 
 #[then("the cat is not hungry")]
 fn cat_is_fed(world: &mut AnimalWorld) -> Result<(), &'static str> {
-    (!world.cat.hungry).then(|| ()).ok_or("Cat is still hungry!")
+    (!world.cat.hungry).then_some(()).ok_or("Cat is still hungry!")
 }
 #
 # #[tokio::main]

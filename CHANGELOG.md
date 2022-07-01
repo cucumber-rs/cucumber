@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bump up [MSRV] to 1.61 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0])
+- Bump up [MSRV] to 1.62 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0], [todo])
 
 ### Changed
 
