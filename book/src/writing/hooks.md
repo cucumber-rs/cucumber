@@ -13,7 +13,7 @@ Scenario hooks
 ```rust
 # use std::time::Duration;
 # 
-# use cucumber::WorldInit as _;
+# use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
 # 
@@ -44,7 +44,7 @@ World::cucumber()
 ```rust
 # use std::time::Duration;
 # 
-# use cucumber::WorldInit as _;
+# use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
 # 

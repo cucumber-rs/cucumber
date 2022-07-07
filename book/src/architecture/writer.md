@@ -16,7 +16,7 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WorldInit as _, WriterExt as _,
+#     WriterExt as _,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},
@@ -294,7 +294,7 @@ async fn main() {
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, then, when, Event, World, 
-#     WorldInit as _, WriterExt as _,
+#     WriterExt as _,
 # };
 # use futures::{future, stream};
 # use tokio::time::sleep;

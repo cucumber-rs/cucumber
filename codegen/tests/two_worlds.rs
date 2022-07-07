@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use cucumber::{gherkin::Step, given, when, World, WorldInit as _};
+use cucumber::{gherkin::Step, given, when, World};
 use tokio::time;
 
 #[derive(Debug, Default, World)]

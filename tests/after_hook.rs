@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{given, then, when, Parameter, WorldInit as _};
+use cucumber::{given, then, when, Parameter, World as _};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;

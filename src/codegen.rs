@@ -10,11 +10,11 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::{convert::Infallible, fmt::Debug, future::Future, path::Path};
+use std::{convert::Infallible, future::Future};
 
 use futures::future;
 
-use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
+use crate::{step, Step, World};
 
 pub use anyhow;
 pub use async_trait::async_trait;
@@ -25,94 +25,6 @@ pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
 pub use once_cell::sync::Lazy;
 pub use regex::Regex;
-
-/// [`World`] extension with auto-wiring capabilities.
-#[async_trait(?Send)]
-pub trait WorldInit: Debug + WorldInventory {
-    /// Returns runner for tests with auto-wired steps marked by [`given`],
-    /// [`when`] and [`then`] attributes.
-    ///
-    /// [`given`]: crate::given
-    /// [`then`]: crate::then
-    /// [`when`]: crate::when
-    #[must_use]
-    fn collection() -> step::Collection<Self> {
-        let mut out = step::Collection::new();
-
-        for given in inventory::iter::<Self::Given> {
-            let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex(), fun);
-        }
-
-        for when in inventory::iter::<Self::When> {
-            let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex(), fun);
-        }
-
-        for then in inventory::iter::<Self::Then> {
-            let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex(), fun);
-        }
-
-        out
-    }
-
-    /// Returns default [`Cucumber`] with all auto-wired [`Step`]s.
-    #[must_use]
-    fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I> {
-        Cucumber::new().steps(Self::collection())
-    }
-
-    /// Runs [`Cucumber`].
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
-    /// [`Step`]: crate::Step
-    /// [`Writer`]: crate::Writer
-    async fn run<I: AsRef<Path>>(input: I) {
-        Self::cucumber().run_and_exit(input).await;
-    }
-
-    /// Runs [`Cucumber`] with [`Scenario`]s filter.
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: gherkin::Step
-    /// [`Writer`]: crate::Writer
-    async fn filter_run<I, F>(input: I, filter: F)
-    where
-        I: AsRef<Path>,
-        F: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> bool
-            + 'static,
-    {
-        Self::cucumber().filter_run_and_exit(input, filter).await;
-    }
-}
-
-impl<T> WorldInit for T where T: Debug + WorldInventory {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {
@@ -136,7 +48,7 @@ pub trait WorldInventory: World {
 pub type LazyRegex = fn() -> Regex;
 
 /// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]
-/// attributes inside [`WorldInit::collection()`] method.
+/// attributes inside [`World::collection()`] method.
 ///
 /// [`given`]: crate::given
 /// [`when`]: crate::when

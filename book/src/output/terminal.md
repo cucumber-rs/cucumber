@@ -20,7 +20,7 @@ Increasing verbosity level with `-vv` CLI option, makes the state of the `World`
 ```rust,should_panic
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -84,7 +84,7 @@ Feature: Animal feature
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -146,7 +146,7 @@ Coloring may be disabled by specifying `--color` CLI option:
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -213,7 +213,7 @@ Though [`cucumber`] crate doesn't capture any manual printing produced in a [ste
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -274,7 +274,7 @@ To achieve natural output for debugging, the following preparations are required
 ```rust
 # use std::{io, time::Duration};
 #
-# use cucumber::{given, then, when, writer, World, WorldInit as _, WriterExt as _};
+# use cucumber::{given, then, when, writer, World, WriterExt as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -345,7 +345,7 @@ As a number of [scenario]s grows, it may become quite difficult to find failed/s
 ```rust,should_panic
 # use std::{time::Duration};
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -402,7 +402,7 @@ async fn main() {
 ```rust
 # use std::{time::Duration};
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]

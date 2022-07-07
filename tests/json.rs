@@ -1,6 +1,6 @@
 use std::{fs, io::Read as _};
 
-use cucumber::{given, then, when, writer, WorldInit as _};
+use cucumber::{given, then, when, writer, World as _};
 use futures::FutureExt as _;
 use regex::RegexBuilder;
 use tempfile::NamedTempFile;

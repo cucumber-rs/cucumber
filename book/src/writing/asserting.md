@@ -12,7 +12,7 @@ There are two ways of doing [assertion]s in a [step] matching function:
 
 Throwing a panic in a [step] matching function makes the appropriate [step] failed:
 ```rust,should_panic
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -71,7 +71,7 @@ fn cat_is_fed(_: &mut AnimalWorld) {
 
 Similarly to [using the `?` operator in Rust tests][1], we may also return a `Result<()>` from a [step] matching function, so returning an `Err` will cause the [step] to fail (anything implementing [`Display`] is sufficient).
 ```rust,should_panic
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {

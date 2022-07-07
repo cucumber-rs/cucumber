@@ -133,7 +133,7 @@ Feature: Animal feature
 ```rust,should_panic
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 # 
 # #[derive(Debug, Default)]

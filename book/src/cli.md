@@ -70,7 +70,7 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{cli, given, then, when, World, WorldInit as _};
+# use cucumber::{cli, given, then, when, World};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #
@@ -147,7 +147,7 @@ async fn main() {
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{cli, given, then, when, World, WorldInit as _};
+# use cucumber::{cli, given, then, when, World};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #

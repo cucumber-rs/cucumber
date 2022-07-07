@@ -16,7 +16,6 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WorldInit as _,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},

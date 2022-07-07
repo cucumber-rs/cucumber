@@ -33,7 +33,7 @@ To relate the text of the `.feature` file with the actual tests we would need a 
 
 To enable testing of our `animal.feature`, let's add this code to `example.rs`:
 ```rust
-use cucumber::{given, World, WorldInit as _};
+use cucumber::{given, World};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
@@ -115,7 +115,7 @@ These various [step] matching functions are executed to transform the `World`. A
 
 We can add a `when` [step] matcher:
 ```rust
-# use cucumber::{given, when, World, WorldInit as _};
+# use cucumber::{given, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -155,7 +155,7 @@ Once we run the tests again, we see that two lines are green now and the next on
 
 Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then` [step] matcher follows to assert this, as our [feature] says:
 ```rust
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -202,7 +202,7 @@ Once we run the tests, now we see all steps being accounted for and the whole [s
 
 To assure that assertion is indeed happening, let's reverse it temporarily:
 ```rust,should_panic
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -261,7 +261,7 @@ Feature: Animal feature
 
 The only thing that is different is the `Given` [step]. But we don't have to write a new matcher here! We can leverage [`regex`] support:
 ```rust
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -312,7 +312,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 
 Alternatively, we also may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
 ```rust
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -379,7 +379,7 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]

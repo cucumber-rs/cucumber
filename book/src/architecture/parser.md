@@ -9,9 +9,7 @@ Let's start by implementing a custom [`Parser`] which statically emits a single 
 # use std::{path::PathBuf, time::Duration};
 #
 # use async_trait::async_trait;
-# use cucumber::{
-#     cli, gherkin, given, parser, then, when, World, WorldInit as _,
-# };
+# use cucumber::{cli, gherkin, given, parser, then, when, World};
 # use futures::{future, stream};
 # use tokio::time::sleep;
 #

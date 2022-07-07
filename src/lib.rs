@@ -136,13 +136,22 @@ mod actually_used_crates_in_tests {
 
 use std::fmt::Display;
 
+#[cfg(feature = "macros")]
+use std::{fmt::Debug, path::Path};
+
 use async_trait::async_trait;
+
+#[cfg(feature = "macros")]
+use self::{
+    codegen::{StepConstructor as _, WorldInventory},
+    cucumber::DefaultCucumber,
+};
 
 pub use gherkin;
 
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use self::codegen::{Parameter, WorldInit};
+pub use self::codegen::Parameter;
 #[cfg(feature = "macros")]
 #[doc(inline)]
 pub use cucumber_codegen::{given, then, when, Parameter, World};
@@ -180,4 +189,100 @@ pub trait World: Sized + 'static {
 
     /// Creates a new [`World`] instance.
     async fn new() -> Result<Self, Self::Error>;
+
+    #[cfg(feature = "macros")]
+    /// Returns runner for tests with auto-wired steps marked by [`given`],
+    /// [`when`] and [`then`] attributes.
+    ///
+    /// [`given`]: crate::given
+    /// [`then`]: crate::then
+    /// [`when`]: crate::when
+    #[must_use]
+    fn collection() -> step::Collection<Self>
+    where
+        Self: Debug + WorldInventory,
+    {
+        let mut out = step::Collection::new();
+
+        for given in inventory::iter::<Self::Given> {
+            let (loc, regex, fun) = given.inner();
+            out = out.given(Some(loc), regex(), fun);
+        }
+
+        for when in inventory::iter::<Self::When> {
+            let (loc, regex, fun) = when.inner();
+            out = out.when(Some(loc), regex(), fun);
+        }
+
+        for then in inventory::iter::<Self::Then> {
+            let (loc, regex, fun) = then.inner();
+            out = out.then(Some(loc), regex(), fun);
+        }
+
+        out
+    }
+
+    #[cfg(feature = "macros")]
+    /// Returns default [`Cucumber`] with all auto-wired [`Step`]s.
+    #[must_use]
+    fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I>
+    where
+        Self: Debug + WorldInventory,
+    {
+        Cucumber::new().steps(Self::collection())
+    }
+
+    #[cfg(feature = "macros")]
+    /// Runs [`Cucumber`].
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
+    /// later produces events handled by [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Parser`]: crate::Parser
+    /// [`Runner`]: crate::Runner
+    /// [`Step`]: crate::Step
+    /// [`Writer`]: crate::Writer
+    async fn run<I: AsRef<Path>>(input: I)
+    where
+        Self: Debug + WorldInventory,
+    {
+        Self::cucumber().run_and_exit(input).await;
+    }
+
+    #[cfg(feature = "macros")]
+    /// Runs [`Cucumber`] with [`Scenario`]s filter.
+    ///
+    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
+    /// later produces events handled by [`Writer`].
+    ///
+    /// # Panics
+    ///
+    /// If encountered errors while parsing [`Feature`]s or at least one
+    /// [`Step`] panicked.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Parser`]: crate::Parser
+    /// [`Runner`]: crate::Runner
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    /// [`Writer`]: crate::Writer
+    async fn filter_run<I, F>(input: I, filter: F)
+    where
+        Self: Debug + WorldInventory,
+        I: AsRef<Path>,
+        F: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> bool
+            + 'static,
+    {
+        Self::cucumber().filter_run_and_exit(input, filter).await;
+    }
 }

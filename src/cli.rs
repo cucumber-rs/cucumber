@@ -44,7 +44,7 @@ pub use clap::{Args, Parser};
 /// ```rust
 /// # use std::time::Duration;
 /// #
-/// # use cucumber::{cli, World, WorldInit as _};
+/// # use cucumber::{cli, World};
 /// # use futures::FutureExt as _;
 /// # use tokio::time;
 /// #

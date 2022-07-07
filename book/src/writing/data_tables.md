@@ -24,7 +24,7 @@ Data, declared in the [table], may be accessed via [`Step`] argument:
 ```rust
 # use std::collections::HashMap;
 #
-use cucumber::{gherkin::Step, given, then, when, World, WorldInit as _};
+use cucumber::{gherkin::Step, given, then, when, World};
 
 #[given(regex = r"^a (hungry|satiated) animal$")]
 async fn hungry_animal(world: &mut AnimalWorld, step: &Step, state: String) {

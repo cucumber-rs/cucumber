@@ -25,7 +25,7 @@ At parsing stage `<template>`s are replaced by value from cells, so we may get t
 ```rust
 # use std::{collections::HashMap, time::Duration};
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 #[derive(Debug, Default)]

@@ -1,7 +1,7 @@
 use std::panic::AssertUnwindSafe;
 
 use clap::Parser;
-use cucumber::{cli, given, WorldInit as _};
+use cucumber::{cli, given, World as _};
 use futures::FutureExt as _;
 
 #[derive(cli::Args)]

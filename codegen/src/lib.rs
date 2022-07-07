@@ -142,7 +142,7 @@ macro_rules! step_attribute {
         /// ```
         /// # use std::{convert::Infallible};
         /// #
-        /// use cucumber::{given, when, World, WorldInit as _};
+        /// use cucumber::{given, when, World};
         ///
         /// #[derive(Debug, Default, World)]
         /// struct MyWorld;
@@ -189,7 +189,7 @@ macro_rules! step_attribute {
         /// ```rust
         /// # use std::convert::Infallible;
         /// #
-        /// # use cucumber::{gherkin::Step, given, World, WorldInit as _};
+        /// # use cucumber::{gherkin::Step, given, World};
         /// #
         /// # #[derive(Debug, Default, World)]
         /// # struct MyWorld;
@@ -280,7 +280,7 @@ pub fn world(input: TokenStream) -> TokenStream {
 /// ```rust
 /// # use std::{convert::Infallible};
 /// #
-/// use cucumber::{given, when, Parameter, World, WorldInit as _};
+/// use cucumber::{given, when, Parameter, World};
 /// use derive_more::{Deref, FromStr};
 ///
 /// #[derive(Debug, Default, World)]

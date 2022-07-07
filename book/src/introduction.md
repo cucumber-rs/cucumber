@@ -20,7 +20,7 @@ These features are agnostic to the implementation, the only requirement is that 
 ```rust
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, WorldInit as _};
+# use cucumber::{given, then, when, World as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default, cucumber::World)]

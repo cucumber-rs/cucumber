@@ -1,6 +1,6 @@
 use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
-use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
+use cucumber::{gherkin::Step, given, then, when, World};
 use futures::FutureExt as _;
 use tempfile::TempDir;
 use tokio::time;

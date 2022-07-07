@@ -18,7 +18,7 @@ Egenskap: Dyr egenskap
     Så katten er ikke sulten
 ```
 ```rust
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {

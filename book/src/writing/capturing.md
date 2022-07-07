@@ -12,7 +12,7 @@ Using [regular expressions][regex] or [Cucumber Expressions][expr] for our [step
 
 Using a [regular expression][regex] for a [step] matching function is possible with `regex =` attribute modifier:
 ```rust
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -70,7 +70,7 @@ For matching a captured value we are not restricted to use only `String`. In fac
 ```rust
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -140,7 +140,7 @@ Alternatively, a [Cucumber Expression][expr] may be used to capture values. This
 ```rust
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -214,7 +214,7 @@ Another useful advantage of using [Cucumber Expressions][expr] is an ability to 
 ```rust
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 use cucumber::Parameter;
 
 # #[derive(Debug, Default)]
@@ -287,7 +287,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 ```rust
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World, WorldInit as _};
+# use cucumber::{given, then, when, World};
 use cucumber::Parameter;
 
 # #[derive(Debug, Default)]

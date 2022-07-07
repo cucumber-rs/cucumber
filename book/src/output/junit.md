@@ -12,7 +12,7 @@ And configuring output to [`writer::JUnit`]:
 ```rust
 # use std::{fs, io};
 # 
-# use cucumber::WorldInit as _;
+# use cucumber::World as _;
 use cucumber::writer;
 
 # #[derive(Debug, Default, cucumber::World)]

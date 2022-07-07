@@ -6,7 +6,7 @@ Reporting tests result to multiple outputs simultaneously may be achieved by usi
 ```rust
 # use std::{fs, io};
 # 
-# use cucumber::WorldInit as _;
+# use cucumber::World as _;
 use cucumber::{writer, WriterExt as _};
 
 # #[derive(Debug, Default, cucumber::World)]

@@ -135,7 +135,7 @@ static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
 mod spec {
     use std::fs;
 
-    use cucumber::{WorldInit as _, WriterExt as _};
+    use cucumber::{World as _, WriterExt as _};
     use globwalk::GlobWalkerBuilder;
 
     use super::{DebugWriter, World};

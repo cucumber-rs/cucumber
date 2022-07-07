@@ -31,11 +31,11 @@ use crate::{
 /// Top-level [Cucumber] executor.
 ///
 /// Most of the time you don't need to work with it directly, just use
-/// [`WorldInit::run()`] or [`WorldInit::cucumber()`] on your [`World`] deriver
-/// to get [Cucumber] up and running.
+/// [`World::run()`] or [`World::cucumber()`] on your [`World`] deriver to get
+/// [Cucumber] up and running.
 ///
 /// Otherwise use [`Cucumber::new()`] to get the default [Cucumber] executor,
-/// provide [`Step`]s with [`WorldInit::collection()`] or by hand with
+/// provide [`Step`]s with [`World::collection()`] or by hand with
 /// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
 ///
 /// In case you want a custom [`Parser`], [`Runner`] or [`Writer`], or some
@@ -44,9 +44,6 @@ use crate::{
 /// [`Cucumber::with_writer()`] to construct your dream [Cucumber] executor!
 ///
 /// [Cucumber]: https://cucumber.io
-/// [`WorldInit::collection()`]: crate::WorldInit::collection()
-/// [`WorldInit::cucumber()`]: crate::WorldInit::cucumber()
-/// [`WorldInit::run()`]: crate::WorldInit::run()
 pub struct Cucumber<W, P, I, R, Wr, Cli = cli::Empty>
 where
     W: World,
@@ -179,7 +176,7 @@ where
     ///
     /// Adjust [`Cucumber`] to re-output all the [`Skipped`] steps at the end:
     /// ```rust
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -223,7 +220,7 @@ where
     ///
     /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -244,7 +241,7 @@ where
     ///
     /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps at the end:
     /// ```rust,should_panic
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -289,7 +286,7 @@ where
     /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
     /// # use futures::FutureExt as _;
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -311,7 +308,7 @@ where
     /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps ta the end by
     /// providing a custom `filter` predicate:
     /// ```rust,should_panic
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -397,7 +394,7 @@ where
     ///
     /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
     /// ```rust,should_panic
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -467,7 +464,7 @@ where
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
     /// marked with a `@dog` tag:
     /// ```rust,should_panic
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -579,7 +576,7 @@ where
     /// ```rust
     /// # use std::time::Duration;
     /// #
-    /// # use cucumber::{cli, World, WorldInit as _};
+    /// # use cucumber::{cli, World};
     /// # use futures::FutureExt as _;
     /// # use tokio::time;
     /// #
@@ -658,7 +655,7 @@ where
     ///
     /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
@@ -1104,7 +1101,7 @@ where
     ///
     /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
-    /// # use cucumber::{World, WorldInit as _};
+    /// # use cucumber::World;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;
