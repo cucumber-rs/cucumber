@@ -179,8 +179,6 @@ where
     ///
     /// Adjust [`Cucumber`] to re-output all the [`Skipped`] steps at the end:
     /// ```rust
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -225,8 +223,6 @@ where
     ///
     /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -248,8 +244,6 @@ where
     ///
     /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps at the end:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -294,8 +288,6 @@ where
     ///
     /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
     /// # use futures::FutureExt as _;
     /// # use cucumber::{World, WorldInit as _};
     /// #
@@ -319,8 +311,6 @@ where
     /// Adjust [`Cucumber`] to re-output all the [`Failed`] steps ta the end by
     /// providing a custom `filter` predicate:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -407,9 +397,6 @@ where
     ///
     /// To fail all the [`Skipped`] steps setup [`Cucumber`] like this:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
-    /// # use async_trait::async_trait;
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -480,9 +467,6 @@ where
     /// Adjust [`Cucumber`] to fail on all [`Skipped`] steps, but the ones
     /// marked with a `@dog` tag:
     /// ```rust,should_panic
-    /// # use std::convert::Infallible;
-    /// #
-    /// # use async_trait::async_trait;
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -593,7 +577,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// # use std::{convert::Infallible, time::Duration};
+    /// # use std::time::Duration;
     /// #
     /// # use cucumber::{cli, World, WorldInit as _};
     /// # use futures::FutureExt as _;
@@ -674,8 +658,6 @@ where
     ///
     /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]
@@ -1122,8 +1104,6 @@ where
     ///
     /// Adjust [`Cucumber`] to run only [`Scenario`]s marked with `@cat` tag:
     /// ```rust
-    /// # use std::convert::Infallible;
-    /// #
     /// # use cucumber::{World, WorldInit as _};
     /// #
     /// # #[derive(Debug, Default, World)]

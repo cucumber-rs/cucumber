@@ -29,7 +29,7 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario]. The basic requirement for a `World` object is to provide a `new()` function.
+To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario].
 
 To enable testing of our `animal.feature`, let's add this code to `example.rs`:
 ```rust
@@ -68,6 +68,34 @@ fn main() {
     futures::executor::block_on(AnimalWorld::run("tests/features/book"));
 }
 ```
+
+> __NOTE__: As each [scenario] gets it's own `World` instance, we need to somehow construct it. Example above uses `Default` impl, but this can be changed:
+> 
+> ```rust
+> # use cucumber::World;
+> #
+> # #[derive(Debug)]
+> # struct Cat {
+> #     pub hungry: bool,
+> # }
+> #
+> #[derive(Debug, World)]
+> #[world(init = Self::new)]
+> pub struct AnimalWorld {
+>     cat: Cat,
+> }
+> 
+> impl AnimalWorld {
+>     fn new() -> Self {
+>         Self {
+>             cat: Cat { hungry: false }
+>         }
+>     }
+> }
+> # fn main() {}
+> ```
+> 
+> Function inside `#[world(init)]` attribute can be sync or async, returning `Result` or `World` itself.
 
 If we run this, we should see an output like this:  
 ![record](rec/quickstart_simple_1.gif)

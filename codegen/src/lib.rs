@@ -179,8 +179,8 @@ macro_rules! step_attribute {
         ///
         /// # Function arguments
         ///
-        /// - First argument has to be mutable reference to the [`WorldInit`]
-        ///   deriver (your [`World`] implementer).
+        /// - First argument has to be mutable reference to the [`World`]
+        ///   deriver.
         /// - Other argument's types have to implement [`FromStr`] or it has to
         ///   be a slice where the element type also implements [`FromStr`].
         /// - To use [`gherkin::Step`], name the argument as `step`,

@@ -42,7 +42,7 @@ pub use clap::{Args, Parser};
 /// # Example
 ///
 /// ```rust
-/// # use std::{convert::Infallible, time::Duration};
+/// # use std::time::Duration;
 /// #
 /// # use cucumber::{cli, World, WorldInit as _};
 /// # use futures::FutureExt as _;
