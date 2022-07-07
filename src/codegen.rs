@@ -107,13 +107,11 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
     true
 }
 
-/// Helper-trait for resolving `#[derive(`[`World`]`)]`'s `#[world(init)]`
-/// attribute.
+/// Return-type polymorphism over `async`ness for a `#[world(init)]` attribute
+/// of a [`#[derive(World)]`](macro@World) macro.
 ///
-/// In combination with [`IntoWorldResult`] this allows us to accept async or
-/// sync, fallible or infallible functions as a `#[world(init)]`'s value. This
-/// is done by wrapping sync functions into [`future::Ready`] and infallible
-/// into [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
+/// It allows to accept both sync and `async` functions as an attribute's
+/// argument, by automatically wrapping sync functions in a [`future::Ready`].
 ///
 /// ```rust
 /// # use async_trait::async_trait;
@@ -127,7 +125,7 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
 ///
 ///     async fn new() -> Result<Self, Self::Error> {
 ///         use cucumber::codegen::{
-///             IntoWorldFuture as _, IntoWorldResult as _,
+///             IntoWorldResult as _, ToWorldFuture as _,
 ///         };
 ///
 ///         fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
@@ -137,69 +135,96 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
 ///         //           `#[world(init)]`'s value
 ///         //          ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
 ///         (&as_fn_ptr(<Self as Default>::default))
-///             .into_world_future() // Maybe wraps into `future::Ready`
+///             .to_world_future() // maybe wraps into `future::Ready`
 ///             .await
-///             .into_world_result() // Maybe wraps into `Result<_, Infallible>`
+///             .into_world_result()
 ///             .map_err(Into::into)
 ///     }
 /// }
 /// ```
-///
-/// [`World`]: macro@crate::World
-pub trait IntoWorldFuture: Sized {
-    /// [`Future`] returned by [`World`]'s constructor.
+pub trait ToWorldFuture {
+    /// [`Future`] returned by this [`World`] constructor.
     ///
     /// Set to [`future::Ready`] in case construction is sync.
     type Future: Future;
 
-    /// Resolves [`Future`] for constructing [`World`] using
-    /// [autoderef-based specialization][1].
+    /// Resolves this [`Future`] for constructing a new[`World`] using
+    /// [autoderef-based specialization][0].
     ///
-    /// [1]: https://bit.ly/3AuAfRp
-    #[allow(clippy::wrong_self_convention)]
-    fn into_world_future(&self) -> Self::Future;
+    /// [0]: https://tinyurl.com/autoref-spec
+    fn to_world_future(&self) -> Self::Future;
 }
 
-impl<R: IntoWorldResult> IntoWorldFuture for fn() -> R {
+impl<R: IntoWorldResult> ToWorldFuture for fn() -> R {
     type Future = future::Ready<R>;
 
-    fn into_world_future(&self) -> Self::Future {
+    fn to_world_future(&self) -> Self::Future {
         future::ready(self())
     }
 }
 
-impl<Fut: Future> IntoWorldFuture for &fn() -> Fut
+impl<Fut: Future> ToWorldFuture for &fn() -> Fut
 where
     Fut::Output: IntoWorldResult,
 {
     type Future = Fut;
 
-    fn into_world_future(&self) -> Self::Future {
+    fn to_world_future(&self) -> Self::Future {
         self()
     }
 }
 
-/// Helper-trait for resolving `#[derive(`[`World`]`)]`'s `#[world(init)]`
-/// attribute.
+/// Return-type polymorphism over fallibility for a `#[world(init)]` attribute
+/// of a [`#[derive(World)]`](macro@World) macro.
 ///
-/// See [`IntoWorldFuture`] for more info.
+/// It allows to accept both fallible (returning [`Result`]) and infallible
+/// functions as an attribute's argument, by automatically wrapping infallible
+/// functions in a [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
 ///
-/// [`World`]: macro@crate::World
+/// ```rust
+/// # use async_trait::async_trait;
+/// #
+/// # #[derive(Default)]
+/// # struct World;
+/// #
+/// #[async_trait(?Send)]
+/// impl cucumber::World for World {
+///     type Error = anyhow::Error;
+///
+///     async fn new() -> Result<Self, Self::Error> {
+///         use cucumber::codegen::{
+///             IntoWorldResult as _, ToWorldFuture as _,
+///         };
+///
+///         fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
+///             v
+///         }
+///
+///         //           `#[world(init)]`'s value
+///         //          ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+///         (&as_fn_ptr(<Self as Default>::default))
+///             .to_world_future()
+///             .await
+///             .into_world_result() // maybe wraps into `Result<_, Infallible>`
+///             .map_err(Into::into)
+///     }
+/// }
+/// ```
 pub trait IntoWorldResult: Sized {
     /// [`World`] type itself.
     type World: World;
 
-    /// Error returned by [`World`]'s constructor.
+    /// Error returned by this [`World`] constructor.
     ///
-    /// Set to [`Infallible`] in case construction never errors.
+    /// Set to [`Infallible`] in case construction is infallible.
     type Error;
 
-    /// Passes [`Result`]`<`[`World`]`, Err>` as is, or wraps plain [`World`]
-    /// into [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
+    /// Passes [`Result`]`<`[`World`]`, Self::Error>` as is, or wraps the plain
+    /// [`World`] in a [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
     ///
     /// # Errors
     ///
-    /// In case [`World`] construction errors.
+    /// In case the [`World`] construction errors.
     fn into_world_result(self) -> Result<Self::World, Self::Error>;
 }
 

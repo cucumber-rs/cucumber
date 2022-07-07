@@ -6,7 +6,7 @@ use itertools::Itertools as _;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-#[derive(Debug, Default, cucumber::World)]
+#[derive(cucumber::World, Debug, Default)]
 struct World(usize);
 
 #[given(regex = r"foo is (\d+)")]

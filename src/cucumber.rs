@@ -285,8 +285,8 @@ where
     ///
     /// Output with a regular [`Cucumber::fail_on_skipped()`]:
     /// ```rust,should_panic
-    /// # use futures::FutureExt as _;
     /// # use cucumber::World;
+    /// # use futures::FutureExt as _;
     /// #
     /// # #[derive(Debug, Default, World)]
     /// # struct MyWorld;

@@ -11,11 +11,9 @@ cucumber = { version = "0.13", features = ["output-json"] }
 And configuring output to [`writer::Json`]:
 ```rust
 # use std::{fs, io};
-# 
-# use cucumber::World as _;
-use cucumber::writer;
+use cucumber::{writer, World as _};
 
-# #[derive(Debug, Default, cucumber::World)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
 #
 # #[tokio::main]

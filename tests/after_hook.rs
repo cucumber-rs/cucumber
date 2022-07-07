@@ -62,7 +62,7 @@ async fn step(world: &mut World, secs: CustomU64) {
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 
-#[derive(Clone, Copy, Debug, cucumber::World)]
+#[derive(Clone, Copy, cucumber::World, Debug)]
 #[world(init = Self::new)]
 struct World(usize);
 
@@ -74,6 +74,6 @@ impl World {
             "Failed to initialize `World`",
         );
 
-        World(0)
+        Self(0)
     }
 }

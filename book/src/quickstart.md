@@ -49,6 +49,7 @@ impl Cat {
 }
 
 // `World` is your shared, likely mutable state.
+// Cucumber constructs it via `Default::default()` for each scenario. 
 #[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     cat: Cat,
@@ -69,8 +70,8 @@ fn main() {
 }
 ```
 
-> __NOTE__: As each [scenario] gets it's own `World` instance, we need to somehow construct it. Example above uses `Default` impl, but this can be changed:
-> 
+> __TIP__: Using `Default::default()` for constructing a `World` object may be not enough. In such case a custom constructor may be specified via `#[world(init = my_constructor)]` attribute.
+>
 > ```rust
 > # use cucumber::World;
 > #
@@ -80,22 +81,21 @@ fn main() {
 > # }
 > #
 > #[derive(Debug, World)]
-> #[world(init = Self::new)]
+> // Accepts both sync/async and fallible/infallible functions.
+> #[world(init = Self::new)] 
 > pub struct AnimalWorld {
 >     cat: Cat,
 > }
-> 
+>
 > impl AnimalWorld {
 >     fn new() -> Self {
 >         Self {
->             cat: Cat { hungry: false }
+>             cat: Cat { hungry: true }
 >         }
 >     }
 > }
 > # fn main() {}
 > ```
-> 
-> Function inside `#[world(init)]` attribute can be sync or async, returning `Result` or `World` itself.
 
 If we run this, we should see an output like this:  
 ![record](rec/quickstart_simple_1.gif)

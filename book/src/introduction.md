@@ -23,7 +23,7 @@ These features are agnostic to the implementation, the only requirement is that 
 # use cucumber::{given, then, when, World as _};
 # use tokio::time::sleep;
 #
-# #[derive(Debug, Default, cucumber::World)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World {
 #     user: Option<String>,
 #     capacity: usize,

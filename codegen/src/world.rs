@@ -32,8 +32,9 @@ pub(crate) fn derive(input: TokenStream) -> syn::Result<TokenStream> {
 /// Helper attributes of `#[derive(World)]` macro.
 #[derive(Debug, Default, ParseAttrs)]
 struct Attrs {
-    /// Function, which is used to construct `World`. Uses [`Default`] impl, in
-    /// case no value is provided.
+    /// Function to be used for a `World` construction.
+    ///
+    /// If [`None`] then [`Default::default()`] will be used.
     #[parse(value)]
     init: Option<syn::ExprPath>,
 }
@@ -86,7 +87,6 @@ impl Definition {
 
     /// Generates code of implementing a `WorldInventory` trait.
     #[allow(clippy::similar_names)] // because of `when_ty` vs `then_ty`
-    #[must_use]
     fn impl_world_inventory(&self) -> TokenStream {
         let world = &self.ident;
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
@@ -110,7 +110,6 @@ impl Definition {
     }
 
     /// Generates code of implementing a `World` trait.
-    #[must_use]
     fn impl_world(&self) -> TokenStream {
         let world = &self.ident;
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
@@ -129,7 +128,7 @@ impl Definition {
 
                 async fn new() -> Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
-                        IntoWorldFuture as _, IntoWorldResult as _,
+                        IntoWorldResult as _, ToWorldFuture as _,
                     };
 
                     fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
@@ -137,7 +136,7 @@ impl Definition {
                     }
 
                     (&as_fn_ptr(#init))
-                        .into_world_future()
+                        .to_world_future()
                         .await
                         .into_world_result()
                         .map_err(::std::convert::Into::into)
@@ -227,7 +226,7 @@ mod spec {
 
                 async fn new() -> Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
-                        IntoWorldFuture as _, IntoWorldResult as _,
+                        IntoWorldResult as _, ToWorldFuture as _,
                     };
 
                     fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
@@ -235,7 +234,7 @@ mod spec {
                     }
 
                     (&as_fn_ptr(<Self as ::std::default::Default>::default))
-                        .into_world_future()
+                        .to_world_future()
                         .await
                         .into_world_result()
                         .map_err(::std::convert::Into::into)
@@ -357,7 +356,7 @@ mod spec {
 
                 async fn new() -> Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
-                        IntoWorldFuture as _, IntoWorldResult as _,
+                        IntoWorldResult as _, ToWorldFuture as _,
                     };
 
                     fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
@@ -365,7 +364,7 @@ mod spec {
                     }
 
                     (&as_fn_ptr(<Self as ::std::default::Default>::default))
-                        .into_world_future()
+                        .to_world_future()
                         .await
                         .into_world_result()
                         .map_err(::std::convert::Into::into)
@@ -488,7 +487,7 @@ mod spec {
 
                 async fn new() -> Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
-                        IntoWorldFuture as _, IntoWorldResult as _,
+                        IntoWorldResult as _, ToWorldFuture as _,
                     };
 
                     fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
@@ -496,7 +495,7 @@ mod spec {
                     }
 
                     (&as_fn_ptr(Self::custom))
-                        .into_world_future()
+                        .to_world_future()
                         .await
                         .into_world_result()
                         .map_err(::std::convert::Into::into)

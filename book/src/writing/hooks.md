@@ -17,7 +17,7 @@ Scenario hooks
 # use futures::FutureExt as _;
 # use tokio::time;
 # 
-# #[derive(Debug, Default, cucumber::World)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
 # 
 # fn main() {
@@ -48,7 +48,7 @@ World::cucumber()
 # use futures::FutureExt as _;
 # use tokio::time;
 # 
-# #[derive(Debug, Default, cucumber::World)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
 # 
 # fn main() {
