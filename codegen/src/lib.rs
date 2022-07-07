@@ -232,9 +232,8 @@ macro_rules! step_attribute {
     };
 }
 
-/// Helper macro for generating public shim of [`macro@WorldInit`] deriving
-/// macro consistently with the ones of [`macro@given`], [`macro@when`] and
-/// [`macro@then`] attributes.
+/// Helper macro for generating public shim of [`macro@given`], [`macro@when`]
+/// and [`macro@then`] attributes.
 macro_rules! steps {
     ($($name:ident),*) => {
         $(step_attribute!($name);)*
@@ -243,12 +242,31 @@ macro_rules! steps {
 
 steps!(given, when, then);
 
-/// Derive macro for tests auto-wiring.
+/// Derive macro for implementing [`World`] trait.
 ///
-/// See [`macro@given`], [`macro@when`] and [`macro@then`] attributes
-/// for further details.
+/// # Example
+///
+/// ```rust
+/// #[derive(cucumber::World)]
+/// #[world(init = Self::new)]
+/// struct World(usize);
+///
+/// impl World {
+///     fn new() -> Self {
+///         Self(42)
+///     }
+/// }
+/// ```
+///
+/// # Attribute arguments
+///
+/// - `#[param(init = path::to::fn)]`
+///
+///   Path to a function, that is used to construct [`World`] instance. Provided
+///   function can be sync or async, return [`Result`] or [`World`] itself. In
+///   case no value is provided [`Default::default`] impl will be used.
 #[proc_macro_derive(World, attributes(world))]
-pub fn derive_init(input: TokenStream) -> TokenStream {
+pub fn world(input: TokenStream) -> TokenStream {
     world::derive(input.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()

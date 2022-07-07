@@ -18,6 +18,10 @@ use syn::parse_quote;
 use synthez::{ParseAttrs, ToTokens};
 
 /// Generates code of `#[derive(World)]` macro expansion.
+///
+/// # Errors
+///
+/// If failed to parse [`Attrs`].
 pub(crate) fn derive(input: TokenStream) -> syn::Result<TokenStream> {
     let input = syn::parse2::<syn::DeriveInput>(input)?;
     let definition = Definition::try_from(input)?;
@@ -25,26 +29,34 @@ pub(crate) fn derive(input: TokenStream) -> syn::Result<TokenStream> {
     Ok(quote! { #definition })
 }
 
-/// TODO
+/// Helper attributes of `#[derive(World)]` macro.
 #[derive(Debug, Default, ParseAttrs)]
 struct Attrs {
-    /// TODO
+    /// Function, which is used to construct `World`. Uses [`Default`] impl, in
+    /// case no value is provided.
     #[parse(value)]
     init: Option<syn::ExprPath>,
 }
 
-/// TODO
+/// Representation of a type implementing a `World` trait, used for code
+/// generation.
 #[derive(Debug, ToTokens)]
 #[to_tokens(append(impl_world_inventory, impl_world, impl_step_constructors))]
 struct Definition {
-    /// TODO
-    init: Option<syn::ExprPath>,
-
-    /// TODO
+    /// Name of this type.
     ident: syn::Ident,
 
-    /// TODO
+    /// [`syn::Generics`] of this type.
+    generics: syn::Generics,
+
+    /// [`Visibility`] of this `World`.
+    ///
+    /// [`Visibility`]: syn::Visibility
     vis: syn::Visibility,
+
+    /// Function, which is used to construct `World`. Uses [`Default`] impl, in
+    /// case no value is provided.
+    init: Option<syn::ExprPath>,
 }
 
 impl TryFrom<syn::DeriveInput> for Definition {
@@ -54,27 +66,31 @@ impl TryFrom<syn::DeriveInput> for Definition {
         let attrs: Attrs = Attrs::parse_attrs("world", &input)?;
 
         Ok(Self {
-            init: attrs.init,
             ident: input.ident,
+            generics: input.generics,
             vis: input.vis,
+            init: attrs.init,
         })
     }
 }
 
 impl Definition {
-    /// TODO
+    /// Possible step names.
     const STEPS: &'static [&'static str] = &["given", "when", "then"];
 
-    /// TODO
+    /// Assertion to ensure, that [`Self::STEPS`] has exactly 3 step types.
     #[allow(clippy::manual_assert)] // `assert_eq!` isn't const yet
     const EXACTLY_3_STEPS: () = if Self::STEPS.len() != 3 {
         panic!("Expected exactly 3 step names");
     };
 
-    /// TODO
+    /// Generates code of implementing a `WorldInventory` trait.
     #[allow(clippy::similar_names)] // because of `when_ty` vs `then_ty`
+    #[must_use]
     fn impl_world_inventory(&self) -> TokenStream {
         let world = &self.ident;
+        let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
+
         let (given_ty, when_ty, then_ty) = self
             .step_types()
             .collect_tuple()
@@ -82,7 +98,10 @@ impl Definition {
 
         quote! {
             #[automatically_derived]
-            impl ::cucumber::codegen::WorldInventory for #world {
+            impl #impl_gens ::cucumber::codegen::WorldInventory
+                 for #world #ty_gens
+                 #where_clause
+            {
                 type Given = #given_ty;
                 type When = #when_ty;
                 type Then = #then_ty;
@@ -90,9 +109,12 @@ impl Definition {
         }
     }
 
-    /// TODO
+    /// Generates code of implementing a `World` trait.
+    #[must_use]
     fn impl_world(&self) -> TokenStream {
         let world = &self.ident;
+        let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
+
         let init = self.init.clone().unwrap_or_else(
             || parse_quote! { <Self as ::std::default::Default>::default },
         );
@@ -100,7 +122,9 @@ impl Definition {
         quote! {
             #[automatically_derived]
             #[::cucumber::codegen::async_trait(?Send)]
-            impl ::cucumber::World for #world {
+            impl #impl_gens ::cucumber::World for #world #ty_gens
+                 #where_clause
+            {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
                 async fn new() -> Result<Self, Self::Error> {
@@ -122,10 +146,13 @@ impl Definition {
         }
     }
 
-    /// Generates structs and their implementations of private traits.
+    /// Generates code for additional struct implementing `StepConstructor`
+    /// trait.
+    #[must_use]
     fn impl_step_constructors(&self) -> TokenStream {
         let world = &self.ident;
         let world_vis = &self.vis;
+        let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
 
         self.step_types()
             .map(|ty| {
@@ -144,7 +171,10 @@ impl Definition {
                     }
 
                     #[automatically_derived]
-                    impl ::cucumber::codegen::StepConstructor<#world> for #ty {
+                    impl #impl_gens
+                         ::cucumber::codegen::StepConstructor<#world #ty_gens>
+                         for #ty #where_clause
+                    {
                         fn inner(&self) -> (
                             ::cucumber::step::Location,
                             ::cucumber::codegen::LazyRegex,
@@ -177,7 +207,7 @@ mod spec {
     use syn::parse_quote;
 
     #[test]
-    fn expands() {
+    fn derives_impl() {
         let input = parse_quote! {
             pub struct World;
         };
@@ -285,6 +315,267 @@ mod spec {
 
             #[automatically_derived]
             impl ::cucumber::codegen::StepConstructor<World> for
+                CucumberThenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberThenWorld);
+        };
+
+        assert_eq!(
+            super::derive(input).unwrap().to_string(),
+            output.to_string(),
+        );
+    }
+
+    #[test]
+    fn derives_impl_with_generics() {
+        let input = parse_quote! {
+            pub struct World<T>(T);
+        };
+
+        let output = quote! {
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::WorldInventory for World<T> {
+                type Given = CucumberGivenWorld;
+                type When = CucumberWhenWorld;
+                type Then = CucumberThenWorld;
+            }
+
+            #[automatically_derived]
+            #[::cucumber::codegen::async_trait(?Send)]
+            impl<T> ::cucumber::World for World<T> {
+                type Error = ::cucumber::codegen::anyhow::Error;
+
+                async fn new() -> Result<Self, Self::Error> {
+                    use ::cucumber::codegen::{
+                        IntoWorldFuture as _, IntoWorldResult as _,
+                    };
+
+                    fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
+                        v
+                    }
+
+                    (&as_fn_ptr(<Self as ::std::default::Default>::default))
+                        .into_world_future()
+                        .await
+                        .into_world_result()
+                        .map_err(::std::convert::Into::into)
+                }
+            }
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberGivenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+                CucumberGivenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberGivenWorld);
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberWhenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+                CucumberWhenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberWhenWorld);
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberThenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+                CucumberThenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberThenWorld);
+        };
+
+        assert_eq!(
+            super::derive(input).unwrap().to_string(),
+            output.to_string(),
+        );
+    }
+
+    #[test]
+    fn derives_impl_with_init_fn() {
+        let input = parse_quote! {
+            #[world(init = Self::custom)]
+            pub struct World<T>(T);
+        };
+
+        let output = quote! {
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::WorldInventory for World<T> {
+                type Given = CucumberGivenWorld;
+                type When = CucumberWhenWorld;
+                type Then = CucumberThenWorld;
+            }
+
+            #[automatically_derived]
+            #[::cucumber::codegen::async_trait(?Send)]
+            impl<T> ::cucumber::World for World<T> {
+                type Error = ::cucumber::codegen::anyhow::Error;
+
+                async fn new() -> Result<Self, Self::Error> {
+                    use ::cucumber::codegen::{
+                        IntoWorldFuture as _, IntoWorldResult as _,
+                    };
+
+                    fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
+                        v
+                    }
+
+                    (&as_fn_ptr(Self::custom))
+                        .into_world_future()
+                        .await
+                        .into_world_result()
+                        .map_err(::std::convert::Into::into)
+                }
+            }
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberGivenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+                CucumberGivenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberGivenWorld);
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberWhenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+                CucumberWhenWorld
+            {
+                fn inner(&self) -> (
+                    ::cucumber::step::Location,
+                    ::cucumber::codegen::LazyRegex,
+                    ::cucumber::Step<World>,
+                ) {
+                    (self.loc, self.regex, self.func)
+                }
+            }
+
+            #[automatically_derived]
+            ::cucumber::codegen::collect!(CucumberWhenWorld);
+
+            #[automatically_derived]
+            #[doc(hidden)]
+            pub struct CucumberThenWorld {
+                 #[doc(hidden)]
+                 pub loc: ::cucumber::step::Location,
+
+                 #[doc(hidden)]
+                 pub regex: ::cucumber::codegen::LazyRegex,
+
+                 #[doc(hidden)]
+                 pub func: ::cucumber::Step<World>,
+            }
+
+            #[automatically_derived]
+            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
                 CucumberThenWorld
             {
                 fn inner(&self) -> (
