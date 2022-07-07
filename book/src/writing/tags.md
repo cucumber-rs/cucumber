@@ -131,10 +131,9 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 ```rust,should_panic
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 # 
 # #[derive(Debug, Default)]
@@ -148,20 +147,9 @@ Feature: Animal feature
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

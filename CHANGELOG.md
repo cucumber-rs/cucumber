@@ -13,7 +13,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bump up [MSRV] to 1.62 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0], [todo])
+- Bumped up [MSRV] to 1.62 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0], [8ad5cc86])
+- Replaced `#[derive(WorldInit)]` with `#[derive(World)]` to remove the need of manual `World` trait implementation. ([#219], [#217])
+- Merged `WorldInit` trait into the `World` trait. ([#219])
 
 ### Changed
 
@@ -21,6 +23,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [#215]: /../../issues/215
 [#216]: /../../pull/216
+[#217]: /../../issues/217
+[#219]: /../../pull/219
+[8ad5cc86]: /../../commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
 [cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
 [fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
 

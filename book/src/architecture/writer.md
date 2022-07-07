@@ -7,7 +7,6 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 
 ```rust
 # use std::{
-#     convert::Infallible,
 #     panic::{self, AssertUnwindSafe},
 #     path::PathBuf,
 #     sync::Arc,
@@ -17,7 +16,7 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WorldInit, WriterExt as _,
+#     WriterExt as _,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},
@@ -37,20 +36,9 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #     }
 # }
 #
-# #[derive(Clone, Debug, WorldInit)]
+# #[derive(Clone, Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -301,11 +289,11 @@ async fn main() {
 > __TIP__: `CustomWriter` will print trash if we feed unordered [`event::Cucumber`]s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap `CustomWriter` into [`writer::Normalize`], which will do that for us.
 
 ```rust
-# use std::{convert::Infallible, path::PathBuf, time::Duration};
+# use std::{path::PathBuf, time::Duration};
 #
 # use async_trait::async_trait;
 # use cucumber::{
-#     cli, event, gherkin, given, parser, then, when, Event, World, WorldInit,
+#     cli, event, gherkin, given, parser, then, when, Event, World, 
 #     WriterExt as _,
 # };
 # use futures::{future, stream};
@@ -322,20 +310,9 @@ async fn main() {
 #     }
 # }
 #
-# #[derive(Clone, Debug, WorldInit)]
+# #[derive(Clone, Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

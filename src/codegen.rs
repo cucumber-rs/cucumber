@@ -10,12 +10,14 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::{fmt::Debug, path::Path};
+use std::{convert::Infallible, future::Future};
 
-use async_trait::async_trait;
+use futures::future;
 
-use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
+use crate::{step, Step, World};
 
+pub use anyhow;
+pub use async_trait::async_trait;
 pub use cucumber_expressions::{
     expand::parameters::Provider as ParametersProvider, Expression, Spanned,
 };
@@ -23,94 +25,6 @@ pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
 pub use once_cell::sync::Lazy;
 pub use regex::Regex;
-
-/// [`World`] extension with auto-wiring capabilities.
-#[async_trait(?Send)]
-pub trait WorldInit: Debug + WorldInventory {
-    /// Returns runner for tests with auto-wired steps marked by [`given`],
-    /// [`when`] and [`then`] attributes.
-    ///
-    /// [`given`]: crate::given
-    /// [`then`]: crate::then
-    /// [`when`]: crate::when
-    #[must_use]
-    fn collection() -> step::Collection<Self> {
-        let mut out = step::Collection::new();
-
-        for given in inventory::iter::<Self::Given> {
-            let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex(), fun);
-        }
-
-        for when in inventory::iter::<Self::When> {
-            let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex(), fun);
-        }
-
-        for then in inventory::iter::<Self::Then> {
-            let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex(), fun);
-        }
-
-        out
-    }
-
-    /// Returns default [`Cucumber`] with all auto-wired [`Step`]s.
-    #[must_use]
-    fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I> {
-        Cucumber::new().steps(Self::collection())
-    }
-
-    /// Runs [`Cucumber`].
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
-    /// [`Step`]: crate::Step
-    /// [`Writer`]: crate::Writer
-    async fn run<I: AsRef<Path>>(input: I) {
-        Self::cucumber().run_and_exit(input).await;
-    }
-
-    /// Runs [`Cucumber`] with [`Scenario`]s filter.
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: gherkin::Step
-    /// [`Writer`]: crate::Writer
-    async fn filter_run<I, F>(input: I, filter: F)
-    where
-        I: AsRef<Path>,
-        F: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> bool
-            + 'static,
-    {
-        Self::cucumber().filter_run_and_exit(input, filter).await;
-    }
-}
-
-impl<T> WorldInit for T where T: Debug + WorldInventory {}
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {
@@ -134,7 +48,7 @@ pub trait WorldInventory: World {
 pub type LazyRegex = fn() -> Regex;
 
 /// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]
-/// attributes inside [`WorldInit::collection()`] method.
+/// attributes inside [`World::collection()`] method.
 ///
 /// [`given`]: crate::given
 /// [`when`]: crate::when
@@ -191,4 +105,143 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
     }
 
     true
+}
+
+/// Return-type polymorphism over `async`ness for a `#[world(init)]` attribute
+/// of a [`#[derive(World)]`](macro@World) macro.
+///
+/// It allows to accept both sync and `async` functions as an attribute's
+/// argument, by automatically wrapping sync functions in a [`future::Ready`].
+///
+/// ```rust
+/// # use async_trait::async_trait;
+/// #
+/// # #[derive(Default)]
+/// # struct World;
+/// #
+/// #[async_trait(?Send)]
+/// impl cucumber::World for World {
+///     type Error = anyhow::Error;
+///
+///     async fn new() -> Result<Self, Self::Error> {
+///         use cucumber::codegen::{
+///             IntoWorldResult as _, ToWorldFuture as _,
+///         };
+///
+///         fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
+///             v
+///         }
+///
+///         //           `#[world(init)]`'s value
+///         //          ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+///         (&as_fn_ptr(<Self as Default>::default))
+///             .to_world_future() // maybe wraps into `future::Ready`
+///             .await
+///             .into_world_result()
+///             .map_err(Into::into)
+///     }
+/// }
+/// ```
+pub trait ToWorldFuture {
+    /// [`Future`] returned by this [`World`] constructor.
+    ///
+    /// Set to [`future::Ready`] in case construction is sync.
+    type Future: Future;
+
+    /// Resolves this [`Future`] for constructing a new[`World`] using
+    /// [autoderef-based specialization][0].
+    ///
+    /// [0]: https://tinyurl.com/autoref-spec
+    fn to_world_future(&self) -> Self::Future;
+}
+
+impl<R: IntoWorldResult> ToWorldFuture for fn() -> R {
+    type Future = future::Ready<R>;
+
+    fn to_world_future(&self) -> Self::Future {
+        future::ready(self())
+    }
+}
+
+impl<Fut: Future> ToWorldFuture for &fn() -> Fut
+where
+    Fut::Output: IntoWorldResult,
+{
+    type Future = Fut;
+
+    fn to_world_future(&self) -> Self::Future {
+        self()
+    }
+}
+
+/// Return-type polymorphism over fallibility for a `#[world(init)]` attribute
+/// of a [`#[derive(World)]`](macro@World) macro.
+///
+/// It allows to accept both fallible (returning [`Result`]) and infallible
+/// functions as an attribute's argument, by automatically wrapping infallible
+/// functions in a [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
+///
+/// ```rust
+/// # use async_trait::async_trait;
+/// #
+/// # #[derive(Default)]
+/// # struct World;
+/// #
+/// #[async_trait(?Send)]
+/// impl cucumber::World for World {
+///     type Error = anyhow::Error;
+///
+///     async fn new() -> Result<Self, Self::Error> {
+///         use cucumber::codegen::{
+///             IntoWorldResult as _, ToWorldFuture as _,
+///         };
+///
+///         fn as_fn_ptr<T>(v: fn() -> T) -> fn() -> T {
+///             v
+///         }
+///
+///         //           `#[world(init)]`'s value
+///         //          ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+///         (&as_fn_ptr(<Self as Default>::default))
+///             .to_world_future()
+///             .await
+///             .into_world_result() // maybe wraps into `Result<_, Infallible>`
+///             .map_err(Into::into)
+///     }
+/// }
+/// ```
+pub trait IntoWorldResult: Sized {
+    /// [`World`] type itself.
+    type World: World;
+
+    /// Error returned by this [`World`] constructor.
+    ///
+    /// Set to [`Infallible`] in case construction is infallible.
+    type Error;
+
+    /// Passes [`Result`]`<`[`World`]`, Self::Error>` as is, or wraps the plain
+    /// [`World`] in a [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
+    ///
+    /// # Errors
+    ///
+    /// In case the [`World`] construction errors.
+    fn into_world_result(self) -> Result<Self::World, Self::Error>;
+}
+
+impl<W: World> IntoWorldResult for W {
+    type World = Self;
+    type Error = Infallible;
+
+    fn into_world_result(self) -> Result<Self, Self::Error> {
+        Ok(self)
+    }
+}
+
+impl<W: World, E> IntoWorldResult for Result<W, E> {
+    type World = W;
+    type Error = E;
+
+    fn into_world_result(self) -> Self {
+        self
+    }
 }

@@ -4,23 +4,11 @@ Multiple outputs
 Reporting tests result to multiple outputs simultaneously may be achieved by using [`writer::Tee`].
 
 ```rust
-# use std::{convert::Infallible, fs, io};
-# 
-# use async_trait::async_trait;
-# use cucumber::WorldInit;
-use cucumber::{writer, WriterExt as _};
+# use std::{fs, io};
+use cucumber::{writer, World as _, WriterExt as _};
 
-# #[derive(Debug, WorldInit)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
-# 
-# #[async_trait(?Send)]
-# impl cucumber::World for World {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(World)
-#     }
-# }
 #
 # #[tokio::main]
 # async fn main() -> io::Result<()> {

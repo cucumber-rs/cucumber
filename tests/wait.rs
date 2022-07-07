@@ -1,7 +1,6 @@
-use std::{convert::Infallible, panic::AssertUnwindSafe, time::Duration};
+use std::{panic::AssertUnwindSafe, time::Duration};
 
-use async_trait::async_trait;
-use cucumber::{cli, given, then, when, Parameter, WorldInit};
+use cucumber::{cli, given, then, when, Parameter, World as _};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
@@ -56,14 +55,5 @@ async fn step(world: &mut World, secs: CustomU64) {
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 
-#[derive(Clone, Copy, Debug, WorldInit)]
+#[derive(Clone, Copy, cucumber::World, Debug, Default)]
 struct World(usize);
-
-#[async_trait(?Send)]
-impl cucumber::World for World {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(World(0))
-    }
-}

@@ -18,25 +18,15 @@ These features are agnostic to the implementation, the only requirement is that 
 [Cucumber] implementations then simply hook into these keywords and execute the logic corresponding to the keywords. [`cucumber`] crate is one of such implementations and is the subject of this book.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, WorldInit};
+# use cucumber::{given, then, when, World as _};
 # use tokio::time::sleep;
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World {
 #     user: Option<String>,
 #     capacity: usize,
-# }
-#
-# #[async_trait(?Send)]
-# impl cucumber::World for World {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(Self { user: None, capacity: 0 })
-#     }
 # }
 #
 #[given(expr = "{word} is hungry")] // Cucumber Expression

@@ -11,24 +11,14 @@ Scenario hooks
 [`Before` hook] runs before the first step of each scenario, even before [`Background`] ones.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 # 
-# use async_trait::async_trait;
-# use cucumber::WorldInit;
+# use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
 # 
-# #[derive(Debug, WorldInit)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
-# 
-# #[async_trait(?Send)]
-# impl cucumber::World for World {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(World)
-#     }
-# }
 # 
 # fn main() {
 World::cucumber()
@@ -52,24 +42,14 @@ World::cucumber()
 [`After` hook] runs after the last [step] of each [scenario], even when that [step] fails or is skipped.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 # 
-# use async_trait::async_trait;
-# use cucumber::WorldInit;
+# use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
 # 
-# #[derive(Debug, WorldInit)]
+# #[derive(cucumber::World, Debug, Default)]
 # struct World;
-# 
-# #[async_trait(?Send)]
-# impl cucumber::World for World {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(World)
-#     }
-# }
 # 
 # fn main() {
 World::cucumber()

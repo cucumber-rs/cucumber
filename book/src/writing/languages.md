@@ -18,12 +18,9 @@ Egenskap: Dyr egenskap
     Så katten er ikke sulten
 ```
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -34,20 +31,9 @@ Egenskap: Dyr egenskap
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 #[given(regex = r"^en (sulten|mett) katt$")]

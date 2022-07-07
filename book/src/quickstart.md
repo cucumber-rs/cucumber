@@ -29,18 +29,15 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 
-To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario]. The basic requirement for a `World` object is to provide a `new()` function.
+To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario].
 
 To enable testing of our `animal.feature`, let's add this code to `example.rs`:
 ```rust
-use std::convert::Infallible;
-
-use async_trait::async_trait;
-use cucumber::{given, World, WorldInit};
+use cucumber::{given, World};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Cat {
     pub hungry: bool,
 }
@@ -52,23 +49,10 @@ impl Cat {
 }
 
 // `World` is your shared, likely mutable state.
-#[derive(Debug, WorldInit)]
+// Cucumber constructs it via `Default::default()` for each scenario. 
+#[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     cat: Cat,
-}
-
-// `World` needs to be implemented, so Cucumber knows how to construct it
-// for each scenario.
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    // We do require some error type.
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Infallible> {
-        Ok(Self {
-            cat: Cat { hungry: false },
-        })
-    }
 }
 
 // Steps are defined with `given`, `when` and `then` attributes.
@@ -85,6 +69,33 @@ fn main() {
     futures::executor::block_on(AnimalWorld::run("tests/features/book"));
 }
 ```
+
+> __TIP__: Using `Default::default()` for constructing a `World` object may be not enough. In such case a custom constructor may be specified via `#[world(init = my_constructor)]` attribute.
+>
+> ```rust
+> # use cucumber::World;
+> #
+> # #[derive(Debug)]
+> # struct Cat {
+> #     pub hungry: bool,
+> # }
+> #
+> #[derive(Debug, World)]
+> // Accepts both sync/async and fallible/infallible functions.
+> #[world(init = Self::new)] 
+> pub struct AnimalWorld {
+>     cat: Cat,
+> }
+>
+> impl AnimalWorld {
+>     fn new() -> Self {
+>         Self {
+>             cat: Cat { hungry: true }
+>         }
+>     }
+> }
+> # fn main() {}
+> ```
 
 If we run this, we should see an output like this:  
 ![record](rec/quickstart_simple_1.gif)
@@ -104,12 +115,9 @@ These various [step] matching functions are executed to transform the `World`. A
 
 We can add a `when` [step] matcher:
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -120,20 +128,9 @@ We can add a `when` [step] matcher:
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 # #[given("a hungry cat")]
@@ -158,12 +155,9 @@ Once we run the tests again, we see that two lines are green now and the next on
 
 Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then` [step] matcher follows to assert this, as our [feature] says:
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -174,20 +168,9 @@ Finally, how do we check our result? We expect that this will cause some change 
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 # #[given("a hungry cat")]
@@ -219,12 +202,9 @@ Once we run the tests, now we see all steps being accounted for and the whole [s
 
 To assure that assertion is indeed happening, let's reverse it temporarily:
 ```rust,should_panic
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -235,21 +215,9 @@ To assure that assertion is indeed happening, let's reverse it temporarily:
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     // We require some error type
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 # #[given("a hungry cat")]
@@ -293,12 +261,9 @@ Feature: Animal feature
 
 The only thing that is different is the `Given` [step]. But we don't have to write a new matcher here! We can leverage [`regex`] support:
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -309,20 +274,9 @@ The only thing that is different is the `Given` [step]. But we don't have to wri
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -358,12 +312,9 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 
 Alternatively, we also may use [Cucumber Expressions] for the same purpose (less powerful, but much more readable):
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -374,20 +325,9 @@ Alternatively, we also may use [Cucumber Expressions] for the same purpose (less
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 #[given(expr = "a {word} cat")]
@@ -437,13 +377,12 @@ harness = false  # allows Cucumber to print output instead of libtest
 
 And, simply `sleep` on each [step] to test the `async` support (in the real world, of course, there will be web/database requests, etc.):
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -454,20 +393,9 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 #[given(regex = r"^a (hungry|satiated) cat$")]

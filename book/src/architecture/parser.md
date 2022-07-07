@@ -6,10 +6,10 @@ Let's start by implementing a custom [`Parser`] which statically emits a single 
 [`Parser`] represents anything that emits a [`Stream`] of [feature]s.
 
 ```rust
-# use std::{convert::Infallible, path::PathBuf, time::Duration};
+# use std::{path::PathBuf, time::Duration};
 #
 # use async_trait::async_trait;
-# use cucumber::{cli, gherkin, given, parser, then, when, World, WorldInit};
+# use cucumber::{cli, gherkin, given, parser, then, when, World};
 # use futures::{future, stream};
 # use tokio::time::sleep;
 #
@@ -24,20 +24,9 @@ Let's start by implementing a custom [`Parser`] which statically emits a single 
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

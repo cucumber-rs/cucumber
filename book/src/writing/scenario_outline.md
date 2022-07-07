@@ -23,10 +23,9 @@ At parsing stage `<template>`s are replaced by value from cells, so we may get t
 > __NOTE__: `<template>`s are replaced even inside [doc strings] and [data tables].
 
 ```rust
-# use std::{collections::HashMap, convert::Infallible, time::Duration};
+# use std::{collections::HashMap, time::Duration};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World};
 # use tokio::time::sleep;
 #
 #[derive(Debug, Default)]
@@ -40,20 +39,9 @@ impl Animal {
     }
 }
 
-#[derive(Debug, WorldInit)]
+#[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     animals: HashMap<String, Animal>,
-}
-
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Infallible> {
-        Ok(Self {
-            animals: HashMap::new(),
-        })
-    }
 }
 
 #[given(regex = r"^a (hungry|satiated) (\S+)$")]
