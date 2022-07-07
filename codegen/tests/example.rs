@@ -1,22 +1,19 @@
 use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
-use async_trait::async_trait;
 use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
 use futures::FutureExt as _;
 use tempfile::TempDir;
 use tokio::time;
 
-#[derive(Debug, WorldInit)]
+#[derive(Debug, World)]
+#[world(init = Self::new)]
 pub struct MyWorld {
     foo: i32,
     dir: TempDir,
 }
 
-#[async_trait(?Send)]
-impl World for MyWorld {
-    type Error = io::Error;
-
-    async fn new() -> Result<Self, Self::Error> {
+impl MyWorld {
+    fn new() -> io::Result<Self> {
         Ok(Self {
             foo: 0,
             dir: TempDir::new()?,

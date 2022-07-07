@@ -1,7 +1,6 @@
-use std::{convert::Infallible, fs, io::Read as _};
+use std::{fs, io::Read as _};
 
-use async_trait::async_trait;
-use cucumber::{given, then, when, writer, WorldInit};
+use cucumber::{given, then, when, writer, WorldInit as _};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
@@ -44,14 +43,5 @@ async fn main() {
     );
 }
 
-#[derive(Clone, Copy, Debug, WorldInit)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World(usize);
-
-#[async_trait(?Send)]
-impl cucumber::World for World {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(World(0))
-    }
-}

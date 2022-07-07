@@ -111,7 +111,7 @@
 
 mod attribute;
 mod parameter;
-mod world_init;
+mod world;
 
 use proc_macro::TokenStream;
 
@@ -142,20 +142,10 @@ macro_rules! step_attribute {
         /// ```
         /// # use std::{convert::Infallible};
         /// #
-        /// # use async_trait::async_trait;
-        /// use cucumber::{given, when, World, WorldInit};
+        /// use cucumber::{given, when, World, WorldInit as _};
         ///
-        /// #[derive(Debug, WorldInit)]
+        /// #[derive(Debug, Default, World)]
         /// struct MyWorld;
-        ///
-        /// #[async_trait(?Send)]
-        /// impl World for MyWorld {
-        ///     type Error = Infallible;
-        ///
-        ///     async fn new() -> Result<Self, Self::Error> {
-        ///         Ok(Self)
-        ///     }
-        /// }
         ///
         /// #[given(regex = r"(\S+) is (\d+)")]
         /// #[when(expr = "{word} is {int}")]
@@ -199,20 +189,10 @@ macro_rules! step_attribute {
         /// ```rust
         /// # use std::convert::Infallible;
         /// #
-        /// # use async_trait::async_trait;
-        /// # use cucumber::{gherkin::Step, given, World, WorldInit};
+        /// # use cucumber::{gherkin::Step, given, World, WorldInit as _};
         /// #
-        /// # #[derive(Debug, WorldInit)]
+        /// # #[derive(Debug, Default, World)]
         /// # struct MyWorld;
-        /// #
-        /// # #[async_trait(?Send)]
-        /// # impl World for MyWorld {
-        /// #     type Error = Infallible;
-        /// #
-        /// #     async fn new() -> Result<Self, Self::Error> {
-        /// #         Ok(Self)
-        /// #     }
-        /// # }
         /// #
         /// #[given(regex = r"(\S+) is not (\S+)")]
         /// fn test_step(
@@ -257,22 +237,22 @@ macro_rules! step_attribute {
 /// [`macro@then`] attributes.
 macro_rules! steps {
     ($($name:ident),*) => {
-        /// Derive macro for tests auto-wiring.
-        ///
-        /// See [`macro@given`], [`macro@when`] and [`macro@then`] attributes
-        /// for further details.
-        #[proc_macro_derive(WorldInit)]
-        pub fn derive_init(input: TokenStream) -> TokenStream {
-            world_init::derive(input.into(), &[$(std::stringify!($name)),*])
-                .unwrap_or_else(syn::Error::into_compile_error)
-                .into()
-        }
-
         $(step_attribute!($name);)*
     }
 }
 
 steps!(given, when, then);
+
+/// Derive macro for tests auto-wiring.
+///
+/// See [`macro@given`], [`macro@when`] and [`macro@then`] attributes
+/// for further details.
+#[proc_macro_derive(World, attributes(world))]
+pub fn derive_init(input: TokenStream) -> TokenStream {
+    world::derive(input.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
 
 /// In addition to [default parameters] of [Cucumber Expressions], you may
 /// implement and use custom ones.
@@ -282,21 +262,11 @@ steps!(given, when, then);
 /// ```rust
 /// # use std::{convert::Infallible};
 /// #
-/// # use async_trait::async_trait;
-/// use cucumber::{given, when, Parameter, World, WorldInit};
+/// use cucumber::{given, when, Parameter, World, WorldInit as _};
 /// use derive_more::{Deref, FromStr};
 ///
-/// #[derive(Debug, WorldInit)]
+/// #[derive(Debug, Default, World)]
 /// struct MyWorld;
-///
-/// #[async_trait(?Send)]
-/// impl World for MyWorld {
-///     type Error = Infallible;
-///
-///     async fn new() -> Result<Self, Self::Error> {
-///         Ok(Self)
-///     }
-/// }
 ///
 /// #[given(regex = r"^(\S+) is (\d+)$")]
 /// #[when(expr = "{word} is {u64}")]

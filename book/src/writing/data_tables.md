@@ -22,10 +22,9 @@ Feature: Animal feature
 
 Data, declared in the [table], may be accessed via [`Step`] argument:
 ```rust
-# use std::{collections::HashMap, convert::Infallible};
+# use std::collections::HashMap;
 #
-# use async_trait::async_trait;
-use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
+use cucumber::{gherkin::Step, given, then, when, World, WorldInit as _};
 
 #[given(regex = r"^a (hungry|satiated) animal$")]
 async fn hungry_animal(world: &mut AnimalWorld, step: &Step, state: String) {
@@ -80,20 +79,9 @@ impl Animal {
     }
 }
 
-#[derive(Debug, WorldInit)]
+#[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     animals: HashMap<String, Animal>,
-}
-
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Infallible> {
-        Ok(Self {
-            animals: HashMap::new(),
-        })
-    }
 }
 #
 # #[tokio::main]

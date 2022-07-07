@@ -10,23 +10,13 @@ cucumber = { version = "0.13", features = ["output-junit"] }
 
 And configuring output to [`writer::JUnit`]:
 ```rust
-# use std::{convert::Infallible, fs, io};
+# use std::{fs, io};
 # 
-# use async_trait::async_trait;
-# use cucumber::WorldInit;
+# use cucumber::WorldInit as _;
 use cucumber::writer;
 
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
-# 
-# #[async_trait(?Send)]
-# impl cucumber::World for World {
-#     type Error = Infallible;
-# 
-#     async fn new() -> Result<Self, Self::Error> {
-#         Ok(World)
-#     }
-# }
 #
 # #[tokio::main]
 # async fn main() -> io::Result<()> {

@@ -1,8 +1,7 @@
-use std::{convert::Infallible, panic::AssertUnwindSafe};
+use std::panic::AssertUnwindSafe;
 
-use async_trait::async_trait;
 use clap::Parser;
-use cucumber::{cli, given, WorldInit};
+use cucumber::{cli, given, WorldInit as _};
 use futures::FutureExt as _;
 
 #[derive(cli::Args)]
@@ -22,17 +21,8 @@ struct Smoke {
     report_name: String,
 }
 
-#[derive(Clone, Copy, Debug, WorldInit)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World;
-
-#[async_trait(?Send)]
-impl cucumber::World for World {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(World)
-    }
-}
 
 #[given("an invalid step")]
 fn invalid_step(_world: &mut World) {

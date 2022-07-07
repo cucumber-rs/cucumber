@@ -1,12 +1,10 @@
 use std::{
-    convert::Infallible,
     panic::AssertUnwindSafe,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
 };
 
-use async_trait::async_trait;
-use cucumber::{given, then, when, Parameter, WorldInit};
+use cucumber::{given, then, when, Parameter, WorldInit as _};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
@@ -64,20 +62,18 @@ async fn step(world: &mut World, secs: CustomU64) {
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 
-#[derive(Clone, Copy, Debug, WorldInit)]
+#[derive(Clone, Copy, Debug, cucumber::World)]
+#[world(init = Self::new)]
 struct World(usize);
 
-#[async_trait(?Send)]
-impl cucumber::World for World {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
+impl World {
+    fn new() -> Self {
         assert_ne!(
             NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst),
             11,
             "Failed to initialize `World`",
         );
 
-        Ok(World(0))
+        World(0)
     }
 }

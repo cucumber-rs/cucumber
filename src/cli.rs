@@ -44,22 +44,12 @@ pub use clap::{Args, Parser};
 /// ```rust
 /// # use std::{convert::Infallible, time::Duration};
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{cli, WorldInit};
+/// # use cucumber::{cli, World, WorldInit as _};
 /// # use futures::FutureExt as _;
 /// # use tokio::time;
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {

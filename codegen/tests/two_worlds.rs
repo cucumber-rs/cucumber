@@ -1,35 +1,16 @@
-use std::{convert::Infallible, time::Duration};
+use std::time::Duration;
 
-use async_trait::async_trait;
-use cucumber::{gherkin::Step, given, when, World, WorldInit};
+use cucumber::{gherkin::Step, given, when, World, WorldInit as _};
 use tokio::time;
 
-#[derive(Debug, WorldInit)]
+#[derive(Debug, Default, World)]
 pub struct FirstWorld {
     foo: i32,
 }
 
-#[async_trait(?Send)]
-impl World for FirstWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(Self { foo: 0 })
-    }
-}
-
-#[derive(Debug, WorldInit)]
+#[derive(Debug, Default, World)]
 pub struct SecondWorld {
     foo: i32,
-}
-
-#[async_trait(?Send)]
-impl World for SecondWorld {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(Self { foo: 0 })
-    }
 }
 
 #[given(regex = r"(\S+) is (\d+)")]

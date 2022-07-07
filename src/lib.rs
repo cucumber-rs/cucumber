@@ -134,7 +134,7 @@ mod actually_used_crates_in_tests {
     use tokio as _;
 }
 
-use std::error::Error as StdError;
+use std::fmt::Display;
 
 use async_trait::async_trait;
 
@@ -145,7 +145,7 @@ pub use gherkin;
 pub use self::codegen::{Parameter, WorldInit};
 #[cfg(feature = "macros")]
 #[doc(inline)]
-pub use cucumber_codegen::{given, then, when, Parameter, WorldInit};
+pub use cucumber_codegen::{given, then, when, Parameter, World};
 
 #[doc(inline)]
 pub use self::{
@@ -176,7 +176,7 @@ pub use self::{
 #[async_trait(?Send)]
 pub trait World: Sized + 'static {
     /// Error of creating a new [`World`] instance.
-    type Error: StdError;
+    type Error: Display;
 
     /// Creates a new [`World`] instance.
     async fn new() -> Result<Self, Self::Error>;

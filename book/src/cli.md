@@ -68,10 +68,9 @@ By default, the whole CLI is composed of [`Parser::Cli`], [`Runner::Cli`] and [`
 CLI may be extended even more with arbitrary options, if required. In such case we should combine the final CLI by ourselves and apply it via [`Cucumber::with_cli()`] method.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{cli, given, then, when, World, WorldInit};
+# use cucumber::{cli, given, then, when, World, WorldInit as _};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #
@@ -86,20 +85,9 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -157,10 +145,9 @@ async fn main() {
 [Cargo alias] is a neat way to define shortcuts for regularly used customized tests running commands.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{cli, given, then, when, World, WorldInit};
+# use cucumber::{cli, given, then, when, World, WorldInit as _};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #
@@ -175,20 +162,9 @@ async fn main() {
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

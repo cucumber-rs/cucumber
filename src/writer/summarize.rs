@@ -376,20 +376,10 @@ impl<Writer> Summarize<Writer> {
 /// ```rust,compile_fail
 /// # use std::convert::Infallible;
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// # use cucumber::{World, WorldInit as _, writer, WriterExt as _};
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {
@@ -408,21 +398,11 @@ impl<Writer> Summarize<Writer> {
 /// ```rust
 /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{WorldInit, writer, WriterExt as _};
+/// # use cucumber::{World, WorldInit as _, writer, WriterExt as _};
 /// # use futures::FutureExt as _;
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {

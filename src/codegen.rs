@@ -10,12 +10,14 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::{fmt::Debug, path::Path};
+use std::{convert::Infallible, fmt::Debug, future::Future, path::Path};
 
-use async_trait::async_trait;
+use futures::future;
 
 use crate::{cucumber::DefaultCucumber, step, Cucumber, Step, World};
 
+pub use anyhow;
+pub use async_trait::async_trait;
 pub use cucumber_expressions::{
     expand::parameters::Provider as ParametersProvider, Expression, Spanned,
 };
@@ -191,4 +193,65 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
     }
 
     true
+}
+
+/// TODO
+pub trait IntoWorldResult: Sized {
+    /// TODO
+    type World: World;
+
+    /// TODO
+    type Error;
+
+    /// TODO
+    ///
+    /// # Errors
+    fn into_world_result(self) -> Result<Self::World, Self::Error>;
+}
+
+impl<W: World> IntoWorldResult for W {
+    type World = Self;
+    type Error = Infallible;
+
+    fn into_world_result(self) -> Result<Self, Self::Error> {
+        Ok(self)
+    }
+}
+
+impl<W: World, E> IntoWorldResult for Result<W, E> {
+    type World = W;
+    type Error = E;
+
+    fn into_world_result(self) -> Self {
+        self
+    }
+}
+
+/// TODO
+pub trait IntoWorldFuture: Sized {
+    /// TODO
+    type Future: Future;
+
+    /// TODO
+    #[allow(clippy::wrong_self_convention)]
+    fn into_world_future(&self) -> Self::Future;
+}
+
+impl<R: IntoWorldResult> IntoWorldFuture for fn() -> R {
+    type Future = future::Ready<R>;
+
+    fn into_world_future(&self) -> Self::Future {
+        future::ready(self())
+    }
+}
+
+impl<Fut: Future> IntoWorldFuture for &fn() -> Fut
+where
+    Fut::Output: IntoWorldResult,
+{
+    type Future = Fut;
+
+    fn into_world_future(&self) -> Self::Future {
+        self()
+    }
 }

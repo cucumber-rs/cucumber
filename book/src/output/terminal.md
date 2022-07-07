@@ -18,10 +18,9 @@ Just specifying `-v` makes no difference, as it refers to the default verbosity 
 Increasing verbosity level with `-vv` CLI option, makes the state of the `World` being printed at the moment of failure.
 
 ```rust,should_panic
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -29,20 +28,9 @@ Increasing verbosity level with `-vv` CLI option, makes the state of the `World`
 #     pub hungry: bool,
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -94,10 +82,9 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -111,20 +98,9 @@ Feature: Animal feature
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -168,10 +144,9 @@ async fn main() {
 
 Coloring may be disabled by specifying `--color` CLI option:
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -185,20 +160,9 @@ Coloring may be disabled by specifying `--color` CLI option:
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -247,10 +211,9 @@ Though [`cucumber`] crate doesn't capture any manual printing produced in a [ste
 > __WARNING:__ Moreover, manual printing will very likely interfere with [default][1] interactive pretty-printing.
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::time::Duration;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -264,20 +227,9 @@ Though [`cucumber`] crate doesn't capture any manual printing produced in a [ste
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -320,10 +272,9 @@ To achieve natural output for debugging, the following preparations are required
 3. Wrapping it into [`writer::AssertNormalized`] to assure [`cucumber`] about the output being [normalized][4] already (due to sequential execution).
 
 ```rust
-# use std::{convert::Infallible, io, time::Duration};
+# use std::{io, time::Duration};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, writer, World, WorldInit, WriterExt as _};
+# use cucumber::{given, then, when, writer, World, WorldInit as _, WriterExt as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -337,20 +288,9 @@ To achieve natural output for debugging, the following preparations are required
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -403,10 +343,9 @@ async fn main() {
 As a number of [scenario]s grows, it may become quite difficult to find failed/skipped ones in a large output. This issue may be mitigated by duplicating failed and/or skipped [step]s at the and of output via [`Cucumber::repeat_failed()`] and [`Cucumber::repeat_skipped()`] methods respectively.
 
 ```rust,should_panic
-# use std::{convert::Infallible, time::Duration};
+# use std::{time::Duration};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -420,20 +359,9 @@ As a number of [scenario]s grows, it may become quite difficult to find failed/s
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -472,10 +400,9 @@ async fn main() {
 ![record](../rec/output_terminal_repeat_failed.gif)
 
 ```rust
-# use std::{convert::Infallible, time::Duration};
+# use std::{time::Duration};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -489,20 +416,9 @@ async fn main() {
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

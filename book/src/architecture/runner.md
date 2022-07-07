@@ -7,7 +7,6 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 
 ```rust
 # use std::{
-#     convert::Infallible,
 #     panic::{self, AssertUnwindSafe},
 #     path::PathBuf,
 #     sync::Arc,
@@ -17,7 +16,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 # use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WorldInit,
+#     WorldInit as _,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},
@@ -37,20 +36,9 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #     }
 # }
 #
-# #[derive(Clone, Debug, WorldInit)]
+# #[derive(Clone, Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Animal,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Animal::default(),
-#         })
-#     }
 # }
 #
 # #[given(regex = r"^a (hungry|satiated) cat$")]

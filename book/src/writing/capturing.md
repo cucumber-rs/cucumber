@@ -12,12 +12,9 @@ Using [regular expressions][regex] or [Cucumber Expressions][expr] for our [step
 
 Using a [regular expression][regex] for a [step] matching function is possible with `regex =` attribute modifier:
 ```rust
-# use std::convert::Infallible;
+# use cucumber::{given, then, when, World, WorldInit as _};
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
-#
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: bool,
 # }
@@ -28,20 +25,9 @@ Using a [regular expression][regex] for a [step] matching function is possible w
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat { hungry: false },
-#         })
-#     }
 # }
 #
 #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -82,12 +68,11 @@ fn feed_cat(world: &mut AnimalWorld) {
 For matching a captured value we are not restricted to use only `String`. In fact, any type implementing a [`FromStr`] trait can be used as a [step] function argument (including primitive types).
 
 ```rust
-# use std::{convert::Infallible, str::FromStr};
+# use std::str::FromStr;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 #
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: State,
 # }
@@ -98,9 +83,10 @@ For matching a captured value we are not restricted to use only `String`. In fac
 #     }
 # }
 #
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum State {
     Hungry,
+    #[default]
     Satiated,
 }
 
@@ -116,22 +102,9 @@ impl FromStr for State {
     }
 }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat {
-#                 hungry: State::Satiated,
-#             },
-#         })
-#     }
 # }
 
 #[given(regex = r"^a (hungry|satiated) cat$")]
@@ -165,12 +138,11 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 
 Alternatively, a [Cucumber Expression][expr] may be used to capture values. This is possible with `expr =` attribute modifier and [parameters] usage:
 ```rust
-# use std::{convert::Infallible, str::FromStr};
+# use std::str::FromStr;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 #
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: State,
 # }
@@ -181,9 +153,10 @@ Alternatively, a [Cucumber Expression][expr] may be used to capture values. This
 #     }
 # }
 #
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # enum State {
 #     Hungry,
+#     #[default]
 #     Satiated,
 # }
 #
@@ -199,22 +172,9 @@ Alternatively, a [Cucumber Expression][expr] may be used to capture values. This
 #     }
 # }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat {
-#                 hungry: State::Satiated,
-#             },
-#         })
-#     }
 # }
 #
 #[given(expr = "a {word} cat")]
@@ -252,13 +212,12 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse [custom parameters] in addition to [default ones][parameters].
 
 ```rust
-# use std::{convert::Infallible, str::FromStr};
+# use std::str::FromStr;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 use cucumber::Parameter;
 
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: State,
 # }
@@ -269,11 +228,12 @@ use cucumber::Parameter;
 #     }
 # }
 #
-#[derive(Debug, Parameter)]
+#[derive(Debug, Default, Parameter)]
 // NOTE: `name` is optional, by default the lowercased type name is implied.
 #[param(name = "hungriness", regex = "hungry|satiated")]
 enum State {
     Hungry,
+    #[default]
     Satiated,
 }
 
@@ -290,22 +250,9 @@ impl FromStr for State {
     }
 }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat {
-#                 hungry: State::Satiated,
-#             },
-#         })
-#     }
 # }
 
 #[given(expr = "a {hungriness} cat")]
@@ -338,13 +285,12 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 > __TIP__: In case [regex] of a [custom parameter][custom parameters] consists of several capturing groups, only the first non-empty match will be returned. 
 
 ```rust
-# use std::{convert::Infallible, str::FromStr};
+# use std::str::FromStr;
 #
-# use async_trait::async_trait;
-# use cucumber::{given, then, when, World, WorldInit};
+# use cucumber::{given, then, when, World, WorldInit as _};
 use cucumber::Parameter;
 
-# #[derive(Debug)]
+# #[derive(Debug, Default)]
 # struct Cat {
 #     pub hungry: Hungriness,
 # }
@@ -355,11 +301,12 @@ use cucumber::Parameter;
 #     }
 # }
 #
-#[derive(Debug, Eq, Parameter, PartialEq)]
+#[derive(Debug, Default, Eq, Parameter, PartialEq)]
 #[param(regex = "(hungry)|(satiated)|'([^']*)'")]
 // We want to capture without quotes  ^^^^^^^
 enum Hungriness {
     Hungry,
+    #[default]
     Satiated,
     Other(String),
 }
@@ -377,22 +324,9 @@ impl FromStr for Hungriness {
     }
 }
 #
-# #[derive(Debug, WorldInit)]
+# #[derive(Debug, Default, World)]
 # pub struct AnimalWorld {
 #     cat: Cat,
-# }
-#
-# #[async_trait(?Send)]
-# impl World for AnimalWorld {
-#     type Error = Infallible;
-#
-#     async fn new() -> Result<Self, Infallible> {
-#         Ok(Self {
-#             cat: Cat {
-#                 hungry: Hungriness::Satiated,
-#             },
-#         })
-#     }
 # }
 
 #[given(expr = "a {hungriness} cat")]

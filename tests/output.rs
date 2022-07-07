@@ -1,14 +1,12 @@
-use std::{borrow::Cow, cmp::Ordering, convert::Infallible, fmt::Debug};
+use std::{borrow::Cow, cmp::Ordering, fmt::Debug};
 
 use async_trait::async_trait;
-use cucumber::{
-    cli, event, given, parser, step, then, when, Event, WorldInit, Writer,
-};
+use cucumber::{cli, event, given, parser, step, then, when, Event, Writer};
 use itertools::Itertools as _;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-#[derive(Debug, Default, WorldInit)]
+#[derive(Debug, Default, cucumber::World)]
 struct World(usize);
 
 #[given(regex = r"foo is (\d+)")]
@@ -21,15 +19,6 @@ fn step(w: &mut World, num: usize) {
 
 #[given(regex = r"foo is (\d+) ambiguous")]
 fn ambiguous(_w: &mut World) {}
-
-#[async_trait(?Send)]
-impl cucumber::World for World {
-    type Error = Infallible;
-
-    async fn new() -> Result<Self, Self::Error> {
-        Ok(World::default())
-    }
-}
 
 #[derive(Default)]
 struct DebugWriter(String);

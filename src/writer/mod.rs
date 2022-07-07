@@ -309,20 +309,10 @@ impl<T> Ext for T {
 /// ```rust,compile_fail
 /// # use std::convert::Infallible;
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// # use cucumber::{writer, World, WorldInit as _, WriterExt as _};
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {
@@ -342,20 +332,10 @@ impl<T> Ext for T {
 /// ```rust,compile_fail
 /// # use std::convert::Infallible;
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// # use cucumber::{writer, World, WorldInit as _, WriterExt as _};
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {
@@ -375,21 +355,11 @@ impl<T> Ext for T {
 /// ```rust
 /// # use std::{convert::Infallible, panic::AssertUnwindSafe};
 /// #
-/// # use async_trait::async_trait;
-/// # use cucumber::{writer, WorldInit, WriterExt as _};
+/// # use cucumber::{writer, World, WorldInit as _, WriterExt as _};
 /// # use futures::FutureExt as _;
 /// #
-/// # #[derive(Debug, WorldInit)]
+/// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
-/// #
-/// # #[async_trait(?Send)]
-/// # impl cucumber::World for MyWorld {
-/// #     type Error = Infallible;
-/// #
-/// #     async fn new() -> Result<Self, Self::Error> {
-/// #         Ok(Self)
-/// #     }
-/// # }
 /// #
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() {
