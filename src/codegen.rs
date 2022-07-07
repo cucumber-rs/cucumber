@@ -204,9 +204,12 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
 /// into [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
 ///
 /// ```rust
+/// # use async_trait::async_trait;
+/// #
 /// # #[derive(Default)]
 /// # struct World;
 /// #
+/// #[async_trait(?Send)]
 /// impl cucumber::World for World {
 ///     type Error = anyhow::Error;
 ///
