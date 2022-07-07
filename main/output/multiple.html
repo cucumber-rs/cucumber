@@ -136,23 +136,11 @@
                     <main>
                         <h1 id="multiple-outputs"><a class="header" href="#multiple-outputs">Multiple outputs</a></h1>
 <p>Reporting tests result to multiple outputs simultaneously may be achieved by using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, fs, io};
-</span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::WorldInit;
-</span>use cucumber::{writer, WriterExt as _};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+</span>use cucumber::{writer, World as _, WriterExt as _};
 
-<span class="boring">#[derive(Debug, WorldInit)]
+<span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl cucumber::World for World {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
-</span><span class="boring">        Ok(World)
-</span><span class="boring">    }
-</span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {

@@ -141,10 +141,9 @@
 <p>Just specifying <code>-v</code> makes no difference, as it refers to the default verbosity level (no additional info).</p>
 <h3 id="output-world-on-failures--vv"><a class="header" href="#output-world-on-failures--vv">Output <code>World</code> on failures (<code>-vv</code>)</a></h3>
 <p>Increasing verbosity level with <code>-vv</code> CLI option, makes the state of the <code>World</code> being printed at the moment of failure.</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -152,20 +151,9 @@
 </span><span class="boring">    pub hungry: bool,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -211,10 +199,9 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -228,20 +215,9 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -279,10 +255,9 @@ async fn main() {
 <p><img src="../rec/output_terminal_verbose_2.gif" alt="record" /></p>
 <h2 id="coloring"><a class="header" href="#coloring">Coloring</a></h2>
 <p>Coloring may be disabled by specifying <code>--color</code> CLI option:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -296,20 +271,9 @@ async fn main() {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -353,10 +317,9 @@ async fn main() {
 <blockquote>
 <p><strong>WARNING:</strong> Moreover, manual printing will very likely interfere with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a> interactive pretty-printing.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -370,20 +333,9 @@ async fn main() {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -425,10 +377,9 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 <li>Creating <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html#method.raw"><code>writer::Basic::raw</code></a> with <a href="https://docs.rs/cucumber/*/cucumber/writer/enum.Coloring.html#variant.Never"><code>Coloring::Never</code></a> to avoid interactive pretty-printed output.</li>
 <li>Wrapping it into <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.AssertNormalized.html"><code>writer::AssertNormalized</code></a> to assure <a href="https://docs.rs/cucumber"><code>cucumber</code></a> about the output being <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Normalized.html">normalized</a> already (due to sequential execution).</li>
 </ol>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, io, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{io, time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, writer, World, WorldInit, WriterExt as _};
+</span><span class="boring">use cucumber::{given, then, when, writer, World, WriterExt as _};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -442,20 +393,9 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -502,10 +442,9 @@ async fn main() {
 </blockquote>
 <h2 id="repeating-failed-andor-skipped-steps"><a class="header" href="#repeating-failed-andor-skipped-steps">Repeating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s</a></h2>
 <p>As a number of <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s grows, it may become quite difficult to find failed/skipped ones in a large output. This issue may be mitigated by duplicating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s at the and of output via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed"><code>Cucumber::repeat_failed()</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped"><code>Cucumber::repeat_skipped()</code></a> methods respectively.</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -519,20 +458,9 @@ async fn main() {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -569,10 +497,9 @@ async fn main() {
 }
 </code></pre></pre>
 <p><img src="../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
@@ -586,20 +513,9 @@ async fn main() {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]

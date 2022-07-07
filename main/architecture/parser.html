@@ -137,10 +137,10 @@
                         <h1 id="custom-parser"><a class="header" href="#custom-parser">Custom <code>Parser</code></a></h1>
 <p>Let's start by implementing a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> which statically emits a single <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> for execution.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> represents anything that emits a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, path::PathBuf, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World};
 </span><span class="boring">use futures::{future, stream};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
@@ -155,20 +155,9 @@
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]

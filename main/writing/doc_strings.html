@@ -181,12 +181,9 @@
 <p><strong>NOTE</strong>: Whilst <a href="https://docs.rs/cucumber"><code>cucumber</code></a> and <a href="https://docs.rs/gherkin"><code>gherkin</code></a> crates support content types and backticks as the delimiter, many tools like text editors don’t (yet).</p>
 </blockquote>
 <p>In a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, there’s no need to find this text and match it with a pattern. Instead, it may be accessed via <a href="https://docs.rs/gherkin/*/gherkin/struct.Step.html"><code>Step</code></a> argument:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::convert::Infallible;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{gherkin::Step, given, then, when, World};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{gherkin::Step, given, then, when, World, WorldInit};
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
 </span><span class="boring">    pub hungry: bool,
 </span><span class="boring">}
@@ -197,20 +194,9 @@
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Cat,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Cat { hungry: false },
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]

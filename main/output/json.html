@@ -140,23 +140,11 @@
 <pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, fs, io};
-</span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::WorldInit;
-</span>use cucumber::writer;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+</span>use cucumber::{writer, World as _};
 
-<span class="boring">#[derive(Debug, WorldInit)]
+<span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl cucumber::World for World {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Self::Error&gt; {
-</span><span class="boring">        Ok(World)
-</span><span class="boring">    }
-</span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {

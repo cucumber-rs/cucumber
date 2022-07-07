@@ -190,10 +190,9 @@ OPTIONS:
 <h2 id="customizing"><a class="header" href="#customizing">Customizing</a></h2>
 <p>By default, the whole CLI is composed of <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli"><code>Parser::Cli</code></a>, <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli"><code>Runner::Cli</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli"><code>Writer::Cli</code></a>, provided by the used components. Once a custom <a href="architecture/parser.html"><code>Parser</code></a>, <a href="architecture/runner.html"><code>Runner</code></a> or <a href="architecture/writer.html"><code>Writer</code></a> is used, its CLI is automatically emerged into the final CLI.</p>
 <p>CLI may be extended even more with arbitrary options, if required. In such case we should combine the final CLI by ourselves and apply it via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{cli, given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
@@ -208,20 +207,9 @@ OPTIONS:
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
@@ -274,10 +262,9 @@ async fn main() {
 </blockquote>
 <h2 id="aliasing"><a class="header" href="#aliasing">Aliasing</a></h2>
 <p><a href="https://doc.rust-lang.org/cargo/reference/config.html#alias">Cargo alias</a> is a neat way to define shortcuts for regularly used customized tests running commands.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{cli, given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
@@ -292,20 +279,9 @@ async fn main() {
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[derive(Debug, WorldInit)]
+</span><span class="boring">#[derive(Debug, Default, World)]
 </span><span class="boring">pub struct AnimalWorld {
 </span><span class="boring">    cat: Animal,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">#[async_trait(?Send)]
-</span><span class="boring">impl World for AnimalWorld {
-</span><span class="boring">    type Error = Infallible;
-</span><span class="boring">
-</span><span class="boring">    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-</span><span class="boring">        Ok(Self {
-</span><span class="boring">            cat: Animal::default(),
-</span><span class="boring">        })
-</span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]

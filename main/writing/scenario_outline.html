@@ -153,10 +153,9 @@
 <blockquote>
 <p><strong>NOTE</strong>: <code>&lt;template&gt;</code>s are replaced even inside <a href="doc_strings.html">doc strings</a> and <a href="data_tables.html">data tables</a>.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{collections::HashMap, convert::Infallible, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{collections::HashMap, time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
-</span><span class="boring">use cucumber::{given, then, when, World, WorldInit};
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span>#[derive(Debug, Default)]
@@ -170,20 +169,9 @@ impl Animal {
     }
 }
 
-#[derive(Debug, WorldInit)]
+#[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     animals: HashMap&lt;String, Animal&gt;,
-}
-
-#[async_trait(?Send)]
-impl World for AnimalWorld {
-    type Error = Infallible;
-
-    async fn new() -&gt; Result&lt;Self, Infallible&gt; {
-        Ok(Self {
-            animals: HashMap::new(),
-        })
-    }
 }
 
 #[given(regex = r&quot;^a (hungry|satiated) (\S+)$&quot;)]
