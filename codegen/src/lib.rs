@@ -242,13 +242,13 @@ macro_rules! steps {
 
 steps!(given, when, then);
 
-/// Derive macro for implementing [`World`] trait.
+/// Derive macro for implementing a [`World`] trait.
 ///
 /// # Example
 ///
 /// ```rust
 /// #[derive(cucumber::World)]
-/// #[world(init = Self::new)]
+/// #[world(init = Self::new)] // optional, uses `Default::default()` if omitted
 /// struct World(usize);
 ///
 /// impl World {
@@ -260,11 +260,13 @@ steps!(given, when, then);
 ///
 /// # Attribute arguments
 ///
-/// - `#[param(init = path::to::fn)]`
+/// - `#[world(init = path::to::fn)]`
 ///
-///   Path to a function, that is used to construct [`World`] instance. Provided
-///   function can be sync or async, return [`Result`] or [`World`] itself. In
-///   case no value is provided [`Default::default`] impl will be used.
+///   Path to a function to be used for a [`World`] instance construction.
+///   Specified function can be either sync or `async`, and either fallible
+///   (return [`Result`]) or infallible (return [`World`] itself). In case no
+///   function is specified, the [`Default::default()`] will be used for
+///   construction.
 #[proc_macro_derive(World, attributes(world))]
 pub fn world(input: TokenStream) -> TokenStream {
     world::derive(input.into())

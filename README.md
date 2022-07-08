@@ -34,7 +34,7 @@ use std::time::Duration;
 use cucumber::{given, then, when, World as _};
 use tokio::time::sleep;
 
-#[derive(Debug, Default, cucumber::World)]
+#[derive(cucumber::World, Debug, Default)]
 struct World {
     user: Option<String>,
     capacity: usize,

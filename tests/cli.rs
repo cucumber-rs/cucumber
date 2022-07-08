@@ -21,7 +21,7 @@ struct Smoke {
     report_name: String,
 }
 
-#[derive(Clone, Copy, Debug, Default, cucumber::World)]
+#[derive(Clone, Copy, cucumber::World, Debug, Default)]
 struct World;
 
 #[given("an invalid step")]

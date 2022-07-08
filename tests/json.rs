@@ -64,5 +64,5 @@ async fn main() {
     );
 }
 
-#[derive(Clone, Copy, Debug, Default, cucumber::World)]
+#[derive(Clone, Copy, cucumber::World, Debug, Default)]
 struct World(usize);

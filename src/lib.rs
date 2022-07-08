@@ -135,7 +135,6 @@ mod actually_used_crates_in_tests {
 }
 
 use std::fmt::Display;
-
 #[cfg(feature = "macros")]
 use std::{fmt::Debug, path::Path};
 
@@ -223,7 +222,7 @@ pub trait World: Sized + 'static {
     }
 
     #[cfg(feature = "macros")]
-    /// Returns default [`Cucumber`] with all auto-wired [`Step`]s.
+    /// Returns default [`Cucumber`] with all the auto-wired [`Step`]s.
     #[must_use]
     fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I>
     where

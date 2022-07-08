@@ -374,7 +374,7 @@ impl<Writer> Summarize<Writer> {
 /// # Example
 ///
 /// ```rust,compile_fail
-/// # use cucumber::{World, writer, WriterExt as _};
+/// # use cucumber::{writer, World, WriterExt as _};
 /// #
 /// # #[derive(Debug, Default, World)]
 /// # struct MyWorld;
@@ -396,7 +396,7 @@ impl<Writer> Summarize<Writer> {
 /// ```rust
 /// # use std::panic::AssertUnwindSafe;
 /// #
-/// # use cucumber::{World, writer, WriterExt as _};
+/// # use cucumber::{writer, World, WriterExt as _};
 /// # use futures::FutureExt as _;
 /// #
 /// # #[derive(Debug, Default, World)]
