@@ -118,6 +118,7 @@ impl Metadata {
 /// Top-level [Cucumber] run event.
 ///
 /// [Cucumber]: https://cucumber.io
+#[allow(variant_size_differences)]
 #[derive(Debug)]
 pub enum Cucumber<World> {
     /// [`Cucumber`] execution being started.
@@ -125,6 +126,31 @@ pub enum Cucumber<World> {
 
     /// [`Feature`] event.
     Feature(Arc<gherkin::Feature>, Feature<World>),
+
+    /// All [`Feature`]s are parsed.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    ParsingFinished {
+        /// Number of [`Feature`]s.
+        ///
+        /// [`Feature`]: gherkin::Feature
+        features: usize,
+
+        /// Number of [`Rule`]s.
+        ///
+        /// [`Rule`]: gherkin::Rule
+        rules: usize,
+
+        /// Number of [`Scenario`]s.
+        ///
+        /// [`Scenario`]: gherkin::Scenario
+        scenarios: usize,
+
+        /// Number of [`Step`]s.
+        ///
+        /// [`Step`]: gherkin::Step
+        steps: usize,
+    },
 
     /// [`Cucumber`] execution being finished.
     Finished,
@@ -137,6 +163,17 @@ impl<World> Clone for Cucumber<World> {
         match self {
             Self::Started => Self::Started,
             Self::Feature(f, ev) => Self::Feature(Arc::clone(f), ev.clone()),
+            Self::ParsingFinished {
+                features,
+                rules,
+                scenarios,
+                steps,
+            } => Self::ParsingFinished {
+                features: *features,
+                rules: *rules,
+                scenarios: *scenarios,
+                steps: *steps,
+            },
             Self::Finished => Self::Finished,
         }
     }

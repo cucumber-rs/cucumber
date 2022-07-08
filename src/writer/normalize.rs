@@ -83,7 +83,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
         }
 
         match event.map(Event::split) {
-            res @ (Err(_) | Ok((Cucumber::Started, _))) => {
+            res @ (Err(_)
+            | Ok((
+                Cucumber::Started | Cucumber::ParsingFinished { .. },
+                _,
+            ))) => {
                 self.writer
                     .handle_event(res.map(|(ev, meta)| meta.insert(ev)), cli)
                     .await;

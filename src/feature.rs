@@ -82,6 +82,13 @@ pub trait Ext: Sized {
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     fn count_scenarios(&self) -> usize;
+
+    /// Counts all the [`Feature`]'s [`Step`]s.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn count_steps(&self) -> usize;
 }
 
 #[sealed]
@@ -106,6 +113,16 @@ impl Ext for gherkin::Feature {
     fn count_scenarios(&self) -> usize {
         self.scenarios.len()
             + self.rules.iter().map(|r| r.scenarios.len()).sum::<usize>()
+    }
+
+    fn count_steps(&self) -> usize {
+        self.scenarios.iter().map(|s| s.steps.len()).sum::<usize>()
+            + self
+                .rules
+                .iter()
+                .flat_map(|r| &r.scenarios)
+                .map(|s| s.steps.len())
+                .sum::<usize>()
     }
 }
 

@@ -107,7 +107,7 @@ where
 
         match ev.map(Event::split) {
             Err(err) => self.handle_error(&err),
-            Ok((Cucumber::Started, _)) => {}
+            Ok((Cucumber::Started | Cucumber::ParsingFinished { .. }, _)) => {}
             Ok((Cucumber::Feature(feat, ev), meta)) => match ev {
                 Feature::Started => {
                     self.suit = Some(

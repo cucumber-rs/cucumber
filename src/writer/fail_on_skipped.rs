@@ -118,6 +118,7 @@ where
                 ) => map_failed_step(f, None, sc, st),
                 Cucumber::Started
                 | Cucumber::Feature(..)
+                | Cucumber::ParsingFinished { .. }
                 | Cucumber::Finished => ev,
             })
         });

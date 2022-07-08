@@ -198,7 +198,7 @@ where
                 Ok(Cucumber::Finished) => {
                     self.state = State::FinishedButNotOutput;
                 }
-                Ok(Cucumber::Started) => {}
+                Ok(Cucumber::Started | Cucumber::ParsingFinished { .. }) => {}
             };
         }
 
