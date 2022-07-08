@@ -35,6 +35,7 @@ output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
+cargo-json = ["dep:serde", "dep:serde_json", "timestamps"]
 
 [dependencies]
 anyhow = { version = "1.0.58", optional = true }

@@ -792,6 +792,7 @@ where
     }
 }
 
+#[cfg(not(feature = "cargo-json"))]
 /// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
 pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
@@ -801,6 +802,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     writer::Summarize<writer::Normalize<W, writer::Basic>>,
 >;
 
+#[cfg(not(feature = "cargo-json"))]
 impl<W, I> Default for DefaultCucumber<W, I>
 where
     W: World + Debug,
@@ -811,6 +813,48 @@ where
             parser::Basic::new(),
             runner::Basic::default(),
             writer::Basic::stdout().summarized(),
+        )
+    }
+}
+
+#[cfg(feature = "cargo-json")]
+/// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
+pub(crate) type DefaultCucumber<W, I> = Cucumber<
+    W,
+    parser::Basic,
+    I,
+    runner::Basic<W>,
+    writer::Cases<
+        writer::Summarize<writer::Normalize<W, writer::Basic>>,
+        writer::Normalize<W, writer::CargoJson<W>>,
+        fn(
+            &parser::Result<Event<event::Cucumber<W>>>,
+            &cli::Compose<writer::basic::Cli, writer::cargo_json::Cli>,
+        ) -> bool,
+    >,
+>;
+
+#[cfg(feature = "cargo-json")]
+impl<W, I> Default for DefaultCucumber<W, I>
+where
+    W: World + Debug,
+    I: AsRef<Path>,
+{
+    fn default() -> Self {
+        Self::custom(
+            parser::Basic::new(),
+            runner::Basic::default(),
+            writer::Cases::new(
+                writer::Basic::stdout().summarized(),
+                writer::CargoJson::stdout().normalized(),
+                |_, cli| {
+                    !cli.right
+                        .format
+                        .as_ref()
+                        .map(|f| f == "json")
+                        .unwrap_or_default()
+                },
+            ),
         )
     }
 }
