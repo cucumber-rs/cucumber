@@ -26,16 +26,17 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["macros"]
+default = ["libtest", "macros"]
 # Enables step attributes and auto-wiring.
 macros = ["dep:anyhow", "dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
+# Enables support for outputting in libtest's JSON format.
+libtest = ["dep:serde", "dep:serde_json", "timestamps"]
 # Enables support for outputting in Cucumber JSON format.
 output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
-cargo-json = ["dep:serde", "dep:serde_json", "timestamps"]
 
 [dependencies]
 anyhow = { version = "1.0.58", optional = true }

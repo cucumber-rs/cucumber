@@ -13,16 +13,16 @@
 //! [`Cucumber`]: crate::event::Cucumber
 
 pub mod basic;
-#[cfg(feature = "cargo-json")]
-pub mod cargo_json;
-pub mod cases;
 pub mod discard;
 pub mod fail_on_skipped;
 #[cfg(feature = "output-json")]
 pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
+#[cfg(feature = "libtest")]
+pub mod libtest;
 pub mod normalize;
+pub mod or;
 pub mod out;
 pub mod repeat;
 pub mod summarize;
@@ -33,21 +33,21 @@ use sealed::sealed;
 
 use crate::{event, parser, Event};
 
-#[cfg(feature = "cargo-json")]
-#[doc(inline)]
-pub use self::cargo_json::CargoJson;
 #[cfg(feature = "output-json")]
 #[doc(inline)]
 pub use self::json::Json;
 #[cfg(feature = "output-junit")]
 #[doc(inline)]
 pub use self::junit::JUnit;
+#[cfg(feature = "libtest")]
+#[doc(inline)]
+pub use self::libtest::Libtest;
 #[doc(inline)]
 pub use self::{
     basic::{Basic, Coloring},
-    cases::Cases,
     fail_on_skipped::FailOnSkipped,
     normalize::{AssertNormalized, Normalize, Normalized},
+    or::Or,
     repeat::Repeat,
     summarize::{Summarizable, Summarize},
     tee::Tee,

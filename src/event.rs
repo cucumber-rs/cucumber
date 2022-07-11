@@ -150,6 +150,11 @@ pub enum Cucumber<World> {
         ///
         /// [`Step`]: gherkin::Step
         steps: usize,
+
+        /// Number of [`Parser`] errors.
+        ///
+        /// [`Parser`]: crate::Parser
+        parser_errors: usize,
     },
 
     /// [`Cucumber`] execution being finished.
@@ -168,11 +173,13 @@ impl<World> Clone for Cucumber<World> {
                 rules,
                 scenarios,
                 steps,
+                parser_errors,
             } => Self::ParsingFinished {
                 features: *features,
                 rules: *rules,
                 scenarios: *scenarios,
                 steps: *steps,
+                parser_errors: *parser_errors,
             },
             Self::Finished => Self::Finished,
         }

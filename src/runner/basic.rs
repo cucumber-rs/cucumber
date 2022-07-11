@@ -484,6 +484,7 @@ async fn insert_features<W, S, F>(
     let mut rules = 0;
     let mut scenarios = 0;
     let mut steps = 0;
+    let mut parser_errors = 0;
 
     pin_mut!(features_stream);
     while let Some(feat) = features_stream.next().await {
@@ -499,6 +500,8 @@ async fn insert_features<W, S, F>(
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
             Err(e) => {
+                parser_errors += 1;
+
                 if sender.unbounded_send(Err(e)).is_err() || fail_fast {
                     break;
                 }
@@ -512,6 +515,7 @@ async fn insert_features<W, S, F>(
             rules,
             scenarios,
             steps,
+            parser_errors,
         },
     ))));
 

@@ -792,7 +792,7 @@ where
     }
 }
 
-#[cfg(not(feature = "cargo-json"))]
+#[cfg(not(feature = "libtest"))]
 /// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
 pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
@@ -802,7 +802,7 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     writer::Summarize<writer::Normalize<W, writer::Basic>>,
 >;
 
-#[cfg(not(feature = "cargo-json"))]
+#[cfg(not(feature = "libtest"))]
 impl<W, I> Default for DefaultCucumber<W, I>
 where
     W: World + Debug,
@@ -817,24 +817,26 @@ where
     }
 }
 
-#[cfg(feature = "cargo-json")]
+#[cfg(feature = "libtest")]
+// TODO: Maybe remove normalization from `writer::Libtest`, once resolved:
+//       https://github.com/intellij-rust/intellij-rust/issues/9041
 /// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
 pub(crate) type DefaultCucumber<W, I> = Cucumber<
     W,
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::Cases<
+    writer::Or<
         writer::Summarize<writer::Normalize<W, writer::Basic>>,
-        writer::Normalize<W, writer::CargoJson<W>>,
+        writer::Normalize<W, writer::Libtest<W>>,
         fn(
             &parser::Result<Event<event::Cucumber<W>>>,
-            &cli::Compose<writer::basic::Cli, writer::cargo_json::Cli>,
+            &cli::Compose<writer::basic::Cli, writer::libtest::Cli>,
         ) -> bool,
     >,
 >;
 
-#[cfg(feature = "cargo-json")]
+#[cfg(feature = "libtest")]
 impl<W, I> Default for DefaultCucumber<W, I>
 where
     W: World + Debug,
@@ -844,15 +846,14 @@ where
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
-            writer::Cases::new(
+            writer::Or::new(
                 writer::Basic::stdout().summarized(),
-                writer::CargoJson::stdout().normalized(),
+                writer::Libtest::stdout().normalized(),
                 |_, cli| {
-                    !cli.right
-                        .format
-                        .as_ref()
-                        .map(|f| f == "json")
-                        .unwrap_or_default()
+                    !matches!(
+                        cli.right.format,
+                        Some(writer::libtest::Format::Json),
+                    )
                 },
             ),
         )
