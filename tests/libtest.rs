@@ -29,8 +29,13 @@ async fn main() {
 
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
-    let non_deterministic =
-        Regex::new("\"exec_time\":\\d*\\.?\\d*|\n|\\s").unwrap();
+    let non_deterministic = Regex::new(
+        "\"exec_time\":\\d*\\.?\\d*\
+             | [/\\\\]([^\"]*)[/\\\\]([A-z1-9-_]*).feature\
+             |\n\
+             |\\s",
+    )
+    .unwrap();
 
     assert_eq!(
         non_deterministic.replace_all(&buffer, ""),

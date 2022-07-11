@@ -1,5 +1,6 @@
 {"type":"suite","event":"started","test_count":41}
-{"type":"test","event":"started","name":"Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}{"type":"test","event":"failed","name":"Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature","stdout":"Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
+{"type":"test","event":"started","name":"Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
+{"type":"test","event":"failed","name":"Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature","stdout":"Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
 {"type":"test","event":"started","name":"Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario 1 sec::7: Given 1 sec"}
