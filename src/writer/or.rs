@@ -101,7 +101,7 @@ where
         ev: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        self.0.handle_event(ev, cli).await
+        self.0.handle_event(ev, cli).await;
     }
 }
 
