@@ -89,6 +89,11 @@ required-features = ["output-junit"]
 harness = false
 
 [[test]]
+name = "libtest"
+required-features = ["libtest"]
+harness = false
+
+[[test]]
 name = "wait"
 harness = false
 

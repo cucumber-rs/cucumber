@@ -818,6 +818,13 @@ where
 }
 
 #[cfg(feature = "libtest")]
+/// Shortcut for the [`DefaultCucumber`]'s [`fn`] inside [`writer::Or`].
+pub(crate) type DefaultCucumberOrFn<W> = fn(
+    &parser::Result<Event<event::Cucumber<W>>>,
+    &cli::Compose<writer::basic::Cli, writer::libtest::Cli>,
+) -> bool;
+
+#[cfg(feature = "libtest")]
 // TODO: Maybe remove normalization from `writer::Libtest`, once resolved:
 //       https://github.com/intellij-rust/intellij-rust/issues/9041
 /// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
@@ -826,13 +833,12 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::Or<
-        writer::Summarize<writer::Normalize<W, writer::Basic>>,
-        writer::Normalize<W, writer::Libtest<W>>,
-        fn(
-            &parser::Result<Event<event::Cucumber<W>>>,
-            &cli::Compose<writer::basic::Cli, writer::libtest::Cli>,
-        ) -> bool,
+    writer::or::ArbitraryWriteIntoBoth<
+        writer::Or<
+            writer::Summarize<writer::Normalize<W, writer::Basic>>,
+            writer::Normalize<W, writer::Libtest<W>>,
+            DefaultCucumberOrFn<W>,
+        >,
     >,
 >;
 
@@ -843,19 +849,19 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
+        let pred: DefaultCucumberOrFn<W> = |_, cli| {
+            !matches!(cli.right.format, Some(writer::libtest::Format::Json))
+        };
+
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
             writer::Or::new(
                 writer::Basic::stdout().summarized(),
                 writer::Libtest::stdout().normalized(),
-                |_, cli| {
-                    !matches!(
-                        cli.right.format,
-                        Some(writer::libtest::Format::Json),
-                    )
-                },
-            ),
+                pred,
+            )
+            .arbitrary_write_into_both(),
         )
     }
 }
