@@ -70,28 +70,6 @@ where
     }
 }
 
-// #[async_trait(?Send)]
-// impl<'val, W, L, R, Val, F> writer::Arbitrary<'val, W, Val> for
-// Cases<L, R, F>
-//     where
-//         W: World,
-//         L: writer::Arbitrary<'val, W, Val>,
-//         R: writer::Arbitrary<'val, W, Val>,
-//         F: FnMut(
-//             &parser::Result<Event<event::Cucumber<W>>>,
-//             &cli::Compose<L::Cli, R::Cli>,
-//         ) -> bool,
-//         Val: Clone + 'val,
-// {
-//     async fn write(&mut self, val: Val)
-//         where
-//             'val: 'async_trait,
-//     {
-//         future::join(self.left.write(val.clone()), self.right.write(val))
-// .await;
-//     }
-// }
-
 impl<W, L, R, F> writer::Failure<W> for Or<L, R, F>
 where
     L: writer::Failure<W>,
