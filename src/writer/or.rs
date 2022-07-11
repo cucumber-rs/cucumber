@@ -29,7 +29,8 @@ pub struct Or<L, R, F> {
     predicate: F,
 }
 
-/// TODO
+/// Wrapper for [`Or`] [`Writer`], that implements [`writer::Arbitrary`],
+/// writing into both [`Writer`]s.
 #[derive(Clone, Copy, Debug)]
 pub struct ArbitraryWriteIntoBoth<T>(pub T);
 
@@ -48,7 +49,8 @@ impl<L, R, F> Or<L, R, F> {
         }
     }
 
-    /// TODO
+    /// Wraps this [`Writer`] into a type, that implements
+    /// [`writer::Arbitrary`] by writing into both [`Writer`]s.
     #[must_use]
     pub const fn arbitrary_write_into_both(
         self,
