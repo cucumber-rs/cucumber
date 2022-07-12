@@ -368,16 +368,7 @@ where
             _parser_input: PhantomData,
         }
     }
-}
 
-impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
-where
-    W: World,
-    P: Parser<I>,
-    R: Runner<W>,
-    Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
-    Cli: clap::Args,
-{
     /// Consider [`Skipped`] [`Background`] or regular [`Step`]s as [`Failed`]
     /// if their [`Scenario`] isn't marked with `@allow.skipped` tag.
     ///
@@ -818,13 +809,6 @@ where
 }
 
 #[cfg(feature = "libtest")]
-/// Shortcut for the [`DefaultCucumber`]'s [`fn`] inside [`writer::Or`].
-pub(crate) type DefaultCucumberOrFn<W> = fn(
-    &parser::Result<Event<event::Cucumber<W>>>,
-    &cli::Compose<writer::basic::Cli, writer::libtest::Cli>,
-) -> bool;
-
-#[cfg(feature = "libtest")]
 // TODO: Maybe remove normalization from `writer::Libtest`, once resolved:
 //       https://github.com/intellij-rust/intellij-rust/issues/9041
 /// Shortcut for the [`Cucumber`] type returned by its [`Default`] impl.
@@ -833,12 +817,13 @@ pub(crate) type DefaultCucumber<W, I> = Cucumber<
     parser::Basic,
     I,
     runner::Basic<W>,
-    writer::or::ArbitraryWriteIntoBoth<
-        writer::Or<
-            writer::Summarize<writer::Normalize<W, writer::Basic>>,
-            writer::Normalize<W, writer::Libtest<W>>,
-            DefaultCucumberOrFn<W>,
-        >,
+    writer::Or<
+        writer::Summarize<writer::Normalize<W, writer::Basic>>,
+        writer::Normalize<W, writer::Libtest<W>>,
+        fn(
+            &parser::Result<Event<event::Cucumber<W>>>,
+            &cli::Compose<writer::basic::Cli, writer::libtest::Cli>,
+        ) -> bool,
     >,
 >;
 
@@ -849,19 +834,19 @@ where
     I: AsRef<Path>,
 {
     fn default() -> Self {
-        let pred: DefaultCucumberOrFn<W> = |_, cli| {
-            !matches!(cli.right.format, Some(writer::libtest::Format::Json))
-        };
-
         Self::custom(
             parser::Basic::new(),
             runner::Basic::default(),
             writer::Or::new(
                 writer::Basic::stdout().summarized(),
                 writer::Libtest::stdout().normalized(),
-                pred,
-            )
-            .arbitrary_write_into_both(),
+                |_, cli| {
+                    !matches!(
+                        cli.right.format,
+                        Some(writer::libtest::Format::Json),
+                    )
+                },
+            ),
         )
     }
 }

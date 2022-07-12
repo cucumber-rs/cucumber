@@ -46,16 +46,16 @@ async fn main() {
         .run("./tests/features")
         .await;
 
-    assert_eq!(writer.0.left.steps.passed, 7);
-    assert_eq!(writer.0.left.steps.skipped, 5);
-    assert_eq!(writer.0.left.steps.failed, 0);
+    assert_eq!(writer.left.steps.passed, 7);
+    assert_eq!(writer.left.steps.skipped, 5);
+    assert_eq!(writer.left.steps.failed, 0);
 
     let writer = SecondWorld::cucumber()
         .max_concurrent_scenarios(None)
         .run("./tests/features")
         .await;
 
-    assert_eq!(writer.0.left.steps.passed, 1);
-    assert_eq!(writer.0.left.steps.skipped, 8);
-    assert_eq!(writer.0.left.steps.failed, 0);
+    assert_eq!(writer.left.steps.passed, 1);
+    assert_eq!(writer.left.steps.skipped, 8);
+    assert_eq!(writer.left.steps.failed, 0);
 }

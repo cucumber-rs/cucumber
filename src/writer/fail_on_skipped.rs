@@ -57,7 +57,7 @@ where
         Option<&gherkin::Rule>,
         &gherkin::Scenario,
     ) -> bool,
-    Wr: for<'val> writer::Arbitrary<'val, W, String>,
+    Wr: Writer<W>,
 {
     type Cli = Wr::Cli;
 
