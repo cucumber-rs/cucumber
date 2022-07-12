@@ -285,11 +285,18 @@ impl<Out: io::Write> Json<Out> {
                 duration: duration(),
                 error_message: None,
             },
-            event::Step::Failed(_, _, err) => match err {
+            event::Step::Failed(_, loc, _, err) => match err {
                 event::StepError::AmbiguousMatch(err) => RunResult {
                     status: Status::Ambiguous,
                     duration: duration(),
-                    error_message: Some(err.to_string()),
+                    error_message: Some(format!(
+                        "{}{err}",
+                        loc.map(|l| format!(
+                            "{}:{}:{}",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default(),
+                    )),
                 },
                 event::StepError::Panic(info) => RunResult {
                     status: Status::Failed,

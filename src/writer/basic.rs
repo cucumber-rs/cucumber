@@ -26,7 +26,7 @@ use regex::CaptureLocations;
 use crate::{
     cli::Colored,
     event::{self, Info},
-    parser,
+    parser, step,
     writer::{
         self,
         out::{Styles, WriteStrExt as _},
@@ -435,7 +435,7 @@ impl<Out: io::Write> Basic<Out> {
             Step::Started => {
                 self.step_started(step)?;
             }
-            Step::Passed(captures) => {
+            Step::Passed(captures, _) => {
                 self.step_passed(step, captures)?;
                 self.indent = self.indent.saturating_sub(4);
             }
@@ -443,8 +443,8 @@ impl<Out: io::Write> Basic<Out> {
                 self.step_skipped(feat, step)?;
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(c, w, i) => {
-                self.step_failed(feat, step, c.as_ref(), w.as_ref(), i)?;
+            Step::Failed(c, loc, w, i) => {
+                self.step_failed(feat, step, c.as_ref(), *loc, w.as_ref(), i)?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -583,16 +583,15 @@ impl<Out: io::Write> Basic<Out> {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
+        loc: Option<step::Location>,
         world: Option<&W>,
         err: &event::StepError,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword = self.styles.err(format!(
-            "{indent}✘  {}",
-            step.keyword,
-            indent = " ".repeat(self.indent.saturating_sub(3)),
-        ));
+        let indent = " ".repeat(self.indent.saturating_sub(3));
+        let step_keyword =
+            self.styles.err(format!("{indent}✘  {}", step.keyword));
         let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
             |capts| {
@@ -607,7 +606,7 @@ impl<Out: io::Write> Basic<Out> {
         );
 
         let diagnostics = self.styles.err(format!(
-            "{}{}\n\
+            "{}{}\n{}\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             step.docstring
@@ -623,6 +622,11 @@ impl<Out: io::Write> Basic<Out> {
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
                 .unwrap_or_default(),
+            loc.map(|l| format!(
+                "{indent}   {}:{}:{}\n",
+                l.path, l.line, l.column,
+            ))
+            .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -640,10 +644,9 @@ impl<Out: io::Write> Basic<Out> {
                 ))
                 .filter(|_| self.verbosity.shows_world())
                 .unwrap_or_default(),
-            indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
-        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}",))
+        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -667,7 +670,7 @@ impl<Out: io::Write> Basic<Out> {
             Step::Started => {
                 self.bg_step_started(bg)?;
             }
-            Step::Passed(captures) => {
+            Step::Passed(captures, _) => {
                 self.bg_step_passed(bg, captures)?;
                 self.indent = self.indent.saturating_sub(4);
             }
@@ -675,8 +678,8 @@ impl<Out: io::Write> Basic<Out> {
                 self.bg_step_skipped(feat, bg)?;
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(c, w, i) => {
-                self.bg_step_failed(feat, bg, c.as_ref(), w.as_ref(), i)?;
+            Step::Failed(c, loc, w, i) => {
+                self.bg_step_failed(feat, bg, c.as_ref(), *loc, w.as_ref(), i)?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -739,7 +742,9 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword = self.styles.ok(format!("✔> {}", step.keyword));
+        let indent = " ".repeat(self.indent.saturating_sub(3));
+        let step_keyword =
+            self.styles.ok(format!("{indent}✔> {}", step.keyword));
         let step_value = format_captures(
             &step.value,
             captures,
@@ -764,10 +769,11 @@ impl<Out: io::Write> Basic<Out> {
             .map(|t| format_table(t, self.indent))
             .unwrap_or_default());
 
-        self.output.write_line(&self.styles.ok(format!(
-            "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
-            indent = " ".repeat(self.indent.saturating_sub(3)),
-        )))
+        self.output.write_line(
+            &self.styles.ok(format!(
+                "{step_keyword}{step_value}{doc_str}{step_table}",
+            )),
+        )
     }
 
     /// Outputs the [skipped] [`Background`] [`Step`].
@@ -819,16 +825,15 @@ impl<Out: io::Write> Basic<Out> {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
+        loc: Option<step::Location>,
         world: Option<&W>,
         err: &event::StepError,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword = self.styles.err(format!(
-            "{indent}✘> {}{}",
-            step.keyword,
-            indent = " ".repeat(self.indent.saturating_sub(3)),
-        ));
+        let indent = " ".repeat(self.indent.saturating_sub(3));
+        let step_keyword =
+            self.styles.err(format!("{indent}✘> {}", step.keyword));
         let step_value = captures.map_or_else(
             || self.styles.err(&step.value),
             |capts| {
@@ -843,7 +848,7 @@ impl<Out: io::Write> Basic<Out> {
         );
 
         let diagnostics = self.styles.err(format!(
-            "{}{}\n\
+            "{}{}\n{}\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             step.docstring
@@ -859,6 +864,11 @@ impl<Out: io::Write> Basic<Out> {
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
                 .unwrap_or_default(),
+            loc.map(|l| format!(
+                "{indent}   {}:{}:{}\n",
+                l.path, l.line, l.column,
+            ))
+            .unwrap_or_default(),
             feat.path
                 .as_ref()
                 .and_then(|p| p.to_str())
@@ -875,10 +885,9 @@ impl<Out: io::Write> Basic<Out> {
                     self.indent.saturating_sub(3) + 3,
                 ))
                 .unwrap_or_default(),
-            indent = " ".repeat(self.indent.saturating_sub(3))
         ));
 
-        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}",))
+        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 }
 

@@ -140,16 +140,17 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #         mut world: AnimalWorld,
 #         step: gherkin::Step,
 #     ) -> (AnimalWorld, event::Step<AnimalWorld>) {
-#         let ev = if let Some((step_fn, captures, ctx)) =
+#         let ev = if let Some((step_fn, captures, loc, ctx)) =
 #             Self::steps_fns().find(&step).expect("Ambiguous match")
 #         {
 #             match AssertUnwindSafe(step_fn(&mut world, ctx))
 #                 .catch_unwind()
 #                 .await
 #             {
-#                 Ok(()) => event::Step::Passed(captures),
+#                 Ok(()) => event::Step::Passed(captures, loc),
 #                 Err(e) => event::Step::Failed(
 #                     Some(captures),
+#                     loc,
 #                     Some(Arc::new(world.clone())),
 #                     event::StepError::Panic(e.into()),
 #                 ),
@@ -257,9 +258,9 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                             event::Step::Started => {
                                 print!("{} {}...", step.keyword, step.value)
                             }
-                            event::Step::Passed(_) => println!("ok"),
+                            event::Step::Passed(..) => println!("ok"),
                             event::Step::Skipped => println!("skip"),
-                            event::Step::Failed(_, _, err) => {
+                            event::Step::Failed(_, _, _, err) => {
                                 println!("failed: {err}")
                             }
                         },
@@ -426,9 +427,9 @@ async fn main() {
 #                             event::Step::Started => {
 #                                 print!("{} {}...", step.keyword, step.value)
 #                             }
-#                             event::Step::Passed(_) => println!("ok"),
+#                             event::Step::Passed(..) => println!("ok"),
 #                             event::Step::Skipped => println!("skip"),
-#                             event::Step::Failed(_, _, err) => {
+#                             event::Step::Failed(_, _, _, err) => {
 #                                 println!("failed: {err}", )
 #                             }
 #                         },

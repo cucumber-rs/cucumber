@@ -32,8 +32,7 @@ async fn main() {
     let non_deterministic = Regex::new(
         "\"exec_time\":\\d*\\.?\\d*\
              | [/\\\\]([^\"]*)[/\\\\]([A-z1-9-_]*).feature\
-             |\n\
-             |\\s",
+             |\n",
     )
     .unwrap();
 

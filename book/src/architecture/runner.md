@@ -140,7 +140,7 @@ impl CustomRunner {
         mut world: AnimalWorld,
         step: gherkin::Step,
     ) -> (AnimalWorld, event::Step<AnimalWorld>) {
-        let ev = if let Some((step_fn, captures, ctx)) =
+        let ev = if let Some((step_fn, captures, loc, ctx)) =
             Self::steps_fns().find(&step).expect("Ambiguous match")
         {
             // Panic represents a failed assertion in a step matching
@@ -149,9 +149,10 @@ impl CustomRunner {
                 .catch_unwind()
                 .await
             {
-                Ok(()) => event::Step::Passed(captures),
+                Ok(()) => event::Step::Passed(captures, loc),
                 Err(e) => event::Step::Failed(
                     Some(captures),
+                    loc,
                     Some(Arc::new(world.clone())),
                     event::StepError::Panic(e.into()),
                 ),

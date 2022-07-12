@@ -30,10 +30,14 @@ use regex::Regex;
 pub type Step<World> =
     for<'a> fn(&'a mut World, Context) -> LocalBoxFuture<'a, ()>;
 
-/// Alias for a [`Step`] with [`regex::CaptureLocations`] and [`Context`]
-/// returned by [`Collection::find()`].
-pub type WithContext<'me, World> =
-    (&'me Step<World>, regex::CaptureLocations, Context);
+/// Alias for a [`Step`] with [`regex::CaptureLocations`], [`Location`] and
+/// [`Context`] returned by [`Collection::find()`].
+pub type WithContext<'me, World> = (
+    &'me Step<World>,
+    regex::CaptureLocations,
+    Option<Location>,
+    Context,
+);
 
 /// Collection of [`Step`]s.
 ///
@@ -173,20 +177,21 @@ impl<World> Collection<World> {
             })
             .collect::<Vec<_>>();
 
-        let (_, _, whole_match, captures, names, step_fn) = match captures.len()
-        {
-            0 => return Ok(None),
-            // Instead of `.unwrap()` to avoid documenting `# Panics` section.
-            1 => captures.pop().unwrap_or_else(|| unreachable!()),
-            _ => {
-                return Err(AmbiguousMatchError {
-                    possible_matches: captures
-                        .into_iter()
-                        .map(|(re, loc, ..)| (re.clone(), *loc))
-                        .collect(),
-                })
-            }
-        };
+        let (_, loc, whole_match, captures, names, step_fn) =
+            match captures.len() {
+                0 => return Ok(None),
+                // Instead of `.unwrap()` to avoid documenting `# Panics`
+                // section.
+                1 => captures.pop().unwrap_or_else(|| unreachable!()),
+                _ => {
+                    return Err(AmbiguousMatchError {
+                        possible_matches: captures
+                            .into_iter()
+                            .map(|(re, loc, ..)| (re.clone(), *loc))
+                            .collect(),
+                    })
+                }
+            };
 
         // PANIC: Slicing is OK here, as all indices are obtained from the
         //        source string.
@@ -206,6 +211,7 @@ impl<World> Collection<World> {
         Ok(Some((
             step_fn,
             captures,
+            *loc,
             Context {
                 step: step.clone(),
                 matches,

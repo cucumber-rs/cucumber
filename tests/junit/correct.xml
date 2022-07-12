@@ -15,6 +15,7 @@
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
+      tests/junit.rs:9:1
       Step failed: /tests/features/wait/rule.feature:17:7
       Captured output:
       Step panicked. Captured output: Too much!
@@ -34,6 +35,7 @@
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
+      tests/junit.rs:9:1
       Step failed: /tests/features/wait/nested/rule.feature:17:7
       Captured output:
       Step panicked. Captured output: Too much!
