@@ -52,7 +52,7 @@ pub struct Cli {
 /// Currently supports only `JSON`.
 #[derive(Clone, Copy, Debug)]
 pub enum Format {
-    /// [`libtest`][1]'s `JSON` format.
+    /// [`libtest`][1]'s JSON format.
     ///
     /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
     Json,

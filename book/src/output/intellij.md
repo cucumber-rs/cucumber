@@ -6,7 +6,6 @@ With feature `libtest` (enabled by default), IDE with [IntelliJ Rust] plugin can
 ![record](../rec/intellij.gif)
 
 > __NOTE__: There are currently 2 caveats with [IntelliJ Rust] integration:
-> 
 > 1. Because of [output interpretation issue], current timing reports for individual tests are accurate only for serial tests (or in case `--concurrency=1` CLI option is used);
 > 2. Although debugger works, test window may select `Step` that didn't trigger the breakpoint. To fix this, use `--concurrency=1` CLI option.
 
