@@ -166,10 +166,10 @@ impl<Out: io::Write> Json<Out> {
         use event::Scenario;
 
         match ev {
-            Scenario::Hook(ty, ev) => {
+            Scenario::Hook(ty, ev, _) => {
                 self.handle_hook_event(feature, rule, scenario, ty, ev, meta);
             }
-            Scenario::Background(st, ev) => {
+            Scenario::Background(st, ev, _) => {
                 self.handle_step_event(
                     feature,
                     rule,
@@ -180,12 +180,12 @@ impl<Out: io::Write> Json<Out> {
                     meta,
                 );
             }
-            Scenario::Step(st, ev) => {
+            Scenario::Step(st, ev, _) => {
                 self.handle_step_event(
                     feature, rule, scenario, "scenario", &st, ev, meta,
                 );
             }
-            Scenario::Started | Scenario::Finished => {}
+            Scenario::Started(_) | Scenario::Finished(_) => {}
         }
     }
 

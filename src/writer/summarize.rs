@@ -320,9 +320,9 @@ impl<Writer> Summarize<Writer> {
         use event::{Hook, Scenario};
 
         match ev {
-            Scenario::Started
-            | Scenario::Hook(_, Hook::Passed | Hook::Started) => {}
-            Scenario::Hook(_, Hook::Failed(..)) => {
+            Scenario::Started(_)
+            | Scenario::Hook(_, Hook::Passed | Hook::Started, _) => {}
+            Scenario::Hook(_, Hook::Failed(..), _) => {
                 // - If Scenario's last Step failed and then After Hook failed
                 //   too, we don't need to track second failure;
                 // - If Scenario's last Step was skipped and then After Hook
@@ -344,10 +344,10 @@ impl<Writer> Summarize<Writer> {
                 }
                 self.failed_hooks += 1;
             }
-            Scenario::Background(_, ev) | Scenario::Step(_, ev) => {
+            Scenario::Background(_, ev, _) | Scenario::Step(_, ev, _) => {
                 self.handle_step(scenario, ev);
             }
-            Scenario::Finished => {
+            Scenario::Finished(_) => {
                 if self.handled_scenarios.remove(scenario).is_none() {
                     self.scenarios.passed += 1;
                 }

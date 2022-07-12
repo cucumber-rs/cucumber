@@ -337,26 +337,28 @@ impl<Out: io::Write> Basic<Out> {
         use event::{Hook, Scenario};
 
         match ev {
-            Scenario::Started => {
+            Scenario::Started(_) => {
                 self.scenario_started(scenario)?;
             }
-            Scenario::Hook(_, Hook::Started) => {
+            Scenario::Hook(_, Hook::Started, _) => {
                 self.indent += 4;
             }
-            Scenario::Hook(which, Hook::Failed(world, info)) => {
+            Scenario::Hook(which, Hook::Failed(world, info), _) => {
                 self.hook_failed(feat, scenario, *which, world.as_ref(), info)?;
                 self.indent = self.indent.saturating_sub(4);
             }
-            Scenario::Hook(_, Hook::Passed) => {
+            Scenario::Hook(_, Hook::Passed, _) => {
                 self.indent = self.indent.saturating_sub(4);
             }
-            Scenario::Background(bg, ev) => {
+            Scenario::Background(bg, ev, _) => {
                 self.background(feat, bg, ev)?;
             }
-            Scenario::Step(st, ev) => {
+            Scenario::Step(st, ev, _) => {
                 self.step(feat, st, ev)?;
             }
-            Scenario::Finished => self.indent = self.indent.saturating_sub(2),
+            Scenario::Finished(_) => {
+                self.indent = self.indent.saturating_sub(2)
+            }
         }
         Ok(())
     }

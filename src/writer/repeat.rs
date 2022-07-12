@@ -148,13 +148,13 @@ impl<W, Wr> Repeat<W, Wr> {
                             _,
                             Rule::Scenario(
                                 _,
-                                Scenario::Step(_, Step::Skipped)
-                                    | Scenario::Background(_, Step::Skipped)
+                                Scenario::Step(_, Step::Skipped, _)
+                                    | Scenario::Background(_, Step::Skipped, _)
                             )
                         ) | Feature::Scenario(
                             _,
-                            Scenario::Step(_, Step::Skipped)
-                                | Scenario::Background(_, Step::Skipped)
+                            Scenario::Step(_, Step::Skipped, _)
+                                | Scenario::Background(_, Step::Skipped, _)
                         )
                     )),
                 )
@@ -183,15 +183,19 @@ impl<W, Wr> Repeat<W, Wr> {
                             _,
                             Rule::Scenario(
                                 _,
-                                Scenario::Step(_, Step::Failed(..))
-                                    | Scenario::Background(_, Step::Failed(..))
-                                    | Scenario::Hook(_, Hook::Failed(..))
+                                Scenario::Step(_, Step::Failed(..), _)
+                                    | Scenario::Background(
+                                        _,
+                                        Step::Failed(..),
+                                        _
+                                    )
+                                    | Scenario::Hook(_, Hook::Failed(..), _)
                             )
                         ) | Feature::Scenario(
                             _,
-                            Scenario::Step(_, Step::Failed(..))
-                                | Scenario::Background(_, Step::Failed(..))
-                                | Scenario::Hook(_, Hook::Failed(..))
+                            Scenario::Step(_, Step::Failed(..), _)
+                                | Scenario::Background(_, Step::Failed(..), _)
+                                | Scenario::Hook(_, Hook::Failed(..), _)
                         )
                     )) | Err(_),
                 )

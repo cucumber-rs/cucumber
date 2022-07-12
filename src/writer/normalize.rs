@@ -778,7 +778,7 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         while let Some((ev, meta)) = self.current_item().map(Event::split) {
-            let should_be_removed = matches!(ev, event::Scenario::Finished);
+            let should_be_removed = matches!(ev, event::Scenario::Finished(_));
 
             let ev = meta.wrap(event::Cucumber::scenario(
                 Arc::clone(&feature),

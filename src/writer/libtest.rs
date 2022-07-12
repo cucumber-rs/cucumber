@@ -364,14 +364,14 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         use event::Scenario;
 
         match ev {
-            Scenario::Started | Scenario::Finished => Vec::new(),
-            Scenario::Hook(ty, ev) => {
+            Scenario::Started(_) | Scenario::Finished(_) => Vec::new(),
+            Scenario::Hook(ty, ev, _) => {
                 self.expand_hook_event(feature, rule, scenario, ty, ev)
             }
-            Scenario::Background(step, ev) => self.expand_step_event(
+            Scenario::Background(step, ev, _) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, true, cli,
             ),
-            Scenario::Step(step, ev) => self.expand_step_event(
+            Scenario::Step(step, ev, _) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, false, cli,
             ),
         }

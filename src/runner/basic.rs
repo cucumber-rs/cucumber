@@ -35,7 +35,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
-    event::{self, HookType, Info},
+    event::{self, HookType, Info, Retries},
     feature::Ext as _,
     parser, step, Event, Runner, Step, World,
 };
@@ -579,6 +579,7 @@ async fn execute<W, Before, After>(
         after_hook,
         event_sender,
         finished_sender,
+        features.clone(),
     );
 
     executor.send_event(event::Cucumber::Started);
@@ -608,8 +609,8 @@ async fn execute<W, Before, After>(
             *sc -= runnable.len();
         }
 
-        for (f, r, s) in runnable {
-            run_scenarios.push(executor.run_scenario(f, r, s));
+        for (f, r, s, ty, retries) in runnable {
+            run_scenarios.push(executor.run_scenario(f, r, s, ty, retries));
         }
 
         if run_scenarios.next().await.is_some() {
@@ -686,6 +687,9 @@ struct Executor<W, Before, After> {
         Option<Arc<gherkin::Rule>>,
         Failed,
     )>,
+
+    /// TODO
+    storage: Features,
 }
 
 impl<W: World, Before, After> Executor<W, Before, After>
@@ -718,6 +722,7 @@ where
             Option<Arc<gherkin::Rule>>,
             Failed,
         )>,
+        storage: Features,
     ) -> Self {
         Self {
             collection,
@@ -725,6 +730,7 @@ where
             after_hook,
             event_sender,
             finished_sender,
+            storage,
         }
     }
 
@@ -743,19 +749,21 @@ where
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
+        scenario_ty: ScenarioType,
+        retries: Option<Retries>,
     ) {
-        let ok = |e: fn(_) -> event::Scenario<W>| {
+        let ok = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
                 let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
-                event::Cucumber::scenario(f, r, s, e(step))
+                event::Cucumber::scenario(f, r, s, e(step, retries))
             }
         };
-        let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(_, _, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
-            move |step, captures, loc| {
+            move |step, cap, loc| {
                 let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
-                event::Cucumber::scenario(f, r, s, e(step, captures, loc))
+                event::Cucumber::scenario(f, r, s, e(step, cap, loc, retries))
             }
         };
 
@@ -777,12 +785,12 @@ where
             Arc::clone(&feature),
             rule.clone(),
             Arc::clone(&scenario),
-            event::Scenario::Started,
+            event::Scenario::Started(retries),
         ));
 
         let mut result = async {
             let before_hook = self
-                .run_before_hook(&feature, rule.as_ref(), &scenario)
+                .run_before_hook(&feature, rule.as_ref(), &scenario, retries)
                 .await?;
 
             let feature_background = feature
@@ -851,6 +859,7 @@ where
                 Arc::clone(&scenario),
                 world.clone(),
                 exec_error,
+                retries,
             );
         }
 
@@ -861,14 +870,29 @@ where
             world,
             after_hook_meta,
             after_hook_error,
+            retries,
         );
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),
             rule.clone(),
             Arc::clone(&scenario),
-            event::Scenario::Finished,
+            event::Scenario::Finished(retries),
         ));
+
+        if let Some(next_try) =
+            retries.and_then(Retries::next_try).filter(|_| is_failed)
+        {
+            self.storage
+                .insert_scenario(
+                    Arc::clone(&feature),
+                    rule.clone(),
+                    scenario,
+                    scenario_ty,
+                    Some(next_try),
+                )
+                .await;
+        }
 
         self.scenario_finished(feature, rule, is_failed);
     }
@@ -886,6 +910,7 @@ where
         feature: &Arc<gherkin::Feature>,
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
+        retries: Option<Retries>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
         let init_world = async {
             AssertUnwindSafe(W::new())
@@ -907,7 +932,7 @@ where
                 Arc::clone(feature),
                 rule.map(Arc::clone),
                 Arc::clone(scenario),
-                event::Scenario::hook_started(HookType::Before),
+                event::Scenario::hook_started(HookType::Before, retries),
             ));
 
             let fut = init_world.and_then(|mut world| async {
@@ -929,7 +954,7 @@ where
                         Arc::clone(feature),
                         rule.map(Arc::clone),
                         Arc::clone(scenario),
-                        event::Scenario::hook_passed(HookType::Before),
+                        event::Scenario::hook_passed(HookType::Before, retries),
                     ));
                     Ok(Some(world))
                 }
@@ -1063,6 +1088,7 @@ where
         scenario: Arc<gherkin::Scenario>,
         world: Option<Arc<W>>,
         err: ExecutionFailure<W>,
+        retries: Option<Retries>,
     ) {
         match err {
             ExecutionFailure::StepSkipped(_) => {}
@@ -1078,6 +1104,7 @@ where
                             HookType::Before,
                             world,
                             panic_info,
+                            retries,
                         ),
                     ),
                     meta,
@@ -1097,7 +1124,7 @@ where
                     rule,
                     scenario,
                     event::Scenario::background_step_failed(
-                        step, captures, loc, world, error,
+                        step, captures, loc, world, error, retries,
                     ),
                 ),
                 meta,
@@ -1116,7 +1143,7 @@ where
                     rule,
                     scenario,
                     event::Scenario::step_failed(
-                        step, captures, loc, world, error,
+                        step, captures, loc, world, error, retries,
                     ),
                 ),
                 meta,
@@ -1172,6 +1199,7 @@ where
         world: Option<Arc<W>>,
         meta: Option<AfterHookEventsMeta>,
         err: Option<Info>,
+        retries: Option<Retries>,
     ) {
         debug_assert_eq!(self.after_hook.is_some(), meta.is_some());
 
@@ -1181,7 +1209,7 @@ where
                     Arc::clone(&feature),
                     rule.clone(),
                     Arc::clone(&scenario),
-                    event::Scenario::hook_started(HookType::After),
+                    event::Scenario::hook_started(HookType::After, retries),
                 ),
                 meta.started,
             );
@@ -1191,14 +1219,19 @@ where
                     feature,
                     rule,
                     scenario,
-                    event::Scenario::hook_failed(HookType::After, world, err),
+                    event::Scenario::hook_failed(
+                        HookType::After,
+                        world,
+                        err,
+                        retries,
+                    ),
                 )
             } else {
                 event::Cucumber::scenario(
                     feature,
                     rule,
                     scenario,
-                    event::Scenario::hook_passed(HookType::After),
+                    event::Scenario::hook_passed(HookType::After, retries),
                 )
             };
 
@@ -1392,6 +1425,8 @@ impl FinishedRulesAndFeatures {
                 Arc<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
+                ScenarioType,
+                Option<Retries>,
             )],
         >,
     ) -> impl Iterator<Item = event::Cucumber<W>> {
@@ -1411,7 +1446,7 @@ impl FinishedRulesAndFeatures {
         let mut started_rules = Vec::new();
         for (feat, rule) in runnable
             .iter()
-            .filter_map(|(feat, rule, _)| {
+            .filter_map(|(feat, rule, _, _, _)| {
                 rule.clone().map(|r| (Arc::clone(feat), r))
             })
             .dedup()
@@ -1445,6 +1480,7 @@ type Scenarios = HashMap<
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
+        Option<Retries>,
     )>,
 >;
 
@@ -1496,30 +1532,53 @@ impl Features {
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
+                    None, // TODO
                 )
             })
-            .into_group_map_by(|(f, r, s)| {
+            .into_group_map_by(|(f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
 
-        let mut scenarios = self.scenarios.lock().await;
-        if local.get(&ScenarioType::Serial).is_none() {
+        self.insert_scenarios(local).await;
+    }
+
+    /// TODO
+    async fn insert_scenarios(&self, scenarios: Scenarios) {
+        let mut storage = self.scenarios.lock().await;
+        if scenarios.get(&ScenarioType::Serial).is_none() {
             // If there are no Serial Scenarios we just extending already
             // existing Concurrent Scenarios.
-            for (which, values) in local {
-                scenarios.entry(which).or_default().extend(values);
+            for (which, values) in scenarios {
+                storage.entry(which).or_default().extend(values);
             }
         } else {
             // If there are Serial Scenarios we insert all Serial and Concurrent
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
-            for (which, mut values) in local {
-                let old = mem::take(scenarios.entry(which).or_default());
+            for (which, mut values) in scenarios {
+                let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
-                scenarios.entry(which).or_default().extend(values);
+                storage.entry(which).or_default().extend(values);
             }
         }
+    }
+
+    /// TODO
+    async fn insert_scenario(
+        &self,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
+        scenario_ty: ScenarioType,
+        retries: Option<Retries>,
+    ) {
+        self.insert_scenarios(
+            [(scenario_ty, vec![(feature, rule, scenario, retries)])]
+                .into_iter()
+                .collect(),
+        )
+        .await
     }
 
     /// Returns [`Scenario`]s which are ready to run.
@@ -1532,11 +1591,17 @@ impl Features {
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
+        ScenarioType,
+        Option<Retries>,
     )> {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
             .get_mut(&ScenarioType::Serial)
-            .and_then(|s| (!s.is_empty()).then(|| vec![s.remove(0)]))
+            .and_then(|s| {
+                (!s.is_empty()).then(|| s.remove(0)).map(|(f, r, s, ret)| {
+                    vec![(f, r, s, ScenarioType::Serial, ret)]
+                })
+            })
             .or_else(|| {
                 scenarios.get_mut(&ScenarioType::Concurrent).and_then(|s| {
                     (!s.is_empty()).then(|| {
@@ -1544,7 +1609,11 @@ impl Features {
                             s.len(),
                             max_concurrent_scenarios.unwrap_or(s.len()),
                         );
-                        s.drain(0..end).collect()
+                        s.drain(0..end)
+                            .map(|(f, r, s, ret)| {
+                                (f, r, s, ScenarioType::Concurrent, ret)
+                            })
+                            .collect()
                     })
                 })
             })

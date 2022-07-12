@@ -270,16 +270,16 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         use event::Scenario;
 
         match ev {
-            Scenario::Started => {
+            Scenario::Started(retries) => {
                 self.scenario_started_at = Some(meta.at);
-                self.events.push(Scenario::Started);
+                self.events.push(Scenario::Started(retries));
             }
             Scenario::Hook(..)
             | Scenario::Background(..)
             | Scenario::Step(..) => {
                 self.events.push(ev);
             }
-            Scenario::Finished => {
+            Scenario::Finished(_) => {
                 let dur = self.scenario_duration(meta.at, sc);
                 let events = mem::take(&mut self.events);
                 let case = self.test_case(feat, rule, sc, &events, dur);
@@ -318,6 +318,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     Scenario::Hook(
                         HookType::After,
                         Hook::Passed | Hook::Started,
+                        _,
                     ),
                 )
             })
@@ -343,25 +344,27 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         );
 
         let mut case = match last_event {
-            Scenario::Started
-            | Scenario::Hook(_, Hook::Started | Hook::Passed)
-            | Scenario::Background(_, Step::Started | Step::Passed(_, _))
-            | Scenario::Step(_, Step::Started | Step::Passed(_, _)) => {
+            Scenario::Started(_)
+            | Scenario::Hook(_, Hook::Started | Hook::Passed, _)
+            | Scenario::Background(_, Step::Started | Step::Passed(_, _), _)
+            | Scenario::Step(_, Step::Started | Step::Passed(_, _), _) => {
                 TestCaseBuilder::success(&case_name, duration).build()
             }
-            Scenario::Background(_, Step::Skipped)
-            | Scenario::Step(_, Step::Skipped) => {
+            Scenario::Background(_, Step::Skipped, _)
+            | Scenario::Step(_, Step::Skipped, _) => {
                 TestCaseBuilder::skipped(&case_name).build()
             }
-            Scenario::Hook(_, Hook::Failed(_, e)) => TestCaseBuilder::failure(
-                &case_name,
-                duration,
-                "Hook Panicked",
-                coerce_error(e).as_ref(),
-            )
-            .build(),
-            Scenario::Background(_, Step::Failed(_, _, _, e))
-            | Scenario::Step(_, Step::Failed(_, _, _, e)) => {
+            Scenario::Hook(_, Hook::Failed(_, e), _) => {
+                TestCaseBuilder::failure(
+                    &case_name,
+                    duration,
+                    "Hook Panicked",
+                    coerce_error(e).as_ref(),
+                )
+                .build()
+            }
+            Scenario::Background(_, Step::Failed(_, _, _, e), _)
+            | Scenario::Step(_, Step::Failed(_, _, _, e), _) => {
                 TestCaseBuilder::failure(
                     &case_name,
                     duration,
@@ -370,7 +373,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 )
                 .build()
             }
-            Scenario::Finished => {
+            Scenario::Finished(_) => {
                 panic!(
                     "Duplicated `Finished` event for `Scenario`: \"{}\"\n\
                      {WRAP_ADVICE}",
