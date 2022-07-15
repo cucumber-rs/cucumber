@@ -159,7 +159,14 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           override: true
 
+      - run: rustc --version --verbose
+
       - run: make test.cargo crate=${{ matrix.crate }}
+        continue-on-error: true
+
+      - run: make test.cargo crate=${{ matrix.crate }}
+        env:
+          RUST_BACKTRACE: 1
 
   test-book:
     name: Test Book
