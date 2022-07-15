@@ -11,12 +11,11 @@ use cucumber::{writer, World as _};
 # struct World;
 #
 # #[tokio::main]
-# async fn main() -> io::Result<()> {
+# async fn main() {
 World::cucumber()
     .with_writer(writer::Libtest::or_basic())
     .run("tests/features/book")
     .await;
-# Ok(())
 # }
 ```
 
