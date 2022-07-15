@@ -132,6 +132,27 @@ pub trait Failure<World>: Writer<World> {
     fn hook_errors(&self) -> usize;
 }
 
+/// [`Writer`] tracking a number of [`Passed`] or [`Skipped`] [`Step`]s.
+///
+/// [`Passed`]: event::Step::Passed
+/// [`Skipped`]: event::Step::Skipped
+/// [`Step`]: gherkin::Step
+pub trait SuccessOrSkipped<World>: Writer<World> {
+    /// Returns number of [`Passed`] [`Step`]s.
+    ///
+    /// [`Passed`]: event::Step::Passed
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn passed_steps(&self) -> usize;
+
+    /// Returns number of [`Skipped`] [`Step`]s.
+    ///
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn skipped_steps(&self) -> usize;
+}
+
 /// Extension of [`Writer`] allowing its normalization and summarization.
 #[sealed]
 pub trait Ext: Sized {

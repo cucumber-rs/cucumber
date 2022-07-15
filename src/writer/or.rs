@@ -93,6 +93,25 @@ where
     }
 }
 
+impl<W, L, R, F> writer::SuccessOrSkipped<W> for Or<L, R, F>
+where
+    L: writer::SuccessOrSkipped<W>,
+    R: writer::SuccessOrSkipped<W>,
+    F: FnMut(
+        &parser::Result<Event<event::Cucumber<W>>>,
+        &cli::Compose<L::Cli, R::Cli>,
+    ) -> bool,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        self.left.passed_steps() + self.right.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.left.skipped_steps() + self.right.skipped_steps()
+    }
+}
+
 impl<L, R, F> writer::Normalized for Or<L, R, F>
 where
     L: writer::Normalized,

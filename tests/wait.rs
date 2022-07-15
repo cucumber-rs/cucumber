@@ -1,6 +1,6 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
-use cucumber::{cli, given, then, when, Parameter, World as _};
+use cucumber::{cli, given, then, when, writer, Parameter, World as _};
 use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
@@ -29,6 +29,7 @@ async fn main() {
             .boxed_local()
         })
         .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
+        .with_writer(writer::Libtest::or_basic())
         .with_cli(cli)
         .run_and_exit("tests/features/wait");
 

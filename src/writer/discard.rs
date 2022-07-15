@@ -69,6 +69,18 @@ impl<W: World, Wr: writer::Failure<W> + ?Sized> writer::Failure<W>
     }
 }
 
+impl<W: World, Wr: writer::SuccessOrSkipped<W> + ?Sized>
+    writer::SuccessOrSkipped<W> for Arbitrary<Wr>
+{
+    fn passed_steps(&self) -> usize {
+        self.0.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.0.skipped_steps()
+    }
+}
+
 impl<Wr: writer::Normalized> writer::Normalized for Arbitrary<Wr> {}
 
 impl<Wr: writer::NonTransforming> writer::NonTransforming for Arbitrary<Wr> {}

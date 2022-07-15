@@ -111,6 +111,20 @@ where
     }
 }
 
+impl<W, Wr, F> writer::SuccessOrSkipped<W> for Repeat<W, Wr, F>
+where
+    Wr: writer::SuccessOrSkipped<W> + writer::NonTransforming,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+}
+
 impl<W, Wr: writer::Normalized, F> writer::Normalized for Repeat<W, Wr, F> {}
 
 impl<W, Wr, F> writer::Summarizable for Repeat<W, Wr, F> {}

@@ -111,6 +111,23 @@ where
     }
 }
 
+impl<W, L, R> writer::SuccessOrSkipped<W> for Tee<L, R>
+where
+    L: writer::SuccessOrSkipped<W>,
+    R: writer::SuccessOrSkipped<W>,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.passed_steps(), self.right.passed_steps())
+    }
+
+    fn skipped_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.skipped_steps(), self.right.skipped_steps())
+    }
+}
+
 impl<L, R> writer::Normalized for Tee<L, R>
 where
     L: writer::Normalized,

@@ -167,6 +167,20 @@ where
     }
 }
 
+impl<W, Wr> writer::SuccessOrSkipped<W> for Normalize<W, Wr>
+where
+    Wr: writer::SuccessOrSkipped<W>,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+}
+
 impl<W, Wr: writer::NonTransforming> writer::NonTransforming
     for Normalize<W, Wr>
 {
@@ -267,6 +281,20 @@ where
 
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
+    }
+}
+
+impl<W, Wr> writer::SuccessOrSkipped<W> for AssertNormalized<Wr>
+where
+    Wr: writer::SuccessOrSkipped<W>,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        self.0.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.0.skipped_steps()
     }
 }
 

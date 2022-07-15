@@ -164,7 +164,8 @@ pub use self::{
     step::Step,
     writer::{
         Arbitrary as ArbitraryWriter, Ext as WriterExt,
-        Failure as FailureWriter, Writer,
+        Failure as FailureWriter, SuccessOrSkipped as SuccessOrSkippedWriter,
+        Writer,
     },
 };
 

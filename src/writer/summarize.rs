@@ -248,6 +248,20 @@ where
     }
 }
 
+impl<W, Wr> writer::SuccessOrSkipped<W> for Summarize<Wr>
+where
+    W: World,
+    Self: Writer<W>,
+{
+    fn passed_steps(&self) -> usize {
+        self.steps.passed
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.steps.skipped
+    }
+}
+
 impl<Wr: writer::Normalized> writer::Normalized for Summarize<Wr> {}
 
 impl<Wr: writer::NonTransforming> writer::NonTransforming for Summarize<Wr> {}
