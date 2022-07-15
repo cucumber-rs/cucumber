@@ -851,6 +851,11 @@ where
             );
 
         let is_failed = result.is_err() || after_hook_error.is_some();
+        let is_really_failed = matches!(
+            result,
+            Err(ExecutionFailure::BeforeHookPanicked { .. }
+                | ExecutionFailure::StepPanicked { .. })
+        );
 
         if let Some(exec_error) = result.err() {
             self.emit_failed_events(
@@ -880,8 +885,9 @@ where
             event::Scenario::Finished(retries),
         ));
 
-        if let Some(next_try) =
-            retries.and_then(Retries::next_try).filter(|_| is_failed)
+        if let Some(next_try) = retries
+            .and_then(Retries::next_try)
+            .filter(|_| is_really_failed)
         {
             self.storage
                 .insert_scenario(
@@ -1532,7 +1538,10 @@ impl Features {
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
-                    None, // TODO
+                    Some(Retries {
+                        left: 1,
+                        current: 0,
+                    }), // TODO
                 )
             })
             .into_group_map_by(|(f, r, s, _)| {

@@ -26,7 +26,8 @@ use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    event, parser,
+    event::{self, Retries},
+    parser,
     writer::{self, basic::coerce_error, out::WriteStrExt as _, Arbitrary},
     Event, World, Writer,
 };
@@ -365,14 +366,14 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
         match ev {
             Scenario::Started(_) | Scenario::Finished(_) => Vec::new(),
-            Scenario::Hook(ty, ev, _) => {
-                self.expand_hook_event(feature, rule, scenario, ty, ev)
+            Scenario::Hook(ty, ev, retries) => {
+                self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
             }
-            Scenario::Background(step, ev, _) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, true, cli,
+            Scenario::Background(step, ev, retries) => self.expand_step_event(
+                feature, rule, scenario, &step, ev, retries, false, cli,
             ),
-            Scenario::Step(step, ev, _) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, false, cli,
+            Scenario::Step(step, ev, retries) => self.expand_step_event(
+                feature, rule, scenario, &step, ev, retries, false, cli,
             ),
         }
     }
@@ -385,6 +386,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         scenario: &gherkin::Scenario,
         hook: event::HookType,
         ev: event::Hook<W>,
+        retries: Option<Retries>,
     ) -> Vec<LibTestJsonEvent> {
         match ev {
             event::Hook::Started | event::Hook::Passed => Vec::new(),
@@ -396,6 +398,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     rule,
                     scenario,
                     Either::Left(hook),
+                    retries,
                 );
 
                 vec![
@@ -423,6 +426,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         scenario: &gherkin::Scenario,
         step: &gherkin::Step,
         ev: event::Step<W>,
+        retries: Option<Retries>,
         is_background: bool,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
@@ -433,6 +437,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             rule,
             scenario,
             Either::Right((step, is_background)),
+            retries,
         );
 
         let ev = match ev {
@@ -481,6 +486,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         step: Either<event::HookType, (&gherkin::Step, IsBackground)>,
+        retries: Option<Retries>,
     ) -> String {
         let feature = format!(
             "{} {}",
@@ -497,7 +503,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             .as_ref()
             .map(|r| format!("{}: {} {}", r.position.line, r.keyword, r.name));
         let scenario = format!(
-            "{}: {} {}",
+            "{}: {} {} | {retries:?}",
             scenario.position.line, scenario.keyword, scenario.name,
         );
         let step = match step {
