@@ -124,7 +124,7 @@ at your option.
 [Cucumber JSON format]: https://github.com/cucumber/cucumber-json-schema
 [Gherkin]: https://cucumber.io/docs/gherkin/reference
 [JUnit XML report]: https://llg.cubic.org/docs/junit
-[IntelliJ Rust plugin integration]: book/src/output/intellij.md
+[IntelliJ Rust plugin integration]: https://cucumber-rs.github.io/cucumber/main/output/intellij.html
 
 [1]: https://cucumber-rs.github.io/cucumber/current
 [2]: https://cucumber-rs.github.io/cucumber/main

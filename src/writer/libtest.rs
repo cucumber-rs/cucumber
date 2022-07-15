@@ -168,6 +168,22 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
     }
 }
 
+/// Alias for [`Libtest::or()`] return type.
+#[allow(clippy::module_name_repetitions)]
+pub type LibtestOr<W, Wr> = writer::Or<
+    Wr,
+    Normalize<W, Libtest<W, io::Stdout>>,
+    fn(
+        &parser::Result<Event<event::Cucumber<W>>>,
+        &cli::Compose<<Wr as Writer<W>>::Cli, Cli>,
+    ) -> bool,
+>;
+
+/// Alias for [`Libtest::or_basic()`] return type.
+#[allow(clippy::module_name_repetitions)]
+pub type LibtestOrBasic<W> =
+    LibtestOr<W, Summarize<Normalize<W, writer::Basic>>>;
+
 impl<W: Debug + World> Libtest<W, io::Stdout> {
     /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into the
     /// [`io::Stdout`].
@@ -183,14 +199,7 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
     #[must_use]
     pub fn or<AnotherWriter: Writer<W>>(
         writer: AnotherWriter,
-    ) -> writer::Or<
-        AnotherWriter,
-        Normalize<W, Self>,
-        fn(
-            &parser::Result<Event<event::Cucumber<W>>>,
-            &cli::Compose<AnotherWriter::Cli, Cli>,
-        ) -> bool,
-    > {
+    ) -> LibtestOr<W, AnotherWriter> {
         writer::Or::new(writer, Self::stdout(), |_, cli| {
             !matches!(cli.right.format, Some(writer::libtest::Format::Json))
         })
@@ -202,14 +211,7 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
     ///
     /// [`Json`]: Format::Json
     #[must_use]
-    pub fn or_basic() -> writer::Or<
-        Summarize<Normalize<W, writer::Basic>>,
-        Normalize<W, Self>,
-        fn(
-            &parser::Result<Event<event::Cucumber<W>>>,
-            &cli::Compose<writer::basic::Cli, Cli>,
-        ) -> bool,
-    > {
+    pub fn or_basic() -> LibtestOrBasic<W> {
         Self::or(writer::Basic::stdout().summarized())
     }
 }
@@ -550,8 +552,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     .then(|| feature
                         .background
                         .as_ref()
-                        .map(|bg| bg.keyword.as_str())
-                        .unwrap_or_else(|| "Background"))
+                        .map_or("Background", |bg| bg.keyword.as_str()))
                     .unwrap_or_default(),
                 step.keyword,
                 step.value,
@@ -592,10 +593,10 @@ impl<W: World + Debug, O: io::Write> writer::Failure<W> for Libtest<W, O> {
     }
 }
 
-impl<W: World + Debug, O: io::Write> writer::SuccessOrSkipped<W>
-    for Libtest<W, O>
+impl<W, O> writer::SuccessOrSkipped<W> for Libtest<W, O>
 where
-    W: World,
+    O: io::Write,
+    W: Debug + World,
     Self: Writer<W>,
 {
     fn passed_steps(&self) -> usize {
