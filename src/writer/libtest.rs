@@ -187,6 +187,8 @@ pub type LibtestOrBasic<W> =
 impl<W: Debug + World> Libtest<W, io::Stdout> {
     /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into the
     /// [`io::Stdout`].
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn stdout() -> Normalize<W, Self> {
         Self::new(io::stdout())
@@ -196,6 +198,7 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
     /// [`Cli::format`] is set to [`Json`] or provided `writer` otherwise.
     ///
     /// [`Json`]: Format::Json
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn or<AnotherWriter: Writer<W>>(
         writer: AnotherWriter,
@@ -210,6 +213,7 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
     /// otherwise.
     ///
     /// [`Json`]: Format::Json
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn or_basic() -> LibtestOrBasic<W> {
         Self::or(writer::Basic::stdout().summarized())
