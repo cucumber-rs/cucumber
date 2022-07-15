@@ -4,8 +4,7 @@ IntelliJ Rust
 With [`writer::Libtest`] (enabled by `libtest` feature), IDE with [IntelliJ Rust] plugin can interpret output of [`cucumber`] test similar to unit tests. To use it, just add [Cargo configuration] (current example uses `cargo test --test wait` command) or run it via [Cargo command]. This automatically adds `--format=json` CLI option, which makes [`cucumber`] output IDE-compatible.
 
 Example below is set up to output with default [`writer::Basic`], if there is no `--format=json` option, and with [`writer::Libtest`] otherwise.
-```rust,should_panic
-# use std::{fs, io};
+```rust
 use cucumber::{writer, World as _};
 
 # #[derive(cucumber::World, Debug, Default)]
