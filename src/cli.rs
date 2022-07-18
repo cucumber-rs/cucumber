@@ -216,10 +216,9 @@ impl Colored for Empty {}
 /// #[async_trait(?Send)]
 /// impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
 /// where
-///     W: World,
-///     Self: Writer<W>,
 ///     Wr: writer::Arbitrary<'val, W, Val>,
 ///     Val: 'val,
+///     Self: Writer<W>,
 /// {
 ///     async fn write(&mut self, val: Val)
 ///     where
@@ -231,9 +230,8 @@ impl Colored for Empty {}
 ///
 /// impl<W, Wr> writer::Failure<W> for CustomWriter<Wr>
 /// where
-///     W: World,
-///     Self: Writer<W>,
 ///     Wr: writer::Failure<W>,
+///     Self: Writer<W>,
 /// {
 ///     fn failed_steps(&self) -> usize {
 ///         self.0.failed_steps()

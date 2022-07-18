@@ -69,8 +69,10 @@ impl<W: World, Wr: writer::Failure<W> + ?Sized> writer::Failure<W>
     }
 }
 
-impl<W: World, Wr: writer::SuccessOrSkipped<W> + ?Sized>
-    writer::SuccessOrSkipped<W> for Arbitrary<Wr>
+impl<W, Wr> writer::SuccessOrSkipped<W> for Arbitrary<Wr>
+where
+    Wr: writer::SuccessOrSkipped<W> + ?Sized,
+    Self: Writer<W>,
 {
     fn passed_steps(&self) -> usize {
         self.0.passed_steps()

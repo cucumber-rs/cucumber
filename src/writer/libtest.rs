@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`libtest`][1] compatible [`Writer`] implementation.
+//! [Rust `libtest`][1] compatible [`Writer`] implementation.
 //!
 //! [1]: https://doc.rust-lang.org/rustc/tests/index.html
 
@@ -35,9 +35,9 @@ use crate::{
 };
 
 /// CLI options of a [`Libtest`] [`Writer`].
-#[derive(Debug, Clone, clap::Args)]
+#[derive(clap::Args, Clone, Debug)]
 pub struct Cli {
-    /// Configure formatting of output.
+    /// Formatting of the output.
     #[clap(long, name = "json")]
     pub format: Option<Format>,
 

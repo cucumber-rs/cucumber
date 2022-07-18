@@ -132,7 +132,7 @@ pub trait Failure<World>: Writer<World> {
     fn hook_errors(&self) -> usize;
 }
 
-/// [`Writer`] tracking a number of [`Passed`] or [`Skipped`] [`Step`]s.
+/// [`Writer`] tracking a number of [`Passed`] and [`Skipped`] [`Step`]s.
 ///
 /// [`Passed`]: event::Step::Passed
 /// [`Skipped`]: event::Step::Skipped

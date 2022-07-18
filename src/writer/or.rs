@@ -23,8 +23,8 @@ pub struct Or<L, R, F> {
     /// Right [`Writer`].
     pub right: R,
 
-    /// Indicates, which [`Writer`] should be used. `left` is used on [`true`]
-    /// and `right` on [`false`].
+    /// Predicate indicating which [`Writer`] should be used.
+    /// `left` is used on [`true`] and `right` on [`false`].
     predicate: F,
 }
 
