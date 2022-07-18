@@ -36,5 +36,5 @@ As the test suit grows, it may become harder to notice how minimal changes to re
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [tag]: https://cucumber.io/docs/cucumber/api#tags
 
-[1]: https://cucumberio/docs/guides/anti-patterns/#feature-coupled-step-definitions
+[1]: https://cucumber.io/docs/guides/anti-patterns/#feature-coupled-step-definitions
 [2]: capturing.md
