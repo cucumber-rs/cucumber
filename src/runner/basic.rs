@@ -70,6 +70,13 @@ pub enum ScenarioType {
     Concurrent,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum RetryAt {
+    #[default]
+    Start,
+    End,
+}
+
 /// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
 /// or a [`Serial`] one.
 ///
@@ -108,6 +115,8 @@ pub type AfterHookFn<World> = for<'a> fn(
 ///
 /// [`Scenario`]: gherkin::Scenario
 type Failed = bool;
+
+type IsRetried = bool;
 
 /// Default [`Runner`] implementation which follows [_order guarantees_][1] from
 /// the [`Runner`] trait docs.
@@ -619,17 +628,19 @@ async fn execute<W, Before, After>(
             }
         }
 
-        while let Ok(Some((feat, rule, scenario_failed))) =
+        while let Ok(Some((feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
             if let Some(r) = rule {
-                if let Some(f) =
-                    storage.rule_scenario_finished(Arc::clone(&feat), r)
-                {
+                if let Some(f) = storage.rule_scenario_finished(
+                    Arc::clone(&feat),
+                    r,
+                    retried,
+                ) {
                     executor.send_event(f);
                 }
             }
-            if let Some(f) = storage.feature_scenario_finished(feat) {
+            if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);
             }
 
@@ -686,6 +697,7 @@ struct Executor<W, Before, After> {
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Failed,
+        IsRetried,
     )>,
 
     /// TODO
@@ -721,6 +733,7 @@ where
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
             Failed,
+            IsRetried,
         )>,
         storage: Features,
     ) -> Self {
@@ -750,8 +763,10 @@ where
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
-        retries: Option<Retries>,
+        retries: Option<(Retries, RetryAt)>,
     ) {
+        let retry_at = retries.map(|(_, at)| at);
+        let retries = retries.map(|(r, _)| r);
         let ok = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
@@ -850,12 +865,14 @@ where
                 |(w, meta)| (w.map(Arc::new), meta, None),
             );
 
-        let is_failed = result.is_err() || after_hook_error.is_some();
-        let is_really_failed = matches!(
-            result,
-            Err(ExecutionFailure::BeforeHookPanicked { .. }
-                | ExecutionFailure::StepPanicked { .. })
-        );
+        let scenario_failed = match &result {
+            Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
+            Err(
+                ExecutionFailure::BeforeHookPanicked { .. }
+                | ExecutionFailure::StepPanicked { .. },
+            ) => true,
+        };
+        let is_failed = scenario_failed || after_hook_error.is_some();
 
         if let Some(exec_error) = result.err() {
             self.emit_failed_events(
@@ -885,10 +902,11 @@ where
             event::Scenario::Finished(retries),
         ));
 
-        if let Some(next_try) = retries
+        let next_try = retries
+            .filter(|_| is_failed)
             .and_then(Retries::next_try)
-            .filter(|_| is_really_failed)
-        {
+            .zip(retry_at);
+        if let Some(next_try) = next_try {
             self.storage
                 .insert_scenario(
                     Arc::clone(&feature),
@@ -900,7 +918,7 @@ where
                 .await;
         }
 
-        self.scenario_finished(feature, rule, is_failed);
+        self.scenario_finished(feature, rule, is_failed, next_try.is_some());
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1253,12 +1271,13 @@ where
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         is_failed: Failed,
+        is_retried: IsRetried,
     ) {
         // If the receiver end is dropped, then no one listens for events
         // so we can just ignore it.
         drop(
             self.finished_sender
-                .unbounded_send((feature, rule, is_failed)),
+                .unbounded_send((feature, rule, is_failed, is_retried)),
         );
     }
 
@@ -1332,6 +1351,7 @@ struct FinishedRulesAndFeatures {
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Failed,
+        IsRetried,
     )>,
 }
 
@@ -1342,6 +1362,7 @@ impl FinishedRulesAndFeatures {
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
             Failed,
+            IsRetried,
         )>,
     ) -> Self {
         Self {
@@ -1361,7 +1382,12 @@ impl FinishedRulesAndFeatures {
         &mut self,
         feature: Arc<gherkin::Feature>,
         rule: Arc<gherkin::Rule>,
+        is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
+        if is_retried {
+            return None;
+        }
+
         let finished_scenarios = self
             .rule_scenarios_count
             .get_mut(&(Arc::clone(&feature), Arc::clone(&rule)))
@@ -1384,7 +1410,12 @@ impl FinishedRulesAndFeatures {
     fn feature_scenario_finished<W>(
         &mut self,
         feature: Arc<gherkin::Feature>,
+        is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
+        if is_retried {
+            return None;
+        }
+
         let finished_scenarios = self
             .features_scenarios_count
             .get_mut(&feature)
@@ -1432,7 +1463,7 @@ impl FinishedRulesAndFeatures {
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
                 ScenarioType,
-                Option<Retries>,
+                Option<(Retries, RetryAt)>,
             )],
         >,
     ) -> impl Iterator<Item = event::Cucumber<W>> {
@@ -1486,7 +1517,7 @@ type Scenarios = HashMap<
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
-        Option<Retries>,
+        Option<(Retries, RetryAt)>,
     )>,
 >;
 
@@ -1538,10 +1569,13 @@ impl Features {
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
-                    Some(Retries {
-                        left: 1,
-                        current: 0,
-                    }), // TODO
+                    Some((
+                        Retries {
+                            left: 1,
+                            current: 0,
+                        },
+                        RetryAt::Start,
+                    )), // TODO
                 )
             })
             .into_group_map_by(|(f, r, s, _)| {
@@ -1553,11 +1587,51 @@ impl Features {
 
     /// TODO
     async fn insert_scenarios(&self, scenarios: Scenarios) {
+        let mut with_retries = HashMap::<_, Vec<(_, _, _, (_, _))>>::new();
+        let mut without_retries: Scenarios = HashMap::new();
+        for (ty, scenarios) in scenarios {
+            for (f, r, s, ret) in scenarios {
+                match ret {
+                    ret @ (None | Some((Retries { current: 0, .. }, _))) => {
+                        without_retries
+                            .entry(ty)
+                            .or_default()
+                            .push((f, r, s, ret));
+                    }
+                    Some(ret) => {
+                        with_retries
+                            .entry(ty)
+                            .or_default()
+                            .push((f, r, s, ret));
+                    }
+                }
+            }
+        }
+
         let mut storage = self.scenarios.lock().await;
-        if scenarios.get(&ScenarioType::Serial).is_none() {
+
+        // TODO: refactor by splitting into distinct HashMaps with
+        //       RetryAt::Start and RetryAt::End
+
+        for (ty, scenarios) in with_retries {
+            let ty_storage = storage.entry(ty).or_default();
+            for scenario in scenarios {
+                match scenario {
+                    (f, r, s, (ret, RetryAt::Start)) => ty_storage
+                        .insert(0, (f, r, s, Some((ret, RetryAt::End)))),
+                    (f, r, s, (ret, RetryAt::End)) => {
+                        ty_storage.push((f, r, s, Some((ret, RetryAt::End))))
+                    }
+                }
+            }
+        }
+
+        // -----
+
+        if without_retries.get(&ScenarioType::Serial).is_none() {
             // If there are no Serial Scenarios we just extending already
             // existing Concurrent Scenarios.
-            for (which, values) in scenarios {
+            for (which, values) in without_retries {
                 storage.entry(which).or_default().extend(values);
             }
         } else {
@@ -1565,7 +1639,7 @@ impl Features {
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
-            for (which, mut values) in scenarios {
+            for (which, mut values) in without_retries {
                 let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
                 storage.entry(which).or_default().extend(values);
@@ -1580,7 +1654,7 @@ impl Features {
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
-        retries: Option<Retries>,
+        retries: Option<(Retries, RetryAt)>,
     ) {
         self.insert_scenarios(
             [(scenario_ty, vec![(feature, rule, scenario, retries)])]
@@ -1601,7 +1675,7 @@ impl Features {
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
         ScenarioType,
-        Option<Retries>,
+        Option<(Retries, RetryAt)>,
     )> {
         let mut scenarios = self.scenarios.lock().await;
         scenarios
