@@ -53,9 +53,17 @@ where
     }
 }
 
-impl<W: World, Wr: writer::Failure<W> + ?Sized> writer::Failure<W>
+impl<W: World, Wr: writer::Stats<W> + ?Sized> writer::Stats<W>
     for Arbitrary<Wr>
 {
+    fn passed_steps(&self) -> usize {
+        self.0.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.0.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.0.failed_steps()
     }
@@ -66,20 +74,6 @@ impl<W: World, Wr: writer::Failure<W> + ?Sized> writer::Failure<W>
 
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
-    }
-}
-
-impl<W, Wr> writer::SuccessOrSkipped<W> for Arbitrary<Wr>
-where
-    Wr: writer::SuccessOrSkipped<W> + ?Sized,
-    Self: Writer<W>,
-{
-    fn passed_steps(&self) -> usize {
-        self.0.passed_steps()
-    }
-
-    fn skipped_steps(&self) -> usize {
-        self.0.skipped_steps()
     }
 }
 
@@ -97,18 +91,18 @@ impl<Wr> Arbitrary<Wr> {
     }
 }
 
-/// Wrapper providing a no-op [`FailureWriter`] implementation returning only
+/// Wrapper providing a no-op [`StatsWriter`] implementation returning only
 /// `0`.
 ///
-/// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`] into a
-/// [`writer::Tee`], as the later accepts only [`FailureWriter`]s.
+/// Intended to be used for feeding a non-[`StatsWriter`] [`Writer`] into a
+/// [`writer::Tee`], as the later accepts only [`StatsWriter`]s.
 ///
-/// [`FailureWriter`]: writer::Failure
+/// [`StatsWriter`]: writer::Stats
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
-pub struct Failure<Wr: ?Sized>(Wr);
+pub struct Stats<Wr: ?Sized>(Wr);
 
 #[async_trait(?Send)]
-impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Failure<Wr> {
+impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
     type Cli = Wr::Cli;
 
     async fn handle_event(
@@ -121,7 +115,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Failure<Wr> {
 }
 
 #[async_trait(?Send)]
-impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Failure<Wr>
+impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Stats<Wr>
 where
     W: World,
     Val: 'val,
@@ -135,7 +129,17 @@ where
     }
 }
 
-impl<W: World, Wr: Writer<W> + ?Sized> writer::Failure<W> for Failure<Wr> {
+impl<W: World, Wr: Writer<W> + ?Sized> writer::Stats<W> for Stats<Wr> {
+    /// Always returns `0`.
+    fn passed_steps(&self) -> usize {
+        0
+    }
+
+    /// Always returns `0`.
+    fn skipped_steps(&self) -> usize {
+        0
+    }
+
     /// Always returns `0`.
     fn failed_steps(&self) -> usize {
         0
@@ -152,14 +156,14 @@ impl<W: World, Wr: Writer<W> + ?Sized> writer::Failure<W> for Failure<Wr> {
     }
 }
 
-impl<Wr: writer::Normalized> writer::Normalized for Failure<Wr> {}
+impl<Wr: writer::Normalized> writer::Normalized for Stats<Wr> {}
 
-impl<Wr: writer::NonTransforming> writer::NonTransforming for Failure<Wr> {}
+impl<Wr: writer::NonTransforming> writer::NonTransforming for Stats<Wr> {}
 
-impl<Wr> Failure<Wr> {
-    /// Wraps the given [`Writer`] into a [`discard::Failure`] one.
+impl<Wr> Stats<Wr> {
+    /// Wraps the given [`Writer`] into a [`discard::Stats`] one.
     ///
-    /// [`discard::Failure`]: crate::writer::discard::Failure
+    /// [`discard::Stats`]: crate::writer::discard::Stats
     #[must_use]
     pub const fn wrap(writer: Wr) -> Self {
         Self(writer)

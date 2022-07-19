@@ -1058,7 +1058,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: writer::Failure<W> + writer::Normalized,
+    Wr: writer::Stats<W> + writer::Normalized,
     Cli: clap::Args,
 {
     /// Runs [`Cucumber`].

@@ -228,11 +228,19 @@ impl Colored for Empty {}
 ///     }
 /// }
 ///
-/// impl<W, Wr> writer::Failure<W> for CustomWriter<Wr>
+/// impl<W, Wr> writer::Stats<W> for CustomWriter<Wr>
 /// where
-///     Wr: writer::Failure<W>,
+///     Wr: writer::Stats<W>,
 ///     Self: Writer<W>,
 /// {
+///     fn passed_steps(&self) -> usize {
+///         self.0.failed_steps()
+///     }
+///
+///     fn skipped_steps(&self) -> usize {
+///         self.0.failed_steps()
+///     }
+///
 ///     fn failed_steps(&self) -> usize {
 ///         self.0.failed_steps()
 ///     }

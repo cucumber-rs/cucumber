@@ -583,7 +583,15 @@ type IsBackground = bool;
 
 impl<W: World, O: io::Write> writer::NonTransforming for Libtest<W, O> {}
 
-impl<W: World + Debug, O: io::Write> writer::Failure<W> for Libtest<W, O> {
+impl<W: World + Debug, O: io::Write> writer::Stats<W> for Libtest<W, O> {
+    fn passed_steps(&self) -> usize {
+        self.passed
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.ignored
+    }
+
     fn failed_steps(&self) -> usize {
         self.failed
     }
@@ -594,21 +602,6 @@ impl<W: World + Debug, O: io::Write> writer::Failure<W> for Libtest<W, O> {
 
     fn hook_errors(&self) -> usize {
         self.hook_errors
-    }
-}
-
-impl<W, O> writer::SuccessOrSkipped<W> for Libtest<W, O>
-where
-    O: io::Write,
-    W: Debug + World,
-    Self: Writer<W>,
-{
-    fn passed_steps(&self) -> usize {
-        self.passed
-    }
-
-    fn skipped_steps(&self) -> usize {
-        self.ignored
     }
 }
 

@@ -230,11 +230,19 @@ where
     }
 }
 
-impl<W, Wr> writer::Failure<W> for Summarize<Wr>
+impl<W, Wr> writer::Stats<W> for Summarize<Wr>
 where
     W: World,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.steps.passed
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.steps.skipped
+    }
+
     fn failed_steps(&self) -> usize {
         self.steps.failed
     }
@@ -245,19 +253,6 @@ where
 
     fn hook_errors(&self) -> usize {
         self.failed_hooks
-    }
-}
-
-impl<W, Wr> writer::SuccessOrSkipped<W> for Summarize<Wr>
-where
-    Self: Writer<W>,
-{
-    fn passed_steps(&self) -> usize {
-        self.steps.passed
-    }
-
-    fn skipped_steps(&self) -> usize {
-        self.steps.skipped
     }
 }
 

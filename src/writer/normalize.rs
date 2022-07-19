@@ -149,11 +149,19 @@ where
     }
 }
 
-impl<W, Wr> writer::Failure<W> for Normalize<W, Wr>
+impl<W, Wr> writer::Stats<W> for Normalize<W, Wr>
 where
-    Wr: writer::Failure<W>,
+    Wr: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.writer.failed_steps()
     }
@@ -164,20 +172,6 @@ where
 
     fn hook_errors(&self) -> usize {
         self.writer.hook_errors()
-    }
-}
-
-impl<W, Wr> writer::SuccessOrSkipped<W> for Normalize<W, Wr>
-where
-    Wr: writer::SuccessOrSkipped<W>,
-    Self: Writer<W>,
-{
-    fn passed_steps(&self) -> usize {
-        self.writer.passed_steps()
-    }
-
-    fn skipped_steps(&self) -> usize {
-        self.writer.skipped_steps()
     }
 }
 
@@ -266,11 +260,19 @@ where
     }
 }
 
-impl<W, Wr> writer::Failure<W> for AssertNormalized<Wr>
+impl<W, Wr> writer::Stats<W> for AssertNormalized<Wr>
 where
-    Wr: writer::Failure<W>,
+    Wr: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.0.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.0.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.0.failed_steps()
     }
@@ -281,20 +283,6 @@ where
 
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
-    }
-}
-
-impl<W, Wr> writer::SuccessOrSkipped<W> for AssertNormalized<Wr>
-where
-    Wr: writer::SuccessOrSkipped<W>,
-    Self: Writer<W>,
-{
-    fn passed_steps(&self) -> usize {
-        self.0.passed_steps()
-    }
-
-    fn skipped_steps(&self) -> usize {
-        self.0.skipped_steps()
     }
 }
 

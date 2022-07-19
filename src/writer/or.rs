@@ -70,33 +70,10 @@ where
     }
 }
 
-impl<W, L, R, F> writer::Failure<W> for Or<L, R, F>
+impl<W, L, R, F> writer::Stats<W> for Or<L, R, F>
 where
-    L: writer::Failure<W>,
-    R: writer::Failure<W>,
-    F: FnMut(
-        &parser::Result<Event<event::Cucumber<W>>>,
-        &cli::Compose<L::Cli, R::Cli>,
-    ) -> bool,
-    Self: Writer<W>,
-{
-    fn failed_steps(&self) -> usize {
-        self.left.failed_steps() + self.right.failed_steps()
-    }
-
-    fn parsing_errors(&self) -> usize {
-        self.left.parsing_errors() + self.right.parsing_errors()
-    }
-
-    fn hook_errors(&self) -> usize {
-        self.left.hook_errors() + self.right.hook_errors()
-    }
-}
-
-impl<W, L, R, F> writer::SuccessOrSkipped<W> for Or<L, R, F>
-where
-    L: writer::SuccessOrSkipped<W>,
-    R: writer::SuccessOrSkipped<W>,
+    L: writer::Stats<W>,
+    R: writer::Stats<W>,
     F: FnMut(
         &parser::Result<Event<event::Cucumber<W>>>,
         &cli::Compose<L::Cli, R::Cli>,
@@ -109,6 +86,18 @@ where
 
     fn skipped_steps(&self) -> usize {
         self.left.skipped_steps() + self.right.skipped_steps()
+    }
+
+    fn failed_steps(&self) -> usize {
+        self.left.failed_steps() + self.right.failed_steps()
+    }
+
+    fn parsing_errors(&self) -> usize {
+        self.left.parsing_errors() + self.right.parsing_errors()
+    }
+
+    fn hook_errors(&self) -> usize {
+        self.left.hook_errors() + self.right.hook_errors()
     }
 }
 
