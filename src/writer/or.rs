@@ -23,8 +23,8 @@ pub struct Or<L, R, F> {
     /// Right [`Writer`].
     pub right: R,
 
-    /// Indicates, which [`Writer`] should be used. `left` is used on [`true`]
-    /// and `right` on [`false`].
+    /// Predicate indicating which [`Writer`] should be used.
+    /// `left` is used on [`true`] and `right` on [`false`].
     predicate: F,
 }
 
@@ -70,16 +70,24 @@ where
     }
 }
 
-impl<W, L, R, F> writer::Failure<W> for Or<L, R, F>
+impl<W, L, R, F> writer::Stats<W> for Or<L, R, F>
 where
-    L: writer::Failure<W>,
-    R: writer::Failure<W>,
+    L: writer::Stats<W>,
+    R: writer::Stats<W>,
     F: FnMut(
         &parser::Result<Event<event::Cucumber<W>>>,
         &cli::Compose<L::Cli, R::Cli>,
     ) -> bool,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.left.passed_steps() + self.right.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.left.skipped_steps() + self.right.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.left.failed_steps() + self.right.failed_steps()
     }

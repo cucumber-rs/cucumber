@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! [`libtest`][1] compatible [`Writer`] implementation.
+//! [Rust `libtest`][1] compatible [`Writer`] implementation.
 //!
 //! [1]: https://doc.rust-lang.org/rustc/tests/index.html
 
@@ -26,16 +26,18 @@ use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    event::{self, Retries},
-    parser,
-    writer::{self, basic::coerce_error, out::WriteStrExt as _, Arbitrary},
-    Event, World, Writer,
+    cli, event::{self, Retries}, parser,
+    writer::{
+        self, basic::coerce_error, out::WriteStrExt as _, Arbitrary, Normalize,
+        Summarize,
+    },
+    Event, World, Writer, WriterExt as _,
 };
 
 /// CLI options of a [`Libtest`] [`Writer`].
-#[derive(Debug, Clone, clap::Args)]
+#[derive(clap::Args, Clone, Debug)]
 pub struct Cli {
-    /// Configure formatting of output.
+    /// Formatting of the output.
     #[clap(long, name = "json")]
     pub format: Option<Format>,
 
@@ -54,7 +56,7 @@ pub struct Cli {
 /// Currently supports only `JSON`.
 #[derive(Clone, Copy, Debug)]
 pub enum Format {
-    /// [`libtest`][1]'s `JSON` format.
+    /// [`libtest`][1]'s JSON format.
     ///
     /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
     Json,
@@ -167,18 +169,88 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
     }
 }
 
+/// Alias for [`Libtest::or()`] return type.
+#[allow(clippy::module_name_repetitions)]
+pub type LibtestOr<W, Wr> = writer::Or<
+    Wr,
+    Normalize<W, Libtest<W, io::Stdout>>,
+    fn(
+        &parser::Result<Event<event::Cucumber<W>>>,
+        &cli::Compose<<Wr as Writer<W>>::Cli, Cli>,
+    ) -> bool,
+>;
+
+/// Alias for [`Libtest::or_basic()`] return type.
+#[allow(clippy::module_name_repetitions)]
+pub type LibtestOrBasic<W> =
+    LibtestOr<W, Summarize<Normalize<W, writer::Basic>>>;
+
 impl<W: Debug + World> Libtest<W, io::Stdout> {
-    /// Creates a new [`Libtest`] [`Writer`] outputting into the [`io::Stdout`].
+    /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into the
+    /// [`io::Stdout`].
+    ///
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn stdout() -> Self {
+    pub fn stdout() -> Normalize<W, Self> {
         Self::new(io::stdout())
+    }
+
+    /// Creates a new [`Writer`] which uses [`Normalized`] [`Libtest`] in case
+    /// [`Cli::format`] is set to [`Json`] or provided `writer` otherwise.
+    ///
+    /// [`Json`]: Format::Json
+    /// [`Normalized`]: writer::Normalized
+    #[must_use]
+    pub fn or<AnotherWriter: Writer<W>>(
+        writer: AnotherWriter,
+    ) -> LibtestOr<W, AnotherWriter> {
+        writer::Or::new(writer, Self::stdout(), |_, cli| {
+            !matches!(cli.right.format, Some(writer::libtest::Format::Json))
+        })
+    }
+
+    /// Creates a new [`Writer`] which uses [`Normalized`] [`Libtest`] in case
+    /// [`Cli::format`] is set to [`Json`] [`Normalized`] [`writer::Basic`]
+    /// otherwise.
+    ///
+    /// [`Json`]: Format::Json
+    /// [`Normalized`]: writer::Normalized
+    #[must_use]
+    pub fn or_basic() -> LibtestOrBasic<W> {
+        Self::or(writer::Basic::stdout().summarized())
     }
 }
 
 impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
-    /// Creates a new [`Libtest`] [`Writer`] outputting into the given `output`.
+    /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into
+    /// the given `output`.
+    ///
+    /// Theoretically, normalization should be done by the tool that's consuming
+    /// the output og this [`Writer`]. But lack of clear specification of the
+    /// [`libtest`][1]'s `JSON` output leads to some tools [struggling] to
+    /// interpret. So we recommend using [`Normalized`] [`Libtest::new()`].
+    ///
+    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
+    /// [struggling]: https://github.com/intellij-rust/intellij-rust/issues/9041
+    /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub const fn new(output: Out) -> Self {
+    pub fn new(output: Out) -> Normalize<W, Self> {
+        Self::raw(output).normalized()
+    }
+
+    /// Creates a new non-[`Normalized`] [`Libtest`] [`Writer`] outputting into
+    /// the given `output`.
+    ///
+    /// Theoretically, normalization should be done by the tool that's consuming
+    /// the output og this [`Writer`]. But lack of clear specification of the
+    /// [`libtest`][1]'s `JSON` output leads to some tools [struggling] to
+    /// interpret it. So we recommend using [`Normalized`] [`Libtest::new()`].
+    ///
+    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
+    /// [struggling]: https://github.com/intellij-rust/intellij-rust/issues/9041
+    /// [`Normalized`]: writer::Normalized
+    #[must_use]
+    pub const fn raw(output: Out) -> Self {
         Self {
             output,
             events: Vec::new(),
@@ -316,7 +388,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     || self.parsing_errors.to_string(),
                     |p| p.escape_default().to_string(),
                 );
-                let name = format!("Parsing {name}");
+                let name = format!("Feature: Parsing {name}");
 
                 vec![
                     TestEvent::started(name.clone()).into(),
@@ -488,8 +560,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         step: Either<event::HookType, (&gherkin::Step, IsBackground)>,
         retries: Option<Retries>,
     ) -> String {
-        let feature = format!(
-            "{} {}",
+        let feature_name = format!(
+            "{}: {} {}",
+            feature.keyword,
             feature.name,
             feature.path.as_ref().and_then(|p| p.to_str()).map_or_else(
                 || {
@@ -499,28 +572,38 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 |s| s.escape_default().to_string()
             ),
         );
-        let rule = rule
+        let rule_name = rule
             .as_ref()
-            .map(|r| format!("{}: {} {}", r.position.line, r.keyword, r.name));
-        let scenario = format!(
-            "{}: {} {} | {retries:?}",
+            .map(|r| format!("{}: {}: {}", r.position.line, r.keyword, r.name));
+        let scenario_name = format!(
+            "{}: {}: {} | {retries:?}",
             scenario.position.line, scenario.keyword, scenario.name,
         );
-        let step = match step {
+        let step_name = match step {
             Either::Left(hook) => format!("{hook} hook"),
             Either::Right((step, is_bg)) => format!(
-                "{}: {}{}{}",
+                "{}: {} {}{}",
                 step.position.line,
-                is_bg.then_some("Background ").unwrap_or_default(),
+                is_bg
+                    .then(|| feature
+                        .background
+                        .as_ref()
+                        .map_or("Background", |bg| bg.keyword.as_str()))
+                    .unwrap_or_default(),
                 step.keyword,
                 step.value,
             ),
         };
 
-        [Some(feature), rule, Some(scenario), Some(step)]
-            .into_iter()
-            .flatten()
-            .join("::")
+        [
+            Some(feature_name),
+            rule_name,
+            Some(scenario_name),
+            Some(step_name),
+        ]
+        .into_iter()
+        .flatten()
+        .join("::")
     }
 }
 
@@ -532,7 +615,15 @@ type IsBackground = bool;
 
 impl<W: World, O: io::Write> writer::NonTransforming for Libtest<W, O> {}
 
-impl<W: World + Debug, O: io::Write> writer::Failure<W> for Libtest<W, O> {
+impl<W: World + Debug, O: io::Write> writer::Stats<W> for Libtest<W, O> {
+    fn passed_steps(&self) -> usize {
+        self.passed
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.ignored
+    }
+
     fn failed_steps(&self) -> usize {
         self.failed
     }
@@ -565,10 +656,10 @@ where
 
 /// [`libtest`][1]'s JSON event.
 ///
-/// This format isn't stable, so this implementation uses [this PR][1] as a
-/// reference point.
+/// This format isn't stable, so this implementation uses [implementation][1] as
+/// a reference point.
 ///
-/// [1]: https://github.com/rust-lang/rust/pull/46450
+/// [1]: https://bit.ly/3PrLtKC
 #[derive(Clone, Debug, From, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum LibTestJsonEvent {
