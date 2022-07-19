@@ -116,7 +116,7 @@ impl Metadata {
 }
 
 /// TODO
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Retries {
     /// TODO
     pub left: usize,
@@ -641,5 +641,15 @@ impl<World> Scenario<World> {
             Step::Failed(captures, loc, world, info.into()),
             retries,
         )
+    }
+
+    pub fn retries(&self) -> Option<Retries> {
+        match self {
+            Scenario::Started(retries)
+            | Scenario::Hook(_, _, retries)
+            | Scenario::Background(_, _, retries)
+            | Scenario::Step(_, _, retries)
+            | Scenario::Finished(retries) => *retries,
+        }
     }
 }
