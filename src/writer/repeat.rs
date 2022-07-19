@@ -93,11 +93,19 @@ where
     }
 }
 
-impl<W, Wr, F> writer::Failure<W> for Repeat<W, Wr, F>
+impl<W, Wr, F> writer::Stats<W> for Repeat<W, Wr, F>
 where
-    Wr: writer::Failure<W> + writer::NonTransforming,
+    Wr: writer::Stats<W> + writer::NonTransforming,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.writer.failed_steps()
     }

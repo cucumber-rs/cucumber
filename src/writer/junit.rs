@@ -176,9 +176,9 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     pub fn for_tee(
         output: Out,
         verbosity: impl Into<Verbosity>,
-    ) -> discard::Arbitrary<discard::Failure<Self>> {
+    ) -> discard::Arbitrary<discard::Stats<Self>> {
         Self::raw(output, verbosity)
-            .discard_failure_writes()
+            .discard_stats_writes()
             .discard_arbitrary_writes()
     }
 

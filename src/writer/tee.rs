@@ -22,17 +22,17 @@ use crate::{cli, event, parser, writer, Event, World, Writer};
 ///
 /// # Blanket implementations
 ///
-/// [`ArbitraryWriter`] and [`FailureWriter`] are implemented only in case both
+/// [`ArbitraryWriter`] and [`StatsWriter`] are implemented only in case both
 /// `left` and `right` [`Writer`]s implement them. In case one of them doesn't
 /// implement the required traits, use
 /// [`WriterExt::discard_arbitrary_writes()`][1] and
-/// [`WriterExt::discard_failure_writes()`][2] methods to provide the one with
+/// [`WriterExt::discard_stats_writes()`][2] methods to provide the one with
 /// no-op implementations.
 ///
 /// [`ArbitraryWriter`]: writer::Arbitrary
-/// [`FailureWriter`]: writer::Failure
+/// [`StatsWriter`]: writer::Stats
 /// [1]: crate::WriterExt::discard_arbitrary_writes
-/// [2]: crate::WriterExt::discard_failure_writes
+/// [2]: crate::WriterExt::discard_stats_writes
 #[derive(Clone, Copy, Debug)]
 pub struct Tee<L, R> {
     /// Left [`Writer`].
@@ -89,12 +89,22 @@ where
     }
 }
 
-impl<W, L, R> writer::Failure<W> for Tee<L, R>
+impl<W, L, R> writer::Stats<W> for Tee<L, R>
 where
-    L: writer::Failure<W>,
-    R: writer::Failure<W>,
+    L: writer::Stats<W>,
+    R: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.passed_steps(), self.right.passed_steps())
+    }
+
+    fn skipped_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.skipped_steps(), self.right.skipped_steps())
+    }
+
     fn failed_steps(&self) -> usize {
         // Either one of them is zero, or both numbers are the same.
         cmp::max(self.left.failed_steps(), self.right.failed_steps())

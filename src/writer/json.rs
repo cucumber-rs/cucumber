@@ -129,9 +129,9 @@ impl<Out: io::Write> Json<Out> {
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: crate::event::Cucumber
     #[must_use]
-    pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Failure<Self>> {
+    pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Stats<Self>> {
         Self::raw(output)
-            .discard_failure_writes()
+            .discard_stats_writes()
             .discard_arbitrary_writes()
     }
 

@@ -31,9 +31,8 @@ async fn main() {
     // compare them well.
     let non_deterministic = Regex::new(
         "\"exec_time\":\\d*\\.?\\d*\
-             |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
-             |\n\
-             |\\s",
+             | [/\\\\]([^\"]*)[/\\\\]([A-z1-9-_]*).feature\
+             |\\s?\n",
     )
     .unwrap();
 
