@@ -26,7 +26,9 @@ use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    cli, event::{self, Retries}, parser,
+    cli,
+    event::{self, Retries},
+    parser,
     writer::{
         self, basic::coerce_error, out::WriteStrExt as _, Arbitrary, Normalize,
         Summarize,

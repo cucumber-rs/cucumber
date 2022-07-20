@@ -9,6 +9,7 @@ Feature: Basic
     Then unknown
     Then 1 sec
 
+  @retry(10)
   Rule: rule
     @fail_before
     Scenario: 2 secs

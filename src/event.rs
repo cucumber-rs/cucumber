@@ -115,18 +115,18 @@ impl Metadata {
     }
 }
 
-/// TODO
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Retries {
-    /// TODO
     pub left: usize,
 
-    /// TODO
     pub current: usize,
 }
 
 impl Retries {
-    /// TODO
+    pub fn initial(left: usize) -> Self {
+        Self { left, current: 0 }
+    }
+
     pub fn next_try(self) -> Option<Retries> {
         self.left.checked_sub(1).map(|left| Self {
             left,

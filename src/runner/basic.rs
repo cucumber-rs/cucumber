@@ -73,8 +73,8 @@ pub enum ScenarioType {
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum RetryAt {
     #[default]
-    Start,
-    End,
+    Immediately,
+    Postponed,
 }
 
 /// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
@@ -88,6 +88,12 @@ pub type WhichScenarioFn = fn(
     Option<&gherkin::Rule>,
     &gherkin::Scenario,
 ) -> ScenarioType;
+
+pub type RetryFn = fn(
+    &gherkin::Feature,
+    Option<&gherkin::Rule>,
+    &gherkin::Scenario,
+) -> Option<(Retries, RetryAt)>;
 
 /// Alias for [`fn`] executed on each [`Scenario`] before running all [`Step`]s.
 ///
@@ -130,6 +136,7 @@ type IsRetried = bool;
 pub struct Basic<
     World,
     F = WhichScenarioFn,
+    R = RetryFn,
     Before = BeforeHookFn<World>,
     After = AfterHookFn<World>,
 > {
@@ -150,6 +157,8 @@ pub struct Basic<
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
     which_scenario: F,
+
+    retry: R,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
     /// including [`Background`] ones.
@@ -172,7 +181,7 @@ pub struct Basic<
 
 // Implemented manually to omit redundant trait bounds on `World` and to omit
 // outputting `F`.
-impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
+impl<World, F, R, B, A> fmt::Debug for Basic<World, F, R, B, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Basic")
             .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
@@ -181,7 +190,7 @@ impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
     }
 }
 
-impl<World> Basic<World, ()> {
+impl<World> Basic<World, (), ()> {
     /// Creates a new empty [`Runner`].
     #[must_use]
     pub fn custom() -> Self {
@@ -189,6 +198,7 @@ impl<World> Basic<World, ()> {
             max_concurrent_scenarios: None,
             steps: step::Collection::new(),
             which_scenario: (),
+            retry: (),
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -199,6 +209,7 @@ impl<World> Basic<World, ()> {
 impl<World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |_, _, scenario| {
+            // TODO: Why do we ignore feature and rule?
             scenario
                 .tags
                 .iter()
@@ -206,11 +217,45 @@ impl<World> Default for Basic<World> {
                 .then_some(ScenarioType::Serial)
                 .unwrap_or(ScenarioType::Concurrent)
         };
+        let retry: RetryFn = |f, r, sc| {
+            let parse_tags = |tags: &[String]| {
+                tags.iter().find_map(|tag| {
+                    tag.strip_prefix("retry").map(|retries| {
+                        let (num, rest) = retries
+                            .strip_prefix('(')
+                            .and_then(|s| {
+                                s.split_once(')').and_then(|(num, rest)| {
+                                    num.parse::<usize>()
+                                        .ok()
+                                        .map(|num| (num, rest))
+                                })
+                            })
+                            .unwrap_or((1, retries));
+
+                        let at = rest
+                            .starts_with(".immediately")
+                            .then_some(RetryAt::Immediately)
+                            .or_else(|| {
+                                rest.starts_with(".postponed")
+                                    .then_some(RetryAt::Postponed)
+                            })
+                            .unwrap_or_default();
+
+                        (Retries::initial(num), at)
+                    })
+                })
+            };
+
+            parse_tags(&sc.tags)
+                .or_else(|| r.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&f.tags))
+        };
 
         Self {
             max_concurrent_scenarios: Some(64),
             steps: step::Collection::new(),
             which_scenario,
+            retry,
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -218,7 +263,9 @@ impl<World> Default for Basic<World> {
     }
 }
 
-impl<World, Which, Before, After> Basic<World, Which, Before, After> {
+impl<World, Which, Retry, Before, After>
+    Basic<World, Which, Retry, Before, After>
+{
     /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
     /// will be limited.
     ///
@@ -252,7 +299,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
-    pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
+    pub fn which_scenario<F>(
+        self,
+        func: F,
+    ) -> Basic<World, F, Retry, Before, After>
     where
         F: Fn(
                 &gherkin::Feature,
@@ -264,6 +314,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         let Self {
             max_concurrent_scenarios,
             steps,
+            retry,
             before_hook,
             after_hook,
             fail_fast,
@@ -273,6 +324,38 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario: func,
+            retry,
+            before_hook,
+            after_hook,
+            fail_fast,
+        }
+    }
+
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
+    #[must_use]
+    pub fn retry<R>(self, func: R) -> Basic<World, Which, R, Before, After>
+    where
+        R: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> Option<(Retries, RetryAt)>
+            + 'static,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            before_hook,
+            after_hook,
+            fail_fast,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            steps,
+            which_scenario,
+            retry: func,
             before_hook,
             after_hook,
             fail_fast,
@@ -287,7 +370,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Step`]: gherkin::Step
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
-    pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
+    pub fn before<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Retry, Func, After>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -300,6 +386,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retry,
             after_hook,
             fail_fast,
             ..
@@ -308,6 +395,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retry,
             before_hook: Some(func),
             after_hook,
             fail_fast,
@@ -327,7 +415,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Step`]: gherkin::Step
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
-    pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
+    pub fn after<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Retry, Before, Func>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -340,6 +431,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retry,
             before_hook,
             fail_fast,
             ..
@@ -348,6 +440,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retry,
             before_hook,
             after_hook: Some(func),
             fail_fast,
@@ -392,7 +485,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     }
 }
 
-impl<W, Which, Before, After> Runner<W> for Basic<W, Which, Before, After>
+impl<W, Which, Retry, Before, After> Runner<W>
+    for Basic<W, Which, Retry, Before, After>
 where
     W: World,
     Which: Fn(
@@ -400,6 +494,12 @@ where
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
+        + 'static,
+    Retry: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> Option<(Retries, RetryAt)>
         + 'static,
     Before: for<'a> Fn(
             &'a gherkin::Feature,
@@ -429,6 +529,7 @@ where
             max_concurrent_scenarios,
             steps,
             which_scenario,
+            retry,
             before_hook,
             after_hook,
             fail_fast,
@@ -442,6 +543,7 @@ where
             buffer.clone(),
             features,
             which_scenario,
+            retry,
             sender.clone(),
             fail_fast,
         );
@@ -474,10 +576,11 @@ where
 /// Stores [`Feature`]s for later use by [`execute()`].
 ///
 /// [`Feature`]: gherkin::Feature
-async fn insert_features<W, S, F>(
+async fn insert_features<W, S, F, R>(
     into: Features,
     features_stream: S,
     which_scenario: F,
+    retries: R,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
     fail_fast: bool,
 ) where
@@ -487,6 +590,12 @@ async fn insert_features<W, S, F>(
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
+        + 'static,
+    R: Fn(
+            &gherkin::Feature,
+            Option<&gherkin::Rule>,
+            &gherkin::Scenario,
+        ) -> Option<(Retries, RetryAt)>
         + 'static,
 {
     let mut features = 0;
@@ -504,7 +613,7 @@ async fn insert_features<W, S, F>(
                 scenarios += f.count_scenarios();
                 steps += f.count_steps();
 
-                into.insert(f, &which_scenario).await;
+                into.insert(f, &which_scenario, &retries).await;
             }
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
@@ -700,7 +809,6 @@ struct Executor<W, Before, After> {
         IsRetried,
     )>,
 
-    /// TODO
     storage: Features,
 }
 
@@ -1542,16 +1650,23 @@ impl Features {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    async fn insert<Which>(
+    async fn insert<Which, Retry>(
         &self,
         feature: gherkin::Feature,
         which_scenario: &Which,
+        retry: &Retry,
     ) where
         Which: Fn(
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> ScenarioType
+            + 'static,
+        Retry: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+            ) -> Option<(Retries, RetryAt)>
             + 'static,
     {
         let local = feature
@@ -1565,17 +1680,12 @@ impl Features {
                     .collect::<Vec<_>>()
             }))
             .map(|(feat, rule, scenario)| {
+                let retries = retry(feat, rule, scenario);
                 (
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
-                    Some((
-                        Retries {
-                            left: 1,
-                            current: 0,
-                        },
-                        RetryAt::Start,
-                    )), // TODO
+                    retries,
                 )
             })
             .into_group_map_by(|(f, r, s, _)| {
@@ -1585,7 +1695,6 @@ impl Features {
         self.insert_scenarios(local).await;
     }
 
-    /// TODO
     async fn insert_scenarios(&self, scenarios: Scenarios) {
         let mut with_retries = HashMap::<_, Vec<(_, _, _, (_, _))>>::new();
         let mut without_retries: Scenarios = HashMap::new();
@@ -1617,11 +1726,17 @@ impl Features {
             let ty_storage = storage.entry(ty).or_default();
             for scenario in scenarios {
                 match scenario {
-                    (f, r, s, (ret, RetryAt::Start)) => ty_storage
-                        .insert(0, (f, r, s, Some((ret, RetryAt::End)))),
-                    (f, r, s, (ret, RetryAt::End)) => {
-                        ty_storage.push((f, r, s, Some((ret, RetryAt::End))))
-                    }
+                    (f, r, s, (ret, RetryAt::Immediately)) => ty_storage
+                        .insert(
+                            0,
+                            (f, r, s, Some((ret, RetryAt::Immediately))),
+                        ),
+                    (f, r, s, (ret, RetryAt::Postponed)) => ty_storage.push((
+                        f,
+                        r,
+                        s,
+                        Some((ret, RetryAt::Postponed)),
+                    )),
                 }
             }
         }
@@ -1647,7 +1762,6 @@ impl Features {
         }
     }
 
-    /// TODO
     async fn insert_scenario(
         &self,
         feature: Arc<gherkin::Feature>,
