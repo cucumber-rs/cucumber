@@ -40,9 +40,9 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 #[async_trait(?Send)]
 impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Arbitrary<Wr>
 where
-    W: World,
     Val: 'val,
-    Wr: Writer<W> + ?Sized,
+    Wr: ?Sized,
+    Self: Writer<W>,
 {
     /// Does nothing.
     async fn write(&mut self, _: Val)
@@ -53,8 +53,10 @@ where
     }
 }
 
-impl<W: World, Wr: writer::Stats<W> + ?Sized> writer::Stats<W>
-    for Arbitrary<Wr>
+impl<W, Wr> writer::Stats<W> for Arbitrary<Wr>
+where
+    Wr: writer::Stats<W> + ?Sized,
+    Self: Writer<W>,
 {
     fn passed_steps(&self) -> usize {
         self.0.passed_steps()
@@ -91,8 +93,7 @@ impl<Wr> Arbitrary<Wr> {
     }
 }
 
-/// Wrapper providing a no-op [`StatsWriter`] implementation returning only
-/// `0`.
+/// Wrapper providing a no-op [`StatsWriter`] implementation returning only `0`.
 ///
 /// Intended to be used for feeding a non-[`StatsWriter`] [`Writer`] into a
 /// [`writer::Tee`], as the later accepts only [`StatsWriter`]s.
@@ -117,9 +118,9 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
 #[async_trait(?Send)]
 impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Stats<Wr>
 where
-    W: World,
     Val: 'val,
     Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
+    Self: Writer<W>,
 {
     async fn write(&mut self, val: Val)
     where
@@ -129,7 +130,11 @@ where
     }
 }
 
-impl<W: World, Wr: Writer<W> + ?Sized> writer::Stats<W> for Stats<Wr> {
+impl<W, Wr> writer::Stats<W> for Stats<Wr>
+where
+    Wr: Writer<W> + ?Sized,
+    Self: Writer<W>,
+{
     /// Always returns `0`.
     fn passed_steps(&self) -> usize {
         0

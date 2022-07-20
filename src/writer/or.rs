@@ -29,11 +29,11 @@ pub struct Or<L, R, F> {
 }
 
 impl<L, R, F> Or<L, R, F> {
-    /// Creates a new [`Or`] [`Writer`], which passes events to the `left`
-    /// and `right` [`Writer`]s based on a `predicate`.
+    /// Creates a new [`Or`] [`Writer`] passing events to the `left` and `right`
+    /// [`Writer`]s based on the specified `predicate`.
     ///
-    /// In case `predicate` returns [`true`], `left` [`Writer`] is used and
-    /// `right` [`Writer`] is used on [`false`].
+    /// In case `predicate` returns [`true`], the `left` [`Writer`] is used,
+    /// otherwise the `right` [`Writer`] is used on [`false`].
     #[must_use]
     pub const fn new(left: L, right: R, predicate: F) -> Self {
         Self {
