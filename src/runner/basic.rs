@@ -467,7 +467,7 @@ where
 /// [`Feature`]: gherkin::Feature
 async fn insert_features<W, S, F>(
     into: Features,
-    features: S,
+    features_stream: S,
     which_scenario: F,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
     fail_fast: bool,
@@ -480,19 +480,44 @@ async fn insert_features<W, S, F>(
         ) -> ScenarioType
         + 'static,
 {
-    pin_mut!(features);
-    while let Some(feat) = features.next().await {
+    let mut features = 0;
+    let mut rules = 0;
+    let mut scenarios = 0;
+    let mut steps = 0;
+    let mut parser_errors = 0;
+
+    pin_mut!(features_stream);
+    while let Some(feat) = features_stream.next().await {
         match feat {
-            Ok(f) => into.insert(f, &which_scenario).await,
+            Ok(f) => {
+                features += 1;
+                rules += f.rules.len();
+                scenarios += f.count_scenarios();
+                steps += f.count_steps();
+
+                into.insert(f, &which_scenario).await;
+            }
             // If the receiver end is dropped, then no one listens for events
             // so we can just stop from here.
             Err(e) => {
+                parser_errors += 1;
+
                 if sender.unbounded_send(Err(e)).is_err() || fail_fast {
                     break;
                 }
             }
         }
     }
+
+    drop(sender.unbounded_send(Ok(Event::new(
+        event::Cucumber::ParsingFinished {
+            features,
+            rules,
+            scenarios,
+            steps,
+            parser_errors,
+        },
+    ))));
 
     into.finish();
 }

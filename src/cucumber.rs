@@ -368,16 +368,7 @@ where
             _parser_input: PhantomData,
         }
     }
-}
 
-impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
-where
-    W: World,
-    P: Parser<I>,
-    R: Runner<W>,
-    Wr: Writer<W> + for<'val> writer::Arbitrary<'val, W, String>,
-    Cli: clap::Args,
-{
     /// Consider [`Skipped`] [`Background`] or regular [`Step`]s as [`Failed`]
     /// if their [`Scenario`] isn't marked with `@allow.skipped` tag.
     ///
@@ -1067,7 +1058,7 @@ where
     W: World,
     P: Parser<I>,
     R: Runner<W>,
-    Wr: writer::Failure<W> + writer::Normalized,
+    Wr: writer::Stats<W> + writer::Normalized,
     Cli: clap::Args,
 {
     /// Runs [`Cucumber`].

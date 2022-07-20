@@ -142,7 +142,11 @@ where
 
         match ev.map(Event::into_inner) {
             Err(err) => self.parsing_failed(&err),
-            Ok(Cucumber::Started | Cucumber::Finished) => Ok(()),
+            Ok(
+                Cucumber::Started
+                | Cucumber::ParsingFinished { .. }
+                | Cucumber::Finished,
+            ) => Ok(()),
             Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.feature_started(&f),
                 Feature::Scenario(sc, ev) => self.scenario(&f, &sc, &ev),

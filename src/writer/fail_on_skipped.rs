@@ -57,7 +57,7 @@ where
         Option<&gherkin::Rule>,
         &gherkin::Scenario,
     ) -> bool,
-    Wr: for<'val> writer::Arbitrary<'val, W, String>,
+    Wr: Writer<W>,
 {
     type Cli = Wr::Cli;
 
@@ -118,6 +118,7 @@ where
                 ) => map_failed_step(f, None, sc, st),
                 Cucumber::Started
                 | Cucumber::Feature(..)
+                | Cucumber::ParsingFinished { .. }
                 | Cucumber::Finished => ev,
             })
         });
@@ -143,11 +144,19 @@ where
     }
 }
 
-impl<W, Wr, F> writer::Failure<W> for FailOnSkipped<Wr, F>
+impl<W, Wr, F> writer::Stats<W> for FailOnSkipped<Wr, F>
 where
-    Wr: writer::Failure<W>,
+    Wr: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.writer.failed_steps()
     }

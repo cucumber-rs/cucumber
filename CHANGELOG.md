@@ -16,6 +16,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Bumped up [MSRV] to 1.62 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0], [8ad5cc86])
 - Replaced `#[derive(WorldInit)]` with `#[derive(World)]` to remove the need of manual `World` trait implementation. ([#219], [#217])
 - Merged `WorldInit` trait into the `World` trait. ([#219])
+- Added `ParsingFinished` variant to `event::Cucumber`. ([#220])
+- Reworked `writer::Failure`/`writer::discard::Failure` as `writer::Stats`/`writer::discard::Stats`. ([#220])
+- Renamed `WriterExt::discard_failure_writes()` to `WriterExt::discard_stats_writes()`. ([#220])
+
+### Added
+
+- `writer::Libtest` (enables [IntelliJ Rust integration][0140-1]) behind the `libtest` feature flag. ([#220])
+- `writer::Or` to alternate between 2 `Writer`s basing on a predicate. ([#220])
+- `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
+- `FeatureExt::count_steps()` method. ([#220])
 
 ### Changed
 
@@ -25,9 +35,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#216]: /../../pull/216
 [#217]: /../../issues/217
 [#219]: /../../pull/219
+[#220]: /../../pull/220
 [8ad5cc86]: /../../commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
 [cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
 [fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
+[0140-1]: book/src/output/intellij.md
 
 
 

@@ -19,7 +19,10 @@ pub mod fail_on_skipped;
 pub mod json;
 #[cfg(feature = "output-junit")]
 pub mod junit;
+#[cfg(feature = "libtest")]
+pub mod libtest;
 pub mod normalize;
+pub mod or;
 pub mod out;
 pub mod repeat;
 pub mod summarize;
@@ -36,11 +39,15 @@ pub use self::json::Json;
 #[cfg(feature = "output-junit")]
 #[doc(inline)]
 pub use self::junit::JUnit;
+#[cfg(feature = "libtest")]
+#[doc(inline)]
+pub use self::libtest::Libtest;
 #[doc(inline)]
 pub use self::{
     basic::{Basic, Coloring},
     fail_on_skipped::FailOnSkipped,
     normalize::{AssertNormalized, Normalize, Normalized},
+    or::Or,
     repeat::Repeat,
     summarize::{Summarizable, Summarize},
     tee::Tee,
@@ -96,16 +103,27 @@ pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
         'val: 'async_trait;
 }
 
-/// [`Writer`] tracking a number of [`Failed`] [`Step`]s and parsing errors.
+/// [`Writer`] tracking a number of [`Passed`], [`Skipped`], [`Failed`]
+/// [`Step`]s and parsing errors.
 ///
 /// [`Failed`]: event::Step::Failed
+/// [`Passed`]: event::Step::Passed
+/// [`Skipped`]: event::Step::Skipped
 /// [`Step`]: gherkin::Step
-pub trait Failure<World>: Writer<World> {
-    /// Indicates whether there were failures/errors during execution.
+pub trait Stats<World>: Writer<World> {
+    /// Returns number of [`Passed`] [`Step`]s.
+    ///
+    /// [`Passed`]: event::Step::Passed
+    /// [`Step`]: gherkin::Step
     #[must_use]
-    fn execution_has_failed(&self) -> bool {
-        self.failed_steps() > 0 || self.parsing_errors() > 0
-    }
+    fn passed_steps(&self) -> usize;
+
+    /// Returns number of [`Skipped`] [`Step`]s.
+    ///
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn skipped_steps(&self) -> usize;
 
     /// Returns number of [`Failed`] [`Step`]s.
     ///
@@ -123,6 +141,14 @@ pub trait Failure<World>: Writer<World> {
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     fn hook_errors(&self) -> usize;
+
+    /// Indicates whether there were failures/errors during execution.
+    #[must_use]
+    fn execution_has_failed(&self) -> bool {
+        self.failed_steps() > 0
+            || self.parsing_errors() > 0
+            || self.hook_errors() > 0
+    }
 }
 
 /// Extension of [`Writer`] allowing its normalization and summarization.
@@ -226,16 +252,16 @@ pub trait Ext: Sized {
     #[must_use]
     fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self>;
 
-    /// Wraps this [`Writer`] into a [`discard::Arbitrary`] one, providing a
-    /// no-op [`FailureWriter`] implementation returning only `0`.
+    /// Wraps this [`Writer`] into a [`discard::Stats`] one, providing a no-op
+    /// [`StatsWriter`] implementation returning only `0`.
     ///
-    /// Intended to be used for feeding a non-[`FailureWriter`] [`Writer`]
-    /// into a [`tee()`], as the later accepts only [`FailureWriter`]s.
+    /// Intended to be used for feeding a non-[`StatsWriter`] [`Writer`] into a
+    /// [`tee()`], as the later accepts only [`StatsWriter`]s.
     ///
     /// [`tee()`]: Ext::tee
-    /// [`FailureWriter`]: Failure
+    /// [`StatsWriter`]: Stats
     #[must_use]
-    fn discard_failure_writes(self) -> discard::Failure<Self>;
+    fn discard_stats_writes(self) -> discard::Stats<Self>;
 }
 
 #[sealed]
@@ -290,8 +316,8 @@ impl<T> Ext for T {
         discard::Arbitrary::wrap(self)
     }
 
-    fn discard_failure_writes(self) -> discard::Failure<Self> {
-        discard::Failure::wrap(self)
+    fn discard_stats_writes(self) -> discard::Stats<Self> {
+        discard::Stats::wrap(self)
     }
 }
 

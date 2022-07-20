@@ -83,7 +83,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
         }
 
         match event.map(Event::split) {
-            res @ (Err(_) | Ok((Cucumber::Started, _))) => {
+            res @ (Err(_)
+            | Ok((
+                Cucumber::Started | Cucumber::ParsingFinished { .. },
+                _,
+            ))) => {
                 self.writer
                     .handle_event(res.map(|(ev, meta)| meta.insert(ev)), cli)
                     .await;
@@ -145,11 +149,19 @@ where
     }
 }
 
-impl<W, Wr> writer::Failure<W> for Normalize<W, Wr>
+impl<W, Wr> writer::Stats<W> for Normalize<W, Wr>
 where
-    Wr: writer::Failure<W>,
+    Wr: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.writer.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.writer.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.writer.failed_steps()
     }
@@ -248,11 +260,19 @@ where
     }
 }
 
-impl<W, Wr> writer::Failure<W> for AssertNormalized<Wr>
+impl<W, Wr> writer::Stats<W> for AssertNormalized<Wr>
 where
-    Wr: writer::Failure<W>,
+    Wr: writer::Stats<W>,
     Self: Writer<W>,
 {
+    fn passed_steps(&self) -> usize {
+        self.0.passed_steps()
+    }
+
+    fn skipped_steps(&self) -> usize {
+        self.0.skipped_steps()
+    }
+
     fn failed_steps(&self) -> usize {
         self.0.failed_steps()
     }

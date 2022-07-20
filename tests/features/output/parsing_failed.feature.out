@@ -1,3 +1,4 @@
 ParsingError
+ParsingFinished { features: 0, rules: 0, scenarios: 0, steps: 0, parser_errors: 1 }
 Started
 Finished

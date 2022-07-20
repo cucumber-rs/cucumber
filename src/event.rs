@@ -118,6 +118,7 @@ impl Metadata {
 /// Top-level [Cucumber] run event.
 ///
 /// [Cucumber]: https://cucumber.io
+#[allow(variant_size_differences)]
 #[derive(Debug)]
 pub enum Cucumber<World> {
     /// [`Cucumber`] execution being started.
@@ -126,17 +127,60 @@ pub enum Cucumber<World> {
     /// [`Feature`] event.
     Feature(Arc<gherkin::Feature>, Feature<World>),
 
+    /// All [`Feature`]s have been parsed.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    ParsingFinished {
+        /// Number of parsed [`Feature`]s.
+        ///
+        /// [`Feature`]: gherkin::Feature
+        features: usize,
+
+        /// Number of parsed [`Rule`]s.
+        ///
+        /// [`Rule`]: gherkin::Rule
+        rules: usize,
+
+        /// Number of parsed [`Scenario`]s.
+        ///
+        /// [`Scenario`]: gherkin::Scenario
+        scenarios: usize,
+
+        /// Number of parsed [`Step`]s.
+        ///
+        /// [`Step`]: gherkin::Step
+        steps: usize,
+
+        /// Number of happened [`Parser`] errors.
+        ///
+        /// [`Parser`]: crate::Parser
+        parser_errors: usize,
+    },
+
     /// [`Cucumber`] execution being finished.
     Finished,
 }
 
-// Manual implementation is required to omit the redundant `World: Clone` trait
-// bound imposed by `#[derive(Clone)]`.
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
 impl<World> Clone for Cucumber<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
             Self::Feature(f, ev) => Self::Feature(Arc::clone(f), ev.clone()),
+            Self::ParsingFinished {
+                features,
+                rules,
+                scenarios,
+                steps,
+                parser_errors,
+            } => Self::ParsingFinished {
+                features: *features,
+                rules: *rules,
+                scenarios: *scenarios,
+                steps: *steps,
+                parser_errors: *parser_errors,
+            },
             Self::Finished => Self::Finished,
         }
     }

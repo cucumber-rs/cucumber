@@ -163,8 +163,8 @@ pub use self::{
     runner::{Runner, ScenarioType},
     step::Step,
     writer::{
-        Arbitrary as ArbitraryWriter, Ext as WriterExt,
-        Failure as FailureWriter, Writer,
+        Arbitrary as ArbitraryWriter, Ext as WriterExt, Stats as StatsWriter,
+        Writer,
     },
 };
 
