@@ -1,6 +1,6 @@
 {"type":"suite","event":"started","test_count":41}
 {"type":"test","event":"started","name":"Feature: Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
-{"type":"test","event":"failed","name":"Feature: Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature","stdout":"Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
+{"type":"test","event":"failed","name":"Feature: Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature","stdout":"Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature\n"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec"}
@@ -16,7 +16,7 @@
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"ok","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs"}
-{"type":"test","event":"failed","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"Step panicked. Captured output: Too much!\nWorld(\n    4,\n)"}
+{"type":"test","event":"failed","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"tests/libtest.rs:9:1\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec"}
@@ -32,7 +32,7 @@
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"ok","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"started","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs"}
-{"type":"test","event":"failed","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"tests/libtest.rs:9:1\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)"}
+{"type":"test","event":"failed","name":"Feature: Basic /Users/work/Work/cucumber/tests/features/wait/nested/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"tests/libtest.rs:9:1\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n"}
 {"type":"test","event":"started","name":"Feature: Outline /Users/work/Work/cucumber/tests/features/wait/outline.feature::14: Scenario Outline: wait::5:  Given 2 secs"}
 {"type":"test","event":"ok","name":"Feature: Outline /Users/work/Work/cucumber/tests/features/wait/outline.feature::14: Scenario Outline: wait::5:  Given 2 secs"}
 {"type":"test","event":"started","name":"Feature: Outline /Users/work/Work/cucumber/tests/features/wait/outline.feature::14: Scenario Outline: wait::6:  When 2 secs"}
