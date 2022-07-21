@@ -53,7 +53,7 @@ pub struct Cli {
 
 /// Output formats.
 ///
-/// Currently supports only `JSON`.
+/// Currently supports only JSON.
 #[derive(Clone, Copy, Debug)]
 pub enum Format {
     /// [`libtest`][1]'s JSON format.
@@ -84,17 +84,18 @@ impl FromStr for Format {
 ///
 /// # Ordering
 ///
-/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into
-/// a [`writer::Normalize`], otherwise will produce output [`Event`]s in a
-/// broken order.
-/// Ideally, we shouldn't wrap this into [`writer::Normalize`] and leave this to
-/// tools, parsing JSON output. Unfortunately, not all tools can do that (ex.
+/// This [`Writer`] isn't [`Normalized`] by itself, so should be wrapped into a
+/// [`writer::Normalize`], otherwise will produce output [`Event`]s in a broken
+/// order.
+///
+/// Ideally, we shouldn't wrap this into a [`writer::Normalize`] and leave this
+/// to tools, parsing JSON output. Unfortunately, not all tools can do that (ex.
 /// [`IntelliJ Rust`][2]), so it's still recommended to wrap this into
 /// [`writer::Normalize`] even if it can mess up timing reports.
 ///
+/// [`Normalized`]: writer::Normalized
 /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
 /// [2]: https://github.com/intellij-rust/intellij-rust/issues/9041
-/// [`Normalized`]: writer::Normalized
 #[derive(Clone, Debug)]
 pub struct Libtest<W, Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to output into.
@@ -102,16 +103,16 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
 
     /// Collection of events before [`ParsingFinished`] is received.
     ///
-    /// Until [`ParsingFinished`] is received, all events are stored inside
-    /// [`Libtest::events`] and outputted only after that event is received.
-    /// This is done, because [`libtest`][1]'s first event must contain number
-    /// of executed test cases.
+    /// Until a [`ParsingFinished`] is received, all the events are stored
+    /// inside [`Libtest::events`] and outputted only after that event is
+    /// received. This is done, because [`libtest`][1]'s first event must
+    /// contain number of executed test cases.
     ///
-    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
     /// [`ParsingFinished`]: event::Cucumber::ParsingFinished
+    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
     events: Vec<parser::Result<Event<event::Cucumber<W>>>>,
 
-    /// Indicates whether [`ParsingFinished`] event was received.
+    /// Indicates whether a [`ParsingFinished`] event was received.
     ///
     /// [`ParsingFinished`]: event::Cucumber::ParsingFinished
     parsed_all: bool,
@@ -143,7 +144,7 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
 
     /// Number of [`Feature`]s with [`path`] set to [`None`].
     ///
-    /// This value is used to generate a unique name to each [`Feature`] to
+    /// This value is used to generate a unique name for each [`Feature`] to
     /// avoid name collisions.
     ///
     /// [`Feature`]: gherkin::Feature
@@ -169,9 +170,8 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
     }
 }
 
-/// Alias for [`Libtest::or()`] return type.
-#[allow(clippy::module_name_repetitions)]
-pub type LibtestOr<W, Wr> = writer::Or<
+/// Shortcut of a [`Libtest::or()`] return type.
+pub type Or<W, Wr> = writer::Or<
     Wr,
     Normalize<W, Libtest<W, io::Stdout>>,
     fn(
@@ -180,10 +180,8 @@ pub type LibtestOr<W, Wr> = writer::Or<
     ) -> bool,
 >;
 
-/// Alias for [`Libtest::or_basic()`] return type.
-#[allow(clippy::module_name_repetitions)]
-pub type LibtestOrBasic<W> =
-    LibtestOr<W, Summarize<Normalize<W, writer::Basic>>>;
+/// Shortcut of a [`Libtest::or_basic()`] return type.
+pub type OrBasic<W> = Or<W, Summarize<Normalize<W, writer::Basic>>>;
 
 impl<W: Debug + World> Libtest<W, io::Stdout> {
     /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into the
@@ -195,60 +193,62 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
         Self::new(io::stdout())
     }
 
-    /// Creates a new [`Writer`] which uses [`Normalized`] [`Libtest`] in case
-    /// [`Cli::format`] is set to [`Json`] or provided `writer` otherwise.
+    /// Creates a new [`Writer`] which uses a [`Normalized`] [`Libtest`] in case
+    /// [`Cli::format`] is set to [`Json`], or provided the `writer` otherwise.
     ///
     /// [`Json`]: Format::Json
     /// [`Normalized`]: writer::Normalized
     #[must_use]
     pub fn or<AnotherWriter: Writer<W>>(
         writer: AnotherWriter,
-    ) -> LibtestOr<W, AnotherWriter> {
+    ) -> Or<W, AnotherWriter> {
         writer::Or::new(writer, Self::stdout(), |_, cli| {
             !matches!(cli.right.format, Some(writer::libtest::Format::Json))
         })
     }
 
-    /// Creates a new [`Writer`] which uses [`Normalized`] [`Libtest`] in case
-    /// [`Cli::format`] is set to [`Json`] [`Normalized`] [`writer::Basic`]
-    /// otherwise.
+    /// Creates a new [`Writer`] which uses a [`Normalized`] [`Libtest`] in case
+    /// [`Cli::format`] is set to [`Json`], or a [`Normalized`]
+    /// [`writer::Basic`] otherwise.
     ///
     /// [`Json`]: Format::Json
     /// [`Normalized`]: writer::Normalized
     #[must_use]
-    pub fn or_basic() -> LibtestOrBasic<W> {
+    pub fn or_basic() -> OrBasic<W> {
         Self::or(writer::Basic::stdout().summarized())
     }
 }
 
 impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
-    /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into
-    /// the given `output`.
+    /// Creates a new [`Normalized`] [`Libtest`] [`Writer`] outputting into the
+    /// provided `output`.
     ///
     /// Theoretically, normalization should be done by the tool that's consuming
     /// the output og this [`Writer`]. But lack of clear specification of the
-    /// [`libtest`][1]'s `JSON` output leads to some tools [struggling] to
-    /// interpret. So we recommend using [`Normalized`] [`Libtest::new()`].
+    /// [`libtest`][1]'s JSON output leads to some tools [struggling][2] to
+    /// interpret it. So, we recommend using a [`Normalized`] [`Libtest::new()`]
+    /// rather than a non-[`Normalized`] [`Libtest::raw()`].
     ///
-    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
-    /// [struggling]: https://github.com/intellij-rust/intellij-rust/issues/9041
     /// [`Normalized`]: writer::Normalized
+    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
+    /// [2]: https://github.com/intellij-rust/intellij-rust/issues/9041
     #[must_use]
     pub fn new(output: Out) -> Normalize<W, Self> {
         Self::raw(output).normalized()
     }
 
     /// Creates a new non-[`Normalized`] [`Libtest`] [`Writer`] outputting into
-    /// the given `output`.
+    /// the provided `output`.
     ///
     /// Theoretically, normalization should be done by the tool that's consuming
     /// the output og this [`Writer`]. But lack of clear specification of the
-    /// [`libtest`][1]'s `JSON` output leads to some tools [struggling] to
-    /// interpret it. So we recommend using [`Normalized`] [`Libtest::new()`].
+    /// [`libtest`][1]'s JSON output leads to some tools [struggling][2] to
+    /// interpret it. So, we recommend using a [`Normalized`] [`Libtest::new()`]
+    /// rather than a non-[`Normalized`] [`Libtest::raw()`].
     ///
-    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
-    /// [struggling]: https://github.com/intellij-rust/intellij-rust/issues/9041
     /// [`Normalized`]: writer::Normalized
+    /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
+    /// [2]: https://github.com/intellij-rust/intellij-rust/issues/9041
     #[must_use]
     pub const fn raw(output: Out) -> Self {
         Self {
@@ -265,9 +265,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Handles [`event::Cucumber`].
+    /// Handles the provided [`event::Cucumber`].
     ///
-    /// Until [`ParsingFinished`] is received, all events are stored inside
+    /// Until [`ParsingFinished`] is received, all the events are stored inside
     /// [`Libtest::events`] and outputted only after that event is received.
     /// This is done, because [`libtest`][1]'s first event must contain number
     /// of executed test cases.
@@ -300,7 +300,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Outputs [`event::Cucumber`].
+    /// Outputs the provided [`event::Cucumber`].
     fn output_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
@@ -315,7 +315,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Converts [`event::Cucumber`] into [`LibTestJsonEvent`]s.
+    /// Converts the provided [`event::Cucumber`] into [`LibTestJsonEvent`]s.
     fn expand_cucumber_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
@@ -398,7 +398,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Converts [`event::Feature`] into [`LibTestJsonEvent`]s.
+    /// Converts the provided [`event::Feature`] into [`LibTestJsonEvent`]s.
     fn expand_feature_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -425,7 +425,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Converts [`event::Scenario`] into [`LibTestJsonEvent`]s.
+    /// Converts the provided [`event::Scenario`] into [`LibTestJsonEvent`]s.
     fn expand_scenario_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -450,7 +450,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Converts [`event::Hook`] into [`LibTestJsonEvent`]s.
+    /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s.
     fn expand_hook_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -487,7 +487,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
-    /// Converts [`event::Step`] into [`LibTestJsonEvent`]s.
+    /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
     #[allow(clippy::too_many_arguments)]
     fn expand_step_event(
         &mut self,
@@ -602,15 +602,19 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 }
 
-/// Indicator, whether [`Step`] is [`Background`] or not.
+/// Indicator, whether a [`Step`] is [`Background`] or not.
 ///
 /// [`Background`]: event::Scenario::Background
 /// [`Step`]: gherkin::Step
 type IsBackground = bool;
 
-impl<W: World, O: io::Write> writer::NonTransforming for Libtest<W, O> {}
+impl<W, O: io::Write> writer::NonTransforming for Libtest<W, O> {}
 
-impl<W: World + Debug, O: io::Write> writer::Stats<W> for Libtest<W, O> {
+impl<W, O> writer::Stats<W> for Libtest<W, O>
+where
+    O: io::Write,
+    Self: Writer<W>,
+{
     fn passed_steps(&self) -> usize {
         self.passed
     }
@@ -790,7 +794,7 @@ impl TestEvent {
     }
 }
 
-/// Inner value of [`TestEvent`].
+/// Inner value of a [`TestEvent`].
 #[derive(Clone, Debug, Serialize)]
 struct TestEventInner {
     /// Name of this test case.

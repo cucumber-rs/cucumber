@@ -103,7 +103,7 @@ pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
         'val: 'async_trait;
 }
 
-/// [`Writer`] tracking a number of [`Passed`], [`Skipped`] and [`Failed`]
+/// [`Writer`] tracking a number of [`Passed`], [`Skipped`], [`Failed`]
 /// [`Step`]s and parsing errors.
 ///
 /// [`Failed`]: event::Step::Failed
@@ -252,11 +252,11 @@ pub trait Ext: Sized {
     #[must_use]
     fn discard_arbitrary_writes(self) -> discard::Arbitrary<Self>;
 
-    /// Wraps this [`Writer`] into a [`discard::Stats`] one, providing a
-    /// no-op [`StatsWriter`] implementation returning only `0`.
+    /// Wraps this [`Writer`] into a [`discard::Stats`] one, providing a no-op
+    /// [`StatsWriter`] implementation returning only `0`.
     ///
-    /// Intended to be used for feeding a non-[`StatsWriter`] [`Writer`]
-    /// into a [`tee()`], as the later accepts only [`StatsWriter`]s.
+    /// Intended to be used for feeding a non-[`StatsWriter`] [`Writer`] into a
+    /// [`tee()`], as the later accepts only [`StatsWriter`]s.
     ///
     /// [`tee()`]: Ext::tee
     /// [`StatsWriter`]: Stats

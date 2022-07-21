@@ -17,16 +17,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Replaced `#[derive(WorldInit)]` with `#[derive(World)]` to remove the need of manual `World` trait implementation. ([#219], [#217])
 - Merged `WorldInit` trait into the `World` trait. ([#219])
 - Added `ParsingFinished` variant to `event::Cucumber`. ([#220])
-- Renamed `writer::Failure` and `writer::discard::Failure` to `writer::Stats` and `writer::discard::Stats`. ([#220])
+- Reworked `writer::Failure`/`writer::discard::Failure` as `writer::Stats`/`writer::discard::Stats`. ([#220])
 - Renamed `WriterExt::discard_failure_writes()` to `WriterExt::discard_stats_writes()`. ([#220])
 - Added `Option<step::Location>` field to `event::Step::Passed` and `event::Step::Failed`. ([#221])
 
 ### Added
 
-- `writer::Or` to alternate between 2 `Writer`s. ([#220])
-- `writer::Libtest` (enables [IntelliJ Rust integration][0140-1]) behind the `libtest` feature flag (enabled by default). ([#220])
+- `writer::Libtest` (enables [IntelliJ Rust integration][0140-1]) behind the `libtest` feature flag. ([#220])
+- `writer::Or` to alternate between 2 `Writer`s basing on a predicate. ([#220])
+- `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
 - `FeatureExt::count_steps()` method. ([#220])
-- `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220]) 
 - Output location of `fn`, that matched the `Step`. ([#221])
 
 ### Changed
