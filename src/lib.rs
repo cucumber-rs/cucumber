@@ -22,7 +22,7 @@
     trivial_casts,
     trivial_numeric_casts
 )]
-#![forbid(non_ascii_idents, unsafe_code)]
+#![forbid(non_ascii_idents)]
 #![warn(
     clippy::as_conversions,
     clippy::branches_sharing_code,
@@ -121,6 +121,7 @@ pub mod parser;
 pub mod runner;
 pub mod step;
 pub mod tag;
+pub(crate) mod vec_drain_filter;
 pub mod writer;
 
 #[cfg(feature = "macros")]

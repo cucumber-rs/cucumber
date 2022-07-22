@@ -13,13 +13,19 @@
 use std::{
     cmp,
     collections::HashMap,
-    fmt, mem,
+    fmt,
+    future::Future,
+    mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
+    pin::Pin,
+    str::FromStr,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
+    task,
+    time::{Duration, Instant},
 };
 
 use futures::{
@@ -31,13 +37,16 @@ use futures::{
     FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
     TryStreamExt as _,
 };
+use humantime::parse_duration;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
-    parser, step, Event, Runner, Step, World,
+    parser, step,
+    vec_drain_filter::Ext as _,
+    Event, Runner, Step, World,
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
@@ -74,7 +83,63 @@ pub enum ScenarioType {
 pub enum RetryAt {
     #[default]
     Immediately,
-    Postponed,
+    After(Duration),
+    End,
+}
+
+impl RetryAt {
+    pub fn parse_from_tag(s: &str) -> Option<RetryAt> {
+        if s.to_lowercase() == "all" {
+            Some(Self::End)
+        } else {
+            parse_duration(s).map(Self::After).ok()
+        }
+    }
+
+    pub fn with_deadline(self, now: Instant) -> RetryAtWithDeadline {
+        match self {
+            RetryAt::Immediately => RetryAtWithDeadline::Immediately,
+            RetryAt::After(dur) => RetryAtWithDeadline::After(dur, Some(now)),
+            RetryAt::End => RetryAtWithDeadline::End,
+        }
+    }
+
+    pub fn without_deadline(self) -> RetryAtWithDeadline {
+        match self {
+            RetryAt::Immediately => RetryAtWithDeadline::Immediately,
+            RetryAt::After(dur) => RetryAtWithDeadline::After(dur, None),
+            RetryAt::End => RetryAtWithDeadline::End,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum RetryAtWithDeadline {
+    #[default]
+    Immediately,
+    After(Duration, Option<Instant>),
+    End,
+}
+
+impl From<RetryAtWithDeadline> for RetryAt {
+    fn from(v: RetryAtWithDeadline) -> Self {
+        match v {
+            RetryAtWithDeadline::Immediately => Self::Immediately,
+            RetryAtWithDeadline::After(dur, _) => Self::After(dur),
+            RetryAtWithDeadline::End => Self::End,
+        }
+    }
+}
+
+impl RetryAtWithDeadline {
+    pub fn is_ready(&self) -> bool {
+        match self {
+            RetryAtWithDeadline::Immediately
+            | RetryAtWithDeadline::End
+            | RetryAtWithDeadline::After(_, None) => true,
+            RetryAtWithDeadline::After(dur, Some(at)) => &at.elapsed() > dur,
+        }
+    }
 }
 
 /// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
@@ -218,6 +283,41 @@ impl<World> Default for Basic<World> {
                 .unwrap_or(ScenarioType::Concurrent)
         };
         let retry: RetryFn = |f, r, sc| {
+            // let parse_at = |s: &str| {
+            //     let (after, at) = s.split_once('=')?;
+            //     (after.trim() == "after")
+            //         .then(|| RetryAt::parse_from_tag(at.trim()))
+            //         .flatten()
+            // };
+            //
+            // let parse_inner = |s: &str| {
+            //     let mut num = 1;
+            //     let mut at = RetryAt::Immediately;
+            //     for s in s.trim().split(',').map(str::trim) {
+            //         if let Some(new_at) = parse_at(s) {
+            //             at = new_at;
+            //         } else if let Some(new_num) = s.parse::<usize>().ok() {
+            //             num = new_num;
+            //         }
+            //     }
+            //     (num, at)
+            // };
+            //
+            // let parse_tags = |tags: &[String]| {
+            //     tags.iter().find_map(|tag| {
+            //         tag.strip_prefix("retry").map(|retries| {
+            //             let (num, at) = retries
+            //                 .strip_prefix('(')
+            //                 .and_then(|s| {
+            //                     let (settings, _) = s.split_once(')')?;
+            //                     Some(parse_inner(settings))
+            //                 })
+            //                 .unwrap_or((1, RetryAt::Immediately));
+            //             (Retries::initial(num), at)
+            //         })
+            //     })
+            // };
+
             let parse_tags = |tags: &[String]| {
                 tags.iter().find_map(|tag| {
                     tag.strip_prefix("retry").map(|retries| {
@@ -236,8 +336,17 @@ impl<World> Default for Basic<World> {
                             .starts_with(".immediately")
                             .then_some(RetryAt::Immediately)
                             .or_else(|| {
-                                rest.starts_with(".postponed")
-                                    .then_some(RetryAt::Postponed)
+                                rest.starts_with(".end").then_some(RetryAt::End)
+                            })
+                            .or_else(|| {
+                                rest.strip_prefix(".after").and_then(|s| {
+                                    s.strip_prefix('(').and_then(|s| {
+                                        let (dur, _) = s.split_once(')')?;
+                                        parse_duration(dur)
+                                            .map(RetryAt::After)
+                                            .ok()
+                                    })
+                                })
                             })
                             .unwrap_or_default();
 
@@ -712,9 +821,12 @@ async fn execute<W, Before, After>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
+        // TODO: explain
+        yield_now().await;
+
         let runnable = features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
-            if features.is_finished() {
+            if features.is_finished().await {
                 break;
             }
             continue;
@@ -1625,7 +1737,7 @@ type Scenarios = HashMap<
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
-        Option<(Retries, RetryAt)>,
+        Option<(Retries, RetryAtWithDeadline)>,
     )>,
 >;
 
@@ -1695,23 +1807,40 @@ impl Features {
         self.insert_scenarios(local).await;
     }
 
-    async fn insert_scenarios(&self, scenarios: Scenarios) {
+    async fn insert_scenarios(
+        &self,
+        scenarios: HashMap<
+            ScenarioType,
+            Vec<(
+                Arc<gherkin::Feature>,
+                Option<Arc<gherkin::Rule>>,
+                Arc<gherkin::Scenario>,
+                Option<(Retries, RetryAt)>,
+            )>,
+        >,
+    ) {
+        let now = Instant::now();
+
         let mut with_retries = HashMap::<_, Vec<(_, _, _, (_, _))>>::new();
         let mut without_retries: Scenarios = HashMap::new();
         for (ty, scenarios) in scenarios {
             for (f, r, s, ret) in scenarios {
                 match ret {
                     ret @ (None | Some((Retries { current: 0, .. }, _))) => {
-                        without_retries
-                            .entry(ty)
-                            .or_default()
-                            .push((f, r, s, ret));
+                        without_retries.entry(ty).or_default().push((
+                            f,
+                            r,
+                            s,
+                            ret.map(|(r, at)| (r, at.without_deadline())),
+                        ));
                     }
-                    Some(ret) => {
-                        with_retries
-                            .entry(ty)
-                            .or_default()
-                            .push((f, r, s, ret));
+                    Some((ret, at)) => {
+                        with_retries.entry(ty).or_default().push((
+                            f,
+                            r,
+                            s,
+                            (ret, at.with_deadline(now)),
+                        ));
                     }
                 }
             }
@@ -1726,17 +1855,19 @@ impl Features {
             let ty_storage = storage.entry(ty).or_default();
             for scenario in scenarios {
                 match scenario {
-                    (f, r, s, (ret, RetryAt::Immediately)) => ty_storage
-                        .insert(
-                            0,
-                            (f, r, s, Some((ret, RetryAt::Immediately))),
-                        ),
-                    (f, r, s, (ret, RetryAt::Postponed)) => ty_storage.push((
+                    (
                         f,
                         r,
                         s,
-                        Some((ret, RetryAt::Postponed)),
-                    )),
+                        ret @ (
+                            _,
+                            (RetryAtWithDeadline::Immediately
+                            | RetryAtWithDeadline::After(..)),
+                        ),
+                    ) => ty_storage.insert(0, (f, r, s, Some(ret))),
+                    (f, r, s, ret @ (_, RetryAtWithDeadline::End)) => {
+                        ty_storage.push((f, r, s, Some(ret)))
+                    }
                 }
             }
         }
@@ -1795,8 +1926,18 @@ impl Features {
         scenarios
             .get_mut(&ScenarioType::Serial)
             .and_then(|s| {
-                (!s.is_empty()).then(|| s.remove(0)).map(|(f, r, s, ret)| {
-                    vec![(f, r, s, ScenarioType::Serial, ret)]
+                s.drain_filter_stable(|(_, _, _, ret)| {
+                    ret.map(|(_, at)| at.is_ready()).unwrap_or(true)
+                })
+                .next()
+                .map(|(f, r, s, ret)| {
+                    vec![(
+                        f,
+                        r,
+                        s,
+                        ScenarioType::Serial,
+                        ret.map(|(r, at)| (r, at.into())),
+                    )]
                 })
             })
             .or_else(|| {
@@ -1806,11 +1947,21 @@ impl Features {
                             s.len(),
                             max_concurrent_scenarios.unwrap_or(s.len()),
                         );
-                        s.drain(0..end)
-                            .map(|(f, r, s, ret)| {
-                                (f, r, s, ScenarioType::Concurrent, ret)
-                            })
-                            .collect()
+
+                        s.drain_filter_stable(|(_, _, _, ret)| {
+                            ret.map(|(_, at)| at.is_ready()).unwrap_or(true)
+                        })
+                        .take(end)
+                        .map(|(f, r, s, ret)| {
+                            (
+                                f,
+                                r,
+                                s,
+                                ScenarioType::Concurrent,
+                                ret.map(|(r, at)| (r, at.into())),
+                            )
+                        })
+                        .collect()
                     })
                 })
             })
@@ -1827,8 +1978,14 @@ impl Features {
     /// Indicates whether there are more [`Feature`]s to execute.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn is_finished(&self) -> bool {
+    async fn is_finished(&self) -> bool {
         self.finished.load(Ordering::SeqCst)
+            && self
+                .scenarios
+                .lock()
+                .await
+                .values()
+                .all(|vec| vec.is_empty())
     }
 }
 
@@ -1929,6 +2086,31 @@ impl<W> ExecutionFailure<W> {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)
             | Self::StepPanicked { world, .. } => world.take(),
+        }
+    }
+}
+
+fn yield_now() -> YieldNow {
+    YieldNow(false)
+}
+
+/// Future for the [`yield_now()`] function.
+#[derive(Debug)]
+pub struct YieldNow(bool);
+
+impl Future for YieldNow {
+    type Output = ();
+
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+    ) -> task::Poll<Self::Output> {
+        if !self.0 {
+            self.0 = true;
+            cx.waker().wake_by_ref();
+            task::Poll::Pending
+        } else {
+            task::Poll::Ready(())
         }
     }
 }

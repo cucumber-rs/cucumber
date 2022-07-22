@@ -25,7 +25,7 @@ use regex::CaptureLocations;
 
 use crate::{
     cli::Colored,
-    event::{self, Info},
+    event::{self, Info, Retries},
     parser, step,
     writer::{
         self,
@@ -337,8 +337,8 @@ impl<Out: io::Write> Basic<Out> {
         use event::{Hook, Scenario};
 
         match ev {
-            Scenario::Started(_) => {
-                self.scenario_started(scenario)?;
+            Scenario::Started(retries) => {
+                self.scenario_started(scenario, *retries)?;
             }
             Scenario::Hook(_, Hook::Started, _) => {
                 self.indent += 4;
@@ -350,11 +350,11 @@ impl<Out: io::Write> Basic<Out> {
             Scenario::Hook(_, Hook::Passed, _) => {
                 self.indent = self.indent.saturating_sub(4);
             }
-            Scenario::Background(bg, ev, _) => {
-                self.background(feat, bg, ev)?;
+            Scenario::Background(bg, ev, retries) => {
+                self.background(feat, bg, ev, *retries)?;
             }
-            Scenario::Step(st, ev, _) => {
-                self.step(feat, st, ev)?;
+            Scenario::Step(st, ev, retries) => {
+                self.step(feat, st, ev, *retries)?;
             }
             Scenario::Finished(_) => {
                 self.indent = self.indent.saturating_sub(2)
@@ -407,15 +407,28 @@ impl<Out: io::Write> Basic<Out> {
     pub(crate) fn scenario_started(
         &mut self,
         scenario: &gherkin::Scenario,
+        retries: Option<Retries>,
     ) -> io::Result<()> {
         self.lines_to_clear = 1;
         self.indent += 2;
-        self.output.write_line(&self.styles.ok(format!(
-            "{}{}: {}",
-            " ".repeat(self.indent),
-            scenario.keyword,
-            scenario.name,
-        )))
+
+        if let Some(retries) = retries.filter(|r| r.current > 0) {
+            self.output.write_line(&self.styles.retry(format!(
+                "{}{}: {} | Retry attempt: {}/{}",
+                " ".repeat(self.indent),
+                scenario.keyword,
+                scenario.name,
+                retries.current,
+                retries.left + retries.current,
+            )))
+        } else {
+            self.output.write_line(&self.styles.ok(format!(
+                "{}{}: {}",
+                " ".repeat(self.indent),
+                scenario.keyword,
+                scenario.name,
+            )))
+        }
     }
 
     /// Outputs the [`Step`]'s [started]/[passed]/[skipped]/[failed] event.
@@ -430,6 +443,7 @@ impl<Out: io::Write> Basic<Out> {
         feat: &gherkin::Feature,
         step: &gherkin::Step,
         ev: &event::Step<W>,
+        retries: Option<Retries>,
     ) -> io::Result<()> {
         use event::Step;
 
@@ -438,7 +452,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.step_started(step)?;
             }
             Step::Passed(captures, _) => {
-                self.step_passed(step, captures)?;
+                self.step_passed(step, captures, retries)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
@@ -446,7 +460,15 @@ impl<Out: io::Write> Basic<Out> {
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(c, loc, w, i) => {
-                self.step_failed(feat, step, c.as_ref(), *loc, w.as_ref(), i)?;
+                self.step_failed(
+                    feat,
+                    step,
+                    c.as_ref(),
+                    *loc,
+                    retries,
+                    w.as_ref(),
+                    i,
+                )?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -504,35 +526,46 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
+        retries: Option<Retries>,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        let step_keyword = self.styles.ok(format!("✔  {}", step.keyword));
+        let style = |s| {
+            if retries.filter(|r| r.current > 0).is_some() {
+                self.styles.retry(s)
+            } else {
+                self.styles.ok(s)
+            }
+        };
+
+        let step_keyword = style(format!("✔  {}", step.keyword));
         let step_value = format_captures(
             &step.value,
             captures,
-            |v| self.styles.ok(v),
-            |v| self.styles.ok(self.styles.bold(v)),
+            |v| style(v.to_owned()),
+            |v| style(self.styles.bold(v).to_string()),
         );
-        let doc_str = self.styles.ok(step
-            .docstring
-            .as_ref()
-            .and_then(|doc| {
-                self.verbosity.shows_docstring().then(|| {
-                    format_str_with_indent(
-                        doc,
-                        self.indent.saturating_sub(3) + 3,
-                    )
+        let doc_str = style(
+            step.docstring
+                .as_ref()
+                .and_then(|doc| {
+                    self.verbosity.shows_docstring().then(|| {
+                        format_str_with_indent(
+                            doc,
+                            self.indent.saturating_sub(3) + 3,
+                        )
+                    })
                 })
-            })
-            .unwrap_or_default());
-        let step_table = self.styles.ok(step
-            .table
-            .as_ref()
-            .map(|t| format_table(t, self.indent))
-            .unwrap_or_default());
+                .unwrap_or_default(),
+        );
+        let step_table = style(
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+        );
 
-        self.output.write_line(&self.styles.ok(format!(
+        self.output.write_line(&style(format!(
             "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -586,28 +619,36 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         loc: Option<step::Location>,
+        retries: Option<Retries>,
         world: Option<&W>,
         err: &event::StepError,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
+        let style = |s| {
+            if retries.filter(|r| r.left > 0).is_some() {
+                self.styles.retry_bright(s)
+            } else {
+                self.styles.err(s)
+            }
+        };
+
         let indent = " ".repeat(self.indent.saturating_sub(3));
-        let step_keyword =
-            self.styles.err(format!("{indent}✘  {}", step.keyword));
+        let step_keyword = style(format!("{indent}✘  {}", step.keyword));
         let step_value = captures.map_or_else(
-            || self.styles.err(&step.value),
+            || style(step.value.clone()),
             |capts| {
                 format_captures(
                     &step.value,
                     capts,
-                    |v| self.styles.err(v),
-                    |v| self.styles.err(self.styles.bold(v)),
+                    |v| style(v.to_owned()),
+                    |v| style(self.styles.bold(v).to_string()),
                 )
                 .into()
             },
         );
 
-        let diagnostics = self.styles.err(format!(
+        let diagnostics = style(format!(
             "{}{}\n{}\
              {indent}   Step failed: {}:{}:{}\n\
              {indent}   Captured output: {}{}",
@@ -665,6 +706,7 @@ impl<Out: io::Write> Basic<Out> {
         feat: &gherkin::Feature,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
+        retries: Option<Retries>,
     ) -> io::Result<()> {
         use event::Step;
 
@@ -673,7 +715,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.bg_step_started(bg)?;
             }
             Step::Passed(captures, _) => {
-                self.bg_step_passed(bg, captures)?;
+                self.bg_step_passed(bg, captures, retries)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
@@ -741,41 +783,49 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         step: &gherkin::Step,
         captures: &CaptureLocations,
+        retries: Option<Retries>,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
+        let style = |s| {
+            if retries.filter(|r| r.current > 0).is_some() {
+                self.styles.retry(s)
+            } else {
+                self.styles.ok(s)
+            }
+        };
+
         let indent = " ".repeat(self.indent.saturating_sub(3));
-        let step_keyword =
-            self.styles.ok(format!("{indent}✔> {}", step.keyword));
+        let step_keyword = style(format!("{indent}✔> {}", step.keyword));
         let step_value = format_captures(
             &step.value,
             captures,
-            |v| self.styles.ok(v),
-            |v| self.styles.ok(self.styles.bold(v)),
+            |v| style(v.to_owned()),
+            |v| style(self.styles.bold(v).to_string()),
         );
-        let doc_str = self.styles.ok(step
-            .docstring
-            .as_ref()
-            .and_then(|doc| {
-                self.verbosity.shows_docstring().then(|| {
-                    format_str_with_indent(
-                        doc,
-                        self.indent.saturating_sub(3) + 3,
-                    )
+        let doc_str = style(
+            step.docstring
+                .as_ref()
+                .and_then(|doc| {
+                    self.verbosity.shows_docstring().then(|| {
+                        format_str_with_indent(
+                            doc,
+                            self.indent.saturating_sub(3) + 3,
+                        )
+                    })
                 })
-            })
-            .unwrap_or_default());
-        let step_table = self.styles.ok(step
-            .table
-            .as_ref()
-            .map(|t| format_table(t, self.indent))
-            .unwrap_or_default());
+                .unwrap_or_default(),
+        );
+        let step_table = style(
+            step.table
+                .as_ref()
+                .map(|t| format_table(t, self.indent))
+                .unwrap_or_default(),
+        );
 
-        self.output.write_line(
-            &self.styles.ok(format!(
-                "{step_keyword}{step_value}{doc_str}{step_table}",
-            )),
-        )
+        self.output.write_line(&style(format!(
+            "{step_keyword}{step_value}{doc_str}{step_table}",
+        )))
     }
 
     /// Outputs the [skipped] [`Background`] [`Step`].

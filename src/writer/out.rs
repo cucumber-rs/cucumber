@@ -29,6 +29,8 @@ pub struct Styles {
     /// [`Style`] for rendering errors and failed events.
     pub err: Style,
 
+    pub retry: Style,
+
     /// [`Style`] for rendering header.
     pub header: Style,
 
@@ -45,6 +47,7 @@ impl Default for Styles {
             ok: Style::new().green(),
             skipped: Style::new().cyan(),
             err: Style::new().red(),
+            retry: Style::new().magenta(),
             header: Style::new().blue(),
             bold: Style::new().bold(),
             is_present: atty::is(atty::Stream::Stdout)
@@ -97,6 +100,36 @@ impl Styles {
     pub fn err<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.err.apply_to(input.into()).to_string().into()
+        } else {
+            input.into()
+        }
+    }
+
+    /// If terminal is present colors `input` with [`Styles::err`] color or
+    /// leaves "as is" otherwise.
+    #[must_use]
+    pub fn retry<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
+        if self.is_present {
+            self.retry.apply_to(input.into()).to_string().into()
+        } else {
+            input.into()
+        }
+    }
+
+    /// If terminal is present colors `input` with [`Styles::err`] color or
+    /// leaves "as is" otherwise.
+    #[must_use]
+    pub fn retry_bright<'a>(
+        &self,
+        input: impl Into<Cow<'a, str>>,
+    ) -> Cow<'a, str> {
+        if self.is_present {
+            self.retry
+                .clone()
+                .bright()
+                .apply_to(input.into())
+                .to_string()
+                .into()
         } else {
             input.into()
         }
