@@ -28,8 +28,10 @@ use serde::Serialize;
 use crate::{
     cli, event, parser,
     writer::{
-        self, basic::coerce_error, out::WriteStrExt as _, Arbitrary, Normalize,
-        Summarize,
+        self,
+        basic::{coerce_error, trim_path},
+        out::WriteStrExt as _,
+        Arbitrary, Normalize, Summarize,
     },
     Event, World, Writer, WriterExt as _,
 };
@@ -514,10 +516,21 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.passed += 1;
 
                 let event = TestEvent::ok(name);
-                if let Some(loc) = loc.filter(|_| cli.show_output) {
+                if cli.show_output {
                     event.with_stdout(format!(
-                        "{}:{}:{}",
-                        loc.path, loc.line, loc.column,
+                        "Defined: {}:{}:{}{}",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                        loc.map(|l| format!(
+                            "\nMatched: {}:{}:{}",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default()
                     ))
                 } else {
                     event
@@ -532,9 +545,17 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.failed += 1;
 
                 TestEvent::failed(name).with_stdout(format!(
-                    "{}{err}{}",
+                    "Defined: {}:{}:{}{}\n\
+                     {err}{}",
+                    feature
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.to_str().map(trim_path))
+                        .unwrap_or(&feature.name),
+                    step.position.line,
+                    step.position.col,
                     loc.map(|l| format!(
-                        "{}:{}:{}\n",
+                        "\nMatched: {}:{}:{}",
                         l.path, l.line, l.column,
                     ))
                     .unwrap_or_default(),
@@ -559,13 +580,17 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             "{}: {} {}",
             feature.keyword,
             feature.name,
-            feature.path.as_ref().and_then(|p| p.to_str()).map_or_else(
-                || {
-                    self.features_without_path += 1;
-                    self.features_without_path.to_string()
-                },
-                |s| s.escape_default().to_string()
-            ),
+            feature
+                .path
+                .as_ref()
+                .and_then(|p| p.to_str().map(trim_path))
+                .map_or_else(
+                    || {
+                        self.features_without_path += 1;
+                        self.features_without_path.to_string()
+                    },
+                    |s| s.escape_default().to_string()
+                ),
         );
         let rule_name = rule
             .as_ref()
