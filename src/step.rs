@@ -180,8 +180,7 @@ impl<World> Collection<World> {
         let (_, loc, whole_match, captures, names, step_fn) =
             match captures.len() {
                 0 => return Ok(None),
-                // Instead of `.unwrap()` to avoid documenting `# Panics`
-                // section.
+                // Instead of `.unwrap()` to avoid documenting `# Panics`.
                 1 => captures.pop().unwrap_or_else(|| unreachable!()),
                 _ => {
                     return Err(AmbiguousMatchError {

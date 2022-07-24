@@ -292,7 +292,7 @@ impl<Out: io::Write> Json<Out> {
                     error_message: Some(format!(
                         "{}{err}",
                         loc.map(|l| format!(
-                            "{}:{}:{}",
+                            "Matched: {}:{}:{}",
                             l.path, l.line, l.column,
                         ))
                         .unwrap_or_default(),

@@ -590,6 +590,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let indent = " ".repeat(self.indent.saturating_sub(3));
+
         let step_keyword =
             self.styles.err(format!("{indent}✘  {}", step.keyword));
         let step_value = captures.map_or_else(
@@ -743,6 +744,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let indent = " ".repeat(self.indent.saturating_sub(3));
+
         let step_keyword =
             self.styles.ok(format!("{indent}✔> {}", step.keyword));
         let step_value = format_captures(

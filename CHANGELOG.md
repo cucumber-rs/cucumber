@@ -27,7 +27,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Or` to alternate between 2 `Writer`s basing on a predicate. ([#220])
 - `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
 - `FeatureExt::count_steps()` method. ([#220])
-- Output location of `fn`, that matched the `Step`. ([#221])
+- Location of `fn` matching the failed `Step` in output. ([#221])
 
 ### Changed
 
