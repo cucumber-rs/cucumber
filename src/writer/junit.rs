@@ -345,8 +345,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let mut case = match last_event {
             Scenario::Started
             | Scenario::Hook(_, Hook::Started | Hook::Passed)
-            | Scenario::Background(_, Step::Started | Step::Passed(_))
-            | Scenario::Step(_, Step::Started | Step::Passed(_)) => {
+            | Scenario::Background(_, Step::Started | Step::Passed(..))
+            | Scenario::Step(_, Step::Started | Step::Passed(..)) => {
                 TestCaseBuilder::success(&case_name, duration).build()
             }
             Scenario::Background(_, Step::Skipped)
@@ -360,8 +360,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 coerce_error(e).as_ref(),
             )
             .build(),
-            Scenario::Background(_, Step::Failed(_, _, e))
-            | Scenario::Step(_, Step::Failed(_, _, e)) => {
+            Scenario::Background(_, Step::Failed(_, _, _, e))
+            | Scenario::Step(_, Step::Failed(_, _, _, e)) => {
                 TestCaseBuilder::failure(
                     &case_name,
                     duration,

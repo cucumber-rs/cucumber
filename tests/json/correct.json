@@ -1,6 +1,6 @@
 [
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+    "uri": "tests/features/wait/invalid.feature",
     "keyword": "",
     "name": "",
     "tags": [],
@@ -8,7 +8,7 @@
       {
         "keyword": "",
         "type": "scenario",
-        "id": "failed-to-parse/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+        "id": "failed-to-parsetests/features/wait/invalid.feature",
         "line": 0,
         "name": "",
         "tags": [],
@@ -28,7 +28,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule.feature",
+    "uri": "tests/features/wait/rule.feature",
     "keyword": "Feature",
     "name": "Basic",
     "tags": [],
@@ -38,128 +38,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 4000
-            }
-          }
-        ],
-        "before": [
-          {
-            "result": {
-              "status": "Passed",
-              "duration": 15000
-            }
-          }
-        ],
-        "keyword": "Scenario",
-        "type": "scenario",
-        "id": "basic/1-sec",
-        "line": 6,
-        "name": "1 sec",
-        "tags": [
-          {
-            "name": "serial",
-            "line": 6
-          }
-        ],
-        "steps": [
-          {
-            "keyword": "Given",
-            "line": 7,
-            "name": "1 sec",
-            "result": {
-              "status": "Passed",
-              "duration": 27000
-            }
-          },
-          {
-            "keyword": "When",
-            "line": 8,
-            "name": "1 sec",
-            "result": {
-              "status": "Passed",
-              "duration": 564000
-            }
-          },
-          {
-            "keyword": "Then",
-            "line": 9,
-            "name": "unknown",
-            "result": {
-              "status": "Skipped",
-              "duration": 253000
-            }
-          }
-        ]
-      },
-      {
-        "keyword": "Background",
-        "type": "background",
-        "id": "basic/1-sec",
-        "line": 6,
-        "name": "1 sec",
-        "tags": [
-          {
-            "name": "serial",
-            "line": 6
-          }
-        ],
-        "steps": [
-          {
-            "keyword": "Given",
-            "line": 3,
-            "name": "1 sec",
-            "result": {
-              "status": "Passed",
-              "duration": 622000
-            }
-          }
-        ]
-      },
-      {
-        "after": [
-          {
-            "result": {
-              "status": "Passed",
-              "duration": 3000
-            }
-          }
-        ],
-        "before": [
-          {
-            "result": {
-              "status": "Failed",
-              "duration": 110000,
-              "error_message": "Tag!"
-            }
-          }
-        ],
-        "keyword": "Scenario",
-        "type": "scenario",
-        "id": "basic/rule/2-secs",
-        "line": 14,
-        "name": "rule 2 secs",
-        "tags": [
-          {
-            "name": "fail_before",
-            "line": 14
-          }
-        ],
-        "steps": []
-      }
-    ]
-  },
-  {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/nested/rule.feature",
-    "keyword": "Feature",
-    "name": "Basic",
-    "tags": [],
-    "elements": [
-      {
-        "after": [
-          {
-            "result": {
-              "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -184,30 +63,30 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 7,
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 24000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 8,
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 545000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 9,
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 8000
+              "duration": 221000
             }
           }
         ]
@@ -226,12 +105,12 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 3,
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 31000
+              "duration": 556000
             }
           }
         ]
@@ -248,9 +127,8 @@
         "before": [
           {
             "result": {
-              "status": "Failed",
-              "duration": 16000,
-              "error_message": "Tag!"
+              "status": "Passed",
+              "duration": 6000
             }
           }
         ],
@@ -265,12 +143,238 @@
             "line": 14
           }
         ],
-        "steps": []
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 15,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 65000
+            }
+          },
+          {
+            "keyword": "When ",
+            "line": 16,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 64000
+            }
+          },
+          {
+            "keyword": "Then ",
+            "line": 17,
+            "name": "2 secs",
+            "result": {
+              "status": "Failed",
+              "duration": 502000,
+              "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
+            }
+          }
+        ]
+      },
+      {
+        "keyword": "Background",
+        "type": "background",
+        "id": "basic/rule/2-secs",
+        "line": 14,
+        "name": "rule 2 secs",
+        "tags": [
+          {
+            "name": "fail_before",
+            "line": 14
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 3,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 27000
+            }
+          }
+        ]
       }
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/outline.feature",
+    "uri": "tests/features/wait/nested/rule.feature",
+    "keyword": "Feature",
+    "name": "Basic",
+    "tags": [],
+    "elements": [
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 7,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 21000
+            }
+          },
+          {
+            "keyword": "When ",
+            "line": 8,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 19000
+            }
+          },
+          {
+            "keyword": "Then ",
+            "line": 9,
+            "name": "unknown",
+            "result": {
+              "status": "Skipped",
+              "duration": 11000
+            }
+          }
+        ]
+      },
+      {
+        "keyword": "Background",
+        "type": "background",
+        "id": "basic/1-sec",
+        "line": 6,
+        "name": "1 sec",
+        "tags": [
+          {
+            "name": "serial",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 3,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 28000
+            }
+          }
+        ]
+      },
+      {
+        "after": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 2000
+            }
+          }
+        ],
+        "before": [
+          {
+            "result": {
+              "status": "Passed",
+              "duration": 6000
+            }
+          }
+        ],
+        "keyword": "Scenario",
+        "type": "scenario",
+        "id": "basic/rule/2-secs",
+        "line": 14,
+        "name": "rule 2 secs",
+        "tags": [
+          {
+            "name": "fail_before",
+            "line": 14
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 15,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 22000
+            }
+          },
+          {
+            "keyword": "When ",
+            "line": 16,
+            "name": "2 secs",
+            "result": {
+              "status": "Passed",
+              "duration": 20000
+            }
+          },
+          {
+            "keyword": "Then ",
+            "line": 17,
+            "name": "2 secs",
+            "result": {
+              "status": "Failed",
+              "duration": 40000,
+              "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
+            }
+          }
+        ]
+      },
+      {
+        "keyword": "Background",
+        "type": "background",
+        "id": "basic/rule/2-secs",
+        "line": 14,
+        "name": "rule 2 secs",
+        "tags": [
+          {
+            "name": "fail_before",
+            "line": 14
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "line": 3,
+            "name": "1 sec",
+            "result": {
+              "status": "Passed",
+              "duration": 28000
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uri": "tests/features/wait/outline.feature",
     "keyword": "Feature",
     "name": "Outline",
     "tags": [],
@@ -280,7 +384,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 14000,
+              "duration": 19000,
               "error_message": "Tag!"
             }
           }
@@ -289,7 +393,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 7000
             }
           }
         ],
@@ -310,30 +414,30 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 82000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 70000
+              "duration": 20000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 523000
+              "duration": 19000
             }
           }
         ]
@@ -343,7 +447,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 12000,
+              "duration": 17000,
               "error_message": "Tag!"
             }
           }
@@ -352,7 +456,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 6000
             }
           }
         ],
@@ -373,30 +477,30 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 20000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 20000
             }
           }
         ]
@@ -406,7 +510,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 12000,
+              "duration": 17000,
               "error_message": "Tag!"
             }
           }
@@ -436,30 +540,30 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 32000
+              "duration": 31000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 21000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 20000
             }
           }
         ]
@@ -469,7 +573,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 12000,
+              "duration": 17000,
               "error_message": "Tag!"
             }
           }
@@ -478,7 +582,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
+              "duration": 7000
             }
           }
         ],
@@ -503,30 +607,30 @@
         ],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 21000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 22000
             }
           }
         ]
@@ -534,7 +638,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule_outline.feature",
+    "uri": "tests/features/wait/rule_outline.feature",
     "keyword": "Feature",
     "name": "Rule Outline",
     "tags": [],
@@ -544,7 +648,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -552,7 +656,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
+              "duration": 7000
             }
           }
         ],
@@ -564,30 +668,30 @@
         "tags": [],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 23000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 20000
             }
           }
         ]
@@ -597,7 +701,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -605,7 +709,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 9000
+              "duration": 10000
             }
           }
         ],
@@ -617,30 +721,30 @@
         "tags": [],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 20000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 19000
             }
           }
         ]
@@ -650,7 +754,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -670,30 +774,30 @@
         "tags": [],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 25000
+              "duration": 23000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 22000
+              "duration": 20000
             }
           }
         ]
@@ -703,7 +807,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -723,30 +827,30 @@
         "tags": [],
         "steps": [
           {
-            "keyword": "Given",
+            "keyword": "Given ",
             "line": 5,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
-            "keyword": "When",
+            "keyword": "When ",
             "line": 6,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 23000
+              "duration": 20000
             }
           },
           {
-            "keyword": "Then",
+            "keyword": "Then ",
             "line": 7,
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 19000
             }
           }
         ]

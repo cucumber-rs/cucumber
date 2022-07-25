@@ -22,7 +22,11 @@ use crate::{
     cli, event,
     feature::ExpandExamplesError,
     parser,
-    writer::{self, basic::coerce_error, discard, Ext as _},
+    writer::{
+        self,
+        basic::{coerce_error, trim_path},
+        discard, Ext as _,
+    },
     Event, World, Writer,
 };
 
@@ -285,18 +289,24 @@ impl<Out: io::Write> Json<Out> {
                 duration: duration(),
                 error_message: None,
             },
-            event::Step::Failed(_, _, err) => match err {
-                event::StepError::AmbiguousMatch(err) => RunResult {
-                    status: Status::Ambiguous,
+            event::Step::Failed(_, loc, _, err) => {
+                let status = match &err {
+                    event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
+                    event::StepError::Panic(..) => Status::Failed,
+                };
+                RunResult {
+                    status,
                     duration: duration(),
-                    error_message: Some(err.to_string()),
-                },
-                event::StepError::Panic(info) => RunResult {
-                    status: Status::Failed,
-                    duration: duration(),
-                    error_message: Some(coerce_error(&info).into_owned()),
-                },
-            },
+                    error_message: Some(format!(
+                        "{}{err}",
+                        loc.map(|l| format!(
+                            "Matched: {}:{}:{}\n",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default(),
+                    )),
+                }
+            }
             event::Step::Skipped => RunResult {
                 status: Status::Skipped,
                 duration: duration(),
@@ -580,7 +590,7 @@ impl Feature {
             uri: feature
                 .path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .map(str::to_owned),
             keyword: feature.keyword.clone(),
             name: feature.name.clone(),
@@ -602,7 +612,7 @@ impl Feature {
             uri: err
                 .path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .map(str::to_owned),
             keyword: String::new(),
             name: String::new(),
@@ -616,7 +626,7 @@ impl Feature {
                     "failed-to-expand-examples{}",
                     err.path
                         .as_ref()
-                        .and_then(|p| p.to_str())
+                        .and_then(|p| p.to_str().map(trim_path))
                         .unwrap_or_default(),
                 ),
                 line: 0,
@@ -644,6 +654,7 @@ impl Feature {
             | gherkin::ParseFileError::Parsing { path, .. } => path,
         }
         .to_str()
+        .map(trim_path)
         .map(str::to_owned);
 
         Self {
@@ -687,7 +698,7 @@ impl PartialEq<gherkin::Feature> for Feature {
                 feature
                     .path
                     .as_ref()
-                    .and_then(|p| p.to_str())
+                    .and_then(|p| p.to_str().map(trim_path))
                     .map(|path| uri == path)
             })
             .unwrap_or_default()

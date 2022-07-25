@@ -15,8 +15,9 @@
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
-      Step failed: /tests/features/wait/rule.feature:17:7
-      Captured output:
+      Step failed:
+      Defined: tests/features/wait/rule.feature:17:7
+      Matched: tests/junit.rs:9:1
       Step panicked. Captured output: Too much!
       World(
           4,
@@ -34,8 +35,9 @@
    ✔  Given 2 secs
    ✔  When 2 secs
    ✘  Then 2 secs
-      Step failed: /tests/features/wait/nested/rule.feature:17:7
-      Captured output:
+      Step failed:
+      Defined: tests/features/wait/nested/rule.feature:17:7
+      Matched: tests/junit.rs:9:1
       Step panicked. Captured output: Too much!
       World(
           4,

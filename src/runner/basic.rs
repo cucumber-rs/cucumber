@@ -751,11 +751,11 @@ where
                 event::Cucumber::scenario(f, r, s, e(step))
             }
         };
-        let ok_capt = |e: fn(_, _) -> event::Scenario<W>| {
+        let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
-            move |step, captures| {
+            move |step, captures, loc| {
                 let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
-                event::Cucumber::scenario(f, r, s, e(step, captures))
+                event::Cucumber::scenario(f, r, s, e(step, captures, loc))
             }
         };
 
@@ -964,20 +964,25 @@ where
     ) -> Result<W, ExecutionFailure<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
-        Ps: FnOnce(Arc<gherkin::Step>, CaptureLocations) -> event::Cucumber<W>,
+        Ps: FnOnce(
+            Arc<gherkin::Step>,
+            CaptureLocations,
+            Option<step::Location>,
+        ) -> event::Cucumber<W>,
         Sk: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
     {
         self.send_event(started(Arc::clone(&step)));
 
         let run = async {
-            let (step_fn, captures, ctx) = match self.collection.find(&step) {
-                Ok(Some(f)) => f,
-                Ok(None) => return Ok((None, world)),
-                Err(e) => {
-                    let e = event::StepError::AmbiguousMatch(e);
-                    return Err((e, None, world));
-                }
-            };
+            let (step_fn, captures, loc, ctx) =
+                match self.collection.find(&step) {
+                    Ok(Some(f)) => f,
+                    Ok(None) => return Ok((None, None, world)),
+                    Err(e) => {
+                        let e = event::StepError::AmbiguousMatch(e);
+                        return Err((e, None, None, world));
+                    }
+                };
 
             let mut world = if let Some(w) = world {
                 w
@@ -988,11 +993,11 @@ where
                         let e = event::StepError::Panic(coerce_into_info(
                             format!("failed to initialize World: {e}"),
                         ));
-                        return Err((e, None, None));
+                        return Err((e, None, loc, None));
                     }
                     Err(e) => {
                         let e = event::StepError::Panic(e.into());
-                        return Err((e, None, None));
+                        return Err((e, None, loc, None));
                     }
                 }
             };
@@ -1001,29 +1006,30 @@ where
                 .catch_unwind()
                 .await
             {
-                Ok(()) => Ok((Some(captures), Some(world))),
+                Ok(()) => Ok((Some(captures), loc, Some(world))),
                 Err(e) => {
                     let e = event::StepError::Panic(e.into());
-                    Err((e, Some(captures), Some(world)))
+                    Err((e, Some(captures), loc, Some(world)))
                 }
             }
         };
 
         #[allow(clippy::shadow_unrelated)]
         match run.await {
-            Ok((Some(captures), Some(world))) => {
-                self.send_event(passed(step, captures));
+            Ok((Some(captures), loc, Some(world))) => {
+                self.send_event(passed(step, captures, loc));
                 Ok(world)
             }
-            Ok((_, world)) => {
+            Ok((_, _, world)) => {
                 self.send_event(skipped(step));
                 Err(ExecutionFailure::StepSkipped(world))
             }
-            Err((err, captures, world)) => {
+            Err((err, captures, loc, world)) => {
                 Err(ExecutionFailure::StepPanicked {
                     world,
                     step,
                     captures,
+                    loc,
                     err,
                     meta: event::Metadata::new(()),
                     is_background,
@@ -1080,6 +1086,7 @@ where
             ExecutionFailure::StepPanicked {
                 step,
                 captures,
+                loc,
                 err: error,
                 meta,
                 is_background: true,
@@ -1090,7 +1097,7 @@ where
                     rule,
                     scenario,
                     event::Scenario::background_step_failed(
-                        step, captures, world, error,
+                        step, captures, loc, world, error,
                     ),
                 ),
                 meta,
@@ -1098,6 +1105,7 @@ where
             ExecutionFailure::StepPanicked {
                 step,
                 captures,
+                loc,
                 err: error,
                 meta,
                 is_background: false,
@@ -1107,7 +1115,9 @@ where
                     feature,
                     rule,
                     scenario,
-                    event::Scenario::step_failed(step, captures, world, error),
+                    event::Scenario::step_failed(
+                        step, captures, loc, world, error,
+                    ),
                 ),
                 meta,
             ),
@@ -1605,6 +1615,12 @@ enum ExecutionFailure<World> {
         ///
         /// [`Step`]: gherkin::Step
         captures: Option<CaptureLocations>,
+
+        /// [`Location`] of the [`fn`] that matched this [`Step`].
+        ///
+        /// [`Location`]: step::Location
+        /// [`Step`]: gherkin::Step
+        loc: Option<step::Location>,
 
         /// [`StepError`] of the [`Step`].
         ///

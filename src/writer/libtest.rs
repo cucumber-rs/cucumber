@@ -28,8 +28,10 @@ use serde::Serialize;
 use crate::{
     cli, event, parser,
     writer::{
-        self, basic::coerce_error, out::WriteStrExt as _, Arbitrary, Normalize,
-        Summarize,
+        self,
+        basic::{coerce_error, trim_path},
+        out::WriteStrExt as _,
+        Arbitrary, Normalize, Summarize,
     },
     Event, World, Writer, WriterExt as _,
 };
@@ -41,7 +43,8 @@ pub struct Cli {
     #[clap(long, name = "json")]
     pub format: Option<Format>,
 
-    /// Show captured stdout of successful tests. Currently does nothing.
+    /// Show captured stdout of successful tests. Currently, outputs only step
+    /// function location.
     #[clap(long)]
     pub show_output: bool,
 
@@ -163,9 +166,9 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
     async fn handle_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
-        _: &Self::Cli,
+        cli: &Self::Cli,
     ) {
-        self.handle_cucumber_event(event);
+        self.handle_cucumber_event(event, cli);
     }
 }
 
@@ -276,6 +279,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn handle_cucumber_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Cli,
     ) {
         use event::{Cucumber, Metadata};
 
@@ -290,11 +294,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 let all_events =
                     iter::once(unite(event)).chain(mem::take(&mut self.events));
                 for ev in all_events {
-                    self.output_event(ev);
+                    self.output_event(ev, cli);
                 }
             }
             (event, false) => self.events.push(unite(event)),
-            (event, true) => self.output_event(unite(event)),
+            (event, true) => self.output_event(unite(event), cli),
         }
     }
 
@@ -302,8 +306,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn output_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Cli,
     ) {
-        for ev in self.expand_cucumber_event(event) {
+        for ev in self.expand_cucumber_event(event, cli) {
             self.output
                 .write_line(serde_json::to_string(&ev).unwrap_or_else(|e| {
                     panic!("Failed to serialize `LibTestJsonEvent`: {e}")
@@ -316,6 +321,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn expand_cucumber_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Cucumber;
 
@@ -366,7 +372,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 vec![ev]
             }
             Ok((Cucumber::Feature(feature, ev), _)) => {
-                self.expand_feature_event(&feature, ev)
+                self.expand_feature_event(&feature, ev, cli)
             }
             Err(e) => {
                 self.parsing_errors += 1;
@@ -399,6 +405,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         &mut self,
         feature: &gherkin::Feature,
         ev: event::Feature<W>,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::{Feature, Rule};
 
@@ -406,11 +413,16 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Feature::Started
             | Feature::Finished
             | Feature::Rule(_, Rule::Started | Rule::Finished) => Vec::new(),
-            Feature::Rule(rule, Rule::Scenario(scenario, ev)) => {
-                self.expand_scenario_event(feature, Some(&rule), &scenario, ev)
-            }
+            Feature::Rule(rule, Rule::Scenario(scenario, ev)) => self
+                .expand_scenario_event(
+                    feature,
+                    Some(&rule),
+                    &scenario,
+                    ev,
+                    cli,
+                ),
             Feature::Scenario(scenario, ev) => {
-                self.expand_scenario_event(feature, None, &scenario, ev)
+                self.expand_scenario_event(feature, None, &scenario, ev, cli)
             }
         }
     }
@@ -422,6 +434,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         ev: event::Scenario<W>,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Scenario;
 
@@ -430,11 +443,12 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Scenario::Hook(ty, ev) => {
                 self.expand_hook_event(feature, rule, scenario, ty, ev)
             }
-            Scenario::Background(step, ev) => {
-                self.expand_step_event(feature, rule, scenario, &step, ev, true)
-            }
-            Scenario::Step(step, ev) => self
-                .expand_step_event(feature, rule, scenario, &step, ev, false),
+            Scenario::Background(step, ev) => self.expand_step_event(
+                feature, rule, scenario, &step, ev, true, cli,
+            ),
+            Scenario::Step(step, ev) => self.expand_step_event(
+                feature, rule, scenario, &step, ev, false, cli,
+            ),
         }
     }
 
@@ -476,6 +490,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
+    #[allow(clippy::too_many_arguments)]
     fn expand_step_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -484,6 +499,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         step: &gherkin::Step,
         ev: event::Step<W>,
         is_background: bool,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Step;
 
@@ -496,28 +512,72 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
         let ev = match ev {
             Step::Started => TestEvent::started(name),
-            Step::Passed(_) => {
+            Step::Passed(_, loc) => {
                 self.passed += 1;
 
-                TestEvent::ok(name)
+                let event = TestEvent::ok(name);
+                if cli.show_output {
+                    event.with_stdout(format!(
+                        "{}:{}:{} (defined){}",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                        loc.map(|l| format!(
+                            "\n{}:{}:{} (matched)",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default()
+                    ))
+                } else {
+                    event
+                }
             }
             Step::Skipped => {
                 self.ignored += 1;
 
-                TestEvent::ignored(name)
+                let event = TestEvent::ignored(name);
+                if cli.show_output {
+                    event.with_stdout(format!(
+                        "{}:{}:{} (defined)",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                    ))
+                } else {
+                    event
+                }
             }
-            Step::Failed(_, world, err) => {
+            Step::Failed(_, loc, world, err) => {
                 self.failed += 1;
 
                 TestEvent::failed(name).with_stdout(format!(
-                    "{err}{}",
+                    "{}:{}:{} (defined){}\n{err}{}",
+                    feature
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.to_str().map(trim_path))
+                        .unwrap_or(&feature.name),
+                    step.position.line,
+                    step.position.col,
+                    loc.map(|l| format!(
+                        "\n{}:{}:{} (matched)",
+                        l.path, l.line, l.column,
+                    ))
+                    .unwrap_or_default(),
                     world.map(|w| format!("\n{w:#?}")).unwrap_or_default(),
                 ))
             }
-        }
-        .into();
+        };
 
-        vec![ev]
+        vec![ev.into()]
     }
 
     /// Generates test case name.
@@ -532,13 +592,17 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             "{}: {} {}",
             feature.keyword,
             feature.name,
-            feature.path.as_ref().and_then(|p| p.to_str()).map_or_else(
-                || {
-                    self.features_without_path += 1;
-                    self.features_without_path.to_string()
-                },
-                |s| s.escape_default().to_string()
-            ),
+            feature
+                .path
+                .as_ref()
+                .and_then(|p| p.to_str().map(trim_path))
+                .map_or_else(
+                    || {
+                        self.features_without_path += 1;
+                        self.features_without_path.to_string()
+                    },
+                    |s| s.escape_default().to_string()
+                ),
         );
         let rule_name = rule
             .as_ref()
@@ -752,7 +816,11 @@ impl TestEvent {
     }
 
     /// Adds a [`TestEventInner::stdout`].
-    fn with_stdout(self, stdout: String) -> Self {
+    fn with_stdout(self, mut stdout: String) -> Self {
+        if !stdout.ends_with('\n') {
+            stdout.push('\n');
+        }
+
         match self {
             Self::Started(inner) => Self::Started(inner.with_stdout(stdout)),
             Self::Ok(inner) => Self::Ok(inner.with_stdout(stdout)),
