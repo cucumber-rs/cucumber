@@ -2809,7 +2809,7 @@ impl CustomRunner {
         mut world: AnimalWorld,
         step: gherkin::Step,
     ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
-        let ev = if let Some((step_fn, captures, ctx)) =
+        let ev = if let Some((step_fn, captures, loc, ctx)) =
             Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
         {
             // Panic represents a failed assertion in a step matching
@@ -2818,9 +2818,10 @@ impl CustomRunner {
                 .catch_unwind()
                 .await
             {
-                Ok(()) =&gt; event::Step::Passed(captures),
+                Ok(()) =&gt; event::Step::Passed(captures, loc),
                 Err(e) =&gt; event::Step::Failed(
                     Some(captures),
+                    loc,
                     Some(Arc::new(world.clone())),
                     event::StepError::Panic(e.into()),
                 ),
@@ -3061,16 +3062,17 @@ async fn main() {
 </span><span class="boring">        mut world: AnimalWorld,
 </span><span class="boring">        step: gherkin::Step,
 </span><span class="boring">    ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
-</span><span class="boring">        let ev = if let Some((step_fn, captures, ctx)) =
+</span><span class="boring">        let ev = if let Some((step_fn, captures, loc, ctx)) =
 </span><span class="boring">            Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
 </span><span class="boring">        {
 </span><span class="boring">            match AssertUnwindSafe(step_fn(&amp;mut world, ctx))
 </span><span class="boring">                .catch_unwind()
 </span><span class="boring">                .await
 </span><span class="boring">            {
-</span><span class="boring">                Ok(()) =&gt; event::Step::Passed(captures),
+</span><span class="boring">                Ok(()) =&gt; event::Step::Passed(captures, loc),
 </span><span class="boring">                Err(e) =&gt; event::Step::Failed(
 </span><span class="boring">                    Some(captures),
+</span><span class="boring">                    loc,
 </span><span class="boring">                    Some(Arc::new(world.clone())),
 </span><span class="boring">                    event::StepError::Panic(e.into()),
 </span><span class="boring">                ),
@@ -3178,9 +3180,9 @@ impl&lt;W: 'static&gt; cucumber::Writer&lt;W&gt; for CustomWriter {
                             event::Step::Started =&gt; {
                                 print!(&quot;{} {}...&quot;, step.keyword, step.value)
                             }
-                            event::Step::Passed(_) =&gt; println!(&quot;ok&quot;),
+                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
                             event::Step::Skipped =&gt; println!(&quot;skip&quot;),
-                            event::Step::Failed(_, _, err) =&gt; {
+                            event::Step::Failed(_, _, _, err) =&gt; {
                                 println!(&quot;failed: {err}&quot;)
                             }
                         },
@@ -3346,9 +3348,9 @@ async fn main() {
 </span><span class="boring">                            event::Step::Started =&gt; {
 </span><span class="boring">                                print!(&quot;{} {}...&quot;, step.keyword, step.value)
 </span><span class="boring">                            }
-</span><span class="boring">                            event::Step::Passed(_) =&gt; println!(&quot;ok&quot;),
+</span><span class="boring">                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
 </span><span class="boring">                            event::Step::Skipped =&gt; println!(&quot;skip&quot;),
-</span><span class="boring">                            event::Step::Failed(_, _, err) =&gt; {
+</span><span class="boring">                            event::Step::Failed(_, _, _, err) =&gt; {
 </span><span class="boring">                                println!(&quot;failed: {err}&quot;, )
 </span><span class="boring">                            }
 </span><span class="boring">                        },
