@@ -16,7 +16,7 @@
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::16:  When 2 secs"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs"}
-{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"Defined: tests/features/wait/rule.feature:17:7\nMatched: tests/libtest.rs:9:1\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::12: Rule: rule::14: Scenario: 2 secs::17:  Then 2 secs","stdout":"tests/features/wait/rule.feature:17:7 (defined)\ntests/libtest.rs:9:1 (matched)\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec"}
@@ -81,4 +81,4 @@
 {"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::6:  When 5 secs"}
 {"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::7:  Then 5 secs"}
 {"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::7:  Then 5 secs"}
-{"type":"suite","event":"failed","passed":36,"failed":3,"ignored":2,"measured":0,"filtered_out":0,"exec_time":0.029614}
+{"type":"suite","event":"failed","passed":36,"failed":3,"ignored":2,"measured":0,"filtered_out":0,"exec_time":0.029719}

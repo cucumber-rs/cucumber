@@ -285,25 +285,24 @@ impl<Out: io::Write> Json<Out> {
                 duration: duration(),
                 error_message: None,
             },
-            event::Step::Failed(_, loc, _, err) => match err {
-                event::StepError::AmbiguousMatch(err) => RunResult {
-                    status: Status::Ambiguous,
+            event::Step::Failed(_, loc, _, err) => {
+                let status = match &err {
+                    event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
+                    event::StepError::Panic(..) => Status::Failed,
+                };
+                RunResult {
+                    status,
                     duration: duration(),
                     error_message: Some(format!(
                         "{}{err}",
                         loc.map(|l| format!(
-                            "Matched: {}:{}:{}",
+                            "Matched: {}:{}:{}\n",
                             l.path, l.line, l.column,
                         ))
                         .unwrap_or_default(),
                     )),
-                },
-                event::StepError::Panic(info) => RunResult {
-                    status: Status::Failed,
-                    duration: duration(),
-                    error_message: Some(coerce_error(&info).into_owned()),
-                },
-            },
+                }
+            }
             event::Step::Skipped => RunResult {
                 status: Status::Skipped,
                 duration: duration(),

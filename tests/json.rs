@@ -21,7 +21,8 @@ async fn main() {
             .before(|_, _, sc, _| {
                 async {
                     assert!(
-                        !sc.tags.iter().any(|t| t == "fail_before"),
+                        !(sc.name == "wait"
+                            && sc.tags.iter().any(|t| t == "fail_before")),
                         "Tag!",
                     );
                 }
