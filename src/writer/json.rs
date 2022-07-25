@@ -22,7 +22,11 @@ use crate::{
     cli, event,
     feature::ExpandExamplesError,
     parser,
-    writer::{self, basic::coerce_error, discard, Ext as _},
+    writer::{
+        self,
+        basic::{coerce_error, trim_path},
+        discard, Ext as _,
+    },
     Event, World, Writer,
 };
 
@@ -586,7 +590,7 @@ impl Feature {
             uri: feature
                 .path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .map(str::to_owned),
             keyword: feature.keyword.clone(),
             name: feature.name.clone(),
@@ -608,7 +612,7 @@ impl Feature {
             uri: err
                 .path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .map(str::to_owned),
             keyword: String::new(),
             name: String::new(),
@@ -622,7 +626,7 @@ impl Feature {
                     "failed-to-expand-examples{}",
                     err.path
                         .as_ref()
-                        .and_then(|p| p.to_str())
+                        .and_then(|p| p.to_str().map(trim_path))
                         .unwrap_or_default(),
                 ),
                 line: 0,
@@ -650,6 +654,7 @@ impl Feature {
             | gherkin::ParseFileError::Parsing { path, .. } => path,
         }
         .to_str()
+        .map(trim_path)
         .map(str::to_owned);
 
         Self {
@@ -693,7 +698,7 @@ impl PartialEq<gherkin::Feature> for Feature {
                 feature
                     .path
                     .as_ref()
-                    .and_then(|p| p.to_str())
+                    .and_then(|p| p.to_str().map(trim_path))
                     .map(|path| uri == path)
             })
             .unwrap_or_default()

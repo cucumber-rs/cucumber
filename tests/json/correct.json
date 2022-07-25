@@ -1,6 +1,6 @@
 [
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+    "uri": "tests/features/wait/invalid.feature",
     "keyword": "",
     "name": "",
     "tags": [],
@@ -8,7 +8,7 @@
       {
         "keyword": "",
         "type": "scenario",
-        "id": "failed-to-parse/Users/work/Work/cucumber/tests/features/wait/invalid.feature",
+        "id": "failed-to-parsetests/features/wait/invalid.feature",
         "line": 0,
         "name": "",
         "tags": [],
@@ -28,7 +28,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule.feature",
+    "uri": "tests/features/wait/rule.feature",
     "keyword": "Feature",
     "name": "Basic",
     "tags": [],
@@ -38,7 +38,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 1000
             }
           }
         ],
@@ -68,7 +68,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -77,7 +77,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 478000
+              "duration": 545000
             }
           },
           {
@@ -86,7 +86,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 218000
+              "duration": 221000
             }
           }
         ]
@@ -110,7 +110,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 490000
+              "duration": 556000
             }
           }
         ]
@@ -120,7 +120,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
+              "duration": 2000
             }
           }
         ],
@@ -150,7 +150,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 68000
+              "duration": 65000
             }
           },
           {
@@ -159,7 +159,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 60000
+              "duration": 64000
             }
           },
           {
@@ -168,7 +168,7 @@
             "name": "2 secs",
             "result": {
               "status": "Failed",
-              "duration": 505000,
+              "duration": 502000,
               "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
             }
           }
@@ -201,7 +201,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/nested/rule.feature",
+    "uri": "tests/features/wait/nested/rule.feature",
     "keyword": "Feature",
     "name": "Basic",
     "tags": [],
@@ -211,7 +211,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
+              "duration": 2000
             }
           }
         ],
@@ -241,7 +241,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 21000
             }
           },
           {
@@ -250,7 +250,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 19000
             }
           },
           {
@@ -259,7 +259,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 7000
+              "duration": 11000
             }
           }
         ]
@@ -283,7 +283,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 28000
             }
           }
         ]
@@ -293,7 +293,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
+              "duration": 2000
             }
           }
         ],
@@ -323,7 +323,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 21000
+              "duration": 22000
             }
           },
           {
@@ -341,7 +341,7 @@
             "name": "2 secs",
             "result": {
               "status": "Failed",
-              "duration": 38000,
+              "duration": 40000,
               "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
             }
           }
@@ -366,7 +366,7 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 28000
             }
           }
         ]
@@ -374,7 +374,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/outline.feature",
+    "uri": "tests/features/wait/outline.feature",
     "keyword": "Feature",
     "name": "Outline",
     "tags": [],
@@ -384,7 +384,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 18000,
+              "duration": 19000,
               "error_message": "Tag!"
             }
           }
@@ -393,7 +393,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
+              "duration": 7000
             }
           }
         ],
@@ -419,7 +419,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -437,7 +437,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 23000
+              "duration": 19000
             }
           }
         ]
@@ -447,7 +447,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 18000,
+              "duration": 17000,
               "error_message": "Tag!"
             }
           }
@@ -482,7 +482,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
@@ -500,7 +500,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 20000
             }
           }
         ]
@@ -510,7 +510,7 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 18000,
+              "duration": 17000,
               "error_message": "Tag!"
             }
           }
@@ -519,7 +519,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 9000
+              "duration": 6000
             }
           }
         ],
@@ -545,7 +545,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 31000
             }
           },
           {
@@ -554,7 +554,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 21000
             }
           },
           {
@@ -563,7 +563,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 18000
+              "duration": 20000
             }
           }
         ]
@@ -582,7 +582,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
+              "duration": 7000
             }
           }
         ],
@@ -612,7 +612,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -621,7 +621,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 24000
+              "duration": 21000
             }
           },
           {
@@ -630,7 +630,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 22000
             }
           }
         ]
@@ -638,7 +638,7 @@
     ]
   },
   {
-    "uri": "/Users/work/Work/cucumber/tests/features/wait/rule_outline.feature",
+    "uri": "tests/features/wait/rule_outline.feature",
     "keyword": "Feature",
     "name": "Rule Outline",
     "tags": [],
@@ -656,7 +656,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
+              "duration": 7000
             }
           }
         ],
@@ -673,7 +673,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -682,7 +682,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 23000
             }
           },
           {
@@ -691,7 +691,7 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 20000
             }
           }
         ]
@@ -709,7 +709,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
+              "duration": 10000
             }
           }
         ],
@@ -726,7 +726,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -735,7 +735,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 20000
             }
           },
           {
@@ -779,7 +779,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 29000
+              "duration": 27000
             }
           },
           {
@@ -788,7 +788,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
+              "duration": 23000
             }
           },
           {
@@ -797,7 +797,7 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 20000
             }
           }
         ]
@@ -807,7 +807,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 0
+              "duration": 1000
             }
           }
         ],
@@ -832,7 +832,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 26000
+              "duration": 27000
             }
           },
           {
@@ -841,7 +841,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
+              "duration": 20000
             }
           },
           {
@@ -850,7 +850,7 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 23000
+              "duration": 19000
             }
           }
         ]
