@@ -45,10 +45,8 @@ async fn main() {
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
     let non_deterministic = RegexBuilder::new(
-        "\"uri\":\\s?\"[^\"]*\"\
-         |\"duration\":\\s?\\d+\
-         |\"id\":\\s?\"failed[^\"]*\"\
-         |\"error_message\":\\s?\"Could[^\"]*\"\
+        "\"duration\":\\s?\\d+\
+         |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
          |\n\
          |\\s",
     )
