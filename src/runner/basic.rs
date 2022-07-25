@@ -821,7 +821,11 @@ async fn execute<W, Before, After>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        // TODO: explain
+        // We yield once on every iteration, because there is a chance, that
+        // this function never yields otherwise. So event sender doesn't send
+        // anything to the `Writer` until the end. This is the case, when all
+        // parsing is done, so there is no contention on `Mutex` inside
+        // `Features` storage and all `Step` functions don't yield.
         yield_now().await;
 
         let runnable = features.get(map_break(started_scenarios)).await;
