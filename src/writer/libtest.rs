@@ -615,8 +615,17 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             .as_ref()
             .map(|r| format!("{}: {}: {}", r.position.line, r.keyword, r.name));
         let scenario_name = format!(
-            "{}: {}: {} | {retries:?}",
-            scenario.position.line, scenario.keyword, scenario.name,
+            "{}: {}: {}{}",
+            scenario.position.line,
+            scenario.keyword,
+            scenario.name,
+            retries
+                .map(|r| format!(
+                    " | Retry attempt {}/{}",
+                    r.current,
+                    r.current + r.left,
+                ))
+                .unwrap_or_default(),
         );
         let step_name = match step {
             Either::Left(hook) => format!("{hook} hook"),

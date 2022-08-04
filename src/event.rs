@@ -118,7 +118,6 @@ impl Metadata {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Retries {
     pub left: usize,
-
     pub current: usize,
 }
 
@@ -127,7 +126,7 @@ impl Retries {
         Self { left, current: 0 }
     }
 
-    pub fn next_try(self) -> Option<Retries> {
+    pub fn next_try(self) -> Option<Self> {
         self.left.checked_sub(1).map(|left| Self {
             left,
             current: self.current + 1,

@@ -24,10 +24,8 @@ use futures::{future::LocalBoxFuture, StreamExt as _};
 use regex::Regex;
 
 use crate::{
-    cli, event,
-    event::Retries,
-    parser,
-    runner::{self, basic::RetryAt},
+    cli, event, parser,
+    runner::{self, basic::RetryOptions},
     step,
     tag::Ext as _,
     writer, Event, Parser, Runner, ScenarioType, Step, World, Writer,
@@ -882,7 +880,8 @@ where
             &gherkin::Feature,
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
-        ) -> Option<(Retries, RetryAt)>
+            &runner::basic::Cli,
+        ) -> Option<RetryOptions>
         + 'static,
     B: for<'a> Fn(
             &'a gherkin::Feature,
@@ -958,7 +957,8 @@ where
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
-            ) -> Option<(Retries, RetryAt)>
+                &runner::basic::Cli,
+            ) -> Option<RetryOptions>
             + 'static,
     {
         let Self {

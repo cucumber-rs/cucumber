@@ -504,11 +504,10 @@ impl<World> CucumberQueue<World> {
         scenario: Arc<gherkin::Scenario>,
         event: Event<event::Scenario<World>>,
     ) {
-        let retries = event.retries();
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .insert_scenario_event(rule, scenario, retries, event);
+            .insert_scenario_event(rule, scenario, event.retries(), event);
     }
 }
 

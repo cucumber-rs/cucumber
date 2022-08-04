@@ -635,8 +635,7 @@ impl<Out: io::Write> Basic<Out> {
 
         let indent = " ".repeat(self.indent.saturating_sub(3));
 
-        let step_keyword =
-            self.styles.err(format!("{indent}✘  {}", step.keyword));
+        let step_keyword = style(format!("{indent}✘  {}", step.keyword));
         let step_value = captures.map_or_else(
             || style(step.value.clone()),
             |capts| {
@@ -725,7 +724,15 @@ impl<Out: io::Write> Basic<Out> {
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Failed(c, loc, w, i) => {
-                self.bg_step_failed(feat, bg, c.as_ref(), *loc, w.as_ref(), i)?;
+                self.bg_step_failed(
+                    feat,
+                    bg,
+                    c.as_ref(),
+                    *loc,
+                    retries,
+                    w.as_ref(),
+                    i,
+                )?;
                 self.indent = self.indent.saturating_sub(4);
             }
         }
@@ -881,28 +888,36 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
         captures: Option<&CaptureLocations>,
         loc: Option<step::Location>,
+        retries: Option<Retries>,
         world: Option<&W>,
         err: &event::StepError,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
+        let style = |s| {
+            if retries.filter(|r| r.left > 0).is_some() {
+                self.styles.retry_bright(s)
+            } else {
+                self.styles.err(s)
+            }
+        };
+
         let indent = " ".repeat(self.indent.saturating_sub(3));
-        let step_keyword =
-            self.styles.err(format!("{indent}✘> {}", step.keyword));
+        let step_keyword = style(format!("{indent}✘> {}", step.keyword));
         let step_value = captures.map_or_else(
-            || self.styles.err(&step.value),
+            || style(step.value.clone()),
             |capts| {
                 format_captures(
                     &step.value,
                     capts,
-                    |v| self.styles.err(v),
-                    |v| self.styles.err(self.styles.bold(v)),
+                    |v| style(v.to_owned()),
+                    |v| style(self.styles.bold(v).to_string()),
                 )
                 .into()
             },
         );
 
-        let diagnostics = self.styles.err(format!(
+        let diagnostics = style(format!(
             "{}{}\n\
              {indent}   Step failed:\n\
              {indent}   Defined: {}:{}:{}{}{}{}",

@@ -105,7 +105,7 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` with [`Styles::err`] color or
+    /// If terminal is present colors `input` with [`Styles::retry`] color or
     /// leaves "as is" otherwise.
     #[must_use]
     pub fn retry<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
@@ -116,8 +116,8 @@ impl Styles {
         }
     }
 
-    /// If terminal is present colors `input` with [`Styles::err`] color or
-    /// leaves "as is" otherwise.
+    /// If terminal is present colors `input` with [`Styles::retry`] color and
+    /// [`Style::bright()`] or leaves "as is" otherwise.
     #[must_use]
     pub fn retry_bright<'a>(
         &self,

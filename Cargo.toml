@@ -45,6 +45,7 @@ atty = "0.2.14"
 clap = { version = "3.0", features = ["derive"] }
 console = "0.15"
 derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
+drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"
 gherkin = "0.12"
