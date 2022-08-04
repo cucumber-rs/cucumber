@@ -20,6 +20,8 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use sealed::sealed;
 
+use crate::writer::basic::trim_path;
+
 /// Helper methods to operate on [`gherkin::Feature`]s.
 #[sealed]
 pub trait Ext: Sized {
@@ -225,7 +227,7 @@ fn expand_scenario(
 #[display(
     fmt = "Failed to resolve <{}> at {}:{}:{}",
     name,
-    "path.as_deref().and_then(Path::to_str).unwrap_or_default()",
+    "path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default()",
     "pos.line",
     "pos.col"
 )]

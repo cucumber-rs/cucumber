@@ -27,11 +27,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Or` to alternate between 2 `Writer`s basing on a predicate. ([#220])
 - `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
 - `FeatureExt::count_steps()` method. ([#220])
-- Output location of `fn`, that matched the `Step`. ([#221])
+- Location of the `fn` matching a failed `Step` in output. ([#221])
 
 ### Changed
 
 - Provided default CLI options are now global (allowed to be specified after custom subcommands). ([#216], [#215])
+- Stripped `CARGO_MANIFEST_DIR` from output paths whenever is possible. ([#221])
 
 [#215]: /../../issues/215
 [#216]: /../../pull/216

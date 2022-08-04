@@ -30,8 +30,10 @@ use crate::{
     event::{self, Retries},
     parser,
     writer::{
-        self, basic::coerce_error, out::WriteStrExt as _, Arbitrary, Normalize,
-        Summarize,
+        self,
+        basic::{coerce_error, trim_path},
+        out::WriteStrExt as _,
+        Arbitrary, Normalize, Summarize,
     },
     Event, World, Writer, WriterExt as _,
 };
@@ -43,7 +45,7 @@ pub struct Cli {
     #[clap(long, name = "json")]
     pub format: Option<Format>,
 
-    /// Show captured stdout of successful tests. Currently outputs only `Step`
+    /// Show captured stdout of successful tests. Currently, outputs only step
     /// function location.
     #[clap(long)]
     pub show_output: bool,
@@ -520,10 +522,21 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.passed += 1;
 
                 let event = TestEvent::ok(name);
-                if let Some(loc) = loc.filter(|_| cli.show_output) {
+                if cli.show_output {
                     event.with_stdout(format!(
-                        "{}:{}:{}",
-                        loc.path, loc.line, loc.column,
+                        "{}:{}:{} (defined){}",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                        loc.map(|l| format!(
+                            "\n{}:{}:{} (matched)",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default()
                     ))
                 } else {
                     event
@@ -532,25 +545,45 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Step::Skipped => {
                 self.ignored += 1;
 
-                TestEvent::ignored(name)
+                let event = TestEvent::ignored(name);
+                if cli.show_output {
+                    event.with_stdout(format!(
+                        "{}:{}:{} (defined)",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                    ))
+                } else {
+                    event
+                }
             }
             Step::Failed(_, loc, world, err) => {
                 self.failed += 1;
 
                 TestEvent::failed(name).with_stdout(format!(
-                    "{}{err}{}",
+                    "{}:{}:{} (defined){}\n{err}{}",
+                    feature
+                        .path
+                        .as_ref()
+                        .and_then(|p| p.to_str().map(trim_path))
+                        .unwrap_or(&feature.name),
+                    step.position.line,
+                    step.position.col,
                     loc.map(|l| format!(
-                        "{}:{}:{}\n",
+                        "\n{}:{}:{} (matched)",
                         l.path, l.line, l.column,
                     ))
                     .unwrap_or_default(),
-                    world.map(|w| format!("\n{:#?}", w)).unwrap_or_default(),
+                    world.map(|w| format!("\n{w:#?}")).unwrap_or_default(),
                 ))
             }
-        }
-        .into();
+        };
 
-        vec![ev]
+        vec![ev.into()]
     }
 
     /// Generates test case name.
@@ -566,13 +599,17 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             "{}: {} {}",
             feature.keyword,
             feature.name,
-            feature.path.as_ref().and_then(|p| p.to_str()).map_or_else(
-                || {
-                    self.features_without_path += 1;
-                    self.features_without_path.to_string()
-                },
-                |s| s.escape_default().to_string()
-            ),
+            feature
+                .path
+                .as_ref()
+                .and_then(|p| p.to_str().map(trim_path))
+                .map_or_else(
+                    || {
+                        self.features_without_path += 1;
+                        self.features_without_path.to_string()
+                    },
+                    |s| s.escape_default().to_string()
+                ),
         );
         let rule_name = rule
             .as_ref()

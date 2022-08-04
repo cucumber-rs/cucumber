@@ -382,7 +382,7 @@ impl<Out: io::Write> Basic<Out> {
              {indent}   Captured output: {}{}",
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .unwrap_or(&feat.name),
             sc.position.line,
             sc.position.col,
@@ -601,7 +601,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
@@ -634,7 +634,9 @@ impl<Out: io::Write> Basic<Out> {
         };
 
         let indent = " ".repeat(self.indent.saturating_sub(3));
-        let step_keyword = style(format!("{indent}✘  {}", step.keyword));
+
+        let step_keyword =
+            self.styles.err(format!("{indent}✘  {}", step.keyword));
         let step_value = captures.map_or_else(
             || style(step.value.clone()),
             |capts| {
@@ -649,9 +651,9 @@ impl<Out: io::Write> Basic<Out> {
         );
 
         let diagnostics = style(format!(
-            "{}{}\n{}\
-             {indent}   Step failed: {}:{}:{}\n\
-             {indent}   Captured output: {}{}",
+            "{}{}\n\
+             {indent}   Step failed:\n\
+             {indent}   Defined: {}:{}:{}{}{}{}",
             step.docstring
                 .as_ref()
                 .and_then(|doc| self.verbosity.shows_docstring().then(|| {
@@ -665,17 +667,17 @@ impl<Out: io::Write> Basic<Out> {
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
                 .unwrap_or_default(),
-            loc.map(|l| format!(
-                "{indent}   {}:{}:{}\n",
-                l.path, l.line, l.column,
-            ))
-            .unwrap_or_default(),
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
+            loc.map(|l| format!(
+                "\n{indent}   Matched: {}:{}:{}",
+                l.path, l.line, l.column,
+            ))
+            .unwrap_or_default(),
             format_str_with_indent(
                 err.to_string(),
                 self.indent.saturating_sub(3) + 3,
@@ -796,6 +798,7 @@ impl<Out: io::Write> Basic<Out> {
         };
 
         let indent = " ".repeat(self.indent.saturating_sub(3));
+
         let step_keyword = style(format!("{indent}✔> {}", step.keyword));
         let step_value = format_captures(
             &step.value,
@@ -859,7 +862,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
@@ -900,9 +903,9 @@ impl<Out: io::Write> Basic<Out> {
         );
 
         let diagnostics = self.styles.err(format!(
-            "{}{}\n{}\
-             {indent}   Step failed: {}:{}:{}\n\
-             {indent}   Captured output: {}{}",
+            "{}{}\n\
+             {indent}   Step failed:\n\
+             {indent}   Defined: {}:{}:{}{}{}{}",
             step.docstring
                 .as_ref()
                 .and_then(|doc| self.verbosity.shows_docstring().then(|| {
@@ -916,17 +919,17 @@ impl<Out: io::Write> Basic<Out> {
                 .as_ref()
                 .map(|t| format_table(t, self.indent))
                 .unwrap_or_default(),
-            loc.map(|l| format!(
-                "{indent}   {}:{}:{}\n",
-                l.path, l.line, l.column,
-            ))
-            .unwrap_or_default(),
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .unwrap_or(&feat.name),
             step.position.line,
             step.position.col,
+            loc.map(|l| format!(
+                "\n{indent}   Matched: {}:{}:{}",
+                l.path, l.line, l.column,
+            ))
+            .unwrap_or_default(),
             format_str_with_indent(
                 err.to_string(),
                 self.indent.saturating_sub(3) + 3,
@@ -1043,4 +1046,12 @@ where
     formatted.push_str(&default(&value[end..value.len()]));
 
     formatted
+}
+
+/// Trims start of the path if it matches with `CARGO_MANIFEST_DIR` environment
+/// variable.
+pub(crate) fn trim_path(path: &str) -> &str {
+    path.trim_start_matches(env!("CARGO_MANIFEST_DIR"))
+        .trim_start_matches('/')
+        .trim_start_matches('\\')
 }
