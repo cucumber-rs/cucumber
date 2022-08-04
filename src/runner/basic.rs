@@ -55,7 +55,7 @@ use crate::{
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
-    #[clap(long, short, name = "int", global = true)]
+    #[clap(long, short, value_name = "int", global = true)]
     pub concurrency: Option<usize>,
 
     /// Run tests until the first failure.
@@ -63,20 +63,20 @@ pub struct Cli {
     pub fail_fast: bool,
 
     /// Number of times scenario will be rerun in case of a failure.
-    #[clap(long, name = "int", global = true)]
+    #[clap(long, value_name = "int", global = true)]
     pub retry: Option<usize>,
 
     /// Delay between each retry attempt.
     #[clap(
         long,
-        name = "duration",
+        value_name = "duration",
         parse(try_from_str = parse_duration),
         global = true,
     )]
     pub retry_after: Option<Duration>,
 
     /// Tag expression to filter retried scenarios.
-    #[clap(long, name = "tagexpr", global = true)]
+    #[clap(long, value_name = "tagexpr1", global = true)]
     pub retry_tag_filter: Option<TagOperation>,
 }
 

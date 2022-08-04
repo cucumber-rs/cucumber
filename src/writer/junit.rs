@@ -43,7 +43,7 @@ pub struct Cli {
     ///
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[clap(long = "junit-v", name = "0|1", global = true)]
+    #[clap(long = "junit-v", value_name = "0|1", global = true)]
     pub verbose: Option<u8>,
 }
 

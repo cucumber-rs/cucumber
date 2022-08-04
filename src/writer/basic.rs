@@ -48,7 +48,7 @@ pub struct Cli {
     /// Coloring policy for a console output.
     #[clap(
         long,
-        name = "auto|always|never",
+        value_name = "auto|always|never",
         default_value = "auto",
         global = true
     )]

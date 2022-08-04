@@ -42,7 +42,7 @@ use crate::{
 #[derive(clap::Args, Clone, Debug)]
 pub struct Cli {
     /// Formatting of the output.
-    #[clap(long, name = "json")]
+    #[clap(long, value_name = "json")]
     pub format: Option<Format>,
 
     /// Show captured stdout of successful tests. Currently, outputs only step
