@@ -9,10 +9,9 @@ Feature: Basic
     Then unknown
     Then 1 sec
 
-  @retry
   Rule: rule
     @fail_before
-    Scenario: 2 secs ret
+    Scenario: 2 secs
       Given 2 secs
       When 2 secs
       Then 2 secs

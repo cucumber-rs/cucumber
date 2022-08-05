@@ -29,6 +29,9 @@ pub struct Styles {
     /// [`Style`] for rendering errors and failed events.
     pub err: Style,
 
+    /// [`Style`] for rendering retried [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     pub retry: Style,
 
     /// [`Style`] for rendering header.

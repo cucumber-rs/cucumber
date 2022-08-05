@@ -446,7 +446,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
             }
             Scenario::Background(step, ev, retries) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, retries, false, cli,
+                feature, rule, scenario, &step, ev, retries, true, cli,
             ),
             Scenario::Step(step, ev, retries) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, false, cli,
@@ -620,6 +620,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             scenario.keyword,
             scenario.name,
             retries
+                .filter(|r| r.current > 0)
                 .map(|r| format!(
                     " | Retry attempt {}/{}",
                     r.current,

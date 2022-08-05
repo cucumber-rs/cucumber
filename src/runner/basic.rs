@@ -13,17 +13,13 @@
 use std::{
     cmp,
     collections::HashMap,
-    fmt,
-    future::Future,
-    mem,
+    fmt, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
-    pin::Pin,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    task,
     time::{Duration, Instant},
 };
 
@@ -45,6 +41,7 @@ use regex::{CaptureLocations, Regex};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
+    future::yield_now,
     parser, step,
     tag::Ext as _,
     Event, Runner, Step, World,
@@ -76,30 +73,30 @@ pub struct Cli {
     pub retry_after: Option<Duration>,
 
     /// Tag expression to filter retried scenarios.
-    #[clap(long, value_name = "tagexpr1", global = true)]
+    #[clap(long, value_name = "tagexpr", global = true)]
     pub retry_tag_filter: Option<TagOperation>,
 }
 
 impl Cli {
+    /// Applies retry settings from the [`Cli`].
     fn apply_retry(
         &self,
         scenario: &gherkin::Scenario,
-        num: Option<usize>,
+        retries: Option<usize>,
         after: Option<Duration>,
     ) -> Option<RetryOptions> {
         let matched = self
             .retry_tag_filter
             .as_ref()
             .map(|op| op.eval(&scenario.tags))
-            .unwrap_or(true);
-        if num.is_some() || after.is_some() || matched {
-            Some(RetryOptions {
-                num: Retries::initial(num.or(self.retry).unwrap_or(1)),
-                at: after.or(self.retry_after),
-            })
-        } else {
-            None
-        }
+            .unwrap_or_default();
+
+        (retries.is_some() || after.is_some() || matched).then(|| {
+            RetryOptions {
+                retries: Retries::initial(retries.or(self.retry).unwrap_or(1)),
+                after: after.or(self.retry_after),
+            }
+        })
     }
 }
 
@@ -120,52 +117,83 @@ pub enum ScenarioType {
     Concurrent,
 }
 
+/// Options for retrying [`Scenario`]s.
+///
+/// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug)]
 pub struct RetryOptions {
-    pub num: Retries,
-    pub at: Option<Duration>,
+    /// Number of [`Retries`].
+    pub retries: Retries,
+
+    /// Delay before next retry attempt will be executed.
+    pub after: Option<Duration>,
 }
 
 impl RetryOptions {
+    /// Returns [`Some`], in case next retry attempt is available, or [`None`]
+    /// otherwise.
+    #[must_use]
     pub fn next_try(self) -> Option<Self> {
-        self.num.next_try().map(|num| Self { num, at: self.at })
+        self.retries.next_try().map(|num| Self {
+            retries: num,
+            after: self.after,
+        })
     }
 
+    /// Constructs [`RetryOptionsWithDeadline`], that will reschedule
+    /// [`Scenario`] [`after`] delay.
+    ///
+    /// [`after`]: RetryOptions::after
+    /// [`Scenario`]: gherkin::Scenario
     fn with_deadline(self, now: Instant) -> RetryOptionsWithDeadline {
         RetryOptionsWithDeadline {
-            num: self.num,
-            at: self.at.map(|at| (at, Some(now))),
+            retries: self.retries,
+            after: self.after.map(|at| (at, Some(now))),
         }
     }
 
+    /// Constructs [`RetryOptionsWithDeadline`], that will reschedule
+    /// [`Scenario`] immediately, ignoring [`RetryOptions::after`]. Used for
+    /// initial [`Scenario`] run, where we don't need to wait for delay.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     fn without_deadline(self) -> RetryOptionsWithDeadline {
         RetryOptionsWithDeadline {
-            num: self.num,
-            at: self.at.map(|at| (at, None)),
+            retries: self.retries,
+            after: self.after.map(|at| (at, None)),
         }
     }
 }
 
+/// [`RetryOptions`] with an [`Option`]al [`Instant`] to determine, whether
+/// [`Scenario`] should be already rescheduled or not.
+///
+/// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug)]
 pub struct RetryOptionsWithDeadline {
-    pub num: Retries,
-    pub at: Option<(Duration, Option<Instant>)>,
+    /// Number of [`Retries`].
+    pub retries: Retries,
+
+    /// Delay before next retry attempt will be executed.
+    pub after: Option<(Duration, Option<Instant>)>,
 }
 
 impl From<RetryOptionsWithDeadline> for RetryOptions {
     fn from(v: RetryOptionsWithDeadline) -> Self {
         Self {
-            num: v.num,
-            at: v.at.map(|(at, _)| at),
+            retries: v.retries,
+            after: v.after.map(|(at, _)| at),
         }
     }
 }
 
 impl RetryOptionsWithDeadline {
+    /// Checks, whether [`Scenario`] is ready for rescheduling ot not.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     fn is_ready(&self) -> bool {
-        self.at
-            .map(|(dur, instant)| Some(instant?.elapsed() > dur))
-            .flatten()
+        self.after
+            .and_then(|(dur, instant)| Some(instant?.elapsed() > dur))
             .unwrap_or(true)
     }
 }
@@ -182,6 +210,9 @@ pub type WhichScenarioFn = fn(
     &gherkin::Scenario,
 ) -> ScenarioType;
 
+/// Alias for [`fn`] used to determine [`Scenario`]'s  [`RetryOptions`].
+///
+/// [`Scenario`]: gherkin::Scenario
 pub type RetryFn = fn(
     &gherkin::Feature,
     Option<&gherkin::Rule>,
@@ -214,8 +245,11 @@ pub type AfterHookFn<World> = for<'a> fn(
 /// Alias for a failed [`Scenario`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-type Failed = bool;
+type IsFailed = bool;
 
+/// Alias for a retried [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
 type IsRetried = bool;
 
 /// Default [`Runner`] implementation which follows [_order guarantees_][1] from
@@ -252,6 +286,9 @@ pub struct Basic<
     /// [`Scenario`]: gherkin::Scenario
     which_scenario: F,
 
+    /// Function determining [`Scenario`]'s [`RetryOptions`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     retry: R,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
@@ -311,6 +348,8 @@ impl<World> Default for Basic<World> {
                 .then_some(ScenarioType::Serial)
                 .unwrap_or(ScenarioType::Concurrent)
         };
+
+        #[allow(clippy::shadow_unrelated)]
         let retry: RetryFn = |f, r, sc, cli| {
             let parse_tags = |tags: &[String]| {
                 tags.iter().find_map(|tag| {
@@ -326,12 +365,13 @@ impl<World> Default for Basic<World> {
                             })
                             .unwrap_or((None, retries));
 
-                        let at = rest.strip_prefix(".after").and_then(|s| {
-                            s.strip_prefix('(').and_then(|s| {
-                                let (dur, _) = s.split_once(')')?;
-                                parse_duration(dur).ok()
-                            })
-                        });
+                        let at =
+                            rest.strip_prefix(".after").and_then(|after| {
+                                after.strip_prefix('(').and_then(|after| {
+                                    let (dur, _) = after.split_once(')')?;
+                                    parse_duration(dur).ok()
+                                })
+                            });
 
                         (num, at)
                     })
@@ -426,6 +466,9 @@ impl<World, Which, Retry, Before, After>
         }
     }
 
+    /// Function determining [`Scenario`]'s [`RetryOptions`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn retry<R>(self, func: R) -> Basic<World, Which, R, Before, After>
@@ -815,7 +858,7 @@ async fn execute<W, Before, After>(
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
         // We yield once on every iteration, because there is a chance, that
-        // this function never yields otherwise. So event sender doesn't send
+        // this function never yields otherwise. So event sender won't send
         // anything to the `Writer` until the end. This is the case, when all
         // parsing is done, so there is no contention on `Mutex` inside
         // `Features` storage and all `Step` functions don't yield.
@@ -911,13 +954,11 @@ struct Executor<W, Before, After> {
     /// Sender for notifying of [`Scenario`]s completion.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    finished_sender: mpsc::UnboundedSender<(
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Failed,
-        IsRetried,
-    )>,
+    finished_sender: FinishedFeaturesSender,
 
+    /// [`Scenario`]s storage.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     storage: Features,
 }
 
@@ -946,12 +987,7 @@ where
         event_sender: mpsc::UnboundedSender<
             parser::Result<Event<event::Cucumber<W>>>,
         >,
-        finished_sender: mpsc::UnboundedSender<(
-            Arc<gherkin::Feature>,
-            Option<Arc<gherkin::Rule>>,
-            Failed,
-            IsRetried,
-        )>,
+        finished_sender: FinishedFeaturesSender,
         storage: Features,
     ) -> Self {
         Self {
@@ -982,7 +1018,7 @@ where
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
     ) {
-        let retry_num = retries.map(|r| r.num);
+        let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
@@ -1123,7 +1159,7 @@ where
             .and_then(RetryOptions::next_try);
         if let Some(next_try) = next_try {
             self.storage
-                .insert_scenario(
+                .insert_retried_scenario(
                     Arc::clone(&feature),
                     rule.clone(),
                     scenario,
@@ -1430,6 +1466,7 @@ where
     ///
     /// See [`Self::emit_failed_events()`] for the explanation why we don't do
     /// that inside [`Self::run_after_hook()`].
+    #[allow(clippy::too_many_arguments)]
     fn emit_after_hook_events(
         &self,
         feature: Arc<gherkin::Feature>,
@@ -1485,7 +1522,7 @@ where
         &self,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
-        is_failed: Failed,
+        is_failed: IsFailed,
         is_retried: IsRetried,
     ) {
         // If the receiver end is dropped, then no one listens for events
@@ -1562,24 +1599,34 @@ struct FinishedRulesAndFeatures {
     /// Receiver for notifying state of [`Scenario`]s completion.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    finished_receiver: mpsc::UnboundedReceiver<(
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Failed,
-        IsRetried,
-    )>,
+    finished_receiver: FinishedFeaturesReceiver,
 }
+
+/// Alias for [`mpsc::UnboundedSender`] that notifies about finished
+/// [`Feature`]s.
+///
+/// [`Feature`]: gherkin::Feature
+type FinishedFeaturesSender = mpsc::UnboundedSender<(
+    Arc<gherkin::Feature>,
+    Option<Arc<gherkin::Rule>>,
+    IsFailed,
+    IsRetried,
+)>;
+
+/// Alias for [`mpsc::UnboundedReceiver`] that receives events about finished
+/// [`Feature`]s.
+///
+/// [`Feature`]: gherkin::Feature
+type FinishedFeaturesReceiver = mpsc::UnboundedReceiver<(
+    Arc<gherkin::Feature>,
+    Option<Arc<gherkin::Rule>>,
+    IsFailed,
+    IsRetried,
+)>;
 
 impl FinishedRulesAndFeatures {
     /// Creates a new [`FinishedRulesAndFeatures`] store.
-    fn new(
-        finished_receiver: mpsc::UnboundedReceiver<(
-            Arc<gherkin::Feature>,
-            Option<Arc<gherkin::Rule>>,
-            Failed,
-            IsRetried,
-        )>,
-    ) -> Self {
+    fn new(finished_receiver: FinishedFeaturesReceiver) -> Self {
         Self {
             features_scenarios_count: HashMap::new(),
             rule_scenarios_count: HashMap::new(),
@@ -1736,6 +1783,17 @@ type Scenarios = HashMap<
     )>,
 >;
 
+/// Alias for [`Features::insert_scenarios()`] argument.
+type InsertedScenarios = HashMap<
+    ScenarioType,
+    Vec<(
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+        Option<RetryOptions>,
+    )>,
+>;
+
 /// Storage sorted by [`ScenarioType`] [`Feature`]'s [`Scenario`]s.
 ///
 /// [`Feature`]: gherkin::Feature
@@ -1804,44 +1862,55 @@ impl Features {
         self.insert_scenarios(local).await;
     }
 
-    async fn insert_scenarios(
+    /// Inserts retried [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    async fn insert_retried_scenario(
         &self,
-        scenarios: HashMap<
-            ScenarioType,
-            Vec<(
-                Arc<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
-                Option<RetryOptions>,
-            )>,
-        >,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
+        scenario_ty: ScenarioType,
+        retries: Option<RetryOptions>,
     ) {
+        self.insert_scenarios(
+            [(scenario_ty, vec![(feature, rule, scenario, retries)])]
+                .into_iter()
+                .collect(),
+        )
+        .await;
+    }
+
+    /// Inserts [`Scenario`]s into this [`Features`] storage.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    async fn insert_scenarios(&self, scenarios: InsertedScenarios) {
         let now = Instant::now();
 
-        let mut with_retries = HashMap::<_, Vec<(_, _, _, _)>>::new();
+        let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
-        for (ty, scenarios) in scenarios {
-            for (f, r, s, ret) in scenarios {
+        for (which, values) in scenarios {
+            for (f, r, s, ret) in values {
                 match ret {
                     ret @ (None
                     | Some(RetryOptions {
-                        num: Retries { current: 0, .. },
+                        retries: Retries { current: 0, .. },
                         ..
                     })) => {
-                        without_retries.entry(ty).or_default().push((
-                            f,
-                            r,
-                            s,
-                            ret.map(RetryOptions::without_deadline),
-                        ));
+                        // `Retries::current` is `0`, so this `Scenario` run is
+                        // initial and we don't need to wait for retry delay.
+                        let ret = ret.map(RetryOptions::without_deadline);
+                        without_retries
+                            .entry(which)
+                            .or_default()
+                            .push((f, r, s, ret));
                     }
                     Some(ret) => {
-                        with_retries.entry(ty).or_default().push((
-                            f,
-                            r,
-                            s,
-                            ret.with_deadline(now),
-                        ));
+                        let ret = ret.with_deadline(now);
+                        with_retries
+                            .entry(which)
+                            .or_default()
+                            .push((f, r, s, ret));
                     }
                 }
             }
@@ -1849,17 +1918,12 @@ impl Features {
 
         let mut storage = self.scenarios.lock().await;
 
-        // TODO: refactor by splitting into distinct HashMaps with
-        //       RetryAt::Start and RetryAt::End
-
-        for (ty, scenarios) in with_retries {
-            let ty_storage = storage.entry(ty).or_default();
-            for (f, r, s, ret) in scenarios {
+        for (which, values) in with_retries {
+            let ty_storage = storage.entry(which).or_default();
+            for (f, r, s, ret) in values {
                 ty_storage.insert(0, (f, r, s, Some(ret)));
             }
         }
-
-        // -----
 
         if without_retries.get(&ScenarioType::Serial).is_none() {
             // If there are no Serial Scenarios we just extending already
@@ -1880,22 +1944,6 @@ impl Features {
         }
     }
 
-    async fn insert_scenario(
-        &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
-        scenario_ty: ScenarioType,
-        retries: Option<RetryOptions>,
-    ) {
-        self.insert_scenarios(
-            [(scenario_ty, vec![(feature, rule, scenario, retries)])]
-                .into_iter()
-                .collect(),
-        )
-        .await
-    }
-
     /// Returns [`Scenario`]s which are ready to run.
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -1909,46 +1957,42 @@ impl Features {
         ScenarioType,
         Option<RetryOptions>,
     )> {
+        use ScenarioType::{Concurrent, Serial};
+
         let mut scenarios = self.scenarios.lock().await;
         scenarios
-            .get_mut(&ScenarioType::Serial)
-            .and_then(|s| {
+            .get_mut(&Serial)
+            .and_then(|storage| {
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
-                VecExt::drain_filter(s, |(_, _, _, ret)| {
+                VecExt::drain_filter(storage, |(_, _, _, ret)| {
                     ret.as_ref()
-                        .map(RetryOptionsWithDeadline::is_ready)
-                        .unwrap_or(true)
+                        .map_or(true, RetryOptionsWithDeadline::is_ready)
                 })
                 .next()
                 .map(|(f, r, s, ret)| {
-                    vec![(f, r, s, ScenarioType::Serial, ret.map(Into::into))]
+                    vec![(f, r, s, Serial, ret.map(Into::into))]
                 })
             })
             .or_else(|| {
-                scenarios.get_mut(&ScenarioType::Concurrent).and_then(|s| {
-                    (!s.is_empty()).then(|| {
+                scenarios.get_mut(&Concurrent).and_then(|storage| {
+                    (!storage.is_empty()).then(|| {
                         let end = cmp::min(
-                            s.len(),
-                            max_concurrent_scenarios.unwrap_or(s.len()),
+                            storage.len(),
+                            max_concurrent_scenarios.unwrap_or(storage.len()),
                         );
 
                         // TODO: Replace with `drain_filter`, once stabilized.
                         //       https://github.com/rust-lang/rust/issues/43244
-                        VecExt::drain_filter(s, |(_, _, _, ret)| {
-                            ret.as_ref()
-                                .map(RetryOptionsWithDeadline::is_ready)
-                                .unwrap_or(true)
+                        VecExt::drain_filter(storage, |(_, _, _, ret)| {
+                            ret.as_ref().map_or(
+                                true,
+                                RetryOptionsWithDeadline::is_ready,
+                            )
                         })
                         .take(end)
                         .map(|(f, r, s, ret)| {
-                            (
-                                f,
-                                r,
-                                s,
-                                ScenarioType::Concurrent,
-                                ret.map(RetryOptions::from),
-                            )
+                            (f, r, s, Concurrent, ret.map(Into::into))
                         })
                         .collect()
                     })
@@ -1969,12 +2013,7 @@ impl Features {
     /// [`Feature`]: gherkin::Feature
     async fn is_finished(&self) -> bool {
         self.finished.load(Ordering::SeqCst)
-            && self
-                .scenarios
-                .lock()
-                .await
-                .values()
-                .all(|vec| vec.is_empty())
+            && self.scenarios.lock().await.values().all(Vec::is_empty)
     }
 }
 
@@ -2075,31 +2114,6 @@ impl<W> ExecutionFailure<W> {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)
             | Self::StepPanicked { world, .. } => world.take(),
-        }
-    }
-}
-
-fn yield_now() -> YieldNow {
-    YieldNow(false)
-}
-
-/// Future for the [`yield_now()`] function.
-#[derive(Clone, Copy, Debug)]
-pub struct YieldNow(bool);
-
-impl Future for YieldNow {
-    type Output = ();
-
-    fn poll(
-        mut self: Pin<&mut Self>,
-        cx: &mut task::Context<'_>,
-    ) -> task::Poll<Self::Output> {
-        if !self.0 {
-            self.0 = true;
-            cx.waker().wake_by_ref();
-            task::Poll::Pending
-        } else {
-            task::Poll::Ready(())
         }
     }
 }

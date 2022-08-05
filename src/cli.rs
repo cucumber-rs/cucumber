@@ -93,7 +93,6 @@ where
 {
     /// Regex to filter scenarios by their name.
     #[clap(
-        id = "re_filter",
         short = 'n',
         long = "name",
         value_name = "regex",
@@ -110,7 +109,7 @@ where
         short = 't',
         long = "tags",
         value_name = "tagexpr",
-        conflicts_with = "re_filter",
+        conflicts_with = "re-filter",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,

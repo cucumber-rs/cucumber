@@ -115,17 +115,28 @@ impl Metadata {
     }
 }
 
+/// Number of retry attempts for [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Retries {
-    pub left: usize,
+    /// Current retry attempt.
     pub current: usize,
+
+    /// Available retries left.
+    pub left: usize,
 }
 
 impl Retries {
-    pub fn initial(left: usize) -> Self {
+    /// Creates initial [`Retries`].
+    #[must_use]
+    pub const fn initial(left: usize) -> Self {
         Self { left, current: 0 }
     }
 
+    /// Returns [`Some`], in case next retry attempt is available, or [`None`]
+    /// otherwise.
+    #[must_use]
     pub fn next_try(self) -> Option<Self> {
         self.left.checked_sub(1).map(|left| Self {
             left,
@@ -642,7 +653,9 @@ impl<World> Scenario<World> {
         )
     }
 
-    pub fn retries(&self) -> Option<Retries> {
+    /// Returns number of [`Retries`] for this [`Scenario`].
+    #[must_use]
+    pub const fn retries(&self) -> Option<Retries> {
         match self {
             Scenario::Started(retries)
             | Scenario::Hook(_, _, retries)

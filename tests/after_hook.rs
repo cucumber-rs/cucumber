@@ -43,7 +43,7 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error, 4 hook errors");
+    assert_eq!(err, "2 steps failed, 1 parsing error, 2 hook errors");
     assert_eq!(NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst), 11);
     assert_eq!(NUMBER_OF_AFTER_WORLDS.load(Ordering::SeqCst), 11);
 }

@@ -70,6 +70,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                                 w,
                                 StepError::AmbiguousMatch(e),
                             ),
+                            ret,
                         ),
                     ),
                 ),
@@ -86,6 +87,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                             w,
                             StepError::AmbiguousMatch(sort_matches(e)),
                         ),
+                        ret,
                     ),
                 );
 
@@ -98,6 +100,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                     Scenario::Step(
                         st,
                         Step::Failed(cap, loc, w, StepError::AmbiguousMatch(e)),
+                        ret,
                     ),
                 ),
             )) => {
@@ -113,6 +116,7 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                             w,
                             StepError::AmbiguousMatch(sort_matches(e)),
                         ),
+                        ret,
                     ),
                 );
 

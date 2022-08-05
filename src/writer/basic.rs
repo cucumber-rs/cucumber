@@ -343,8 +343,15 @@ impl<Out: io::Write> Basic<Out> {
             Scenario::Hook(_, Hook::Started, _) => {
                 self.indent += 4;
             }
-            Scenario::Hook(which, Hook::Failed(world, info), _) => {
-                self.hook_failed(feat, scenario, *which, world.as_ref(), info)?;
+            Scenario::Hook(which, Hook::Failed(world, info), retries) => {
+                self.hook_failed(
+                    feat,
+                    scenario,
+                    *which,
+                    *retries,
+                    world.as_ref(),
+                    info,
+                )?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Scenario::Hook(_, Hook::Passed, _) => {
@@ -357,7 +364,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.step(feat, st, ev, *retries)?;
             }
             Scenario::Finished(_) => {
-                self.indent = self.indent.saturating_sub(2)
+                self.indent = self.indent.saturating_sub(2);
             }
         }
         Ok(())
@@ -372,12 +379,21 @@ impl<Out: io::Write> Basic<Out> {
         feat: &gherkin::Feature,
         sc: &gherkin::Scenario,
         which: event::HookType,
+        retries: Option<Retries>,
         world: Option<&W>,
         info: &Info,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
 
-        self.output.write_line(&self.styles.err(format!(
+        let style = |s| {
+            if retries.filter(|r| r.left > 0).is_some() {
+                self.styles.retry_bright(s)
+            } else {
+                self.styles.err(s)
+            }
+        };
+
+        self.output.write_line(&style(format!(
             "{indent}✘  Scenario's {which} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             feat.path
@@ -613,6 +629,7 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -882,6 +899,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn bg_step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,

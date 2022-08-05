@@ -917,6 +917,7 @@ where
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn which_scenario<Which>(
         self,
@@ -947,6 +948,10 @@ where
         }
     }
 
+    /// Function determining [`Scenario`]'s [`RetryOptions`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn retry<Retry>(
         self,
@@ -984,6 +989,7 @@ where
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn before<Before>(
         self,
@@ -1026,6 +1032,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
+    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn after<After>(
         self,

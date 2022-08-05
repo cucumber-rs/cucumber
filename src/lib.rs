@@ -117,6 +117,7 @@ pub mod cli;
 mod cucumber;
 pub mod event;
 pub mod feature;
+pub(crate) mod future;
 pub mod parser;
 pub mod runner;
 pub mod step;
