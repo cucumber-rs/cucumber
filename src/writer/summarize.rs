@@ -94,6 +94,10 @@ enum Indicator {
     /// [`Skipped`]: event::Step::Skipped
     Skipped,
 
+    /// Retried [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
     Retried,
 }
 
@@ -168,15 +172,24 @@ pub struct Summarize<Writer> {
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    handled_scenarios: HashMap<
-        (
-            Arc<gherkin::Feature>,
-            Option<Arc<gherkin::Rule>>,
-            Arc<gherkin::Scenario>,
-        ),
-        Indicator,
-    >,
+    handled_scenarios: HandledScenarios,
 }
+
+/// [`HashMap`] for keeping track of handled [`Scenario`]s. Whole path with
+/// [`Feature`] and [`Rule`] is used to avoid collisions in case [`Scenario`]s
+/// themself look identical.
+///
+/// [`Feature`]: gherkin::Feature
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
+type HandledScenarios = HashMap<
+    (
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+    ),
+    Indicator,
+>;
 
 #[async_trait(?Send)]
 impl<W, Wr> Writer<W> for Summarize<Wr>
@@ -354,7 +367,7 @@ impl<Writer> Summarize<Writer> {
                         .handled_scenarios
                         .insert((feature, rule, scenario), Retried);
 
-                    if !inserted_before.is_some() {
+                    if inserted_before.is_none() {
                         self.scenarios.retried += 1;
                     }
                 } else {
@@ -394,9 +407,8 @@ impl<Writer> Summarize<Writer> {
                 // - If Scenario executed no Steps and then Hook failed, we
                 //   track Scenario as failed.
                 match self.handled_scenarios.get(&path) {
-                    Some(Indicator::Failed) | Some(Indicator::Retried) => {}
+                    Some(Indicator::Failed | Indicator::Retried) => {}
                     Some(Indicator::Skipped) => {
-                        // TODO
                         self.scenarios.skipped -= 1;
                         self.scenarios.failed += 1;
                     }
@@ -413,16 +425,19 @@ impl<Writer> Summarize<Writer> {
                 self.handle_step(path.0, path.1, path.2, ev, *ret);
             }
             Scenario::Finished(_) => {
+                // We don't remove retried `Scenario`s immediately, because we
+                // want to deduplicate. For example if some `Scenario` is
+                // retried 3 times, we'll see in summary 1 retried `Scenario`
+                // and 3 retried `Step`s.
                 let is_retried = self
                     .handled_scenarios
                     .get(&path)
                     .map(|indicator| matches!(indicator, Indicator::Retried))
                     .unwrap_or_default();
 
-                if !is_retried {
-                    if self.handled_scenarios.remove(&path).is_none() {
-                        self.scenarios.passed += 1;
-                    }
+                if !is_retried && self.handled_scenarios.remove(&path).is_none()
+                {
+                    self.scenarios.passed += 1;
                 }
             }
         }

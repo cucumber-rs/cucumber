@@ -85,13 +85,10 @@ impl Cli {
         retries: Option<usize>,
         after: Option<Duration>,
     ) -> Option<RetryOptions> {
-        let matched = self
-            .retry_tag_filter
-            .as_ref()
-            .map(|op| op.eval(&scenario.tags))
-            .unwrap_or_else(|| {
-                self.retry.is_some() || self.retry_after.is_some()
-            });
+        let matched = self.retry_tag_filter.as_ref().map_or_else(
+            || self.retry.is_some() || self.retry_after.is_some(),
+            |op| op.eval(&scenario.tags),
+        );
 
         (retries.is_some() || after.is_some() || matched).then(|| {
             RetryOptions {

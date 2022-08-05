@@ -154,6 +154,7 @@ where
         0
     }
 
+    /// Always returns `0`.
     fn retried_steps(&self) -> usize {
         0
     }
