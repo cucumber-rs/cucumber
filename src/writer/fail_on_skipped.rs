@@ -174,6 +174,10 @@ where
         self.writer.failed_steps()
     }
 
+    fn retried_steps(&self) -> usize {
+        self.writer.retried_steps()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }

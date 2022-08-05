@@ -131,6 +131,11 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     /// [`Step`]: gherkin::Step
     failed: usize,
 
+    /// Number of retried [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    retried: usize,
+
     /// Number of skipped [`Step`]s.
     ///
     /// [`Step`]: gherkin::Step
@@ -261,6 +266,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             parsed_all: false,
             passed: 0,
             failed: 0,
+            retried: 0,
             parsing_errors: 0,
             hook_errors: 0,
             ignored: 0,
@@ -562,7 +568,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 }
             }
             Step::Failed(_, loc, world, err) => {
-                self.failed += 1;
+                if retries.map(|r| r.left > 0).unwrap_or_default() {
+                    self.retried += 1;
+                } else {
+                    self.failed += 1;
+                }
 
                 TestEvent::failed(name).with_stdout(format!(
                     "{}:{}:{} (defined){}\n{err}{}",
@@ -679,6 +689,10 @@ where
 
     fn failed_steps(&self) -> usize {
         self.failed
+    }
+
+    fn retried_steps(&self) -> usize {
+        self.retried
     }
 
     fn parsing_errors(&self) -> usize {

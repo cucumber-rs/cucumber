@@ -18,7 +18,9 @@ use itertools::Itertools as _;
 
 use crate::{
     cli::Colored,
-    event, parser,
+    event,
+    event::Retries,
+    parser,
     writer::{self, out::Styles},
     Event, World, Writer,
 };
@@ -45,6 +47,12 @@ pub struct Stats {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     pub failed: usize,
+
+    /// Number of retried [`Step`]s (or [`Scenario`]s).
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    pub retried: usize,
 }
 
 impl Stats {
@@ -247,6 +255,10 @@ where
         self.steps.failed
     }
 
+    fn retried_steps(&self) -> usize {
+        self.steps.retried
+    }
+
     fn parsing_errors(&self) -> usize {
         self.parsing_errors
     }
@@ -270,11 +282,13 @@ impl<Writer> From<Writer> for Summarize<Writer> {
                 passed: 0,
                 skipped: 0,
                 failed: 0,
+                retried: 0,
             },
             steps: Stats {
                 passed: 0,
                 skipped: 0,
                 failed: 0,
+                retried: 0,
             },
             parsing_errors: 0,
             failed_hooks: 0,
@@ -292,6 +306,7 @@ impl<Writer> Summarize<Writer> {
         &mut self,
         scenario: &Arc<gherkin::Scenario>,
         ev: &event::Step<W>,
+        retries: Option<Retries>,
     ) {
         use self::{
             event::Step,
@@ -309,8 +324,13 @@ impl<Writer> Summarize<Writer> {
                     .insert(Arc::clone(scenario), Skipped);
             }
             Step::Failed(..) => {
-                self.steps.failed += 1;
-                self.scenarios.failed += 1;
+                if retries.filter(|r| r.left > 0).is_some() {
+                    // TODO
+                } else {
+                    self.steps.failed += 1;
+                    self.scenarios.failed += 1;
+                }
+
                 let _ =
                     self.handled_scenarios.insert(Arc::clone(scenario), Failed);
             }
@@ -330,7 +350,7 @@ impl<Writer> Summarize<Writer> {
         match ev {
             Scenario::Started(_)
             | Scenario::Hook(_, Hook::Passed | Hook::Started, _) => {}
-            Scenario::Hook(_, Hook::Failed(..), _) => {
+            Scenario::Hook(_, Hook::Failed(..), _ret) => {
                 // - If Scenario's last Step failed and then After Hook failed
                 //   too, we don't need to track second failure;
                 // - If Scenario's last Step was skipped and then After Hook
@@ -340,6 +360,7 @@ impl<Writer> Summarize<Writer> {
                 match self.handled_scenarios.get(scenario) {
                     Some(Indicator::Failed) => {}
                     Some(Indicator::Skipped) => {
+                        // TODO
                         self.scenarios.skipped -= 1;
                         self.scenarios.failed += 1;
                     }
@@ -352,8 +373,8 @@ impl<Writer> Summarize<Writer> {
                 }
                 self.failed_hooks += 1;
             }
-            Scenario::Background(_, ev, _) | Scenario::Step(_, ev, _) => {
-                self.handle_step(scenario, ev);
+            Scenario::Background(_, ev, ret) | Scenario::Step(_, ev, ret) => {
+                self.handle_step(scenario, ev, *ret);
             }
             Scenario::Finished(_) => {
                 if self.handled_scenarios.remove(scenario).is_none() {
@@ -498,6 +519,11 @@ impl Styles {
             (stats.failed > 0)
                 .then(|| {
                     self.bold(self.err(format!("{} failed", stats.failed)))
+                })
+                .unwrap_or_default(),
+            (stats.retried > 0)
+                .then(|| {
+                    self.bold(self.retry(format!("{} retried", stats.retried)))
                 })
                 .unwrap_or_default(),
         ]

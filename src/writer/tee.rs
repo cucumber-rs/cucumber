@@ -110,6 +110,11 @@ where
         cmp::max(self.left.failed_steps(), self.right.failed_steps())
     }
 
+    fn retried_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.retried_steps(), self.right.retried_steps())
+    }
+
     fn parsing_errors(&self) -> usize {
         // Either one of them is zero, or both numbers are the same.
         cmp::max(self.left.parsing_errors(), self.right.parsing_errors())
