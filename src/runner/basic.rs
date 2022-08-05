@@ -89,7 +89,9 @@ impl Cli {
             .retry_tag_filter
             .as_ref()
             .map(|op| op.eval(&scenario.tags))
-            .unwrap_or_default();
+            .unwrap_or_else(|| {
+                self.retry.is_some() || self.retry_after.is_some()
+            });
 
         (retries.is_some() || after.is_some() || matched).then(|| {
             RetryOptions {

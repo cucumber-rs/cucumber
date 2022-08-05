@@ -63,7 +63,7 @@ impl Stats {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub const fn total(&self) -> usize {
-        self.passed + self.skipped + self.failed
+        self.passed + self.skipped + self.failed + self.retried
     }
 }
 
@@ -93,6 +93,8 @@ enum Indicator {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     Skipped,
+
+    Retried,
 }
 
 /// Possible states of a [`Summarize`] [`Writer`].
@@ -166,7 +168,14 @@ pub struct Summarize<Writer> {
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
+    handled_scenarios: HashMap<
+        (
+            Arc<gherkin::Feature>,
+            Option<Arc<gherkin::Rule>>,
+            Arc<gherkin::Scenario>,
+        ),
+        Indicator,
+    >,
 }
 
 #[async_trait(?Send)]
@@ -192,14 +201,26 @@ where
         if let State::InProgress = self.state {
             match ev.as_deref() {
                 Err(_) => self.parsing_errors += 1,
-                Ok(Cucumber::Feature(_, ev)) => match ev {
+                Ok(Cucumber::Feature(feat, ev)) => match ev {
                     Feature::Started => self.features += 1,
                     Feature::Rule(_, Rule::Started) => {
                         self.rules += 1;
                     }
-                    Feature::Rule(_, Rule::Scenario(sc, ev))
-                    | Feature::Scenario(sc, ev) => {
-                        self.handle_scenario(sc, ev);
+                    Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
+                        self.handle_scenario(
+                            Arc::clone(feat),
+                            Some(Arc::clone(rule)),
+                            Arc::clone(sc),
+                            ev,
+                        );
+                    }
+                    Feature::Scenario(sc, ev) => {
+                        self.handle_scenario(
+                            Arc::clone(feat),
+                            None,
+                            Arc::clone(sc),
+                            ev,
+                        );
                     }
                     Feature::Finished | Feature::Rule(..) => {}
                 },
@@ -304,13 +325,15 @@ impl<Writer> Summarize<Writer> {
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(
         &mut self,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         ev: &event::Step<W>,
         retries: Option<Retries>,
     ) {
         use self::{
             event::Step,
-            Indicator::{Failed, Skipped},
+            Indicator::{Failed, Retried, Skipped},
         };
 
         match ev {
@@ -321,18 +344,27 @@ impl<Writer> Summarize<Writer> {
                 self.scenarios.skipped += 1;
                 let _ = self
                     .handled_scenarios
-                    .insert(Arc::clone(scenario), Skipped);
+                    .insert((feature, rule, scenario), Skipped);
             }
             Step::Failed(..) => {
                 if retries.filter(|r| r.left > 0).is_some() {
-                    // TODO
+                    self.steps.retried += 1;
+
+                    let inserted_before = self
+                        .handled_scenarios
+                        .insert((feature, rule, scenario), Retried);
+
+                    if !inserted_before.is_some() {
+                        self.scenarios.retried += 1;
+                    }
                 } else {
                     self.steps.failed += 1;
                     self.scenarios.failed += 1;
-                }
 
-                let _ =
-                    self.handled_scenarios.insert(Arc::clone(scenario), Failed);
+                    let _ = self
+                        .handled_scenarios
+                        .insert((feature, rule, scenario), Failed);
+                }
             }
         }
     }
@@ -342,10 +374,14 @@ impl<Writer> Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(
         &mut self,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
         ev: &event::Scenario<W>,
     ) {
         use event::{Hook, Scenario};
+
+        let path = (feature, rule, scenario);
 
         match ev {
             Scenario::Started(_)
@@ -357,8 +393,8 @@ impl<Writer> Summarize<Writer> {
                 //   failed, we need to override skipped Scenario with failed;
                 // - If Scenario executed no Steps and then Hook failed, we
                 //   track Scenario as failed.
-                match self.handled_scenarios.get(scenario) {
-                    Some(Indicator::Failed) => {}
+                match self.handled_scenarios.get(&path) {
+                    Some(Indicator::Failed) | Some(Indicator::Retried) => {}
                     Some(Indicator::Skipped) => {
                         // TODO
                         self.scenarios.skipped -= 1;
@@ -368,17 +404,25 @@ impl<Writer> Summarize<Writer> {
                         self.scenarios.failed += 1;
                         let _ = self
                             .handled_scenarios
-                            .insert(Arc::clone(scenario), Indicator::Failed);
+                            .insert(path, Indicator::Failed);
                     }
                 }
                 self.failed_hooks += 1;
             }
             Scenario::Background(_, ev, ret) | Scenario::Step(_, ev, ret) => {
-                self.handle_step(scenario, ev, *ret);
+                self.handle_step(path.0, path.1, path.2, ev, *ret);
             }
             Scenario::Finished(_) => {
-                if self.handled_scenarios.remove(scenario).is_none() {
-                    self.scenarios.passed += 1;
+                let is_retried = self
+                    .handled_scenarios
+                    .get(&path)
+                    .map(|indicator| matches!(indicator, Indicator::Retried))
+                    .unwrap_or_default();
+
+                if !is_retried {
+                    if self.handled_scenarios.remove(&path).is_none() {
+                        self.scenarios.passed += 1;
+                    }
                 }
             }
         }
