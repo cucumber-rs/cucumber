@@ -245,6 +245,10 @@ impl Colored for Empty {}
 ///         self.0.failed_steps()
 ///     }
 ///
+///     fn retried_steps(&self) -> usize {
+///         self.0.retried_steps()
+///     }
+///
 ///     fn parsing_errors(&self) -> usize {
 ///         self.0.parsing_errors()
 ///     }

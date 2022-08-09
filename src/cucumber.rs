@@ -331,13 +331,17 @@ where
     ///                     _,
     ///                     Rule::Scenario(
     ///                         _,
-    ///                         Scenario::Step(_, Step::Failed(..))
-    ///                             | Scenario::Background(_, Step::Failed(..))
+    ///                         Scenario::Step(_, Step::Failed(..), _)
+    ///                             | Scenario::Background(
+    ///                                 _,
+    ///                                 Step::Failed(_, _, _, _),
+    ///                                 _,
+    ///                             )
     ///                     )
     ///                 ) | Feature::Scenario(
     ///                     _,
-    ///                     Scenario::Step(_, Step::Failed(..))
-    ///                         | Scenario::Background(_, Step::Failed(..))
+    ///                     Scenario::Step(_, Step::Failed(..), _)
+    ///                         | Scenario::Background(_, Step::Failed(..), _)
     ///                 )
     ///             )) | Err(_)
     ///         )

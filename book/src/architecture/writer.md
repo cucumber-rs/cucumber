@@ -183,15 +183,15 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #         panic::set_hook(hook);
 #
 #         let scenario = Arc::new(scenario);
-#         stream::once(future::ready(event::Scenario::Started))
+#         stream::once(future::ready(event::Scenario::Started(None)))
 #             .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
 #                 let step = Arc::new(step);
 #                 [
-#                     event::Scenario::Step(step.clone(), event::Step::Started),
-#                     event::Scenario::Step(step, ev),
+#                     event::Scenario::Step(step.clone(), event::Step::Started, None),
+#                     event::Scenario::Step(step, ev, None),
 #                 ]
 #             })))
-#             .chain(stream::once(future::ready(event::Scenario::Finished)))
+#             .chain(stream::once(future::ready(event::Scenario::Finished(None))))
 #             .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
 #     }
 #
@@ -251,10 +251,10 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                         println!("{}: {}", feature.keyword, feature.name)
                     }
                     event::Feature::Scenario(scenario, ev) => match ev {
-                        event::Scenario::Started => {
+                        event::Scenario::Started(_) => {
                             println!("{}: {}", scenario.keyword, scenario.name)
                         }
-                        event::Scenario::Step(step, ev) => match ev {
+                        event::Scenario::Step(step, ev, _) => match ev {
                             event::Step::Started => {
                                 print!("{} {}...", step.keyword, step.value)
                             }
@@ -420,10 +420,10 @@ async fn main() {
 #                         println!("{}: {}", feature.keyword, feature.name)
 #                     }
 #                     event::Feature::Scenario(scenario, ev) => match ev {
-#                         event::Scenario::Started => {
+#                         event::Scenario::Started(_) => {
 #                             println!("{}: {}", scenario.keyword, scenario.name)
 #                         }
-#                         event::Scenario::Step(step, ev) => match ev {
+#                         event::Scenario::Step(step, ev, _) => match ev {
 #                             event::Step::Started => {
 #                                 print!("{} {}...", step.keyword, step.value)
 #                             }

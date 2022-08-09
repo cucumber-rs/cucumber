@@ -193,15 +193,15 @@ impl CustomRunner {
         panic::set_hook(hook);
 
         let scenario = Arc::new(scenario);
-        stream::once(future::ready(event::Scenario::Started))
+        stream::once(future::ready(event::Scenario::Started(None)))
             .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
                 let step = Arc::new(step);
                 [
-                    event::Scenario::Step(step.clone(), event::Step::Started),
-                    event::Scenario::Step(step, ev),
+                    event::Scenario::Step(step.clone(), event::Step::Started, None),
+                    event::Scenario::Step(step, ev, None),
                 ]
             })))
-            .chain(stream::once(future::ready(event::Scenario::Finished)))
+            .chain(stream::once(future::ready(event::Scenario::Finished(None))))
             .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
     }
 

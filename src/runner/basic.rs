@@ -196,15 +196,6 @@ impl From<RetryOptionsWithDeadline> for RetryOptions {
 }
 
 impl RetryOptionsWithDeadline {
-    /// Checks, whether [`Scenario`] is ready for rescheduling ot not.
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    fn is_ready(&self) -> bool {
-        self.after
-            .and_then(|(dur, instant)| Some(instant?.elapsed() > dur))
-            .unwrap_or(true)
-    }
-
     /// Returns [`Duration`] after [`Scenario`] could be retried.
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -1997,56 +1988,54 @@ impl Features {
         use ScenarioType::{Concurrent, Serial};
 
         let mut min_dur = None;
-        let mut is_ready = |(_, _, _, ret): &mut (
-            _,
-            _,
-            _,
-            Option<RetryOptionsWithDeadline>,
-        )| {
-            let remove = ret
-                .as_ref()
-                .map_or(true, RetryOptionsWithDeadline::is_ready);
-
-            if let Some(left) = ret
-                .as_ref()
-                .filter(|_| !remove)
-                .and_then(RetryOptionsWithDeadline::left_until_retry)
-            {
-                min_dur = min_dur.map(|min| cmp::min(min, left)).or(Some(left));
-            }
-
-            remove
-        };
-
-        let mut scenarios = self.scenarios.lock().await;
-        let scenarios = scenarios
-            .get_mut(&Serial)
-            .and_then(|storage| {
+        let mut drain =
+            |storage: &mut Vec<(_, _, _, Option<RetryOptionsWithDeadline>)>,
+             ty,
+             count| {
+                let mut i = 0;
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
-                VecExt::drain_filter(storage, &mut is_ready).next().map(
-                    |(f, r, s, ret)| {
-                        vec![(f, r, s, Serial, ret.map(Into::into))]
-                    },
-                )
-            })
-            .or_else(|| {
-                scenarios.get_mut(&Concurrent).and_then(|storage| {
-                    (!storage.is_empty()).then(|| {
-                        let end = cmp::min(
-                            storage.len(),
-                            max_concurrent_scenarios.unwrap_or(storage.len()),
-                        );
+                let drained =
+                    VecExt::drain_filter(storage, |(_, _, _, ret)| {
+                        // Because `drain_filter` runs over entire `Vec` on
+                        // `Drop`, we can't just `.take(count)`.
+                        if i >= count {
+                            return false;
+                        }
 
-                        // TODO: Replace with `drain_filter`, once stabilized.
-                        //       https://github.com/rust-lang/rust/issues/43244
-                        VecExt::drain_filter(storage, is_ready)
-                            .take(end)
-                            .map(|(f, r, s, ret)| {
-                                (f, r, s, Concurrent, ret.map(Into::into))
-                            })
-                            .collect()
+                        ret.as_ref()
+                            .and_then(
+                                RetryOptionsWithDeadline::left_until_retry,
+                            )
+                            .map_or_else(
+                                || {
+                                    i += 1;
+                                    true
+                                },
+                                |left| {
+                                    min_dur = min_dur
+                                        .map(|min| cmp::min(min, left))
+                                        .or(Some(left));
+                                    false
+                                },
+                            )
                     })
+                    .map(|(f, r, s, ret)| (f, r, s, ty, ret.map(Into::into)))
+                    .collect::<Vec<_>>();
+                (!drained.is_empty()).then(|| drained)
+            };
+
+        let mut guard = self.scenarios.lock().await;
+        let scenarios = guard
+            .get_mut(&Serial)
+            .and_then(|storage| drain(storage, Serial, 1))
+            .or_else(|| {
+                guard.get_mut(&Concurrent).and_then(|storage| {
+                    let end = cmp::min(
+                        storage.len(),
+                        max_concurrent_scenarios.unwrap_or(storage.len()),
+                    );
+                    drain(storage, Concurrent, end)
                 })
             })
             .unwrap_or_default();
