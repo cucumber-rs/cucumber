@@ -20,12 +20,13 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
+    thread,
     time::{Duration, Instant},
 };
 
 use drain_filter_polyfill::VecExt;
 use futures::{
-    channel::mpsc,
+    channel::{mpsc, oneshot},
     future::{self, Either, LocalBoxFuture},
     lock::Mutex,
     pin_mut,
@@ -64,10 +65,18 @@ pub struct Cli {
     pub retry: Option<usize>,
 
     /// Delay between each retry attempt.
+    ///
+    /// Duration represented like `12min 5s`. Supported suffixes:
+    /// - `nsec`, `ns` — nanoseconds
+    /// - `usec`, `us` — microseconds
+    /// - `msec`, `ms` — milliseconds
+    /// - `seconds`, `second`, `sec`, `s`
+    /// - `minutes`, `minute`, `min`, `m`
     #[clap(
         long,
         value_name = "duration",
         parse(try_from_str = parse_duration),
+        verbatim_doc_comment,
         global = true,
     )]
     pub retry_after: Option<Duration>,
@@ -195,6 +204,14 @@ impl RetryOptionsWithDeadline {
             .and_then(|(dur, instant)| Some(instant?.elapsed() > dur))
             .unwrap_or(true)
     }
+
+    /// Returns [`Duration`] after [`Scenario`] could be retried.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    fn left_until_retry(&self) -> Option<Duration> {
+        let (dur, instant) = self.after?;
+        dur.checked_sub(instant?.elapsed())
+    }
 }
 
 /// Alias for [`fn`] used to determine whether a [`Scenario`] is [`Concurrent`]
@@ -209,7 +226,7 @@ pub type WhichScenarioFn = fn(
     &gherkin::Scenario,
 ) -> ScenarioType;
 
-/// Alias for [`fn`] used to determine [`Scenario`]'s  [`RetryOptions`].
+/// Alias for [`fn`] used to determine [`Scenario`]'s [`RetryOptions`].
 ///
 /// [`Scenario`]: gherkin::Scenario
 pub type RetryFn = fn(
@@ -339,7 +356,6 @@ impl<World> Basic<World, (), ()> {
 impl<World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |_, _, scenario| {
-            // TODO: Why do we ignore feature and rule?
             scenario
                 .tags
                 .iter()
@@ -857,17 +873,35 @@ async fn execute<W, Before, After>(
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
         // We yield once on every iteration, because there is a chance, that
-        // this function never yields otherwise. So event sender won't send
-        // anything to the `Writer` until the end. This is the case, when all
-        // parsing is done, so there is no contention on `Mutex` inside
+        // this function never yields otherwise. In this case event sender won't
+        // send anything to the `Writer` until the end. This is the case, when
+        // all parsing is done, so there is no contention on `Mutex` inside
         // `Features` storage and all `Step` functions don't yield.
         yield_now().await;
 
-        let runnable = features.get(map_break(started_scenarios)).await;
+        let (runnable, sleep) =
+            features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
             if features.is_finished().await {
                 break;
             }
+
+            // To avoid busy-polling of `Features::get()`, in case there are no
+            // scenarios that are running or scheduled for execution, we spawn a
+            // thread, that sleeps for minimal deadline of all retried
+            // scenarios.
+            // TODO: replace `thread::spawn` with async runtime agnostic sleep,
+            //       once it's available.
+            if let Some(dur) = sleep {
+                let (sender, receiver) = oneshot::channel();
+                drop(thread::spawn(move || {
+                    thread::sleep(dur);
+                    sender.send(())
+                }));
+                #[allow(clippy::let_underscore_must_use)]
+                let _ = receiver.await;
+            }
+
             continue;
         }
 
@@ -1943,35 +1977,58 @@ impl Features {
         }
     }
 
-    /// Returns [`Scenario`]s which are ready to run.
+    /// Returns [`Scenario`]s which are ready to run and minimal deadline of all
+    /// retried [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
     async fn get(
         &self,
         max_concurrent_scenarios: Option<usize>,
-    ) -> Vec<(
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
-        ScenarioType,
-        Option<RetryOptions>,
-    )> {
+    ) -> (
+        Vec<(
+            Arc<gherkin::Feature>,
+            Option<Arc<gherkin::Rule>>,
+            Arc<gherkin::Scenario>,
+            ScenarioType,
+            Option<RetryOptions>,
+        )>,
+        Option<Duration>,
+    ) {
         use ScenarioType::{Concurrent, Serial};
 
+        let mut min_dur = None;
+        let mut is_ready = |(_, _, _, ret): &mut (
+            _,
+            _,
+            _,
+            Option<RetryOptionsWithDeadline>,
+        )| {
+            let remove = ret
+                .as_ref()
+                .map_or(true, RetryOptionsWithDeadline::is_ready);
+
+            if let Some(left) = ret
+                .as_ref()
+                .filter(|_| !remove)
+                .and_then(RetryOptionsWithDeadline::left_until_retry)
+            {
+                min_dur = min_dur.map(|min| cmp::min(min, left)).or(Some(left));
+            }
+
+            remove
+        };
+
         let mut scenarios = self.scenarios.lock().await;
-        scenarios
+        let scenarios = scenarios
             .get_mut(&Serial)
             .and_then(|storage| {
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
-                VecExt::drain_filter(storage, |(_, _, _, ret)| {
-                    ret.as_ref()
-                        .map_or(true, RetryOptionsWithDeadline::is_ready)
-                })
-                .next()
-                .map(|(f, r, s, ret)| {
-                    vec![(f, r, s, Serial, ret.map(Into::into))]
-                })
+                VecExt::drain_filter(storage, &mut is_ready).next().map(
+                    |(f, r, s, ret)| {
+                        vec![(f, r, s, Serial, ret.map(Into::into))]
+                    },
+                )
             })
             .or_else(|| {
                 scenarios.get_mut(&Concurrent).and_then(|storage| {
@@ -1983,21 +2040,18 @@ impl Features {
 
                         // TODO: Replace with `drain_filter`, once stabilized.
                         //       https://github.com/rust-lang/rust/issues/43244
-                        VecExt::drain_filter(storage, |(_, _, _, ret)| {
-                            ret.as_ref().map_or(
-                                true,
-                                RetryOptionsWithDeadline::is_ready,
-                            )
-                        })
-                        .take(end)
-                        .map(|(f, r, s, ret)| {
-                            (f, r, s, Concurrent, ret.map(Into::into))
-                        })
-                        .collect()
+                        VecExt::drain_filter(storage, is_ready)
+                            .take(end)
+                            .map(|(f, r, s, ret)| {
+                                (f, r, s, Concurrent, ret.map(Into::into))
+                            })
+                            .collect()
                     })
                 })
             })
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        (scenarios, min_dur)
     }
 
     /// Marks that there will be no more [`Feature`]s to execute.
