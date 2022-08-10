@@ -75,6 +75,20 @@ impl Styles {
         }
     }
 
+    /// Returns [`Styles`] with brighter colors.
+    #[must_use]
+    pub fn bright(&self) -> Self {
+        Self {
+            ok: self.ok.clone().bright(),
+            skipped: self.skipped.clone().bright(),
+            err: self.err.clone().bright(),
+            retry: self.retry.clone().bright(),
+            header: self.header.clone().bright(),
+            bold: self.bold.clone().bright(),
+            is_present: self.is_present,
+        }
+    }
+
     /// If terminal is present colors `input` with [`Styles::ok`] color or
     /// leaves "as is" otherwise.
     #[must_use]
@@ -114,25 +128,6 @@ impl Styles {
     pub fn retry<'a>(&self, input: impl Into<Cow<'a, str>>) -> Cow<'a, str> {
         if self.is_present {
             self.retry.apply_to(input.into()).to_string().into()
-        } else {
-            input.into()
-        }
-    }
-
-    /// If terminal is present colors `input` with [`Styles::retry`] color and
-    /// [`Style::bright()`] or leaves "as is" otherwise.
-    #[must_use]
-    pub fn retry_bright<'a>(
-        &self,
-        input: impl Into<Cow<'a, str>>,
-    ) -> Cow<'a, str> {
-        if self.is_present {
-            self.retry
-                .clone()
-                .bright()
-                .apply_to(input.into())
-                .to_string()
-                .into()
         } else {
             input.into()
         }

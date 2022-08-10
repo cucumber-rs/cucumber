@@ -387,7 +387,7 @@ impl<Out: io::Write> Basic<Out> {
 
         let style = |s| {
             if retries.filter(|r| r.left > 0).is_some() {
-                self.styles.retry_bright(s)
+                self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
             }
@@ -644,7 +644,7 @@ impl<Out: io::Write> Basic<Out> {
 
         let style = |s| {
             if retries.filter(|r| r.left > 0).is_some() {
-                self.styles.retry_bright(s)
+                self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
             }
@@ -914,7 +914,7 @@ impl<Out: io::Write> Basic<Out> {
 
         let style = |s| {
             if retries.filter(|r| r.left > 0).is_some() {
-                self.styles.retry_bright(s)
+                self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
             }

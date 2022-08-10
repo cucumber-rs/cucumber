@@ -66,12 +66,12 @@ pub struct Cli {
 
     /// Delay between each retry attempt.
     ///
-    /// Duration represented like `12min 5s`. Supported suffixes:
-    /// - `nsec`, `ns` — nanoseconds
-    /// - `usec`, `us` — microseconds
-    /// - `msec`, `ms` — milliseconds
-    /// - `seconds`, `second`, `sec`, `s`
-    /// - `minutes`, `minute`, `min`, `m`
+    /// Duration is represented like `12min 5s`. Supported suffixes:
+    /// - `nsec`, `ns` — nanoseconds.
+    /// - `usec`, `us` — microseconds.
+    /// - `msec`, `ms` — milliseconds.
+    /// - `seconds`, `second`, `sec`, `s`.
+    /// - `minutes`, `minute`, `min`, `m`.
     #[clap(
         long,
         value_name = "duration",
@@ -889,8 +889,7 @@ async fn execute<W, Before, After>(
                     thread::sleep(dur);
                     sender.send(())
                 }));
-                #[allow(clippy::let_underscore_must_use)]
-                let _ = receiver.await;
+                let _ = receiver.await.ok();
             }
 
             continue;
@@ -916,10 +915,10 @@ async fn execute<W, Before, After>(
         while let Ok(Some((feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(r) = rule {
+            if let Some(rule) = rule {
                 if let Some(f) = storage.rule_scenario_finished(
                     Arc::clone(&feat),
-                    r,
+                    rule,
                     retried,
                 ) {
                     executor.send_event(f);
@@ -1991,7 +1990,7 @@ impl Features {
         let mut drain =
             |storage: &mut Vec<(_, _, _, Option<RetryOptionsWithDeadline>)>,
              ty,
-             count| {
+             count: Option<usize>| {
                 let mut i = 0;
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
@@ -1999,7 +1998,7 @@ impl Features {
                     VecExt::drain_filter(storage, |(_, _, _, ret)| {
                         // Because `drain_filter` runs over entire `Vec` on
                         // `Drop`, we can't just `.take(count)`.
-                        if i >= count {
+                        if count.filter(|c| i >= *c).is_some() {
                             return false;
                         }
 
@@ -2028,14 +2027,10 @@ impl Features {
         let mut guard = self.scenarios.lock().await;
         let scenarios = guard
             .get_mut(&Serial)
-            .and_then(|storage| drain(storage, Serial, 1))
+            .and_then(|storage| drain(storage, Serial, Some(1)))
             .or_else(|| {
                 guard.get_mut(&Concurrent).and_then(|storage| {
-                    let end = cmp::min(
-                        storage.len(),
-                        max_concurrent_scenarios.unwrap_or(storage.len()),
-                    );
-                    drain(storage, Concurrent, end)
+                    drain(storage, Concurrent, max_concurrent_scenarios)
                 })
             })
             .unwrap_or_default();
