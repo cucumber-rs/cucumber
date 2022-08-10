@@ -18,9 +18,11 @@ use std::{
     marker::PhantomData,
     mem,
     path::Path,
+    time::Duration,
 };
 
 use futures::{future::LocalBoxFuture, StreamExt as _};
+use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::{
@@ -915,6 +917,39 @@ where
         self
     }
 
+    /// If `retries` is [`Some`], then failed [`Scenario`]s will be retried
+    /// specified number of times.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retries(mut self, retries: impl Into<Option<usize>>) -> Self {
+        self.runner = self.runner.retries(retries);
+        self
+    }
+
+    /// If `after` is [`Some`], then failed [`Scenario`]s will be retried after
+    /// specified [`Duration`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_after(mut self, after: impl Into<Option<Duration>>) -> Self {
+        self.runner = self.runner.retry_after(after);
+        self
+    }
+
+    /// If `filter` is [`Some`], then failed [`Scenario`]s will be retried
+    /// only if they are matched by [`TagOperation`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_filter(
+        mut self,
+        filter: impl Into<Option<TagOperation>>,
+    ) -> Self {
+        self.runner = self.runner.retry_filter(filter);
+        self
+    }
+
     /// Function determining whether a [`Scenario`] is [`Concurrent`] or
     /// a [`Serial`] one.
     ///
@@ -957,7 +992,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::type_complexity)]
     #[must_use]
-    pub fn retry<Retry>(
+    pub fn retry_options<Retry>(
         self,
         func: Retry,
     ) -> Cucumber<W, P, I, runner::Basic<W, F, Retry, B, A>, Wr, Cli>
@@ -979,7 +1014,7 @@ where
         } = self;
         Cucumber {
             parser,
-            runner: runner.retry(func),
+            runner: runner.retry_options(func),
             writer,
             cli,
             _world: PhantomData,

@@ -220,7 +220,7 @@ pub type WhichScenarioFn = fn(
 /// Alias for [`fn`] used to determine [`Scenario`]'s [`RetryOptions`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub type RetryFn = fn(
+pub type RetryOptionsFn = fn(
     &gherkin::Feature,
     Option<&gherkin::Rule>,
     &gherkin::Scenario,
@@ -271,7 +271,7 @@ type IsRetried = bool;
 pub struct Basic<
     World,
     F = WhichScenarioFn,
-    R = RetryFn,
+    R = RetryOptionsFn,
     Before = BeforeHookFn<World>,
     After = AfterHookFn<World>,
 > {
@@ -279,6 +279,21 @@ pub struct Basic<
     ///
     /// [`Scenario`]: gherkin::Scenario
     max_concurrent_scenarios: Option<usize>,
+
+    /// Optional number of retries of failed [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    retries: Option<usize>,
+
+    /// Optional [`Duration`] between retries of failed [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    retry_after: Option<Duration>,
+
+    /// Optional [`TagOperation`] filter for retries of failed [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    retry_filter: Option<TagOperation>,
 
     /// [`Collection`] of functions to match [`Step`]s.
     ///
@@ -296,7 +311,7 @@ pub struct Basic<
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    retry: R,
+    retry_options: R,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
     /// including [`Background`] ones.
@@ -334,9 +349,12 @@ impl<World> Basic<World, (), ()> {
     pub fn custom() -> Self {
         Self {
             max_concurrent_scenarios: None,
+            retries: None,
+            retry_after: None,
+            retry_filter: None,
             steps: step::Collection::new(),
             which_scenario: (),
-            retry: (),
+            retry_options: (),
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -356,7 +374,7 @@ impl<World> Default for Basic<World> {
         };
 
         #[allow(clippy::shadow_unrelated)]
-        let retry: RetryFn = |f, r, sc, cli| {
+        let retry: RetryOptionsFn = |f, r, sc, cli| {
             let parse_tags = |tags: &[String]| {
                 tags.iter().find_map(|tag| {
                     tag.strip_prefix("retry").map(|retries| {
@@ -394,9 +412,12 @@ impl<World> Default for Basic<World> {
 
         Self {
             max_concurrent_scenarios: Some(64),
+            retries: None,
+            retry_after: None,
+            retry_filter: None,
             steps: step::Collection::new(),
             which_scenario,
-            retry,
+            retry_options: retry,
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -417,6 +438,39 @@ impl<World, Which, Retry, Before, After>
         max: impl Into<Option<usize>>,
     ) -> Self {
         self.max_concurrent_scenarios = max.into();
+        self
+    }
+
+    /// If `retries` is [`Some`], then failed [`Scenario`]s will be retried
+    /// specified number of times.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retries(mut self, retries: impl Into<Option<usize>>) -> Self {
+        self.retries = retries.into();
+        self
+    }
+
+    /// If `after` is [`Some`], then failed [`Scenario`]s will be retried after
+    /// specified [`Duration`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_after(mut self, after: impl Into<Option<Duration>>) -> Self {
+        self.retry_after = after.into();
+        self
+    }
+
+    /// If `filter` is [`Some`], then failed [`Scenario`]s will be retried
+    /// only if they are matched by [`TagOperation`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_filter(
+        mut self,
+        filter: impl Into<Option<TagOperation>>,
+    ) -> Self {
+        self.retry_filter = filter.into();
         self
     }
 
@@ -454,8 +508,11 @@ impl<World, Which, Retry, Before, After>
     {
         let Self {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
-            retry,
+            retry_options: retry,
             before_hook,
             after_hook,
             fail_fast,
@@ -463,9 +520,12 @@ impl<World, Which, Retry, Before, After>
         } = self;
         Basic {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario: func,
-            retry,
+            retry_options: retry,
             before_hook,
             after_hook,
             fail_fast,
@@ -477,7 +537,10 @@ impl<World, Which, Retry, Before, After>
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
-    pub fn retry<R>(self, func: R) -> Basic<World, Which, R, Before, After>
+    pub fn retry_options<R>(
+        self,
+        func: R,
+    ) -> Basic<World, Which, R, Before, After>
     where
         R: Fn(
                 &gherkin::Feature,
@@ -489,6 +552,9 @@ impl<World, Which, Retry, Before, After>
     {
         let Self {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
             before_hook,
@@ -498,9 +564,12 @@ impl<World, Which, Retry, Before, After>
         } = self;
         Basic {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry: func,
+            retry_options: func,
             before_hook,
             after_hook,
             fail_fast,
@@ -529,18 +598,24 @@ impl<World, Which, Retry, Before, After>
     {
         let Self {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry,
+            retry_options: retry,
             after_hook,
             fail_fast,
             ..
         } = self;
         Basic {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry,
+            retry_options: retry,
             before_hook: Some(func),
             after_hook,
             fail_fast,
@@ -574,18 +649,24 @@ impl<World, Which, Retry, Before, After>
     {
         let Self {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry,
+            retry_options: retry,
             before_hook,
             fail_fast,
             ..
         } = self;
         Basic {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry,
+            retry_options: retry,
             before_hook,
             after_hook: Some(func),
             fail_fast,
@@ -667,20 +748,26 @@ where
     type EventStream =
         LocalBoxStream<'static, parser::Result<Event<event::Cucumber<W>>>>;
 
-    fn run<S>(self, features: S, cli: Cli) -> Self::EventStream
+    fn run<S>(self, features: S, mut cli: Cli) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
         let Self {
             max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
             steps,
             which_scenario,
-            retry,
+            retry_options: retry,
             before_hook,
             after_hook,
             fail_fast,
         } = self;
 
+        cli.retry = cli.retry.or(retries);
+        cli.retry_after = cli.retry_after.or(retry_after);
+        cli.retry_tag_filter = cli.retry_tag_filter.or(retry_filter);
         let fail_fast = if cli.fail_fast { true } else { fail_fast };
         let concurrency = cli.concurrency.or(max_concurrent_scenarios);
 

@@ -358,10 +358,10 @@ impl<Out: io::Write> Basic<Out> {
                 self.indent = self.indent.saturating_sub(4);
             }
             Scenario::Background(bg, ev, retries) => {
-                self.background(feat, bg, ev, *retries)?;
+                self.background(feat, scenario, bg, ev, *retries)?;
             }
             Scenario::Step(st, ev, retries) => {
-                self.step(feat, st, ev, *retries)?;
+                self.step(feat, scenario, st, ev, *retries)?;
             }
             Scenario::Finished(_) => {
                 self.indent = self.indent.saturating_sub(2);
@@ -457,6 +457,7 @@ impl<Out: io::Write> Basic<Out> {
     pub(crate) fn step<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
+        sc: &gherkin::Scenario,
         step: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
@@ -468,7 +469,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.step_started(step)?;
             }
             Step::Passed(captures, _) => {
-                self.step_passed(step, captures, retries)?;
+                self.step_passed(sc, step, captures, retries)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
@@ -540,6 +541,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [`Step`]: gherkin::Step
     pub(crate) fn step_passed(
         &mut self,
+        scenario: &gherkin::Scenario,
         step: &gherkin::Step,
         captures: &CaptureLocations,
         retries: Option<Retries>,
@@ -547,7 +549,9 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.current > 0).is_some() {
+            if retries.filter(|r| r.current > 0).is_some()
+                && scenario.steps.last().filter(|st| *st != step).is_some()
+            {
                 self.styles.retry(s)
             } else {
                 self.styles.ok(s)
@@ -722,6 +726,7 @@ impl<Out: io::Write> Basic<Out> {
     pub(crate) fn background<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
+        sc: &gherkin::Scenario,
         bg: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
@@ -733,7 +738,7 @@ impl<Out: io::Write> Basic<Out> {
                 self.bg_step_started(bg)?;
             }
             Step::Passed(captures, _) => {
-                self.bg_step_passed(bg, captures, retries)?;
+                self.bg_step_passed(sc, bg, captures, retries)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
@@ -807,6 +812,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [`Step`]: gherkin::Step
     pub(crate) fn bg_step_passed(
         &mut self,
+        scenario: &gherkin::Scenario,
         step: &gherkin::Step,
         captures: &CaptureLocations,
         retries: Option<Retries>,
@@ -814,7 +820,9 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.current > 0).is_some() {
+            if retries.filter(|r| r.current > 0).is_some()
+                && scenario.steps.last().filter(|st| *st != step).is_some()
+            {
                 self.styles.retry(s)
             } else {
                 self.styles.ok(s)

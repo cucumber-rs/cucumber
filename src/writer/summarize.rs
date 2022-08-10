@@ -28,7 +28,7 @@ use crate::{
 /// Execution statistics.
 ///
 /// [`Step`]: gherkin::Step
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Stats {
     /// Number of passed [`Step`]s (or [`Scenario`]s).
     ///
@@ -341,6 +341,7 @@ impl<Writer> Summarize<Writer> {
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
+        step: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
     ) {
@@ -351,7 +352,14 @@ impl<Writer> Summarize<Writer> {
 
         match ev {
             Step::Started => {}
-            Step::Passed(..) => self.steps.passed += 1,
+            Step::Passed(..) => {
+                self.steps.passed += 1;
+                if scenario.steps.last().filter(|s| *s == step).is_some() {
+                    let _ = self
+                        .handled_scenarios
+                        .remove(&(feature, rule, scenario));
+                }
+            }
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;
@@ -421,8 +429,8 @@ impl<Writer> Summarize<Writer> {
                 }
                 self.failed_hooks += 1;
             }
-            Scenario::Background(_, ev, ret) | Scenario::Step(_, ev, ret) => {
-                self.handle_step(path.0, path.1, path.2, ev, *ret);
+            Scenario::Background(st, ev, ret) | Scenario::Step(st, ev, ret) => {
+                self.handle_step(path.0, path.1, path.2, st.as_ref(), ev, *ret);
             }
             Scenario::Finished(_) => {
                 // We don't remove retried `Scenario`s immediately, because we
