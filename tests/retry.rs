@@ -65,7 +65,11 @@ async fn main() {
         let elapsed = now.elapsed();
         let abs_diff =
             dur.checked_sub(elapsed).unwrap_or_else(|| elapsed - dur);
-        assert!(abs_diff < Duration::from_millis(100));
+        assert!(
+            abs_diff < Duration::from_millis(100),
+            "Expected time difference is more than 100ms: {}",
+            humantime::Duration::from(abs_diff),
+        );
 
         assert_eq!(
             writer.scenarios,
@@ -75,6 +79,7 @@ async fn main() {
                 failed: f_sc,
                 retried: r_sc,
             },
+            "Wrong Stats for Scenarios",
         );
         assert_eq!(
             writer.steps,
@@ -84,6 +89,7 @@ async fn main() {
                 failed: f_st,
                 retried: r_st,
             },
+            "Wrong Stats for Steps",
         );
 
         SCENARIO_RUNS.lock().await.clear();
