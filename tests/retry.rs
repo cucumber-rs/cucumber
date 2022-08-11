@@ -82,7 +82,7 @@ async fn main() {
     .fold(Duration::ZERO, |prev, (id, cur)| async move {
         if let Some(diff) = prev
             .checked_sub(cur)
-            .filter(|diff| *diff > Duration::from_millis(100))
+            .filter(|diff| *diff > Duration::from_secs(2))
         {
             panic!(
                 "Test case at index {} ran longer than the next one \
