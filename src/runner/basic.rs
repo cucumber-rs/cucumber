@@ -196,7 +196,8 @@ impl From<RetryOptionsWithDeadline> for RetryOptions {
 }
 
 impl RetryOptionsWithDeadline {
-    /// Returns [`Duration`] after [`Scenario`] could be retried.
+    /// Returns [`Duration`] after [`Scenario`] could be retried. If [`None`],
+    /// [`Scenario`] is ready for the retry.
     ///
     /// [`Scenario`]: gherkin::Scenario
     fn left_until_retry(&self) -> Option<Duration> {
@@ -759,7 +760,7 @@ where
             retry_filter,
             steps,
             which_scenario,
-            retry_options: retry,
+            retry_options,
             before_hook,
             after_hook,
             fail_fast,
@@ -778,7 +779,7 @@ where
             buffer.clone(),
             features,
             which_scenario,
-            retry,
+            retry_options,
             sender.clone(),
             cli,
             fail_fast,

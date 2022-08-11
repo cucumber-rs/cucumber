@@ -13,6 +13,7 @@
     - [Scenario hooks](writing/hooks.md)
     - [Spoken languages](writing/languages.md)
     - [Tags](writing/tags.md)
+    - [Retrying failed scenarios](writing/retries.md)
     - [Modules organization](writing/modules.md)
 - [CLI (command-line interface)](cli.md)
 - [Output](output/index.md)

@@ -23,11 +23,14 @@ OPTIONS:
 
         --color <auto|always|never>
             Coloring policy for a console output
-            
+
             [default: auto]
-            
+
         --fail-fast
             Run tests until the first failure
+
+        --format <json>
+            Formatting of the output
 
     -h, --help
             Print help information
@@ -38,20 +41,42 @@ OPTIONS:
 
     -n, --name <regex>
             Regex to filter scenarios by their name
-            
+
             [aliases: scenario-name]
+
+        --retry <int>
+            Number of times scenario will be rerun in case of a failure
+
+        --retry-after <duration>
+            Delay between each retry attempt.
+
+            Duration is represented like `12min 5s`. Supported suffixes:
+            - `nsec`, `ns` — nanoseconds.
+            - `usec`, `us` — microseconds.
+            - `msec`, `ms` — milliseconds.
+            - `seconds`, `second`, `sec`, `s`.
+            - `minutes`, `minute`, `min`, `m`.
+
+        --retry-tag-filter <tagexpr>
+            Tag expression to filter retried scenarios
+
+        --show-output
+            Show captured stdout of successful tests. Currently, outputs only step function location
 
     -t, --tags <tagexpr>
             Tag expression to filter scenarios by.
-            
+
             Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be
             careful about conflicting tags on different levels.
 
     -v
             Verbosity of an output.
-            
+
             `-v` is default verbosity, `-vv` additionally outputs world on failed steps, `-vvv`
             additionally outputs step's doc string (if present).
+
+    -Z <NIGHTLY>
+            Enable nightly-only flags
 ```
 
 ![record](rec/cli.gif)
