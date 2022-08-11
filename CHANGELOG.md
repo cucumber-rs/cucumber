@@ -28,7 +28,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
 - `FeatureExt::count_steps()` method. ([#220])
 - Location of the `fn` matching a failed `Step` in output. ([#221])
-- Retries failed `Scenario`s ([#223], [#212])
+- Ability to retry failed `Scenario`s ([#223], [#212])
 
 ### Changed
 
