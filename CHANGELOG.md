@@ -28,18 +28,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `writer::Stats::passed_steps()` and `writer::Stats::skipped_steps()` methods. ([#220])
 - `FeatureExt::count_steps()` method. ([#220])
 - Location of the `fn` matching a failed `Step` in output. ([#221])
+- Retries failed `Scenario`s ([#223], [#212])
 
 ### Changed
 
 - Provided default CLI options are now global (allowed to be specified after custom subcommands). ([#216], [#215])
 - Stripped `CARGO_MANIFEST_DIR` from output paths whenever is possible. ([#221])
 
+[#212]: /../../issues/212
 [#215]: /../../issues/215
 [#216]: /../../pull/216
 [#217]: /../../issues/217
 [#219]: /../../pull/219
 [#220]: /../../pull/220
 [#221]: /../../pull/221
+[#223]: /../../pull/223
 [8ad5cc86]: /../../commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
 [cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
 [fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
