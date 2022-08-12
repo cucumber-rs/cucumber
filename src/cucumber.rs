@@ -621,7 +621,7 @@ where
     where
         CustomCli: clap::Args,
     {
-        let Cucumber {
+        let Self {
             parser,
             runner,
             writer,
@@ -727,7 +727,7 @@ where
             )
         };
 
-        let Cucumber {
+        let Self {
             parser,
             runner,
             mut writer,

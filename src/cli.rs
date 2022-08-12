@@ -278,7 +278,7 @@ impl<L: Args, R: Args> Compose<L, R> {
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn into_inner(self) -> (L, R) {
-        let Compose { left, right } = self;
+        let Self { left, right } = self;
         (left, right)
     }
 }
