@@ -35,7 +35,6 @@ use futures::{
     TryStreamExt as _,
 };
 use gherkin::tagexpr::TagOperation;
-use humantime::parse_duration;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
@@ -66,16 +65,17 @@ pub struct Cli {
 
     /// Delay between each retry attempt.
     ///
-    /// Duration is represented like `12min 5s`. Supported suffixes:
+    /// Duration is represented in human-readable format like `12min5s`.
+    /// Supported suffixes:
     /// - `nsec`, `ns` — nanoseconds.
     /// - `usec`, `us` — microseconds.
     /// - `msec`, `ms` — milliseconds.
-    /// - `seconds`, `second`, `sec`, `s`.
-    /// - `minutes`, `minute`, `min`, `m`.
+    /// - `seconds`, `second`, `sec`, `s` - seconds.
+    /// - `minutes`, `minute`, `min`, `m` - minutes.
     #[clap(
         long,
         value_name = "duration",
-        parse(try_from_str = parse_duration),
+        parse(try_from_str = humantime::parse_duration),
         verbatim_doc_comment,
         global = true,
     )]
@@ -394,7 +394,7 @@ impl<World> Default for Basic<World> {
                             rest.strip_prefix(".after").and_then(|after| {
                                 after.strip_prefix('(').and_then(|after| {
                                     let (dur, _) = after.split_once(')')?;
-                                    parse_duration(dur).ok()
+                                    humantime::parse_duration(dur).ok()
                                 })
                             });
 

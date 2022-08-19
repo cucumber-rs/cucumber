@@ -657,11 +657,11 @@ impl<World> Scenario<World> {
     #[must_use]
     pub const fn retries(&self) -> Option<Retries> {
         match self {
-            Scenario::Started(retries)
-            | Scenario::Hook(_, _, retries)
-            | Scenario::Background(_, _, retries)
-            | Scenario::Step(_, _, retries)
-            | Scenario::Finished(retries) => *retries,
+            Self::Started(retries)
+            | Self::Hook(_, _, retries)
+            | Self::Background(_, _, retries)
+            | Self::Step(_, _, retries)
+            | Self::Finished(retries) => *retries,
         }
     }
 }
