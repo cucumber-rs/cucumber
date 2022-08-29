@@ -441,20 +441,21 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
-        ev: event::Scenario<W>,
+        ev: event::RetryableScenario<W>,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Scenario;
 
-        match ev {
-            Scenario::Started(_) | Scenario::Finished(_) => Vec::new(),
-            Scenario::Hook(ty, ev, retries) => {
+        let retries = ev.retries;
+        match ev.event {
+            Scenario::Started | Scenario::Finished => Vec::new(),
+            Scenario::Hook(ty, ev) => {
                 self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
             }
-            Scenario::Background(step, ev, retries) => self.expand_step_event(
+            Scenario::Background(step, ev) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, true, cli,
             ),
-            Scenario::Step(step, ev, retries) => self.expand_step_event(
+            Scenario::Step(step, ev) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, false, cli,
             ),
         }

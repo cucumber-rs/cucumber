@@ -261,7 +261,7 @@ impl<World> Cucumber<World> {
         feat: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        event: Scenario<World>,
+        event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
             feat,
@@ -288,7 +288,7 @@ pub enum Feature<World> {
     Rule(Arc<gherkin::Rule>, Rule<World>),
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Feature`] execution being finished.
     ///
@@ -320,7 +320,7 @@ pub enum Rule<World> {
     Started,
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Rule`] execution being finished.
     ///
@@ -471,23 +471,23 @@ pub enum Scenario<World> {
     /// [`Scenario`] execution being started.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    Started(Option<Retries>),
+    Started,
 
     /// [`Hook`] event.
-    Hook(HookType, Hook<World>, Option<Retries>),
+    Hook(HookType, Hook<World>),
 
     /// [`Background`] [`Step`] event.
     ///
     /// [`Background`]: gherkin::Background
-    Background(Arc<gherkin::Step>, Step<World>, Option<Retries>),
+    Background(Arc<gherkin::Step>, Step<World>),
 
     /// [`Step`] event.
-    Step(Arc<gherkin::Step>, Step<World>, Option<Retries>),
+    Step(Arc<gherkin::Step>, Step<World>),
 
     /// [`Scenario`] execution being finished.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    Finished(Option<Retries>),
+    Finished,
 }
 
 // Manual implementation is required to omit the redundant `World: Clone` trait
@@ -495,13 +495,13 @@ pub enum Scenario<World> {
 impl<World> Clone for Scenario<World> {
     fn clone(&self) -> Self {
         match self {
-            Self::Started(r) => Self::Started(*r),
-            Self::Hook(ty, ev, r) => Self::Hook(*ty, ev.clone(), *r),
-            Self::Background(bg, ev, r) => {
-                Self::Background(Arc::clone(bg), ev.clone(), *r)
+            Self::Started => Self::Started,
+            Self::Hook(ty, ev) => Self::Hook(*ty, ev.clone()),
+            Self::Background(bg, ev) => {
+                Self::Background(Arc::clone(bg), ev.clone())
             }
-            Self::Step(st, ev, r) => Self::Step(Arc::clone(st), ev.clone(), *r),
-            Self::Finished(r) => Self::Finished(*r),
+            Self::Step(st, ev) => Self::Step(Arc::clone(st), ev.clone()),
+            Self::Finished => Self::Finished,
         }
     }
 }
@@ -511,22 +511,16 @@ impl<World> Scenario<World> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub const fn hook_started(
-        which: HookType,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Hook(which, Hook::Started, retries)
+    pub const fn hook_started(which: HookType) -> Self {
+        Self::Hook(which, Hook::Started)
     }
 
     /// Constructs an event of a passed [`Scenario`] hook.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub const fn hook_passed(
-        which: HookType,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Hook(which, Hook::Passed, retries)
+    pub const fn hook_passed(which: HookType) -> Self {
+        Self::Hook(which, Hook::Passed)
     }
 
     /// Constructs an event of a failed [`Scenario`] hook.
@@ -537,20 +531,16 @@ impl<World> Scenario<World> {
         which: HookType,
         world: Option<Arc<World>>,
         info: Info,
-        retries: Option<Retries>,
     ) -> Self {
-        Self::Hook(which, Hook::Failed(world, info), retries)
+        Self::Hook(which, Hook::Failed(world, info))
     }
 
     /// Constructs an event of a [`Step`] being started.
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_started(
-        step: Arc<gherkin::Step>,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Step(step, Step::Started, retries)
+    pub fn step_started(step: Arc<gherkin::Step>) -> Self {
+        Self::Step(step, Step::Started)
     }
 
     /// Constructs an event of a [`Background`] [`Step`] being started.
@@ -558,11 +548,8 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_started(
-        step: Arc<gherkin::Step>,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Background(step, Step::Started, retries)
+    pub fn background_step_started(step: Arc<gherkin::Step>) -> Self {
+        Self::Background(step, Step::Started)
     }
 
     /// Constructs an event of a passed [`Step`].
@@ -573,9 +560,8 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
-        retries: Option<Retries>,
     ) -> Self {
-        Self::Step(step, Step::Passed(captures, loc), retries)
+        Self::Step(step, Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -587,31 +573,24 @@ impl<World> Scenario<World> {
         step: Arc<gherkin::Step>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
-        retries: Option<Retries>,
     ) -> Self {
-        Self::Background(step, Step::Passed(captures, loc), retries)
+        Self::Background(step, Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a skipped [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_skipped(
-        step: Arc<gherkin::Step>,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Step(step, Step::Skipped, retries)
+    pub fn step_skipped(step: Arc<gherkin::Step>) -> Self {
+        Self::Step(step, Step::Skipped)
     }
     /// Constructs an event of a skipped [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_skipped(
-        step: Arc<gherkin::Step>,
-        retries: Option<Retries>,
-    ) -> Self {
-        Self::Background(step, Step::Skipped, retries)
+    pub fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
+        Self::Background(step, Step::Skipped)
     }
 
     /// Constructs an event of a failed [`Step`].
@@ -624,13 +603,8 @@ impl<World> Scenario<World> {
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
-        retries: Option<Retries>,
     ) -> Self {
-        Self::Step(
-            step,
-            Step::Failed(captures, loc, world, info.into()),
-            retries,
-        )
+        Self::Step(step, Step::Failed(captures, loc, world, info.into()))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -644,24 +618,42 @@ impl<World> Scenario<World> {
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
-        retries: Option<Retries>,
     ) -> Self {
-        Self::Background(
-            step,
-            Step::Failed(captures, loc, world, info.into()),
-            retries,
-        )
+        Self::Background(step, Step::Failed(captures, loc, world, info.into()))
     }
 
+    pub fn with_retries(
+        self,
+        retries: Option<Retries>,
+    ) -> RetryableScenario<World> {
+        RetryableScenario {
+            event: self,
+            retries,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct RetryableScenario<World> {
+    pub event: Scenario<World>,
+    pub retries: Option<Retries>,
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for RetryableScenario<World> {
+    fn clone(&self) -> Self {
+        Self {
+            event: self.event.clone(),
+            retries: self.retries,
+        }
+    }
+}
+
+impl<World> RetryableScenario<World> {
     /// Returns number of [`Retries`] for this [`Scenario`].
     #[must_use]
     pub const fn retries(&self) -> Option<Retries> {
-        match self {
-            Scenario::Started(retries)
-            | Scenario::Hook(_, _, retries)
-            | Scenario::Background(_, _, retries)
-            | Scenario::Step(_, _, retries)
-            | Scenario::Finished(retries) => *retries,
-        }
+        self.retries
     }
 }

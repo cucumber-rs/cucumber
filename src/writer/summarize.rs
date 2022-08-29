@@ -398,16 +398,17 @@ impl<Writer> Summarize<Writer> {
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        ev: &event::Scenario<W>,
+        ev: &event::RetryableScenario<W>,
     ) {
         use event::{Hook, Scenario};
 
         let path = (feature, rule, scenario);
 
-        match ev {
-            Scenario::Started(_)
-            | Scenario::Hook(_, Hook::Passed | Hook::Started, _) => {}
-            Scenario::Hook(_, Hook::Failed(..), _ret) => {
+        let ret = ev.retries;
+        match &ev.event {
+            Scenario::Started
+            | Scenario::Hook(_, Hook::Passed | Hook::Started) => {}
+            Scenario::Hook(_, Hook::Failed(..)) => {
                 // - If Scenario's last Step failed and then After Hook failed
                 //   too, we don't need to track second failure;
                 // - If Scenario's last Step was skipped and then After Hook
@@ -429,10 +430,10 @@ impl<Writer> Summarize<Writer> {
                 }
                 self.failed_hooks += 1;
             }
-            Scenario::Background(st, ev, ret) | Scenario::Step(st, ev, ret) => {
-                self.handle_step(path.0, path.1, path.2, st.as_ref(), ev, *ret);
+            Scenario::Background(st, ev) | Scenario::Step(st, ev) => {
+                self.handle_step(path.0, path.1, path.2, st.as_ref(), ev, ret);
             }
-            Scenario::Finished(_) => {
+            Scenario::Finished => {
                 // We don't remove retried `Scenario`s immediately, because we
                 // want to deduplicate. For example if some `Scenario` is
                 // retried 3 times, we'll see in summary 1 retried `Scenario`

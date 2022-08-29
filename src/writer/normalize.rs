@@ -510,12 +510,12 @@ impl<World> CucumberQueue<World> {
         feat: &gherkin::Feature,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        event: Event<event::Scenario<World>>,
+        event: Event<event::RetryableScenario<World>>,
     ) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .insert_scenario_event(rule, scenario, event.retries(), event);
+            .insert_scenario_event(rule, scenario, event.retries, event);
     }
 }
 
@@ -636,7 +636,7 @@ impl<World> FeatureQueue<World> {
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         retries: Option<Retries>,
-        ev: Event<event::Scenario<World>>,
+        ev: Event<event::RetryableScenario<World>>,
     ) {
         if let Some(r) = rule {
             match self
@@ -775,7 +775,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Debug)]
-struct ScenariosQueue<World>(Vec<Event<event::Scenario<World>>>);
+struct ScenariosQueue<World>(Vec<Event<event::RetryableScenario<World>>>);
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].
@@ -786,7 +786,7 @@ impl<World> ScenariosQueue<World> {
 
 #[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
-    type Current = Event<event::Scenario<World>>;
+    type Current = Event<event::RetryableScenario<World>>;
     type Emitted = (Arc<gherkin::Scenario>, Option<Retries>);
     type EmittedPath = (
         Arc<gherkin::Feature>,
@@ -805,8 +805,9 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         while let Some((ev, meta)) = self.current_item().map(Event::split) {
-            let should_be_removed = matches!(ev, event::Scenario::Finished(_))
-                .then(|| ev.retries());
+            let should_be_removed =
+                matches!(ev.event, event::Scenario::Finished)
+                    .then(|| ev.retries);
 
             let ev = meta.wrap(event::Cucumber::scenario(
                 Arc::clone(&feature),

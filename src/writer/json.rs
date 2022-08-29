@@ -84,7 +84,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                 Cucumber::Feature(f, event::Feature::Scenario(sc, ev)),
                 meta,
             )) => {
-                self.handle_scenario_event(&f, None, &sc, ev, meta);
+                self.handle_scenario_event(&f, None, &sc, ev.event, meta);
             }
             Ok((
                 Cucumber::Feature(
@@ -93,7 +93,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                 ),
                 meta,
             )) => {
-                self.handle_scenario_event(&f, Some(&r), &sc, ev, meta);
+                self.handle_scenario_event(&f, Some(&r), &sc, ev.event, meta);
             }
             Ok((Cucumber::Finished, _)) => {
                 self.output
@@ -170,10 +170,10 @@ impl<Out: io::Write> Json<Out> {
         use event::Scenario;
 
         match ev {
-            Scenario::Hook(ty, ev, _) => {
+            Scenario::Hook(ty, ev) => {
                 self.handle_hook_event(feature, rule, scenario, ty, ev, meta);
             }
-            Scenario::Background(st, ev, _) => {
+            Scenario::Background(st, ev) => {
                 self.handle_step_event(
                     feature,
                     rule,
@@ -184,12 +184,12 @@ impl<Out: io::Write> Json<Out> {
                     meta,
                 );
             }
-            Scenario::Step(st, ev, _) => {
+            Scenario::Step(st, ev) => {
                 self.handle_step_event(
                     feature, rule, scenario, "scenario", &st, ev, meta,
                 );
             }
-            Scenario::Started(_) | Scenario::Finished(_) => {}
+            Scenario::Started | Scenario::Finished => {}
         }
     }
 

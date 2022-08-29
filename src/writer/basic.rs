@@ -332,38 +332,39 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,
-        ev: &event::Scenario<W>,
+        ev: &event::RetryableScenario<W>,
     ) -> io::Result<()> {
         use event::{Hook, Scenario};
 
-        match ev {
-            Scenario::Started(retries) => {
-                self.scenario_started(scenario, *retries)?;
+        let retries = ev.retries;
+        match &ev.event {
+            Scenario::Started => {
+                self.scenario_started(scenario, retries)?;
             }
-            Scenario::Hook(_, Hook::Started, _) => {
+            Scenario::Hook(_, Hook::Started) => {
                 self.indent += 4;
             }
-            Scenario::Hook(which, Hook::Failed(world, info), retries) => {
+            Scenario::Hook(which, Hook::Failed(world, info)) => {
                 self.hook_failed(
                     feat,
                     scenario,
                     *which,
-                    *retries,
+                    retries,
                     world.as_ref(),
                     info,
                 )?;
                 self.indent = self.indent.saturating_sub(4);
             }
-            Scenario::Hook(_, Hook::Passed, _) => {
+            Scenario::Hook(_, Hook::Passed) => {
                 self.indent = self.indent.saturating_sub(4);
             }
-            Scenario::Background(bg, ev, retries) => {
-                self.background(feat, scenario, bg, ev, *retries)?;
+            Scenario::Background(bg, ev) => {
+                self.background(feat, scenario, bg, ev, retries)?;
             }
-            Scenario::Step(st, ev, retries) => {
-                self.step(feat, scenario, st, ev, *retries)?;
+            Scenario::Step(st, ev) => {
+                self.step(feat, scenario, st, ev, retries)?;
             }
-            Scenario::Finished(_) => {
+            Scenario::Finished => {
                 self.indent = self.indent.saturating_sub(2);
             }
         }

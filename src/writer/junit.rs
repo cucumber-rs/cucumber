@@ -82,7 +82,7 @@ pub struct JUnit<W, Out: io::Write> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [1]: event::Scenario
-    events: Vec<event::Scenario<W>>,
+    events: Vec<event::RetryableScenario<W>>,
 
     /// [`Verbosity`] of this [`Writer`].
     verbosity: Verbosity,
@@ -264,22 +264,22 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
-        ev: event::Scenario<W>,
+        ev: event::RetryableScenario<W>,
         meta: Event<()>,
     ) {
         use event::Scenario;
 
-        match ev {
-            Scenario::Started(retries) => {
+        match &ev.event {
+            Scenario::Started => {
                 self.scenario_started_at = Some(meta.at);
-                self.events.push(Scenario::Started(retries));
+                self.events.push(ev);
             }
             Scenario::Hook(..)
             | Scenario::Background(..)
             | Scenario::Step(..) => {
                 self.events.push(ev);
             }
-            Scenario::Finished(_) => {
+            Scenario::Finished => {
                 let dur = self.scenario_duration(meta.at, sc);
                 let events = mem::take(&mut self.events);
                 let case = self.test_case(feat, rule, sc, &events, dur);
@@ -304,7 +304,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
-        events: &[event::Scenario<W>],
+        events: &[event::RetryableScenario<W>],
         duration: Duration,
     ) -> TestCase {
         use event::{Hook, HookType, Scenario, Step};
@@ -314,11 +314,10 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             .rev()
             .find(|ev| {
                 !matches!(
-                    ev,
+                    ev.event,
                     Scenario::Hook(
                         HookType::After,
                         Hook::Passed | Hook::Started,
-                        _,
                     ),
                 )
             })
@@ -343,28 +342,26 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             sc.position.col,
         );
 
-        let mut case = match last_event {
-            Scenario::Started(_)
-            | Scenario::Hook(_, Hook::Started | Hook::Passed, _)
-            | Scenario::Background(_, Step::Started | Step::Passed(_, _), _)
-            | Scenario::Step(_, Step::Started | Step::Passed(_, _), _) => {
+        let mut case = match &last_event.event {
+            Scenario::Started
+            | Scenario::Hook(_, Hook::Started | Hook::Passed)
+            | Scenario::Background(_, Step::Started | Step::Passed(_, _))
+            | Scenario::Step(_, Step::Started | Step::Passed(_, _)) => {
                 TestCaseBuilder::success(&case_name, duration).build()
             }
-            Scenario::Background(_, Step::Skipped, _)
-            | Scenario::Step(_, Step::Skipped, _) => {
+            Scenario::Background(_, Step::Skipped)
+            | Scenario::Step(_, Step::Skipped) => {
                 TestCaseBuilder::skipped(&case_name).build()
             }
-            Scenario::Hook(_, Hook::Failed(_, e), _) => {
-                TestCaseBuilder::failure(
-                    &case_name,
-                    duration,
-                    "Hook Panicked",
-                    coerce_error(e).as_ref(),
-                )
-                .build()
-            }
-            Scenario::Background(_, Step::Failed(_, _, _, e), _)
-            | Scenario::Step(_, Step::Failed(_, _, _, e), _) => {
+            Scenario::Hook(_, Hook::Failed(_, e)) => TestCaseBuilder::failure(
+                &case_name,
+                duration,
+                "Hook Panicked",
+                coerce_error(e).as_ref(),
+            )
+            .build(),
+            Scenario::Background(_, Step::Failed(_, _, _, e))
+            | Scenario::Step(_, Step::Failed(_, _, _, e)) => {
                 TestCaseBuilder::failure(
                     &case_name,
                     duration,
@@ -373,7 +370,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 )
                 .build()
             }
-            Scenario::Finished(_) => {
+            Scenario::Finished => {
                 panic!(
                     "Duplicated `Finished` event for `Scenario`: \"{}\"\n\
                      {WRAP_ADVICE}",
@@ -392,7 +389,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let output = events
             .iter()
             .map(|ev| {
-                basic_wr.scenario(feat, sc, ev)?;
+                basic_wr.scenario(feat, sc, &ev)?;
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()

@@ -869,8 +869,8 @@ where
     }
 }
 
-impl<W, I, P, Wr, F, R, B, A, Cli>
-    Cucumber<W, P, I, runner::Basic<W, F, R, B, A>, Wr, Cli>
+impl<W, I, P, Wr, F, B, A, Cli>
+    Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
@@ -881,13 +881,6 @@ where
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
-        + 'static,
-    R: Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-            &runner::basic::Cli,
-        ) -> Option<RetryOptions>
         + 'static,
     B: for<'a> Fn(
             &'a gherkin::Feature,
@@ -961,7 +954,7 @@ where
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which, R, B, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr, Cli>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -992,10 +985,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::type_complexity)]
     #[must_use]
-    pub fn retry_options<Retry>(
-        self,
-        func: Retry,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, Retry, B, A>, Wr, Cli>
+    pub fn retry_options<Retry>(mut self, func: Retry) -> Self
     where
         Retry: Fn(
                 &gherkin::Feature,
@@ -1005,21 +995,8 @@ where
             ) -> Option<RetryOptions>
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
-        Cucumber {
-            parser,
-            runner: runner.retry_options(func),
-            writer,
-            cli,
-            _world: PhantomData,
-            _parser_input: PhantomData,
-        }
+        self.runner = self.runner.retry_options(func);
+        self
     }
 
     /// Sets a hook, executed on each [`Scenario`] before running all its
@@ -1033,7 +1010,7 @@ where
     pub fn before<Before>(
         self,
         func: Before,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, R, Before, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr, Cli>
     where
         Before: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1076,7 +1053,7 @@ where
     pub fn after<After>(
         self,
         func: After,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, R, B, After>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr, Cli>
     where
         After: for<'a> Fn(
                 &'a gherkin::Feature,

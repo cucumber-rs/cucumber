@@ -147,7 +147,9 @@ impl<W, Wr> Repeat<W, Wr> {
     /// [`Skipped`]: event::Step::Skipped
     #[must_use]
     pub fn skipped(writer: Wr) -> Self {
-        use event::{Cucumber, Feature, Rule, Scenario, Step};
+        use event::{
+            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+        };
 
         Self {
             writer,
@@ -160,13 +162,22 @@ impl<W, Wr> Repeat<W, Wr> {
                             _,
                             Rule::Scenario(
                                 _,
-                                Scenario::Step(_, Step::Skipped, _)
-                                    | Scenario::Background(_, Step::Skipped, _)
+                                RetryableScenario {
+                                    event: Scenario::Step(_, Step::Skipped)
+                                        | Scenario::Background(
+                                            _,
+                                            Step::Skipped
+                                        ),
+                                    ..
+                                }
                             )
                         ) | Feature::Scenario(
                             _,
-                            Scenario::Step(_, Step::Skipped, _)
-                                | Scenario::Background(_, Step::Skipped, _)
+                            RetryableScenario {
+                                event: Scenario::Step(_, Step::Skipped)
+                                    | Scenario::Background(_, Step::Skipped),
+                                ..
+                            }
                         )
                     )),
                 )
@@ -182,7 +193,9 @@ impl<W, Wr> Repeat<W, Wr> {
     /// [`Parser`]: crate::Parser
     #[must_use]
     pub fn failed(writer: Wr) -> Self {
-        use event::{Cucumber, Feature, Hook, Rule, Scenario, Step};
+        use event::{
+            Cucumber, Feature, Hook, RetryableScenario, Rule, Scenario, Step,
+        };
 
         Self {
             writer,
@@ -195,19 +208,24 @@ impl<W, Wr> Repeat<W, Wr> {
                             _,
                             Rule::Scenario(
                                 _,
-                                Scenario::Step(_, Step::Failed(..), _)
-                                    | Scenario::Background(
-                                        _,
-                                        Step::Failed(..),
-                                        _
-                                    )
-                                    | Scenario::Hook(_, Hook::Failed(..), _)
+                                RetryableScenario {
+                                    event: Scenario::Step(_, Step::Failed(..))
+                                        | Scenario::Background(
+                                            _,
+                                            Step::Failed(..),
+                                        )
+                                        | Scenario::Hook(_, Hook::Failed(..)),
+                                    ..
+                                }
                             )
                         ) | Feature::Scenario(
                             _,
-                            Scenario::Step(_, Step::Failed(..), _)
-                                | Scenario::Background(_, Step::Failed(..), _)
-                                | Scenario::Hook(_, Hook::Failed(..), _)
+                            RetryableScenario {
+                                event: Scenario::Step(_, Step::Failed(..))
+                                    | Scenario::Background(_, Step::Failed(..))
+                                    | Scenario::Hook(_, Hook::Failed(..)),
+                                ..
+                            },
                         )
                     )) | Err(_),
                 )

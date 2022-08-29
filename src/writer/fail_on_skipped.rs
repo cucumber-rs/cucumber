@@ -67,7 +67,8 @@ where
         cli: &Self::Cli,
     ) {
         use event::{
-            Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
+            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+            StepError::Panic,
         };
 
         let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
@@ -85,12 +86,14 @@ where
         let map_failed_bg =
             |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
-                Cucumber::scenario(f, r, sc, Scenario::Background(st, ev, ret))
+                let ev = Scenario::Background(st, ev).with_retries(ret);
+                Cucumber::scenario(f, r, sc, ev)
             };
         let map_failed_step =
             |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
-                Cucumber::scenario(f, r, sc, Scenario::Step(st, ev, ret))
+                let ev = Scenario::Step(st, ev).with_retries(ret);
+                Cucumber::scenario(f, r, sc, ev)
             };
 
         let event = event.map(|outer| {
@@ -101,34 +104,47 @@ where
                         r,
                         Rule::Scenario(
                             sc,
-                            Scenario::Background(st, Step::Skipped, ret),
+                            RetryableScenario {
+                                event: Scenario::Background(st, Step::Skipped),
+                                retries,
+                            },
                         ),
                     ),
-                ) => map_failed_bg(f, Some(r), sc, st, ret),
+                ) => map_failed_bg(f, Some(r), sc, st, retries),
                 Cucumber::Feature(
                     f,
                     Feature::Scenario(
                         sc,
-                        Scenario::Background(st, Step::Skipped, ret),
+                        RetryableScenario {
+                            event: Scenario::Background(st, Step::Skipped),
+                            retries,
+                        },
                     ),
-                ) => map_failed_bg(f, None, sc, st, ret),
+                ) => map_failed_bg(f, None, sc, st, retries),
                 Cucumber::Feature(
                     f,
                     Feature::Rule(
                         r,
                         Rule::Scenario(
                             sc,
-                            Scenario::Step(st, Step::Skipped, ret),
+                            RetryableScenario {
+                                event: Scenario::Step(st, Step::Skipped),
+                                retries,
+                            },
                         ),
                     ),
-                ) => map_failed_step(f, Some(r), sc, st, ret),
+                ) => map_failed_step(f, Some(r), sc, st, retries),
                 Cucumber::Feature(
                     f,
                     Feature::Scenario(
                         sc,
-                        Scenario::Step(st, Step::Skipped, ret),
+                        RetryableScenario {
+                            event: Scenario::Step(st, Step::Skipped),
+                            retries,
+                        },
+                        ..,
                     ),
-                ) => map_failed_step(f, None, sc, st, ret),
+                ) => map_failed_step(f, None, sc, st, retries),
                 Cucumber::Started
                 | Cucumber::Feature(..)
                 | Cucumber::ParsingFinished { .. }
