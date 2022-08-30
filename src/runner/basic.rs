@@ -86,27 +86,6 @@ pub struct Cli {
     pub retry_tag_filter: Option<TagOperation>,
 }
 
-impl Cli {
-    /// Applies retry settings from the [`Cli`].
-    fn apply_retry(
-        &self,
-        scenario: &gherkin::Scenario,
-        options: Option<(Option<usize>, Option<Duration>)>,
-    ) -> Option<RetryOptions> {
-        let matched = self.retry_tag_filter.as_ref().map_or_else(
-            || self.retry.is_some() || self.retry_after.is_some(),
-            |op| op.eval(&scenario.tags),
-        );
-
-        (options.is_some() || matched).then(|| RetryOptions {
-            retries: Retries::initial(
-                options.and_then(|(r, _)| r).or(self.retry).unwrap_or(1),
-            ),
-            after: options.and_then(|(_, a)| a).or(self.retry_after),
-        })
-    }
-}
-
 /// Type determining whether [`Scenario`]s should run concurrently or
 /// sequentially.
 ///
@@ -147,6 +126,67 @@ impl RetryOptions {
         })
     }
 
+    /// Parses [`RetryOptions`] from [`Feature`]'s, [`Rule`]'s,
+    /// [`Scenario`]'s tags and [`Cli`] options.
+    ///
+    /// [`Feature`]: gherkin::Feature
+    /// [`Rule`]: gherkin::Rule
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn parse_from_tags(
+        feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
+        scenario: &gherkin::Scenario,
+        cli: &Cli,
+    ) -> Option<Self> {
+        #[allow(clippy::shadow_unrelated)]
+        let parse_tags = |tags: &[String]| {
+            tags.iter().find_map(|tag| {
+                tag.strip_prefix("retry").map(|retries| {
+                    let (num, rest) = retries
+                        .strip_prefix('(')
+                        .and_then(|s| {
+                            s.split_once(')').and_then(|(num, rest)| {
+                                num.parse::<usize>()
+                                    .ok()
+                                    .map(|num| (Some(num), rest))
+                            })
+                        })
+                        .unwrap_or((None, retries));
+
+                    let after = rest.strip_prefix(".after").and_then(|after| {
+                        after.strip_prefix('(').and_then(|after| {
+                            let (dur, _) = after.split_once(')')?;
+                            humantime::parse_duration(dur).ok()
+                        })
+                    });
+
+                    (num, after)
+                })
+            })
+        };
+
+        let apply_cli = |options: Option<_>| {
+            let matched = cli.retry_tag_filter.as_ref().map_or_else(
+                || cli.retry.is_some() || cli.retry_after.is_some(),
+                |op| op.eval(&scenario.tags),
+            );
+
+            (options.is_some() || matched).then(|| Self {
+                retries: Retries::initial(
+                    options.and_then(|(r, _)| r).or(cli.retry).unwrap_or(1),
+                ),
+                after: options.and_then(|(_, a)| a).or(cli.retry_after),
+            })
+        };
+
+        apply_cli(
+            parse_tags(&scenario.tags)
+                .or_else(|| rule.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&feature.tags)),
+        )
+    }
+
     /// Constructs [`RetryOptionsWithDeadline`], that will reschedule
     /// [`Scenario`] [`after`] delay.
     ///
@@ -169,45 +209,6 @@ impl RetryOptions {
             retries: self.retries,
             after: self.after.map(|at| (at, None)),
         }
-    }
-
-    fn parse_from_tags(
-        f: &gherkin::Feature,
-        r: Option<&gherkin::Rule>,
-        sc: &gherkin::Scenario,
-        cli: &Cli,
-    ) -> Option<Self> {
-        let parse_tags = |tags: &[String]| {
-            tags.iter().find_map(|tag| {
-                tag.strip_prefix("retry").map(|retries| {
-                    let (num, rest) = retries
-                        .strip_prefix('(')
-                        .and_then(|s| {
-                            s.split_once(')').and_then(|(num, rest)| {
-                                num.parse::<usize>()
-                                    .ok()
-                                    .map(|num| (Some(num), rest))
-                            })
-                        })
-                        .unwrap_or((None, retries));
-
-                    let after = rest.strip_prefix(".after").and_then(|after| {
-                        after.strip_prefix('(').and_then(|after| {
-                            let (dur, _) = after.split_once(')')?;
-                            parse_duration(dur).ok()
-                        })
-                    });
-
-                    (num, after)
-                })
-            })
-        };
-
-        let options = parse_tags(&sc.tags)
-            .or_else(|| r.and_then(|r| parse_tags(&r.tags)))
-            .or_else(|| parse_tags(&f.tags));
-
-        cli.apply_retry(sc, options)
     }
 }
 
@@ -256,15 +257,18 @@ pub type WhichScenarioFn = fn(
     &gherkin::Scenario,
 ) -> ScenarioType;
 
-/// Alias for [`fn`] used to determine [`Scenario`]'s [`RetryOptions`].
+/// Alias for [`Box`]ed [`Fn`] used to determine [`Scenario`]'s
+/// [`RetryOptions`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub type RetryOptionsFn = fn(
-    &gherkin::Feature,
-    Option<&gherkin::Rule>,
-    &gherkin::Scenario,
-    &Cli,
-) -> Option<RetryOptions>;
+pub type RetryOptionsFn = Box<
+    dyn Fn(
+        &gherkin::Feature,
+        Option<&gherkin::Rule>,
+        &gherkin::Scenario,
+        &Cli,
+    ) -> Option<RetryOptions>,
+>;
 
 /// Alias for [`fn`] executed on each [`Scenario`] before running all [`Step`]s.
 ///
@@ -349,14 +353,7 @@ pub struct Basic<
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    retry_options: Box<
-        dyn Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-            &Cli,
-        ) -> Option<RetryOptions>,
-    >,
+    retry_options: RetryOptionsFn,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
     /// including [`Background`] ones.
@@ -521,7 +518,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
-    pub fn retry_options<R>(self, func: R) -> Self
+    pub fn retry_options<R>(mut self, func: R) -> Self
     where
         R: Fn(
                 &gherkin::Feature,
@@ -531,30 +528,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             ) -> Option<RetryOptions>
             + 'static,
     {
-        let Self {
-            max_concurrent_scenarios,
-            retries,
-            retry_after,
-            retry_filter,
-            steps,
-            which_scenario,
-            before_hook,
-            after_hook,
-            fail_fast,
-            ..
-        } = self;
-        Basic {
-            max_concurrent_scenarios,
-            retries,
-            retry_after,
-            retry_filter,
-            steps,
-            which_scenario,
-            retry_options: Box::new(func),
-            before_hook,
-            after_hook,
-            fail_fast,
-        }
+        self.retry_options = Box::new(func);
+        self
     }
 
     /// Sets a hook, executed on each [`Scenario`] before running all its
@@ -581,7 +556,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_filter,
             steps,
             which_scenario,
-            retry_options: retry,
+            retry_options,
             after_hook,
             fail_fast,
             ..
@@ -593,7 +568,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_filter,
             steps,
             which_scenario,
-            retry_options: retry,
+            retry_options,
             before_hook: Some(func),
             after_hook,
             fail_fast,
@@ -629,7 +604,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_filter,
             steps,
             which_scenario,
-            retry_options: retry,
+            retry_options,
             before_hook,
             fail_fast,
             ..
@@ -641,7 +616,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_filter,
             steps,
             which_scenario,
-            retry_options: retry,
+            retry_options,
             before_hook,
             after_hook: Some(func),
             fail_fast,
@@ -779,11 +754,11 @@ where
 /// Stores [`Feature`]s for later use by [`execute()`].
 ///
 /// [`Feature`]: gherkin::Feature
-async fn insert_features<W, S, F, R>(
+async fn insert_features<W, S, F>(
     into: Features,
     features_stream: S,
     which_scenario: F,
-    retries: R,
+    retries: RetryOptionsFn,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
     cli: Cli,
     fail_fast: bool,
@@ -794,13 +769,6 @@ async fn insert_features<W, S, F, R>(
             Option<&gherkin::Rule>,
             &gherkin::Scenario,
         ) -> ScenarioType
-        + 'static,
-    R: Fn(
-            &gherkin::Feature,
-            Option<&gherkin::Rule>,
-            &gherkin::Scenario,
-            &Cli,
-        ) -> Option<RetryOptions>
         + 'static,
 {
     let mut features = 0;
@@ -1896,11 +1864,11 @@ impl Features {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    async fn insert<Which, Retry>(
+    async fn insert<Which>(
         &self,
         feature: gherkin::Feature,
         which_scenario: &Which,
-        retry: &Retry,
+        retry: &RetryOptionsFn,
         cli: &Cli,
     ) where
         Which: Fn(
@@ -1908,13 +1876,6 @@ impl Features {
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
             ) -> ScenarioType
-            + 'static,
-        Retry: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-                &Cli,
-            ) -> Option<RetryOptions>
             + 'static,
     {
         let local = feature
@@ -2216,8 +2177,9 @@ impl<W> ExecutionFailure<W> {
 #[cfg(test)]
 mod retry_options {
     use gherkin::GherkinEnv;
+    use humantime::parse_duration;
 
-    use super::{parse_duration, Cli, Duration, Retries, RetryOptions};
+    use super::{Cli, Duration, Retries, RetryOptions};
 
     mod scenario_tags {
         use super::*;

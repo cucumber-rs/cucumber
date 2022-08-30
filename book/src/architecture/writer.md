@@ -183,16 +183,19 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #         panic::set_hook(hook);
 #
 #         let scenario = Arc::new(scenario);
-#         stream::once(future::ready(event::Scenario::Started(None)))
+#         stream::once(future::ready(event::Scenario::Started))
 #             .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
 #                 let step = Arc::new(step);
 #                 [
-#                     event::Scenario::Step(step.clone(), event::Step::Started, None),
-#                     event::Scenario::Step(step, ev, None),
+#                     event::Scenario::Step(step.clone(), event::Step::Started),
+#                     event::Scenario::Step(step, ev),
 #                 ]
 #             })))
-#             .chain(stream::once(future::ready(event::Scenario::Finished(None))))
-#             .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
+#             .chain(stream::once(future::ready(event::Scenario::Finished)))
+#             .map(move |event| event::Feature::Scenario(
+#                 scenario.clone(), 
+#                 event::RetryableScenario { event, retries: None },
+#             ))
 #     }
 #
 #     fn execute_feature(
@@ -250,11 +253,11 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                     event::Feature::Started => {
                         println!("{}: {}", feature.keyword, feature.name)
                     }
-                    event::Feature::Scenario(scenario, ev) => match ev {
-                        event::Scenario::Started(_) => {
+                    event::Feature::Scenario(scenario, ev) => match ev.event {
+                        event::Scenario::Started => {
                             println!("{}: {}", scenario.keyword, scenario.name)
                         }
-                        event::Scenario::Step(step, ev, _) => match ev {
+                        event::Scenario::Step(step, ev) => match ev {
                             event::Step::Started => {
                                 print!("{} {}...", step.keyword, step.value)
                             }
@@ -419,11 +422,11 @@ async fn main() {
 #                     event::Feature::Started => {
 #                         println!("{}: {}", feature.keyword, feature.name)
 #                     }
-#                     event::Feature::Scenario(scenario, ev) => match ev {
-#                         event::Scenario::Started(_) => {
+#                     event::Feature::Scenario(scenario, ev) => match ev.event {
+#                         event::Scenario::Started => {
 #                             println!("{}: {}", scenario.keyword, scenario.name)
 #                         }
-#                         event::Scenario::Step(step, ev, _) => match ev {
+#                         event::Scenario::Step(step, ev) => match ev {
 #                             event::Step::Started => {
 #                                 print!("{} {}...", step.keyword, step.value)
 #                             }

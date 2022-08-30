@@ -622,7 +622,9 @@ impl<World> Scenario<World> {
         Self::Background(step, Step::Failed(captures, loc, world, info.into()))
     }
 
-    pub fn with_retries(
+    /// Transforms this event into [`RetryableScenario`].
+    #[must_use]
+    pub const fn with_retries(
         self,
         retries: Option<Retries>,
     ) -> RetryableScenario<World> {
@@ -633,9 +635,13 @@ impl<World> Scenario<World> {
     }
 }
 
+/// Event of retryable [`Scenario`].
 #[derive(Debug)]
 pub struct RetryableScenario<World> {
+    /// [`Scenario`] event,
     pub event: Scenario<World>,
+
+    /// Number of [`Retries`].
     pub retries: Option<Retries>,
 }
 
@@ -647,13 +653,5 @@ impl<World> Clone for RetryableScenario<World> {
             event: self.event.clone(),
             retries: self.retries,
         }
-    }
-}
-
-impl<World> RetryableScenario<World> {
-    /// Returns number of [`Retries`] for this [`Scenario`].
-    #[must_use]
-    pub const fn retries(&self) -> Option<Retries> {
-        self.retries
     }
 }

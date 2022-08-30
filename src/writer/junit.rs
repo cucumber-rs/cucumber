@@ -389,7 +389,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let output = events
             .iter()
             .map(|ev| {
-                basic_wr.scenario(feat, sc, &ev)?;
+                basic_wr.scenario(feat, sc, ev)?;
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()

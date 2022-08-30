@@ -323,7 +323,9 @@ where
     /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .repeat_if(|ev| {
-    ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
+    ///         use cucumber::event::{
+    ///             Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+    ///         };
     ///
     ///         matches!(
     ///             ev.as_deref(),
@@ -333,17 +335,22 @@ where
     ///                     _,
     ///                     Rule::Scenario(
     ///                         _,
-    ///                         Scenario::Step(_, Step::Failed(..), _)
-    ///                             | Scenario::Background(
-    ///                                 _,
-    ///                                 Step::Failed(_, _, _, _),
-    ///                                 _,
-    ///                             )
+    ///                         RetryableScenario {
+    ///                             event: Scenario::Step(_, Step::Failed(..))
+    ///                                 | Scenario::Background(
+    ///                                     _,
+    ///                                     Step::Failed(_, _, _, _),
+    ///                                 ),
+    ///                             retries: _
+    ///                         }
     ///                     )
     ///                 ) | Feature::Scenario(
     ///                     _,
-    ///                     Scenario::Step(_, Step::Failed(..), _)
-    ///                         | Scenario::Background(_, Step::Failed(..), _)
+    ///                     RetryableScenario {
+    ///                         event: Scenario::Step(_, Step::Failed(..))
+    ///                             | Scenario::Background(_, Step::Failed(..)),
+    ///                         retries: _
+    ///                     }
     ///                 )
     ///             )) | Err(_)
     ///         )
@@ -948,7 +955,6 @@ where
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn which_scenario<Which>(
         self,
@@ -982,7 +988,6 @@ where
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn retry_options<Retry>(mut self, func: Retry) -> Self
     where
@@ -1004,7 +1009,6 @@ where
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn before<Before>(
         self,
@@ -1047,7 +1051,6 @@ where
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::type_complexity)]
     #[must_use]
     pub fn after<After>(
         self,
