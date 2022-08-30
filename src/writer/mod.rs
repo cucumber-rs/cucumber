@@ -134,7 +134,6 @@ pub trait Stats<World>: Writer<World> {
 
     /// Returns number of retried [`Step`]s.
     ///
-    /// [`Failed`]: event::Step::Failed
     /// [`Step`]: gherkin::Step
     #[must_use]
     fn retried_steps(&self) -> usize;

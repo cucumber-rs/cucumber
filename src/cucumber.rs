@@ -631,7 +631,7 @@ where
     where
         CustomCli: clap::Args,
     {
-        let Cucumber {
+        let Self {
             parser,
             runner,
             writer,
@@ -737,7 +737,7 @@ where
             )
         };
 
-        let Cucumber {
+        let Self {
             parser,
             runner,
             mut writer,
@@ -910,8 +910,7 @@ where
         self
     }
 
-    /// If `retries` is [`Some`], then failed [`Scenario`]s will be retried
-    /// specified number of times.
+    /// Makes failed [`Scenario`]s being retried the specified number of times.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
@@ -920,8 +919,8 @@ where
         self
     }
 
-    /// If `after` is [`Some`], then failed [`Scenario`]s will be retried after
-    /// specified [`Duration`].
+    /// Makes failed [`Scenario`]s being retried after the specified
+    /// [`Duration`] passes.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
@@ -930,16 +929,16 @@ where
         self
     }
 
-    /// If `filter` is [`Some`], then failed [`Scenario`]s will be retried
-    /// only if they are matched by [`TagOperation`].
+    /// Makes failed [`Scenario`]s being retried only if they're matching the
+    /// specified `tag_expression`.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn retry_filter(
         mut self,
-        filter: impl Into<Option<TagOperation>>,
+        tag_expression: impl Into<Option<TagOperation>>,
     ) -> Self {
-        self.runner = self.runner.retry_filter(filter);
+        self.runner = self.runner.retry_filter(tag_expression);
         self
     }
 
