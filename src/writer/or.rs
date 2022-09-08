@@ -92,6 +92,10 @@ where
         self.left.failed_steps() + self.right.failed_steps()
     }
 
+    fn retried_steps(&self) -> usize {
+        self.left.retried_steps() + self.right.retried_steps()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.left.parsing_errors() + self.right.parsing_errors()
     }

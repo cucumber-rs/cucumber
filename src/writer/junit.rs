@@ -43,7 +43,7 @@ pub struct Cli {
     ///
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[clap(long = "junit-v", name = "0|1", global = true)]
+    #[clap(long = "junit-v", value_name = "0|1", global = true)]
     pub verbose: Option<u8>,
 }
 
@@ -82,7 +82,7 @@ pub struct JUnit<W, Out: io::Write> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [1]: event::Scenario
-    events: Vec<event::Scenario<W>>,
+    events: Vec<event::RetryableScenario<W>>,
 
     /// [`Verbosity`] of this [`Writer`].
     verbosity: Verbosity,
@@ -264,15 +264,15 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
-        ev: event::Scenario<W>,
+        ev: event::RetryableScenario<W>,
         meta: Event<()>,
     ) {
         use event::Scenario;
 
-        match ev {
+        match &ev.event {
             Scenario::Started => {
                 self.scenario_started_at = Some(meta.at);
-                self.events.push(Scenario::Started);
+                self.events.push(ev);
             }
             Scenario::Hook(..)
             | Scenario::Background(..)
@@ -304,7 +304,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
-        events: &[event::Scenario<W>],
+        events: &[event::RetryableScenario<W>],
         duration: Duration,
     ) -> TestCase {
         use event::{Hook, HookType, Scenario, Step};
@@ -314,7 +314,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             .rev()
             .find(|ev| {
                 !matches!(
-                    ev,
+                    ev.event,
                     Scenario::Hook(
                         HookType::After,
                         Hook::Passed | Hook::Started,
@@ -342,11 +342,11 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             sc.position.col,
         );
 
-        let mut case = match last_event {
+        let mut case = match &last_event.event {
             Scenario::Started
             | Scenario::Hook(_, Hook::Started | Hook::Passed)
-            | Scenario::Background(_, Step::Started | Step::Passed(..))
-            | Scenario::Step(_, Step::Started | Step::Passed(..)) => {
+            | Scenario::Background(_, Step::Started | Step::Passed(_, _))
+            | Scenario::Step(_, Step::Started | Step::Passed(_, _)) => {
                 TestCaseBuilder::success(&case_name, duration).build()
             }
             Scenario::Background(_, Step::Skipped)

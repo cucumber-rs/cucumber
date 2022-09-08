@@ -202,7 +202,10 @@ impl CustomRunner {
                 ]
             })))
             .chain(stream::once(future::ready(event::Scenario::Finished)))
-            .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
+            .map(move |event| event::Feature::Scenario(
+                scenario.clone(), 
+                event::RetryableScenario { event, retries: None },
+            ))
     }
 
     fn execute_feature(

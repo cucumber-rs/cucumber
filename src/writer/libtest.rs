@@ -26,7 +26,9 @@ use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    cli, event, parser,
+    cli,
+    event::{self, Retries},
+    parser,
     writer::{
         self,
         basic::{coerce_error, trim_path},
@@ -40,7 +42,7 @@ use crate::{
 #[derive(clap::Args, Clone, Debug)]
 pub struct Cli {
     /// Formatting of the output.
-    #[clap(long, name = "json")]
+    #[clap(long, value_name = "json")]
     pub format: Option<Format>,
 
     /// Show captured stdout of successful tests. Currently, outputs only step
@@ -128,6 +130,11 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     ///
     /// [`Step`]: gherkin::Step
     failed: usize,
+
+    /// Number of retried [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    retried: usize,
 
     /// Number of skipped [`Step`]s.
     ///
@@ -259,6 +266,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             parsed_all: false,
             passed: 0,
             failed: 0,
+            retried: 0,
             parsing_errors: 0,
             hook_errors: 0,
             ignored: 0,
@@ -433,21 +441,22 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
-        ev: event::Scenario<W>,
+        ev: event::RetryableScenario<W>,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Scenario;
 
-        match ev {
+        let retries = ev.retries;
+        match ev.event {
             Scenario::Started | Scenario::Finished => Vec::new(),
             Scenario::Hook(ty, ev) => {
-                self.expand_hook_event(feature, rule, scenario, ty, ev)
+                self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
             }
             Scenario::Background(step, ev) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, true, cli,
+                feature, rule, scenario, &step, ev, retries, true, cli,
             ),
             Scenario::Step(step, ev) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, false, cli,
+                feature, rule, scenario, &step, ev, retries, false, cli,
             ),
         }
     }
@@ -460,6 +469,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         scenario: &gherkin::Scenario,
         hook: event::HookType,
         ev: event::Hook<W>,
+        retries: Option<Retries>,
     ) -> Vec<LibTestJsonEvent> {
         match ev {
             event::Hook::Started | event::Hook::Passed => Vec::new(),
@@ -471,6 +481,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     rule,
                     scenario,
                     Either::Left(hook),
+                    retries,
                 );
 
                 vec![
@@ -498,6 +509,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         scenario: &gherkin::Scenario,
         step: &gherkin::Step,
         ev: event::Step<W>,
+        retries: Option<Retries>,
         is_background: bool,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
@@ -508,6 +520,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             rule,
             scenario,
             Either::Right((step, is_background)),
+            retries,
         );
 
         let ev = match ev {
@@ -556,7 +569,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 }
             }
             Step::Failed(_, loc, world, err) => {
-                self.failed += 1;
+                if retries.map(|r| r.left > 0).unwrap_or_default() {
+                    self.retried += 1;
+                } else {
+                    self.failed += 1;
+                }
 
                 TestEvent::failed(name).with_stdout(format!(
                     "{}:{}:{} (defined){}\n{err}{}",
@@ -587,6 +604,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         step: Either<event::HookType, (&gherkin::Step, IsBackground)>,
+        retries: Option<Retries>,
     ) -> String {
         let feature_name = format!(
             "{}: {} {}",
@@ -608,8 +626,18 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             .as_ref()
             .map(|r| format!("{}: {}: {}", r.position.line, r.keyword, r.name));
         let scenario_name = format!(
-            "{}: {}: {}",
-            scenario.position.line, scenario.keyword, scenario.name,
+            "{}: {}: {}{}",
+            scenario.position.line,
+            scenario.keyword,
+            scenario.name,
+            retries
+                .filter(|r| r.current > 0)
+                .map(|r| format!(
+                    " | Retry attempt {}/{}",
+                    r.current,
+                    r.current + r.left,
+                ))
+                .unwrap_or_default(),
         );
         let step_name = match step {
             Either::Left(hook) => format!("{hook} hook"),
@@ -662,6 +690,10 @@ where
 
     fn failed_steps(&self) -> usize {
         self.failed
+    }
+
+    fn retried_steps(&self) -> usize {
+        self.retried
     }
 
     fn parsing_errors(&self) -> usize {

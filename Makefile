@@ -143,7 +143,7 @@ book.tests: test.book
 #	https://docs.docker.com/get-docker
 #
 # Usage:
-#	make record [name=(<current-datetime>|<file-name>)]
+#	make record.gif [name=(<current-datetime>|<file-name>)]
 
 record-gif-dir := book/src/rec
 record-gif-name := $(or $(name),$(shell date +%y"-"%m"-"%d"_"%H"-"%M"-"%S))

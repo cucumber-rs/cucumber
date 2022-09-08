@@ -84,7 +84,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                 Cucumber::Feature(f, event::Feature::Scenario(sc, ev)),
                 meta,
             )) => {
-                self.handle_scenario_event(&f, None, &sc, ev, meta);
+                self.handle_scenario_event(&f, None, &sc, ev.event, meta);
             }
             Ok((
                 Cucumber::Feature(
@@ -93,7 +93,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                 ),
                 meta,
             )) => {
-                self.handle_scenario_event(&f, Some(&r), &sc, ev, meta);
+                self.handle_scenario_event(&f, Some(&r), &sc, ev.event, meta);
             }
             Ok((Cucumber::Finished, _)) => {
                 self.output

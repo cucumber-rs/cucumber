@@ -70,6 +70,10 @@ where
         self.0.failed_steps()
     }
 
+    fn retried_steps(&self) -> usize {
+        self.0.retried_steps()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.0.parsing_errors()
     }
@@ -147,6 +151,11 @@ where
 
     /// Always returns `0`.
     fn failed_steps(&self) -> usize {
+        0
+    }
+
+    /// Always returns `0`.
+    fn retried_steps(&self) -> usize {
         0
     }
 

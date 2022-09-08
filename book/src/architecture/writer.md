@@ -192,7 +192,10 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #                 ]
 #             })))
 #             .chain(stream::once(future::ready(event::Scenario::Finished)))
-#             .map(move |ev| event::Feature::Scenario(scenario.clone(), ev))
+#             .map(move |event| event::Feature::Scenario(
+#                 scenario.clone(), 
+#                 event::RetryableScenario { event, retries: None },
+#             ))
 #     }
 #
 #     fn execute_feature(
@@ -250,7 +253,7 @@ impl<W: 'static> cucumber::Writer<W> for CustomWriter {
                     event::Feature::Started => {
                         println!("{}: {}", feature.keyword, feature.name)
                     }
-                    event::Feature::Scenario(scenario, ev) => match ev {
+                    event::Feature::Scenario(scenario, ev) => match ev.event {
                         event::Scenario::Started => {
                             println!("{}: {}", scenario.keyword, scenario.name)
                         }
@@ -419,7 +422,7 @@ async fn main() {
 #                     event::Feature::Started => {
 #                         println!("{}: {}", feature.keyword, feature.name)
 #                     }
-#                     event::Feature::Scenario(scenario, ev) => match ev {
+#                     event::Feature::Scenario(scenario, ev) => match ev.event {
 #                         event::Scenario::Started => {
 #                             println!("{}: {}", scenario.keyword, scenario.name)
 #                         }

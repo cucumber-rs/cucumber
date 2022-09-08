@@ -18,7 +18,7 @@ use either::Either;
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
-    event::{self, Metadata},
+    event::{self, Metadata, Retries},
     parser, writer, Event, World, Writer,
 };
 
@@ -166,6 +166,10 @@ where
         self.writer.failed_steps()
     }
 
+    fn retried_steps(&self) -> usize {
+        self.writer.retried_steps()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }
@@ -275,6 +279,10 @@ where
 
     fn failed_steps(&self) -> usize {
         self.0.failed_steps()
+    }
+
+    fn retried_steps(&self) -> usize {
+        self.0.retried_steps()
     }
 
     fn parsing_errors(&self) -> usize {
@@ -502,12 +510,12 @@ impl<World> CucumberQueue<World> {
         feat: &gherkin::Feature,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        event: Event<event::Scenario<World>>,
+        event: Event<event::RetryableScenario<World>>,
     ) {
         self.queue
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
-            .insert_scenario_event(rule, scenario, event);
+            .insert_scenario_event(rule, scenario, event.retries, event);
     }
 }
 
@@ -568,7 +576,8 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 ///
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-type RuleOrScenario = Either<Arc<gherkin::Rule>, Arc<gherkin::Scenario>>;
+type RuleOrScenario =
+    Either<Arc<gherkin::Rule>, (Arc<gherkin::Scenario>, Option<Retries>)>;
 
 /// Either a [`Rule`]'s or a [`Scenario`]'s [`Queue`].
 ///
@@ -626,7 +635,8 @@ impl<World> FeatureQueue<World> {
         &mut self,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        ev: Event<event::Scenario<World>>,
+        retries: Option<Retries>,
+        ev: Event<event::RetryableScenario<World>>,
     ) {
         if let Some(r) = rule {
             match self
@@ -636,7 +646,7 @@ impl<World> FeatureQueue<World> {
             {
                 Either::Left(rules) => rules
                     .queue
-                    .entry(scenario)
+                    .entry((scenario, retries))
                     .or_insert_with(ScenariosQueue::new)
                     .0
                     .push(ev),
@@ -645,7 +655,7 @@ impl<World> FeatureQueue<World> {
         } else {
             match self
                 .queue
-                .entry(Either::Right(scenario))
+                .entry(Either::Right((scenario, retries)))
                 .or_insert_with(|| Either::Right(ScenariosQueue::new()))
             {
                 Either::Right(events) => events.0.push(ev),
@@ -666,7 +676,7 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
             (Either::Left(rule), Either::Left(events)) => {
                 Either::Left((Arc::clone(rule), events))
             }
-            (Either::Right(scenario), Either::Right(events)) => {
+            (Either::Right((scenario, _)), Either::Right(events)) => {
                 Either::Right((Arc::clone(scenario), events))
             }
             _ => unreachable!(),
@@ -695,7 +705,8 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 /// [`Queue`] of all events of a single [`Rule`].
 ///
 /// [`Rule`]: gherkin::Rule
-type RulesQueue<World> = Queue<Arc<gherkin::Scenario>, ScenariosQueue<World>>;
+type RulesQueue<World> =
+    Queue<(Arc<gherkin::Scenario>, Option<Retries>), ScenariosQueue<World>>;
 
 #[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
@@ -707,7 +718,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         self.queue
             .iter_mut()
             .next()
-            .map(|(sc, ev)| (Arc::clone(sc), ev))
+            .map(|((sc, _), ev)| (Arc::clone(sc), ev))
     }
 
     async fn emit<W: Writer<World>>(
@@ -764,7 +775,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Debug)]
-struct ScenariosQueue<World>(Vec<Event<event::Scenario<World>>>);
+struct ScenariosQueue<World>(Vec<Event<event::RetryableScenario<World>>>);
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].
@@ -775,8 +786,8 @@ impl<World> ScenariosQueue<World> {
 
 #[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
-    type Current = Event<event::Scenario<World>>;
-    type Emitted = Arc<gherkin::Scenario>;
+    type Current = Event<event::RetryableScenario<World>>;
+    type Emitted = (Arc<gherkin::Scenario>, Option<Retries>);
     type EmittedPath = (
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
@@ -794,7 +805,9 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         while let Some((ev, meta)) = self.current_item().map(Event::split) {
-            let should_be_removed = matches!(ev, event::Scenario::Finished);
+            let should_be_removed =
+                matches!(ev.event, event::Scenario::Finished)
+                    .then(|| ev.retries);
 
             let ev = meta.wrap(event::Cucumber::scenario(
                 Arc::clone(&feature),
@@ -804,8 +817,8 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
             ));
             writer.handle_event(Ok(ev), cli).await;
 
-            if should_be_removed {
-                return Some(Arc::clone(&scenario));
+            if let Some(retries) = should_be_removed {
+                return Some((Arc::clone(&scenario), retries));
             }
         }
         None

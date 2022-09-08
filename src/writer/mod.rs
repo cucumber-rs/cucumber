@@ -132,6 +132,12 @@ pub trait Stats<World>: Writer<World> {
     #[must_use]
     fn failed_steps(&self) -> usize;
 
+    /// Returns number of retried [`Step`]s.
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    fn retried_steps(&self) -> usize;
+
     /// Returns number of parsing errors.
     #[must_use]
     fn parsing_errors(&self) -> usize;

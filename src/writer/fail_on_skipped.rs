@@ -67,7 +67,8 @@ where
         cli: &Self::Cli,
     ) {
         use event::{
-            Cucumber, Feature, Rule, Scenario, Step, StepError::Panic,
+            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+            StepError::Panic,
         };
 
         let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
@@ -82,14 +83,18 @@ where
                 Step::Skipped
             }
         };
-        let map_failed_bg = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
-            let ev = map_failed(&f, &r, &sc);
-            Cucumber::scenario(f, r, sc, Scenario::Background(st, ev))
-        };
-        let map_failed_step = |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _| {
-            let ev = map_failed(&f, &r, &sc);
-            Cucumber::scenario(f, r, sc, Scenario::Step(st, ev))
-        };
+        let map_failed_bg =
+            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+                let ev = map_failed(&f, &r, &sc);
+                let ev = Scenario::Background(st, ev).with_retries(ret);
+                Cucumber::scenario(f, r, sc, ev)
+            };
+        let map_failed_step =
+            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+                let ev = map_failed(&f, &r, &sc);
+                let ev = Scenario::Step(st, ev).with_retries(ret);
+                Cucumber::scenario(f, r, sc, ev)
+            };
 
         let event = event.map(|outer| {
             outer.map(|ev| match ev {
@@ -99,28 +104,47 @@ where
                         r,
                         Rule::Scenario(
                             sc,
-                            Scenario::Background(st, Step::Skipped),
+                            RetryableScenario {
+                                event: Scenario::Background(st, Step::Skipped),
+                                retries,
+                            },
                         ),
                     ),
-                ) => map_failed_bg(f, Some(r), sc, st),
+                ) => map_failed_bg(f, Some(r), sc, st, retries),
                 Cucumber::Feature(
                     f,
                     Feature::Scenario(
                         sc,
-                        Scenario::Background(st, Step::Skipped),
+                        RetryableScenario {
+                            event: Scenario::Background(st, Step::Skipped),
+                            retries,
+                        },
                     ),
-                ) => map_failed_bg(f, None, sc, st),
+                ) => map_failed_bg(f, None, sc, st, retries),
                 Cucumber::Feature(
                     f,
                     Feature::Rule(
                         r,
-                        Rule::Scenario(sc, Scenario::Step(st, Step::Skipped)),
+                        Rule::Scenario(
+                            sc,
+                            RetryableScenario {
+                                event: Scenario::Step(st, Step::Skipped),
+                                retries,
+                            },
+                        ),
                     ),
-                ) => map_failed_step(f, Some(r), sc, st),
+                ) => map_failed_step(f, Some(r), sc, st, retries),
                 Cucumber::Feature(
                     f,
-                    Feature::Scenario(sc, Scenario::Step(st, Step::Skipped)),
-                ) => map_failed_step(f, None, sc, st),
+                    Feature::Scenario(
+                        sc,
+                        RetryableScenario {
+                            event: Scenario::Step(st, Step::Skipped),
+                            retries,
+                        },
+                        ..,
+                    ),
+                ) => map_failed_step(f, None, sc, st, retries),
                 Cucumber::Started
                 | Cucumber::Feature(..)
                 | Cucumber::ParsingFinished { .. }
@@ -164,6 +188,10 @@ where
 
     fn failed_steps(&self) -> usize {
         self.writer.failed_steps()
+    }
+
+    fn retried_steps(&self) -> usize {
+        self.writer.retried_steps()
     }
 
     fn parsing_errors(&self) -> usize {

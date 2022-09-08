@@ -115,6 +115,36 @@ impl Metadata {
     }
 }
 
+/// Number of retry attempts for a [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Retries {
+    /// Current retry attempt.
+    pub current: usize,
+
+    /// Available retries left.
+    pub left: usize,
+}
+
+impl Retries {
+    /// Creates initial [`Retries`].
+    #[must_use]
+    pub const fn initial(left: usize) -> Self {
+        Self { left, current: 0 }
+    }
+
+    /// Returns [`Some`], in case next retry attempt is available, or [`None`]
+    /// otherwise.
+    #[must_use]
+    pub fn next_try(self) -> Option<Self> {
+        self.left.checked_sub(1).map(|left| Self {
+            left,
+            current: self.current + 1,
+        })
+    }
+}
+
 /// Top-level [Cucumber] run event.
 ///
 /// [Cucumber]: https://cucumber.io
@@ -231,7 +261,7 @@ impl<World> Cucumber<World> {
         feat: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
-        event: Scenario<World>,
+        event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
             feat,
@@ -258,7 +288,7 @@ pub enum Feature<World> {
     Rule(Arc<gherkin::Rule>, Rule<World>),
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Feature`] execution being finished.
     ///
@@ -290,7 +320,7 @@ pub enum Rule<World> {
     Started,
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, Scenario<World>),
+    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Rule`] execution being finished.
     ///
@@ -590,5 +620,40 @@ impl<World> Scenario<World> {
         info: impl Into<StepError>,
     ) -> Self {
         Self::Background(step, Step::Failed(captures, loc, world, info.into()))
+    }
+
+    /// Transforms this [`Scenario`] event into a [`RetryableScenario`] event.
+    #[must_use]
+    pub const fn with_retries(
+        self,
+        retries: Option<Retries>,
+    ) -> RetryableScenario<World> {
+        RetryableScenario {
+            event: self,
+            retries,
+        }
+    }
+}
+
+/// Event specific to a particular retryable [Scenario].
+///
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+#[derive(Debug)]
+pub struct RetryableScenario<World> {
+    /// Happened [`Scenario`] event.
+    pub event: Scenario<World>,
+
+    /// Number of [`Retries`].
+    pub retries: Option<Retries>,
+}
+
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World> Clone for RetryableScenario<World> {
+    fn clone(&self) -> Self {
+        Self {
+            event: self.event.clone(),
+            retries: self.retries,
+        }
     }
 }

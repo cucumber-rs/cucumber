@@ -18,7 +18,9 @@ use itertools::Itertools as _;
 
 use crate::{
     cli::Colored,
-    event, parser,
+    event,
+    event::Retries,
+    parser,
     writer::{self, out::Styles},
     Event, World, Writer,
 };
@@ -26,7 +28,7 @@ use crate::{
 /// Execution statistics.
 ///
 /// [`Step`]: gherkin::Step
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Stats {
     /// Number of passed [`Step`]s (or [`Scenario`]s).
     ///
@@ -45,6 +47,12 @@ pub struct Stats {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     pub failed: usize,
+
+    /// Number of retried [`Step`]s (or [`Scenario`]s).
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    pub retried: usize,
 }
 
 impl Stats {
@@ -55,6 +63,8 @@ impl Stats {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub const fn total(&self) -> usize {
+        // We intentionally don't include `self.retried` number here, as it's
+        // already counted either in `self.passed` or `self.failed`.
         self.passed + self.skipped + self.failed
     }
 }
@@ -67,7 +77,7 @@ impl Stats {
 pub type SkipFn =
     fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
 
-/// Indicator of a [`Failed`] or [`Skipped`] [`Scenario`].
+/// Indicator of a [`Failed`], [`Skipped`] or retried [`Scenario`].
 ///
 /// [`Failed`]: event::Step::Failed
 /// [`Scenario`]: gherkin::Scenario
@@ -85,6 +95,12 @@ enum Indicator {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     Skipped,
+
+    /// Retried [`Scenario`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    Retried,
 }
 
 /// Possible states of a [`Summarize`] [`Writer`].
@@ -158,8 +174,24 @@ pub struct Summarize<Writer> {
     /// Handled [`Scenario`]s to collect [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    handled_scenarios: HashMap<Arc<gherkin::Scenario>, Indicator>,
+    handled_scenarios: HandledScenarios,
 }
+
+/// [`HashMap`] for keeping track of handled [`Scenario`]s. Whole path with
+/// [`Feature`] and [`Rule`] is used to avoid collisions in case [`Scenario`]s
+/// themself look identical.
+///
+/// [`Feature`]: gherkin::Feature
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
+type HandledScenarios = HashMap<
+    (
+        Arc<gherkin::Feature>,
+        Option<Arc<gherkin::Rule>>,
+        Arc<gherkin::Scenario>,
+    ),
+    Indicator,
+>;
 
 #[async_trait(?Send)]
 impl<W, Wr> Writer<W> for Summarize<Wr>
@@ -184,14 +216,26 @@ where
         if let State::InProgress = self.state {
             match ev.as_deref() {
                 Err(_) => self.parsing_errors += 1,
-                Ok(Cucumber::Feature(_, ev)) => match ev {
+                Ok(Cucumber::Feature(feat, ev)) => match ev {
                     Feature::Started => self.features += 1,
                     Feature::Rule(_, Rule::Started) => {
                         self.rules += 1;
                     }
-                    Feature::Rule(_, Rule::Scenario(sc, ev))
-                    | Feature::Scenario(sc, ev) => {
-                        self.handle_scenario(sc, ev);
+                    Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
+                        self.handle_scenario(
+                            Arc::clone(feat),
+                            Some(Arc::clone(rule)),
+                            Arc::clone(sc),
+                            ev,
+                        );
+                    }
+                    Feature::Scenario(sc, ev) => {
+                        self.handle_scenario(
+                            Arc::clone(feat),
+                            None,
+                            Arc::clone(sc),
+                            ev,
+                        );
                     }
                     Feature::Finished | Feature::Rule(..) => {}
                 },
@@ -247,6 +291,10 @@ where
         self.steps.failed
     }
 
+    fn retried_steps(&self) -> usize {
+        self.steps.retried
+    }
+
     fn parsing_errors(&self) -> usize {
         self.parsing_errors
     }
@@ -270,11 +318,13 @@ impl<Writer> From<Writer> for Summarize<Writer> {
                 passed: 0,
                 skipped: 0,
                 failed: 0,
+                retried: 0,
             },
             steps: Stats {
                 passed: 0,
                 skipped: 0,
                 failed: 0,
+                retried: 0,
             },
             parsing_errors: 0,
             failed_hooks: 0,
@@ -290,29 +340,54 @@ impl<Writer> Summarize<Writer> {
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(
         &mut self,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
+        step: &gherkin::Step,
         ev: &event::Step<W>,
+        retries: Option<Retries>,
     ) {
         use self::{
             event::Step,
-            Indicator::{Failed, Skipped},
+            Indicator::{Failed, Retried, Skipped},
         };
 
         match ev {
             Step::Started => {}
-            Step::Passed(..) => self.steps.passed += 1,
+            Step::Passed(..) => {
+                self.steps.passed += 1;
+                if scenario.steps.last().filter(|s| *s == step).is_some() {
+                    let _ = self
+                        .handled_scenarios
+                        .remove(&(feature, rule, scenario));
+                }
+            }
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;
                 let _ = self
                     .handled_scenarios
-                    .insert(Arc::clone(scenario), Skipped);
+                    .insert((feature, rule, scenario), Skipped);
             }
             Step::Failed(..) => {
-                self.steps.failed += 1;
-                self.scenarios.failed += 1;
-                let _ =
-                    self.handled_scenarios.insert(Arc::clone(scenario), Failed);
+                if retries.filter(|r| r.left > 0).is_some() {
+                    self.steps.retried += 1;
+
+                    let inserted_before = self
+                        .handled_scenarios
+                        .insert((feature, rule, scenario), Retried);
+
+                    if inserted_before.is_none() {
+                        self.scenarios.retried += 1;
+                    }
+                } else {
+                    self.steps.failed += 1;
+                    self.scenarios.failed += 1;
+
+                    let _ = self
+                        .handled_scenarios
+                        .insert((feature, rule, scenario), Failed);
+                }
             }
         }
     }
@@ -322,12 +397,17 @@ impl<Writer> Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(
         &mut self,
-        scenario: &Arc<gherkin::Scenario>,
-        ev: &event::Scenario<W>,
+        feature: Arc<gherkin::Feature>,
+        rule: Option<Arc<gherkin::Rule>>,
+        scenario: Arc<gherkin::Scenario>,
+        ev: &event::RetryableScenario<W>,
     ) {
         use event::{Hook, Scenario};
 
-        match ev {
+        let path = (feature, rule, scenario);
+
+        let ret = ev.retries;
+        match &ev.event {
             Scenario::Started
             | Scenario::Hook(_, Hook::Passed | Hook::Started) => {}
             Scenario::Hook(_, Hook::Failed(..)) => {
@@ -337,8 +417,8 @@ impl<Writer> Summarize<Writer> {
                 //   failed, we need to override skipped Scenario with failed;
                 // - If Scenario executed no Steps and then Hook failed, we
                 //   track Scenario as failed.
-                match self.handled_scenarios.get(scenario) {
-                    Some(Indicator::Failed) => {}
+                match self.handled_scenarios.get(&path) {
+                    Some(Indicator::Failed | Indicator::Retried) => {}
                     Some(Indicator::Skipped) => {
                         self.scenarios.skipped -= 1;
                         self.scenarios.failed += 1;
@@ -347,16 +427,27 @@ impl<Writer> Summarize<Writer> {
                         self.scenarios.failed += 1;
                         let _ = self
                             .handled_scenarios
-                            .insert(Arc::clone(scenario), Indicator::Failed);
+                            .insert(path, Indicator::Failed);
                     }
                 }
                 self.failed_hooks += 1;
             }
-            Scenario::Background(_, ev) | Scenario::Step(_, ev) => {
-                self.handle_step(scenario, ev);
+            Scenario::Background(st, ev) | Scenario::Step(st, ev) => {
+                self.handle_step(path.0, path.1, path.2, st.as_ref(), ev, ret);
             }
             Scenario::Finished => {
-                if self.handled_scenarios.remove(scenario).is_none() {
+                // We don't remove retried `Scenario`s immediately, because we
+                // want to deduplicate. For example if some `Scenario` is
+                // retried 3 times, we'll see in summary 1 retried `Scenario`
+                // and 3 retried `Step`s.
+                let is_retried = self
+                    .handled_scenarios
+                    .get(&path)
+                    .map(|indicator| matches!(indicator, Indicator::Retried))
+                    .unwrap_or_default();
+
+                if !is_retried && self.handled_scenarios.remove(&path).is_none()
+                {
                     self.scenarios.passed += 1;
                 }
             }
@@ -484,7 +575,7 @@ impl Styles {
     /// Formats [`Stats`] for a terminal output.
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
-        let formatted = [
+        let mut formatted = [
             (stats.passed > 0)
                 .then(|| self.bold(self.ok(format!("{} passed", stats.passed))))
                 .unwrap_or_default(),
@@ -504,6 +595,14 @@ impl Styles {
         .into_iter()
         .filter(|s| !s.is_empty())
         .join(&self.bold(", "));
+        if stats.retried > 0 {
+            formatted.push_str(" with ");
+            formatted.push_str(&self.bold(self.retry(format!(
+                "{} retr{}",
+                stats.retried,
+                if stats.retried == 1 { "y" } else { "ies" },
+            ))));
+        }
 
         (!formatted.is_empty())
             .then(|| {

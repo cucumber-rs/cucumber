@@ -95,7 +95,7 @@ where
     #[clap(
         short = 'n',
         long = "name",
-        name = "regex",
+        value_name = "regex",
         visible_alias = "scenario-name",
         global = true
     )]
@@ -108,8 +108,8 @@ where
     #[clap(
         short = 't',
         long = "tags",
-        name = "tagexpr",
-        conflicts_with = "regex",
+        value_name = "tagexpr",
+        conflicts_with = "re-filter",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,
@@ -243,6 +243,10 @@ impl Colored for Empty {}
 ///
 ///     fn failed_steps(&self) -> usize {
 ///         self.0.failed_steps()
+///     }
+///
+///     fn retried_steps(&self) -> usize {
+///         self.0.retried_steps()
 ///     }
 ///
 ///     fn parsing_errors(&self) -> usize {

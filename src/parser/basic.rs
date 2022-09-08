@@ -33,7 +33,7 @@ use super::{Error as ParseError, Parser};
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.
-    #[clap(long = "input", short = 'i', name = "glob", global = true)]
+    #[clap(long = "input", short = 'i', value_name = "glob", global = true)]
     pub features: Option<Walker>,
 }
 

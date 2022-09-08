@@ -25,7 +25,7 @@ OPTIONS:
             Coloring policy for a console output
             
             [default: auto]
-            
+
         --fail-fast
             Run tests until the first failure
 
@@ -40,6 +40,23 @@ OPTIONS:
             Regex to filter scenarios by their name
             
             [aliases: scenario-name]
+
+        --retry <int>
+            Number of times a scenario will be retried in case of a failure
+
+        --retry-after <duration>
+            Delay between each scenario retry attempt.
+            
+            Duration is represented in a human-readable format like `12min5s`.
+            Supported suffixes:
+            - `nsec`, `ns` — nanoseconds.
+            - `usec`, `us` — microseconds.
+            - `msec`, `ms` — milliseconds.
+            - `seconds`, `second`, `sec`, `s` - seconds.
+            - `minutes`, `minute`, `min`, `m` - minutes.
+
+        --retry-tag-filter <tagexpr>
+            Tag expression to filter retried scenarios
 
     -t, --tags <tagexpr>
             Tag expression to filter scenarios by.

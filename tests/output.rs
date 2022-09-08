@@ -32,7 +32,10 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         ev: parser::Result<Event<event::Cucumber<World>>>,
         _: &Self::Cli,
     ) {
-        use event::{Cucumber, Feature, Rule, Scenario, Step, StepError};
+        use event::{
+            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+            StepError,
+        };
 
         // This function is used to provide a deterministic ordering of
         // `possible_matches`.
@@ -62,15 +65,19 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                     rule,
                     Rule::Scenario(
                         sc,
-                        Scenario::Step(
-                            st,
-                            Step::Failed(
-                                cap,
-                                loc,
-                                w,
-                                StepError::AmbiguousMatch(e),
-                            ),
-                        ),
+                        RetryableScenario {
+                            event:
+                                Scenario::Step(
+                                    st,
+                                    Step::Failed(
+                                        cap,
+                                        loc,
+                                        w,
+                                        StepError::AmbiguousMatch(e),
+                                    ),
+                                ),
+                            retries,
+                        },
                     ),
                 ),
             )) => {
@@ -78,15 +85,18 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                     feat,
                     Some(rule),
                     sc,
-                    Scenario::Step(
-                        st,
-                        Step::Failed(
-                            cap,
-                            loc,
-                            w,
-                            StepError::AmbiguousMatch(sort_matches(e)),
+                    RetryableScenario {
+                        event: Scenario::Step(
+                            st,
+                            Step::Failed(
+                                cap,
+                                loc,
+                                w,
+                                StepError::AmbiguousMatch(sort_matches(e)),
+                            ),
                         ),
-                    ),
+                        retries,
+                    },
                 );
 
                 format!("{ev:?}").into()
@@ -95,25 +105,37 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
                 feat,
                 Feature::Scenario(
                     sc,
-                    Scenario::Step(
-                        st,
-                        Step::Failed(cap, loc, w, StepError::AmbiguousMatch(e)),
-                    ),
+                    RetryableScenario {
+                        event:
+                            Scenario::Step(
+                                st,
+                                Step::Failed(
+                                    cap,
+                                    loc,
+                                    w,
+                                    StepError::AmbiguousMatch(e),
+                                ),
+                            ),
+                        retries,
+                    },
                 ),
             )) => {
                 let ev = Cucumber::scenario(
                     feat,
                     None,
                     sc,
-                    Scenario::Step(
-                        st,
-                        Step::Failed(
-                            cap,
-                            loc,
-                            w,
-                            StepError::AmbiguousMatch(sort_matches(e)),
+                    RetryableScenario {
+                        event: Scenario::Step(
+                            st,
+                            Step::Failed(
+                                cap,
+                                loc,
+                                w,
+                                StepError::AmbiguousMatch(sort_matches(e)),
+                            ),
                         ),
-                    ),
+                        retries,
+                    },
                 );
 
                 format!("{ev:?}").into()

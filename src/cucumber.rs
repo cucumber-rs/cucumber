@@ -18,14 +18,20 @@ use std::{
     marker::PhantomData,
     mem,
     path::Path,
+    time::Duration,
 };
 
 use futures::{future::LocalBoxFuture, StreamExt as _};
+use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::{
-    cli, event, parser, runner, step, tag::Ext as _, writer, Event, Parser,
-    Runner, ScenarioType, Step, World, Writer, WriterExt as _,
+    cli, event, parser,
+    runner::{self, basic::RetryOptions},
+    step,
+    tag::Ext as _,
+    writer, Event, Parser, Runner, ScenarioType, Step, World, Writer,
+    WriterExt as _,
 };
 
 /// Top-level [Cucumber] executor.
@@ -317,7 +323,9 @@ where
     /// # async fn main() {
     /// MyWorld::cucumber()
     ///     .repeat_if(|ev| {
-    ///         use cucumber::event::{Cucumber, Feature, Rule, Scenario, Step};
+    ///         use cucumber::event::{
+    ///             Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
+    ///         };
     ///
     ///         matches!(
     ///             ev.as_deref(),
@@ -327,13 +335,22 @@ where
     ///                     _,
     ///                     Rule::Scenario(
     ///                         _,
-    ///                         Scenario::Step(_, Step::Failed(..))
-    ///                             | Scenario::Background(_, Step::Failed(..))
+    ///                         RetryableScenario {
+    ///                             event: Scenario::Step(_, Step::Failed(..))
+    ///                                 | Scenario::Background(
+    ///                                     _,
+    ///                                     Step::Failed(_, _, _, _),
+    ///                                 ),
+    ///                             retries: _
+    ///                         }
     ///                     )
     ///                 ) | Feature::Scenario(
     ///                     _,
-    ///                     Scenario::Step(_, Step::Failed(..))
-    ///                         | Scenario::Background(_, Step::Failed(..))
+    ///                     RetryableScenario {
+    ///                         event: Scenario::Step(_, Step::Failed(..))
+    ///                             | Scenario::Background(_, Step::Failed(..)),
+    ///                         retries: _
+    ///                     }
     ///                 )
     ///             )) | Err(_)
     ///         )
@@ -900,6 +917,38 @@ where
         self
     }
 
+    /// Makes failed [`Scenario`]s being retried the specified number of times.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retries(mut self, retries: impl Into<Option<usize>>) -> Self {
+        self.runner = self.runner.retries(retries);
+        self
+    }
+
+    /// Makes failed [`Scenario`]s being retried after the specified
+    /// [`Duration`] passes.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_after(mut self, after: impl Into<Option<Duration>>) -> Self {
+        self.runner = self.runner.retry_after(after);
+        self
+    }
+
+    /// Makes failed [`Scenario`]s being retried only if they're matching the
+    /// specified `tag_expression`.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_filter(
+        mut self,
+        tag_expression: impl Into<Option<TagOperation>>,
+    ) -> Self {
+        self.runner = self.runner.retry_filter(tag_expression);
+        self
+    }
+
     /// Function determining whether a [`Scenario`] is [`Concurrent`] or
     /// a [`Serial`] one.
     ///
@@ -934,6 +983,24 @@ where
             _world: PhantomData,
             _parser_input: PhantomData,
         }
+    }
+
+    /// Function determining [`Scenario`]'s [`RetryOptions`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn retry_options<Retry>(mut self, func: Retry) -> Self
+    where
+        Retry: Fn(
+                &gherkin::Feature,
+                Option<&gherkin::Rule>,
+                &gherkin::Scenario,
+                &runner::basic::Cli,
+            ) -> Option<RetryOptions>
+            + 'static,
+    {
+        self.runner = self.runner.retry_options(func);
+        self
     }
 
     /// Sets a hook, executed on each [`Scenario`] before running all its
