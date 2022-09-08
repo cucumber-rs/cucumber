@@ -20,8 +20,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Reworked `writer::Failure`/`writer::discard::Failure` as `writer::Stats`/`writer::discard::Stats`. ([#220])
 - Renamed `WriterExt::discard_failure_writes()` to `WriterExt::discard_stats_writes()`. ([#220])
 - Added `Option<step::Location>` field to `event::Step::Passed` and `event::Step::Failed`. ([#221])
-- Wrap `event::Scenario` into `event::RetryableScenario` before storing in other events. ([#223], [#212])
-- Add `retried_steps()` method to `writer::Stats`. ([#223], [#212])
+- Wrapped `event::Scenario` into `event::RetryableScenario` for storing in other `event`s. ([#223], [#212])
+- Added `retried_steps()` method to `writer::Stats`. ([#223], [#212])
 
 ### Added
 
@@ -31,6 +31,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `FeatureExt::count_steps()` method. ([#220])
 - Location of the `fn` matching a failed `Step` in output. ([#221])
 - Ability to retry failed `Scenario`s. ([#223], [#212])
+- `--retry`, `--retry-after` and `--retry-tag-filter` CLI options. ([#223], [#212]) 
 
 ### Changed
 

@@ -59,13 +59,13 @@ pub struct Cli {
     #[clap(long, global = true)]
     pub fail_fast: bool,
 
-    /// Number of times scenario will be rerun in case of a failure.
+    /// Number of times a scenario will be retried in case of a failure.
     #[clap(long, value_name = "int", global = true)]
     pub retry: Option<usize>,
 
-    /// Delay between each retry attempt.
+    /// Delay between each scenario retry attempt.
     ///
-    /// Duration is represented in human-readable format like `12min5s`.
+    /// Duration is represented in a human-readable format like `12min5s`.
     /// Supported suffixes:
     /// - `nsec`, `ns` — nanoseconds.
     /// - `usec`, `us` — microseconds.
@@ -126,8 +126,8 @@ impl RetryOptions {
         })
     }
 
-    /// Parses [`RetryOptions`] from [`Feature`]'s, [`Rule`]'s,
-    /// [`Scenario`]'s tags and [`Cli`] options.
+    /// Parses [`RetryOptions`] from [`Feature`]'s, [`Rule`]'s, [`Scenario`]'s
+    /// tags and [`Cli`] options.
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
@@ -201,7 +201,7 @@ impl RetryOptions {
 
     /// Constructs [`RetryOptionsWithDeadline`], that will reschedule
     /// [`Scenario`] immediately, ignoring [`RetryOptions::after`]. Used for
-    /// initial [`Scenario`] run, where we don't need to wait for delay.
+    /// initial [`Scenario`] run, where we don't need to wait for the delay.
     ///
     /// [`Scenario`]: gherkin::Scenario
     fn without_deadline(self) -> RetryOptionsWithDeadline {
@@ -235,8 +235,8 @@ impl From<RetryOptionsWithDeadline> for RetryOptions {
 }
 
 impl RetryOptionsWithDeadline {
-    /// Returns [`Duration`] after [`Scenario`] could be retried. If [`None`],
-    /// [`Scenario`] is ready for the retry.
+    /// Returns [`Duration`] after which a [`Scenario`] could be retried. If
+    /// [`None`], then [`Scenario`] is ready for the retry.
     ///
     /// [`Scenario`]: gherkin::Scenario
     fn left_until_retry(&self) -> Option<Duration> {
@@ -436,7 +436,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     }
 
     /// If `after` is [`Some`], then failed [`Scenario`]s will be retried after
-    /// specified [`Duration`].
+    /// the specified [`Duration`].
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
@@ -445,16 +445,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         self
     }
 
-    /// If `filter` is [`Some`], then failed [`Scenario`]s will be retried
-    /// only if they are matched by [`TagOperation`].
+    /// If `filter` is [`Some`], then failed [`Scenario`]s will be retried only
+    /// if they're matching the specified `tag_expression`.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
     pub fn retry_filter(
         mut self,
-        filter: impl Into<Option<TagOperation>>,
+        tag_expression: impl Into<Option<TagOperation>>,
     ) -> Self {
-        self.retry_filter = filter.into();
+        self.retry_filter = tag_expression.into();
         self
     }
 
@@ -888,8 +888,8 @@ async fn execute<W, Before, After>(
         // We yield once on every iteration, because there is a chance, that
         // this function never yields otherwise. In this case event sender won't
         // send anything to the `Writer` until the end. This is the case, when
-        // all parsing is done, so there is no contention on `Mutex` inside
-        // `Features` storage and all `Step` functions don't yield.
+        // all the parsing is done, so there is no contention on the `Mutex`
+        // inside `Features` storage and all `Step` functions don't yield.
         yield_now().await;
 
         let (runnable, sleep) =
@@ -903,7 +903,7 @@ async fn execute<W, Before, After>(
             // scenarios that are running or scheduled for execution, we spawn a
             // thread, that sleeps for minimal deadline of all retried
             // scenarios.
-            // TODO: replace `thread::spawn` with async runtime agnostic sleep,
+            // TODO: Replace `thread::spawn` with async runtime agnostic sleep,
             //       once it's available.
             if let Some(dur) = sleep {
                 let (sender, receiver) = oneshot::channel();
@@ -1651,7 +1651,7 @@ struct FinishedRulesAndFeatures {
     finished_receiver: FinishedFeaturesReceiver,
 }
 
-/// Alias for [`mpsc::UnboundedSender`] that notifies about finished
+/// Alias of a [`mpsc::UnboundedSender`] that notifies about finished
 /// [`Feature`]s.
 ///
 /// [`Feature`]: gherkin::Feature
@@ -1662,7 +1662,7 @@ type FinishedFeaturesSender = mpsc::UnboundedSender<(
     IsRetried,
 )>;
 
-/// Alias for [`mpsc::UnboundedReceiver`] that receives events about finished
+/// Alias of a [`mpsc::UnboundedReceiver`] that receives events about finished
 /// [`Feature`]s.
 ///
 /// [`Feature`]: gherkin::Feature
@@ -1832,7 +1832,7 @@ type Scenarios = HashMap<
     )>,
 >;
 
-/// Alias for [`Features::insert_scenarios()`] argument.
+/// Alias of a [`Features::insert_scenarios()`] argument.
 type InsertedScenarios = HashMap<
     ScenarioType,
     Vec<(
@@ -1904,7 +1904,8 @@ impl Features {
         self.insert_scenarios(local).await;
     }
 
-    /// Inserts retried [`Scenario`].
+    /// Inserts the provided retried [`Scenario`] into this [`Features`]
+    /// storage.
     ///
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_retried_scenario(
@@ -1923,7 +1924,7 @@ impl Features {
         .await;
     }
 
-    /// Inserts [`Scenario`]s into this [`Features`] storage.
+    /// Inserts the provided [`Scenario`]s into this [`Features`] storage.
     ///
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_scenarios(&self, scenarios: InsertedScenarios) {
@@ -1986,8 +1987,8 @@ impl Features {
         }
     }
 
-    /// Returns [`Scenario`]s which are ready to run and minimal deadline of all
-    /// retried [`Scenario`]s.
+    /// Returns [`Scenario`]s which are ready to run and the minimal deadline of
+    /// all retried [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
     async fn get(
@@ -2184,22 +2185,28 @@ mod retry_options {
     mod scenario_tags {
         use super::*;
 
-        const FEATURE: &str = "\
-          Feature: only scenarios\n\
-            Scenario: no tags\n\
-              Given a step\n\
-            @retry\n\
-            Scenario: tag\n\
-              Given a step\n\
-            @retry(5)\n\
-            Scenario: tag with explicit value\n\
-              Given a step\n\
-            @retry.after(3s)\n\
-            Scenario: tag with explicit after\n\
-              Given a step\n\
-            @retry(5).after(15s)\n\
-            Scenario: tag with explicit value and after\n\
-              Given a step";
+        // language=Gherkin
+        const FEATURE: &str = r"
+Feature: only scenarios
+  Scenario: no tags
+    Given a step
+
+  @retry
+  Scenario: tag
+    Given a step
+
+  @retry(5)
+  Scenario: tag with explicit value
+    Given a step
+
+  @retry.after(3s)
+  Scenario: tag with explicit after
+    Given a step
+
+  @retry(5).after(15s)
+  Scenario: tag with explicit value and after
+    Given a step
+";
 
         #[test]
         fn empty_cli() {
@@ -2210,9 +2217,9 @@ mod retry_options {
                 retry_after: None,
                 retry_tag_filter: None,
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 None,
@@ -2268,9 +2275,9 @@ mod retry_options {
                 retry_after: None,
                 retry_tag_filter: None,
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
@@ -2332,9 +2339,9 @@ mod retry_options {
                 retry_after: Some(parse_duration("5s").unwrap()),
                 retry_tag_filter: None,
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
@@ -2396,9 +2403,9 @@ mod retry_options {
                 retry_after: None,
                 retry_tag_filter: Some("@retry".parse().unwrap()),
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 None,
@@ -2454,9 +2461,9 @@ mod retry_options {
                 retry_after: Some(parse_duration("5s").unwrap()),
                 retry_tag_filter: Some("@retry".parse().unwrap()),
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 None,
@@ -2507,39 +2514,50 @@ mod retry_options {
     mod rule_tags {
         use super::*;
 
-        const FEATURE: &str = "\
-          Feature: only scenarios\n\
-            Rule: no tags\n\
-              Scenario: no tags\n\
-                Given a step\n\
-              @retry\n\
-              Scenario: tag\n\
-                Given a step\n\
-              @retry(5)\n\
-              Scenario: tag with explicit value\n\
-                Given a step\n\
-              @retry.after(3s)\n\
-              Scenario: tag with explicit after\n\
-                Given a step\n\
-              @retry(5).after(15s)\n\
-              Scenario: tag with explicit value and after\n\
-                Given a step\n\
-            @retry(3).after(5s)\n\
-            Rule: retry tag\n\
-              Scenario: no tags\n\
-                Given a step\n\
-              @retry\n\
-              Scenario: tag\n\
-                Given a step\n\
-              @retry(5)\n\
-              Scenario: tag with explicit value\n\
-                Given a step\n\
-              @retry.after(3s)\n\
-              Scenario: tag with explicit after\n\
-                Given a step\n\
-              @retry(5).after(15s)\n\
-              Scenario: tag with explicit value and after\n\
-                Given a step";
+        // language=Gherkin
+        const FEATURE: &str = r#"
+Feature: only scenarios
+  Rule: no tags
+    Scenario: no tags
+      Given a step
+
+    @retry
+    Scenario: tag
+      Given a step
+
+    @retry(5)
+    Scenario: tag with explicit value
+      Given a step
+
+    @retry.after(3s)
+    Scenario: tag with explicit after
+      Given a step
+
+    @retry(5).after(15s)
+    Scenario: tag with explicit value and after
+      Given a step
+
+  @retry(3).after(5s)
+  Rule: retry tag
+    Scenario: no tags
+      Given a step
+
+    @retry
+    Scenario: tag
+      Given a step
+
+    @retry(5)
+    Scenario: tag with explicit value
+      Given a step
+
+    @retry.after(3s)
+    Scenario: tag with explicit after
+      Given a step
+
+    @retry(5).after(15s)
+    Scenario: tag with explicit value and after
+      Given a step
+"#;
 
         #[test]
         fn empty_cli() {
@@ -2550,9 +2568,9 @@ mod retry_options {
                 retry_after: None,
                 retry_tag_filter: None,
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(
                     &f,
@@ -2708,9 +2726,9 @@ mod retry_options {
                 retry_after: Some(parse_duration("5s").unwrap()),
                 retry_tag_filter: Some("@retry".parse().unwrap()),
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(
                     &f,
@@ -2861,54 +2879,70 @@ mod retry_options {
     mod feature_tags {
         use super::*;
 
-        const FEATURE: &str = "\
-          @retry(8)\n\
-          Feature: only scenarios\n\
-            Scenario: no tags\n\
-              Given a step\n\
-            @retry\n\
-            Scenario: tag\n\
-              Given a step\n\
-            @retry(5)\n\
-            Scenario: tag with explicit value\n\
-              Given a step\n\
-            @retry.after(3s)\n\
-            Scenario: tag with explicit after\n\
-              Given a step\n\
-            @retry(5).after(15s)\n\
-            Scenario: tag with explicit value and after\n\
-              Given a step\n\
-            Rule: no tags\n\
-              Scenario: no tags\n\
-                Given a step\n\
-              @retry\n\
-              Scenario: tag\n\
-                Given a step\n\
-              @retry(5)\n\
-              Scenario: tag with explicit value\n\
-                Given a step\n\
-              @retry.after(3s)\n\
-              Scenario: tag with explicit after\n\
-                Given a step\n\
-              @retry(5).after(15s)\n\
-              Scenario: tag with explicit value and after\n\
-                Given a step\n\
-            @retry(3).after(5s)\n\
-            Rule: retry tag\n\
-              Scenario: no tags\n\
-                Given a step\n\
-              @retry\n\
-              Scenario: tag\n\
-                Given a step\n\
-              @retry(5)\n\
-              Scenario: tag with explicit value\n\
-                Given a step\n\
-              @retry.after(3s)\n\
-              Scenario: tag with explicit after\n\
-                Given a step\n\
-              @retry(5).after(15s)\n\
-              Scenario: tag with explicit value and after\n\
-                Given a step";
+        // language=Gherkin
+        const FEATURE: &str = r"
+@retry(8)
+Feature: only scenarios
+  Scenario: no tags
+    Given a step
+
+  @retry
+  Scenario: tag
+    Given a step
+
+  @retry(5)
+  Scenario: tag with explicit value
+    Given a step
+
+  @retry.after(3s)
+  Scenario: tag with explicit after
+    Given a step
+
+  @retry(5).after(15s)
+  Scenario: tag with explicit value and after
+    Given a step
+
+  Rule: no tags
+    Scenario: no tags
+      Given a step
+
+    @retry
+    Scenario: tag
+      Given a step
+
+    @retry(5)
+    Scenario: tag with explicit value
+      Given a step
+
+    @retry.after(3s)
+    Scenario: tag with explicit after
+      Given a step
+
+    @retry(5).after(15s)
+    Scenario: tag with explicit value and after
+      Given a step
+
+  @retry(3).after(5s)
+  Rule: retry tag
+    Scenario: no tags
+      Given a step
+
+    @retry
+    Scenario: tag
+      Given a step
+
+    @retry(5)
+    Scenario: tag with explicit value
+      Given a step
+
+    @retry.after(3s)
+    Scenario: tag with explicit after
+      Given a step
+
+    @retry(5).after(15s)
+    Scenario: tag with explicit value and after
+      Given a step
+";
 
         #[test]
         fn empty_cli() {
@@ -2919,9 +2953,9 @@ mod retry_options {
                 retry_after: None,
                 retry_tag_filter: None,
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
-                .expect("failed to parse feature");
+                .unwrap_or_else(|e| panic!("failed to parse feature: {e}"));
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
@@ -3133,9 +3167,9 @@ mod retry_options {
                 retry_after: Some(parse_duration("5s").unwrap()),
                 retry_tag_filter: Some("@retry".parse().unwrap()),
             };
-
             let f = gherkin::Feature::parse(FEATURE, GherkinEnv::default())
                 .expect("failed to parse feature");
+
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {

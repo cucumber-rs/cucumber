@@ -115,7 +115,7 @@ impl Metadata {
     }
 }
 
-/// Number of retry attempts for [`Scenario`].
+/// Number of retry attempts for a [`Scenario`].
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -622,7 +622,7 @@ impl<World> Scenario<World> {
         Self::Background(step, Step::Failed(captures, loc, world, info.into()))
     }
 
-    /// Transforms this event into [`RetryableScenario`].
+    /// Transforms this [`Scenario`] event into a [`RetryableScenario`] event.
     #[must_use]
     pub const fn with_retries(
         self,
@@ -635,10 +635,12 @@ impl<World> Scenario<World> {
     }
 }
 
-/// Event of retryable [`Scenario`].
+/// Event specific to a particular retryable [Scenario].
+///
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
 #[derive(Debug)]
 pub struct RetryableScenario<World> {
-    /// [`Scenario`] event,
+    /// Happened [`Scenario`] event.
     pub event: Scenario<World>,
 
     /// Number of [`Retries`].

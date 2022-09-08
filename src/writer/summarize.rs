@@ -63,7 +63,9 @@ impl Stats {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub const fn total(&self) -> usize {
-        self.passed + self.skipped + self.failed + self.retried
+        // We intentionally don't include `self.retried` number here, as it's
+        // already counted either in `self.passed` or `self.failed`.
+        self.passed + self.skipped + self.failed
     }
 }
 
@@ -75,7 +77,7 @@ impl Stats {
 pub type SkipFn =
     fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
 
-/// Indicator of a [`Failed`] or [`Skipped`] [`Scenario`].
+/// Indicator of a [`Failed`], [`Skipped`] or retried [`Scenario`].
 ///
 /// [`Failed`]: event::Step::Failed
 /// [`Scenario`]: gherkin::Scenario
@@ -573,7 +575,7 @@ impl Styles {
     /// Formats [`Stats`] for a terminal output.
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
-        let formatted = [
+        let mut formatted = [
             (stats.passed > 0)
                 .then(|| self.bold(self.ok(format!("{} passed", stats.passed))))
                 .unwrap_or_default(),
@@ -589,15 +591,18 @@ impl Styles {
                     self.bold(self.err(format!("{} failed", stats.failed)))
                 })
                 .unwrap_or_default(),
-            (stats.retried > 0)
-                .then(|| {
-                    self.bold(self.retry(format!("{} retried", stats.retried)))
-                })
-                .unwrap_or_default(),
         ]
         .into_iter()
         .filter(|s| !s.is_empty())
         .join(&self.bold(", "));
+        if stats.retried > 0 {
+            formatted.push_str(" with ");
+            formatted.push_str(&self.bold(self.retry(format!(
+                "{} retr{}",
+                stats.retried,
+                if stats.retried == 1 { "y" } else { "ies" },
+            ))));
+        }
 
         (!formatted.is_empty())
             .then(|| {

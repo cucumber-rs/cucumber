@@ -1,62 +1,115 @@
 Retrying failed scenarios
 =========================
 
-Often it's nearly impossible to create fully-deterministic test case, especially when you are relying on environment like external services, browsers, file system, networking etc. This is why this crate has an ability to retry failed scenarios. Although this feature is supported, it should be used as a last resort. Consider implementing in-step retries with your own needs, like exponential backoff, first. Other ways of dealing with flaky tests include, but not limited to: reducing number of concurrently executed scenarios (maybe even using `@serial` tag), mocking external environment, [controlling time in tests] or even [simulation testing].
+Often, it's nearly impossible to create fully-deterministic test case, especially when you are relying on environments like external services, browsers, file system, networking etc. That's why there is an ability to retry failed [scenario]s. 
+
+> __WARNING__: Although this feature is supported, we highly recommend to use it as the _last resort only_. First, consider implementing in-[step] retries with your own needs (like [exponential backoff]). Other ways of dealing with flaky tests include, but not limited to: reducing number of concurrently executed scenarios (maybe even using `@serial` [tag]), mocking external environment, [controlling time in tests] or even [simulation testing]. It's always better to move towards tests determinism, rather than trying to tame their flakiness.
 
 
 
 
 ## Tags
 
-Recommended way to specify retried scenarios is using tags:
-
+Recommended way to specify retried [scenario]s is using [tags][tag] ([inheritance] is supported too):
 ```gherkin
 Feature: Heads and tails
 
+  # Attempts a single retry immediately.
   @retry
   Scenario: Tails
     Given a coin
     When I flip the coin
     Then I see tails
-
+      
+  # Attempts a single retry in 1 second.
   @retry.after(1s)
   Scenario: Heads
-      Given a coin
-      When I flip the coin
-      Then I see heads
+    Given a coin
+    When I flip the coin
+    Then I see heads
 
+  # Attempts to retry 5 times with no delay between them.
   @retry(5)
   Scenario: Edge
-      Given a coin
-      When I flip the coin
-      Then I see edge
+    Given a coin
+    When I flip the coin
+    Then I see edge
 
-  @retry(100).after(100ms)
+  # Attempts to retry 10 times with 100 milliseconds delay between them.
+  @retry(10).after(100ms)
   Scenario: Levitating
-      Given a coin
-      When I flip the coin
-      Then the coin never lands
+    Given a coin
+    When I flip the coin
+    Then the coin never lands
 ```
+```rust,should_panic
+# use std::time::Duration;
+#
+# use cucumber::{given, then, when, World};
+# use rand::Rng as _;
+# use tokio::time::sleep;
+#
+# #[derive(Debug, Default, World)]
+# pub struct FlipWorld {
+#     flipped: &'static str,
+# }
+#
+#[given("a coin")]
+async fn coin(_: &mut FlipWorld) {
+    sleep(Duration::from_secs(2)).await;
+}
 
-> __NOTE__: On failure, whole Scenario is re-executed with a new fresh [`World`] instance. 
+#[when("I flip the coin")]
+async fn flip(world: &mut FlipWorld) {
+    sleep(Duration::from_secs(2)).await;
 
-Tag syntax is following: `@retry(<number-of-retries>).after(<delay-after-each-retry>)`. Number of retries and delay can be omitted, in that case they will default to `1` and `0s` (or values defined in the CLI)
+    world.flipped = match rand::thread_rng().gen_range(0.0..1.0) {
+        p if p < 0.2 => "edge",
+        p if p < 0.5 => "heads",
+        _ => "tails",
+    }
+}
+
+#[then(regex = r#"^I see (heads|tails|edge)$"#)]
+async fn see(world: &mut FlipWorld, what: String) {
+    sleep(Duration::from_secs(2)).await;
+
+    assert_eq!(what, world.flipped);
+}
+
+#[then("the coin never lands")]
+async fn never_lands(_: &mut FlipWorld) {
+    sleep(Duration::from_secs(2)).await;
+
+    unreachable!("coin always lands")
+}
+#
+# #[tokio::main]
+# async fn main() {
+#     FlipWorld::cucumber()
+#         .fail_on_skipped()
+#         .run_and_exit("tests/features/book/writing/retries.feature")
+#         .await;
+# }
+```
+![record](../rec/writing_retries.gif)
+
+> __NOTE__: On failure, the whole [scenario] is re-executed with a new fresh [`World`] instance. 
 
 
 
 
 ## CLI
 
-The following CLI options are related to the retries
-
+The following [CLI option]s are related to the [scenario] retries:
 ```
 --retry <int>
-    Number of times scenario will be rerun in case of a failure
+    Number of times a scenario will be retried in case of a failure
 
 --retry-after <duration>
-    Delay between each retry attempt.
-
-    Duration is represented in human-readable format like `12min5s`.
+    Delay between each scenario retry attempt.
+    
+    Duration is represented in a human-readable format like `12min5s`.
     Supported suffixes:
     - `nsec`, `ns` — nanoseconds.
     - `usec`, `us` — microseconds.
@@ -68,22 +121,28 @@ The following CLI options are related to the retries
     Tag expression to filter retried scenarios
 ```
 
-`--retry` option is similar to `@retry(<number-of-retries>)`, but applied to all scenarios, that are matched by `--retry-tag-filter` (if not provided, all scenarios will be retried). `--retry-after` is similar to `@retry.after(<delay-after-each-retry>)` in the same manner.
+- `--retry` [CLI option] is similar to `@retry(<number-of-retries>)` [tag], but is applied to all [scenario]s matching the `--retry-tag-filter` (if not provided, all possible [scenario]s are matched).
+- `--retry-after` [CLI option] is similar to `@retry.after(<delay-after-each-retry>)` [tag] in the same manner.
 
 
+### Precedence of tags and CLI options
 
+- Just `@retry` [tag] takes the number of retries and the delay from `--retry` and `--retry-after` [CLI option]s respectively, if they're specified, otherwise defaults to a single retry attempt with no delay.
+- `@retry(3)` [tag] always retries failed [scenario]s at most 3 times, even if `--retry` [CLI option] provides a greater value. Delay is taken from `--retry-after` [CLI option], if it's specified, otherwise defaults to no delay.
+- `@retry.after(1s)` [tag] always delays 1 second before next retry attempt, even if `--retry-after` [CLI option] provides another value. Number of retries is taken from `--retry-after` [CLI option], if it's specified, otherwise defaults a single retry attempt.
+- `@retry(3).after(1s)` always retries failed scenarios at most 3 times with 1 second delay before each attempt, ignoring `--retry` and `--retry-after` [CLI option]s.
 
-### Interaction between tags and CLI options
+> __TIP__: It could be handy to specify `@retry` [tags][tag] only, without any explicit values, and use `--retry=n --retry-after=d --retry-tag-filter=@retry` [CLI option]s to overwrite retrying parameters without affecting any other [scenario]s.
 
-- `@retry` will take number of retries from `--retry` and delay from `--retry-after`.
-- `@retry(3)` will always retry failed scenarios at most 3 times, even if `--retry` option has a greater value. Delay value will be taken from `--retry-after` option.
-- `@retry.after(1s)` will always delay 1 second before next retry. Number of retries value will be taken from `--retry-after` option.
-- `@retry(3).after(1s)` will always retry failed scenarios at most 3 times with 1 second delay, ignoring `CLI` options.
-
-> __NOTE__: You can always specify `@retry` without explicit values and run with `--retry=n --retry-after=d --retry-tag-filter=@retry` to overwrite retry options and don't affect any other scenarios.
 
 
 
 [`World`]: https://docs.rs/cucumber/latest/cucumber/trait.World.html
-[controlling time in tests]: https://docs.rs/tokio/latest/tokio/time/fn.pause.html
+[CLI option]: ../cli.md
+[controlling time in tests]: https://docs.rs/tokio/1.0/tokio/time/fn.pause.html
+[exponential backoff]: https://en.wikipedia.org/wiki/Exponential_backoff
+[inheritance]: tags.md#inheritance
+[scenario]: https://cucumber.io/docs/gherkin/reference#example
 [simulation testing]: https://github.com/madsys-dev/madsim
+[step]: https://cucumber.io/docs/gherkin/reference#steps
+[tag]: https://cucumber.io/docs/cucumber/api#tags
