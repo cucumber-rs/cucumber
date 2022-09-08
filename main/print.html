@@ -193,8 +193,7 @@ async fn is_full(w: &amp;mut World) {
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-async-trait = &quot;0.1&quot;
-cucumber = &quot;0.13&quot;
+cucumber = &quot;0.14&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -522,8 +521,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-async-trait = &quot;0.1&quot;
-cucumber = &quot;0.13&quot;
+cucumber = &quot;0.14&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -2587,7 +2585,7 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.14&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
@@ -2609,7 +2607,7 @@ World::cucumber()
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.14&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
@@ -2655,7 +2653,7 @@ World::cucumber()
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intellij-rust-integration"><a class="header" href="#intellij-rust-integration">IntelliJ Rust integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust/">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.14&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021">use cucumber::{writer, World as _};
 

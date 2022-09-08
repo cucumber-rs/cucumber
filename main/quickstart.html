@@ -139,8 +139,7 @@
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-async-trait = &quot;0.1&quot;
-cucumber = &quot;0.13&quot;
+cucumber = &quot;0.14&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -468,8 +467,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-async-trait = &quot;0.1&quot;
-cucumber = &quot;0.13&quot;
+cucumber = &quot;0.14&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]

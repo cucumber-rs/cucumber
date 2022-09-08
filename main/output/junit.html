@@ -137,7 +137,7 @@
                         <h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.13&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.14&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
