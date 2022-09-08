@@ -6,7 +6,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.14.0] · 2022-??-?? (unreleased)
+## [0.14.0] · 2022-09-08
 [0.14.0]: /../../tree/v0.14.0
 
 [Diff](/../../compare/v0.13.0...v0.14.0) | [Milestone](/../../milestone/13)

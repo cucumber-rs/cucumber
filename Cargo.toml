@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.14.0-dev"
+version = "0.14.0"
 edition = "2021"
 rust-version = "1.62"
 description = """\
@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/after_hook.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/after_hook.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -58,7 +58,7 @@ regex = "1.5.5"
 sealed = "0.4"
 
 # "macros" feature dependencies.
-cucumber-codegen = { version = "0.14.0-dev", path = "./codegen", optional = true }
+cucumber-codegen = { version = "0.14", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional = true }
 inventory = { version = "0.3", optional = true }
 
