@@ -1,7 +1,7 @@
 use std::{fs, io::Read as _};
 
 use cucumber::{given, then, when, writer, World as _};
-use regex::Regex;
+use regex::RegexBuilder;
 use tempfile::NamedTempFile;
 
 #[given(regex = r"(\d+) secs?")]
@@ -27,11 +27,14 @@ async fn main() {
 
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
-    let non_deterministic = Regex::new(
+    let non_deterministic = RegexBuilder::new(
         "time(stamp)?=\"[^\"]+\"\
-         |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
-         |\\s?\n",
+         |: [^\\.\\s]*\\.(feature|rs)(:\\d+:\\d+)?\
+         |^\\s+\
+         |\\s?\\n",
     )
+    .multi_line(true)
+    .build()
     .unwrap();
 
     assert_eq!(

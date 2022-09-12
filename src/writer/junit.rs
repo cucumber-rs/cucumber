@@ -12,7 +12,7 @@
 //!
 //! [1]: https://llg.cubic.org/docs/junit
 
-use std::{fmt::Debug, io, mem, path::Path, time::SystemTime};
+use std::{fmt::Debug, io, mem, time::SystemTime};
 
 use async_trait::async_trait;
 use junit_report::{
@@ -23,7 +23,7 @@ use crate::{
     event, parser,
     writer::{
         self,
-        basic::{coerce_error, Coloring},
+        basic::{coerce_error, trim_path, Coloring},
         discard,
         out::WritableString,
         Ext as _, Verbosity,
@@ -116,7 +116,7 @@ where
                             &feat.name,
                             feat.path
                                 .as_deref()
-                                .and_then(Path::to_str)
+                                .and_then(|p| p.to_str().map(trim_path))
                                 .map(|path| format!(": {path}"))
                                 .unwrap_or_default(),
                         ))
@@ -225,7 +225,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     format!(
                         "Feature{}",
                         path.to_str()
-                            .map(|p| format!(": {p}"))
+                            .map(|p| format!(": {}", trim_path(p)))
                             .unwrap_or_default(),
                     ),
                     "Parser Error",
@@ -236,7 +236,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     "Feature: {}{}:{}",
                     err.path
                         .as_deref()
-                        .and_then(Path::to_str)
+                        .and_then(|p| p.to_str().map(trim_path))
                         .map(|p| format!("{p}:"))
                         .unwrap_or_default(),
                     err.pos.line,
@@ -335,7 +335,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             sc.name,
             feat.path
                 .as_ref()
-                .and_then(|p| p.to_str())
+                .and_then(|p| p.to_str().map(trim_path))
                 .map(|path| format!("{path}:"))
                 .unwrap_or_default(),
             sc.position.line,

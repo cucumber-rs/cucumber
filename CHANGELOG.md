@@ -19,7 +19,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `CARGO_MANIFEST_DIR` being detected in compile time. ([todo])
 
+### Security updated
+
+- `junit-report` crate to 0.8 version to fix [RUSTSEC-2022-0048]. ([#229], [#226])
+
+[#226]: /../../issues/226
+[#229]: /../../pull/229
 [todo]: /../../commit/todo
+[RUSTSEC-2022-0048]: https://rustsec.org/advisories/RUSTSEC-2022-0048.html
 
 
 
