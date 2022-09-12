@@ -29,7 +29,7 @@ async fn main() {
     // compare them well.
     let non_deterministic = RegexBuilder::new(
         "time(stamp)?=\"[^\"]+\"\
-         |: [^\\.\\s]*\\.feature\
+         |: [^\\.\\s]*\\.(feature|rs)(:\\d+:\\d+)?\
          |^\\s+\
          |\\s?\\n",
     )
