@@ -13,8 +13,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Security updated
 
-- `junit-report` crate to 0.8 version to fix [RUSTSEC-2022-0048].
+- `junit-report` crate to 0.8 version to fix [RUSTSEC-2022-0048]. ([#229], [#226])
 
+[#226]: /../../issues/226
+[#229]: /../../pull/229
 [RUSTSEC-2022-0048]: https://rustsec.org/advisories/RUSTSEC-2022-0048.html
 
 
