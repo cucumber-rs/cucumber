@@ -6,6 +6,24 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.14.1] · 2022-09-??
+[0.14.1]: /../../tree/v0.14.1
+
+[Diff](/../../compare/v0.14.0...v0.14.1) | [Milestone](/../../milestone/14)
+
+### Changed
+
+- Considered stripping `CARGO_WORKSPACE_DIR` from output paths whenever is defined. ([todo])
+
+### Fixed
+
+- `CARGO_MANIFEST_DIR` being detected in compile time. ([todo])
+
+[todo]: /../../commit/todo
+
+
+
+
 ## [0.14.0] · 2022-09-08
 [0.14.0]: /../../tree/v0.14.0
 

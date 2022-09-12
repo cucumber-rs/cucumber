@@ -12,7 +12,7 @@
 
 use std::{
     borrow::Cow,
-    cmp,
+    cmp, env,
     fmt::{Debug, Display},
     io,
     str::FromStr,
@@ -21,6 +21,7 @@ use std::{
 use async_trait::async_trait;
 use derive_more::{Deref, DerefMut};
 use itertools::Itertools as _;
+use once_cell::sync::Lazy;
 use regex::CaptureLocations;
 
 use crate::{
@@ -1090,10 +1091,20 @@ where
     formatted
 }
 
-/// Trims start of the path if it matches with `CARGO_MANIFEST_DIR` environment
-/// variable.
+/// Trims start of the path if it matches the current project directory.
 pub(crate) fn trim_path(path: &str) -> &str {
-    path.trim_start_matches(env!("CARGO_MANIFEST_DIR"))
+    /// Path of the current project directory.
+    static CURRENT_DIR: Lazy<String> = Lazy::new(|| {
+        env::var("CARGO_WORKSPACE_DIR")
+            .or_else(|_| env::var("CARGO_MANIFEST_DIR"))
+            .unwrap_or_else(|_| {
+                env::current_dir()
+                    .map(|path| path.display().to_string())
+                    .unwrap_or_default()
+            })
+    });
+
+    path.trim_start_matches(&**CURRENT_DIR)
         .trim_start_matches('/')
         .trim_start_matches('\\')
 }
