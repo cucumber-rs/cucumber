@@ -29,7 +29,7 @@ async fn main() {
     // compare them well.
     let non_deterministic = RegexBuilder::new(
         "time(stamp)?=\"[^\"]+\"\
-         |Could not parse feature file: [^\\.]*\\.feature\
+         |: [^\\.\\s]*\\.feature\
          |^\\s+\
          |\\n",
     )
