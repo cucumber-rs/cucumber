@@ -6,18 +6,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.14.1] · 2022-09-??
+## [0.14.1] · 2022-09-12
 [0.14.1]: /../../tree/v0.14.1
 
 [Diff](/../../compare/v0.14.0...v0.14.1) | [Milestone](/../../milestone/14)
 
 ### Changed
 
-- Considered stripping `CARGO_WORKSPACE_DIR` from output paths whenever is defined. ([todo])
+- Considered stripping `CARGO_WORKSPACE_DIR` from output paths whenever is defined. ([ad0bb22f])
 
 ### Fixed
 
-- `CARGO_MANIFEST_DIR` being detected in compile time. ([todo])
+- `CARGO_MANIFEST_DIR` being detected in compile time. ([ad0bb22f])
 
 ### Security updated
 
@@ -25,7 +25,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [#226]: /../../issues/226
 [#229]: /../../pull/229
-[todo]: /../../commit/todo
+[ad0bb22f]: /../../commit/ad0bb22f9234099985cb1966f92ccefbc97060fb
 [RUSTSEC-2022-0048]: https://rustsec.org/advisories/RUSTSEC-2022-0048.html
 
 
