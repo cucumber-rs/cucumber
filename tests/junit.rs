@@ -31,7 +31,7 @@ async fn main() {
         "time(stamp)?=\"[^\"]+\"\
          |: [^\\.\\s]*\\.feature\
          |^\\s+\
-         |\\n",
+         |\\s?\\n",
     )
     .multi_line(true)
     .build()
