@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.14.1] · 2022-09-12
+[0.14.1]: /../../tree/v0.14.1
+
+[Diff](/../../compare/v0.14.0...v0.14.1) | [Milestone](/../../milestone/14)
+
+### Security updated
+
+- `junit-report` crate to 0.8 version to fix [RUSTSEC-2022-0048].
+
+[RUSTSEC-2022-0048]: https://rustsec.org/advisories/RUSTSEC-2022-0048.html
+
+
+
+
 ## [0.14.0] · 2022-09-08
 [0.14.0]: /../../tree/v0.14.0
 
