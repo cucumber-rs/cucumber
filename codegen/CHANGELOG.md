@@ -6,12 +6,14 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
-## [0.14.2] · 2022-09-??
+## [0.14.2] · 2022-09-19
 [0.14.2]: /../../tree/v0.14.2/codegen
 
 ### Fixed
 
-- `#[derive(World)]` macro being unhygienic regarding custom `Result` types.
+- `#[derive(World)]` macro being unhygienic regarding custom `Result` types. ([186af8b1])
+
+[186af8b1]: /../../commit/186af8b1de37275b308897e2e30d6982830b0278
 
 
 
