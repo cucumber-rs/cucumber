@@ -6,6 +6,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.14.2] · 2022-09-??
+[0.14.2]: /../../tree/v0.14.2
+
+[Diff](/../../compare/v0.14.1...v0.14.2)
+
+### Fixed
+
+- `#[derive(World)]` macro being unhygienic regarding custom `Result` types.
+
+
+
+
 ## [0.14.1] · 2022-09-12
 [0.14.1]: /../../tree/v0.14.1
 

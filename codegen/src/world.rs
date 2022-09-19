@@ -126,7 +126,7 @@ impl Definition {
             {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
-                async fn new() -> Result<Self, Self::Error> {
+                async fn new() -> ::std::result::Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
                         IntoWorldResult as _, ToWorldFuture as _,
                     };
@@ -224,7 +224,7 @@ mod spec {
             impl ::cucumber::World for World {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
-                async fn new() -> Result<Self, Self::Error> {
+                async fn new() -> ::std::result::Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
                         IntoWorldResult as _, ToWorldFuture as _,
                     };
@@ -354,7 +354,7 @@ mod spec {
             impl<T> ::cucumber::World for World<T> {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
-                async fn new() -> Result<Self, Self::Error> {
+                async fn new() -> ::std::result::Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
                         IntoWorldResult as _, ToWorldFuture as _,
                     };
@@ -485,7 +485,7 @@ mod spec {
             impl<T> ::cucumber::World for World<T> {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
-                async fn new() -> Result<Self, Self::Error> {
+                async fn new() -> ::std::result::Result<Self, Self::Error> {
                     use ::cucumber::codegen::{
                         IntoWorldResult as _, ToWorldFuture as _,
                     };
