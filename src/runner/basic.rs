@@ -388,12 +388,13 @@ impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
 impl<World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |_, _, scenario| {
-            scenario
-                .tags
-                .iter()
-                .any(|tag| tag == "serial")
-                .then_some(ScenarioType::Serial)
-                .unwrap_or(ScenarioType::Concurrent)
+            let has_serial_tag =
+                scenario.tags.iter().any(|tag| tag == "serial");
+            if has_serial_tag {
+                ScenarioType::Serial
+            } else {
+                ScenarioType::Concurrent
+            }
         };
 
         Self {
@@ -2041,7 +2042,7 @@ impl Features {
                     })
                     .map(|(f, r, s, ret)| (f, r, s, ty, ret.map(Into::into)))
                     .collect::<Vec<_>>();
-                (!drained.is_empty()).then(|| drained)
+                (!drained.is_empty()).then_some(drained)
             };
 
         let mut guard = self.scenarios.lock().await;

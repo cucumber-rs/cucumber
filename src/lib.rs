@@ -110,6 +110,7 @@
     unused_lifetimes,
     unused_qualifications,
     unused_results,
+    unused_tuple_struct_fields,
     variant_size_differences
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]

@@ -178,7 +178,9 @@ fn expand_scenario(
                         let name = cap.get(1).unwrap().as_str();
 
                         row.clone()
-                            .find_map(|(k, v)| (name == k).then(|| v.as_str()))
+                            .find_map(|(k, v)| {
+                                (name == k).then_some(v.as_str())
+                            })
                             .unwrap_or_else(|| {
                                 err = Some(ExpandExamplesError {
                                     pos,

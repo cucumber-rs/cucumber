@@ -790,7 +790,7 @@ struct SuiteResults {
     /// Number of measured benches.
     measured: usize,
 
-    // TODO: figure out a way to actually report this.
+    // TODO: Figure out a way to actually report this.
     /// Number of filtered out test cases.
     filtered_out: usize,
 
@@ -816,7 +816,6 @@ enum TestEvent {
     Ignored(TestEventInner),
 
     /// Test case timed out.
-    #[allow(dead_code)]
     Timeout(TestEventInner),
 }
 
