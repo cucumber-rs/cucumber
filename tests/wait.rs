@@ -11,7 +11,7 @@ struct CustomCli {
     #[clap(
         long,
         default_value = "10ms",
-        parse(try_from_str = humantime::parse_duration)
+        value_parser = humantime::parse_duration,
     )]
     pause: Duration,
 }

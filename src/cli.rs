@@ -109,7 +109,7 @@ where
         short = 't',
         long = "tags",
         value_name = "tagexpr",
-        conflicts_with = "re-filter",
+        conflicts_with = "re_filter",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,

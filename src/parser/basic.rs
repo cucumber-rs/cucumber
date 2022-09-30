@@ -12,7 +12,6 @@
 
 use std::{
     borrow::Cow,
-    fmt,
     path::{Path, PathBuf},
     str::FromStr,
     vec,
@@ -28,9 +27,11 @@ use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
 
+// TODO: Rename back to `Cli`, once issue is resolved:
+//       https://github.com/clap-rs/clap/issues/4279
 /// CLI options of a [`Basic`] [`Parser`].
 #[derive(clap::Args, Debug)]
-pub struct Cli {
+pub struct ParserCli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.
     #[clap(long = "input", short = 'i', value_name = "glob", global = true)]
@@ -50,7 +51,7 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type Cli = Cli;
+    type Cli = ParserCli;
 
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
@@ -91,7 +92,9 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 
         let features = || {
             let features = if let Some(walker) = cli.features {
-                walk(walker.0)
+                walk(globwalk::glob(walker.0).unwrap_or_else(|e| {
+                    unreachable!("Invalid glob pattern: {e}")
+                }))
             } else {
                 let feats_path = match get_features_path() {
                     Ok(p) => p,
@@ -163,18 +166,13 @@ pub struct UnsupportedLanguageError(
 );
 
 /// Wrapper over [`GlobWalker`] implementing a [`FromStr`].
-pub struct Walker(GlobWalker);
-
-impl fmt::Debug for Walker {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Walker").finish_non_exhaustive()
-    }
-}
+#[derive(Clone, Debug)]
+pub struct Walker(String);
 
 impl FromStr for Walker {
     type Err = globwalk::GlobError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        globwalk::glob(s).map(Self)
+        globwalk::glob(s).map(|_| Self(s.to_owned()))
     }
 }

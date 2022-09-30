@@ -36,14 +36,17 @@ use crate::{
     Event, World, Writer,
 };
 
+// TODO: Rename back to `Cli`, once issue is resolved:
+//       https://github.com/clap-rs/clap/issues/4279
+#[allow(clippy::module_name_repetitions)]
 /// CLI options of a [`Basic`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
-pub struct Cli {
+pub struct BasicWriterCli {
     /// Verbosity of an output.
     ///
     /// `-v` is default verbosity, `-vv` additionally outputs world on failed
     /// steps, `-vvv` additionally outputs step's doc string (if present).
-    #[clap(short, parse(from_occurrences), global = true)]
+    #[clap(short, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
 
     /// Coloring policy for a console output.
@@ -56,7 +59,7 @@ pub struct Cli {
     pub color: Coloring,
 }
 
-impl Colored for Cli {
+impl Colored for BasicWriterCli {
     fn coloring(&self) -> Coloring {
         self.color
     }
@@ -130,7 +133,7 @@ where
     W: World + Debug,
     Out: io::Write,
 {
-    type Cli = Cli;
+    type Cli = BasicWriterCli;
 
     async fn handle_event(
         &mut self,
@@ -223,7 +226,7 @@ impl<Out: io::Write> Basic<Out> {
             lines_to_clear: 0,
             verbosity: verbosity.into(),
         };
-        basic.apply_cli(Cli {
+        basic.apply_cli(BasicWriterCli {
             verbose: u8::from(basic.verbosity) + 1,
             color,
         });
@@ -231,7 +234,7 @@ impl<Out: io::Write> Basic<Out> {
     }
 
     /// Applies the given [`Cli`] options to this [`Basic`] [`Writer`].
-    pub fn apply_cli(&mut self, cli: Cli) {
+    pub fn apply_cli(&mut self, cli: BasicWriterCli) {
         match cli.verbose {
             0 => {}
             1 => self.verbosity = Verbosity::Default,

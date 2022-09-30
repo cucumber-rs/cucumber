@@ -995,7 +995,7 @@ where
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
-                &runner::basic::Cli,
+                &runner::basic::RunnerCli,
             ) -> Option<RetryOptions>
             + 'static,
     {

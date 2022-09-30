@@ -47,9 +47,11 @@ use crate::{
     Event, Runner, Step, World,
 };
 
+// TODO: Rename back to `Cli`, once issue is resolved:
+//       https://github.com/clap-rs/clap/issues/4279
 /// CLI options of a [`Basic`] [`Runner`].
 #[derive(clap::Args, Clone, Debug)]
-pub struct Cli {
+pub struct RunnerCli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
     #[clap(long, short, value_name = "int", global = true)]
@@ -75,7 +77,7 @@ pub struct Cli {
     #[clap(
         long,
         value_name = "duration",
-        parse(try_from_str = humantime::parse_duration),
+        value_parser = humantime::parse_duration,
         verbatim_doc_comment,
         global = true,
     )]
@@ -137,7 +139,7 @@ impl RetryOptions {
         feature: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
-        cli: &Cli,
+        cli: &RunnerCli,
     ) -> Option<Self> {
         #[allow(clippy::shadow_unrelated)]
         let parse_tags = |tags: &[String]| {
@@ -266,7 +268,7 @@ pub type RetryOptionsFn = Box<
         &gherkin::Feature,
         Option<&gherkin::Rule>,
         &gherkin::Scenario,
-        &Cli,
+        &RunnerCli,
     ) -> Option<RetryOptions>,
 >;
 
@@ -525,7 +527,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
                 &gherkin::Feature,
                 Option<&gherkin::Rule>,
                 &gherkin::Scenario,
-                &Cli,
+                &RunnerCli,
             ) -> Option<RetryOptions>
             + 'static,
     {
@@ -686,12 +688,12 @@ where
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
 {
-    type Cli = Cli;
+    type Cli = RunnerCli;
 
     type EventStream =
         LocalBoxStream<'static, parser::Result<Event<event::Cucumber<W>>>>;
 
-    fn run<S>(self, features: S, mut cli: Cli) -> Self::EventStream
+    fn run<S>(self, features: S, mut cli: RunnerCli) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
@@ -761,7 +763,7 @@ async fn insert_features<W, S, F>(
     which_scenario: F,
     retries: RetryOptionsFn,
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
-    cli: Cli,
+    cli: RunnerCli,
     fail_fast: bool,
 ) where
     S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
@@ -1870,7 +1872,7 @@ impl Features {
         feature: gherkin::Feature,
         which_scenario: &Which,
         retry: &RetryOptionsFn,
-        cli: &Cli,
+        cli: &RunnerCli,
     ) where
         Which: Fn(
                 &gherkin::Feature,
@@ -2181,7 +2183,7 @@ mod retry_options {
     use gherkin::GherkinEnv;
     use humantime::parse_duration;
 
-    use super::{Cli, Duration, Retries, RetryOptions};
+    use super::{Duration, Retries, RetryOptions, RunnerCli};
 
     mod scenario_tags {
         use super::*;
@@ -2211,7 +2213,7 @@ Feature: only scenarios
 
         #[test]
         fn empty_cli() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: None,
@@ -2269,7 +2271,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retries() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
@@ -2333,7 +2335,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retry_after() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
@@ -2397,7 +2399,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retry_filter() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
@@ -2455,7 +2457,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retry_after_and_filter() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
@@ -2562,7 +2564,7 @@ Feature: only scenarios
 
         #[test]
         fn empty_cli() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: None,
@@ -2720,7 +2722,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retry_after_and_filter() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
@@ -2947,7 +2949,7 @@ Feature: only scenarios
 
         #[test]
         fn empty_cli() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: None,
@@ -3161,7 +3163,7 @@ Feature: only scenarios
 
         #[test]
         fn cli_retry_after_and_filter() {
-            let cli = Cli {
+            let cli = RunnerCli {
                 concurrency: None,
                 fail_fast: false,
                 retry: Some(7),
