@@ -10,65 +10,60 @@ cargo test --test <test-name> -- --help
 
 Default output is:
 ```
-cucumber
 Run the tests, pet a dog!
 
-USAGE:
-    cucumber [OPTIONS]
+Usage: cucumber [OPTIONS]
 
-OPTIONS:
-    -c, --concurrency <int>
-            Number of scenarios to run concurrently. If not specified, uses the value configured in
-            tests runner, or 64 by default
+Options:
+  -n, --name <regex>
+          Regex to filter scenarios by their name
+          
+          [aliases: scenario-name]
 
-        --color <auto|always|never>
-            Coloring policy for a console output
-            
-            [default: auto]
+  -t, --tags <tagexpr>
+          Tag expression to filter scenarios by.
+          
+          Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be careful about conflicting tags on different levels.
 
-        --fail-fast
-            Run tests until the first failure
+  -i, --input <glob>
+          Glob pattern to look for feature files with. By default, looks for `*.feature`s in the path configured tests runner
 
-    -h, --help
-            Print help information
+  -c, --concurrency <int>
+          Number of scenarios to run concurrently. If not specified, uses the value configured in tests runner, or 64 by default
 
-    -i, --input <glob>
-            Glob pattern to look for feature files with. By default, looks for `*.feature`s in the
-            path configured tests runner
+      --fail-fast
+          Run tests until the first failure
 
-    -n, --name <regex>
-            Regex to filter scenarios by their name
-            
-            [aliases: scenario-name]
+      --retry <int>
+          Number of times a scenario will be retried in case of a failure
 
-        --retry <int>
-            Number of times a scenario will be retried in case of a failure
+      --retry-after <duration>
+          Delay between each scenario retry attempt.
+          
+          Duration is represented in a human-readable format like `12min5s`.
+          Supported suffixes:
+          - `nsec`, `ns` — nanoseconds.
+          - `usec`, `us` — microseconds.
+          - `msec`, `ms` — milliseconds.
+          - `seconds`, `second`, `sec`, `s` - seconds.
+          - `minutes`, `minute`, `min`, `m` - minutes.
 
-        --retry-after <duration>
-            Delay between each scenario retry attempt.
-            
-            Duration is represented in a human-readable format like `12min5s`.
-            Supported suffixes:
-            - `nsec`, `ns` — nanoseconds.
-            - `usec`, `us` — microseconds.
-            - `msec`, `ms` — milliseconds.
-            - `seconds`, `second`, `sec`, `s` - seconds.
-            - `minutes`, `minute`, `min`, `m` - minutes.
+      --retry-tag-filter <tagexpr>
+          Tag expression to filter retried scenarios
 
-        --retry-tag-filter <tagexpr>
-            Tag expression to filter retried scenarios
+  -v...
+          Verbosity of an output.
+          
+          `-v` is default verbosity, `-vv` additionally outputs world on failed steps, `-vvv` additionally outputs step's doc string (if present).
 
-    -t, --tags <tagexpr>
-            Tag expression to filter scenarios by.
-            
-            Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be
-            careful about conflicting tags on different levels.
+      --color <auto|always|never>
+          Coloring policy for a console output
+          
+          [default: auto]
 
-    -v
-            Verbosity of an output.
-            
-            `-v` is default verbosity, `-vv` additionally outputs world on failed steps, `-vvv`
-            additionally outputs step's doc string (if present).
+  -h, --help
+          Print help information (use `-h` for a summary)
+
 ```
 
 ![record](rec/cli.gif)
