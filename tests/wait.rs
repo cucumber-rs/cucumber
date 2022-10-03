@@ -8,7 +8,7 @@ use tokio::time;
 #[derive(cli::Args)]
 struct CustomCli {
     /// Additional time to wait in before and after hooks.
-    #[clap(
+    #[arg(
         long,
         default_value = "10ms",
         value_parser = humantime::parse_duration,

@@ -42,7 +42,7 @@ timestamps = []
 anyhow = { version = "1.0.58", optional = true }
 async-trait = "0.1.43"
 atty = "0.2.14"
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.0.6", features = ["derive"] }
 console = "0.15"
 derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
 drain_filter_polyfill = "0.1.2"

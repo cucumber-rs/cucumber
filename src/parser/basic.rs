@@ -27,14 +27,13 @@ use crate::feature::Ext as _;
 
 use super::{Error as ParseError, Parser};
 
-// TODO: Rename back to `Cli`, once issue is resolved:
-//       https://github.com/clap-rs/clap/issues/4279
 /// CLI options of a [`Basic`] [`Parser`].
 #[derive(clap::Args, Debug)]
-pub struct ParserCli {
+#[group(skip)]
+pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.
-    #[clap(long = "input", short = 'i', value_name = "glob", global = true)]
+    #[arg(long = "input", short = 'i', value_name = "glob", global = true)]
     pub features: Option<Walker>,
 }
 
@@ -51,7 +50,7 @@ pub struct Basic {
 }
 
 impl<I: AsRef<Path>> Parser<I> for Basic {
-    type Cli = ParserCli;
+    type Cli = Cli;
 
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;

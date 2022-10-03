@@ -36,17 +36,15 @@ use crate::{
 /// [1]: event::Scenario
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
-// TODO: Rename back to `Cli`, once issue is resolved:
-//       https://github.com/clap-rs/clap/issues/4279
 /// CLI options of a [`JUnit`] [`Writer`].
-#[allow(clippy::module_name_repetitions)]
 #[derive(clap::Args, Clone, Copy, Debug)]
-pub struct JunitCli {
+#[group(skip)]
+pub struct Cli {
     /// Verbosity of JUnit XML report output.
     ///
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[clap(long = "junit-v", value_name = "0|1", global = true)]
+    #[arg(long = "junit-v", value_name = "0|1", global = true)]
     pub verbose: Option<u8>,
 }
 
@@ -97,7 +95,7 @@ where
     W: World + Debug,
     Out: io::Write,
 {
-    type Cli = JunitCli;
+    type Cli = Cli;
 
     async fn handle_event(
         &mut self,
@@ -208,7 +206,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     }
 
     /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
-    pub fn apply_cli(&mut self, cli: JunitCli) {
+    pub fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
             None => {}
             Some(0) => self.verbosity = Verbosity::Default,

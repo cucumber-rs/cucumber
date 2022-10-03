@@ -6,7 +6,7 @@ use futures::FutureExt as _;
 
 #[derive(cli::Args)]
 struct CustomCli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Option<SubCommand>,
 }
 
@@ -17,7 +17,7 @@ enum SubCommand {
 
 #[derive(cli::Args)]
 struct Smoke {
-    #[clap(long)]
+    #[arg(long)]
     report_name: String,
 }
 

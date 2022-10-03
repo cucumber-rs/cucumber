@@ -38,23 +38,21 @@ use crate::{
     Event, World, Writer, WriterExt as _,
 };
 
-// TODO: Rename back to `Cli`, once issue is resolved:
-//       https://github.com/clap-rs/clap/issues/4279
 /// CLI options of a [`Libtest`] [`Writer`].
-#[allow(clippy::module_name_repetitions)]
 #[derive(clap::Args, Clone, Debug)]
-pub struct LibtestCli {
+#[group(skip)]
+pub struct Cli {
     /// Formatting of the output.
-    #[clap(long, value_name = "json")]
+    #[arg(long, value_name = "json")]
     pub format: Option<Format>,
 
     /// Show captured stdout of successful tests. Currently, outputs only step
     /// function location.
-    #[clap(long)]
+    #[arg(long)]
     pub show_output: bool,
 
     /// Enable nightly-only flags.
-    #[clap(short = 'Z')]
+    #[arg(short = 'Z')]
     pub nightly: Option<String>,
 }
 
@@ -171,7 +169,7 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
 
 #[async_trait(?Send)]
 impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
-    type Cli = LibtestCli;
+    type Cli = Cli;
 
     async fn handle_event(
         &mut self,
@@ -188,7 +186,7 @@ pub type Or<W, Wr> = writer::Or<
     Normalize<W, Libtest<W, io::Stdout>>,
     fn(
         &parser::Result<Event<event::Cucumber<W>>>,
-        &cli::Compose<<Wr as Writer<W>>::Cli, LibtestCli>,
+        &cli::Compose<<Wr as Writer<W>>::Cli, Cli>,
     ) -> bool,
 >;
 
@@ -290,7 +288,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn handle_cucumber_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) {
         use event::{Cucumber, Metadata};
 
@@ -317,7 +315,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn output_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) {
         for ev in self.expand_cucumber_event(event, cli) {
             self.output
@@ -332,7 +330,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     fn expand_cucumber_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Cucumber;
 
@@ -416,7 +414,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         &mut self,
         feature: &gherkin::Feature,
         ev: event::Feature<W>,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::{Feature, Rule};
 
@@ -445,7 +443,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         ev: event::RetryableScenario<W>,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Scenario;
 
@@ -514,7 +512,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         ev: event::Step<W>,
         retries: Option<Retries>,
         is_background: bool,
-        cli: &LibtestCli,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Step;
 

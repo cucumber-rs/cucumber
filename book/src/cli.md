@@ -129,9 +129,9 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 #[derive(cli::Args)] // re-export of `clap::Args`
 struct CustomOpts {
     /// Additional time to wait in before hook.
-    #[clap(
+    #[arg(
         long,
-        parse(try_from_str = humantime::parse_duration)
+        value_parser = humantime::parse_duration,
     )]
     pre_pause: Option<Duration>,
 }
@@ -205,7 +205,7 @@ async fn main() {
 #
 #[derive(clap::Args)]
 struct CustomOpts {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Option<SubCommand>,
 }
 
@@ -217,9 +217,9 @@ enum SubCommand {
 #[derive(clap::Args)]
 struct Smoke {
     /// Additional time to wait in before hook.
-    #[clap(
+    #[arg(
         long,
-        parse(try_from_str = humantime::parse_duration)
+        value_parser = humantime::parse_duration,
     )]
     pre_pause: Option<Duration>,
 }
