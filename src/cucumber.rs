@@ -596,9 +596,9 @@ where
     /// #[derive(clap::Args)]
     /// struct CustomCli {
     ///     /// Additional time to wait in a before hook.
-    ///     #[clap(
+    ///     #[arg(
     ///         long,
-    ///         parse(try_from_str = humantime::parse_duration)
+    ///         value_parser = humantime::parse_duration,
     ///     )]
     ///     before_time: Option<Duration>,
     /// }

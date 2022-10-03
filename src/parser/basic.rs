@@ -12,7 +12,6 @@
 
 use std::{
     borrow::Cow,
-    fmt,
     path::{Path, PathBuf},
     str::FromStr,
     vec,
@@ -30,10 +29,11 @@ use super::{Error as ParseError, Parser};
 
 /// CLI options of a [`Basic`] [`Parser`].
 #[derive(clap::Args, Debug)]
+#[group(skip)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
     /// `*.feature`s in the path configured tests runner.
-    #[clap(long = "input", short = 'i', value_name = "glob", global = true)]
+    #[arg(long = "input", short = 'i', value_name = "glob", global = true)]
     pub features: Option<Walker>,
 }
 
@@ -91,7 +91,9 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
 
         let features = || {
             let features = if let Some(walker) = cli.features {
-                walk(walker.0)
+                walk(globwalk::glob(walker.0).unwrap_or_else(|e| {
+                    unreachable!("Invalid glob pattern: {e}")
+                }))
             } else {
                 let feats_path = match get_features_path() {
                     Ok(p) => p,
@@ -163,18 +165,13 @@ pub struct UnsupportedLanguageError(
 );
 
 /// Wrapper over [`GlobWalker`] implementing a [`FromStr`].
-pub struct Walker(GlobWalker);
-
-impl fmt::Debug for Walker {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Walker").finish_non_exhaustive()
-    }
-}
+#[derive(Clone, Debug)]
+pub struct Walker(String);
 
 impl FromStr for Walker {
     type Err = globwalk::GlobError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        globwalk::glob(s).map(Self)
+        globwalk::glob(s).map(|_| Self(s.to_owned()))
     }
 }

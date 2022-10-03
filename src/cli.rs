@@ -56,9 +56,9 @@ pub use clap::{Args, Parser};
 /// #[derive(clap::Args)] // also re-exported as `cli::Args`
 /// struct CustomOpts {
 ///     /// Additional time to wait in before hook.
-///     #[clap(
+///     #[arg(
 ///         long,
-///         parse(try_from_str = humantime::parse_duration)
+///         value_parser = humantime::parse_duration,
 ///     )]
 ///     pre_pause: Option<Duration>,
 /// }
@@ -79,7 +79,7 @@ pub use clap::{Args, Parser};
 /// [`Runner`]: crate::Runner
 /// [`Writer`]: crate::Writer
 #[derive(Debug, Clone, clap::Parser)]
-#[clap(
+#[command(
     name = "cucumber",
     about = "Run the tests, pet a dog!",
     long_about = "Run the tests, pet a dog!"
@@ -92,7 +92,7 @@ where
     Custom: Args,
 {
     /// Regex to filter scenarios by their name.
-    #[clap(
+    #[arg(
         short = 'n',
         long = "name",
         value_name = "regex",
@@ -105,11 +105,11 @@ where
     ///
     /// Note: Tags from Feature, Rule and Scenario are merged together on
     /// filtering, so be careful about conflicting tags on different levels.
-    #[clap(
+    #[arg(
         short = 't',
         long = "tags",
         value_name = "tagexpr",
-        conflicts_with = "re-filter",
+        conflicts_with = "re_filter",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,
@@ -117,23 +117,23 @@ where
     /// [`Parser`] CLI options.
     ///
     /// [`Parser`]: crate::Parser
-    #[clap(flatten)]
+    #[command(flatten)]
     pub parser: Parser,
 
     /// [`Runner`] CLI options.
     ///
     /// [`Runner`]: crate::Runner
-    #[clap(flatten)]
+    #[command(flatten)]
     pub runner: Runner,
 
     /// [`Writer`] CLI options.
     ///
     /// [`Writer`]: crate::Writer
-    #[clap(flatten)]
+    #[command(flatten)]
     pub writer: Writer,
 
     /// Additional custom CLI options.
-    #[clap(flatten)]
+    #[command(flatten)]
     pub custom: Custom,
 }
 
@@ -168,6 +168,7 @@ pub trait Colored {
 
 /// Empty CLI options.
 #[derive(Args, Clone, Copy, Debug)]
+#[group(skip)]
 pub struct Empty;
 
 impl Colored for Empty {}
@@ -186,7 +187,7 @@ impl Colored for Empty {}
 ///
 /// #[derive(cli::Args)] // re-export of `clap::Args`
 /// struct Cli {
-///     #[clap(long)]
+///     #[arg(long)]
 ///     custom_option: Option<String>,
 /// }
 ///
@@ -267,13 +268,14 @@ impl Colored for Empty {}
 ///
 /// [`Writer`]: crate::Writer
 #[derive(Args, Debug)]
+#[group(skip)]
 pub struct Compose<L: Args, R: Args> {
     /// Left [`clap::Args`] deriver.
-    #[clap(flatten)]
+    #[command(flatten)]
     pub left: L,
 
     /// Right [`clap::Args`] deriver.
-    #[clap(flatten)]
+    #[command(flatten)]
     pub right: R,
 }
 

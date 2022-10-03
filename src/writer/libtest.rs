@@ -40,18 +40,19 @@ use crate::{
 
 /// CLI options of a [`Libtest`] [`Writer`].
 #[derive(clap::Args, Clone, Debug)]
+#[group(skip)]
 pub struct Cli {
     /// Formatting of the output.
-    #[clap(long, value_name = "json")]
+    #[arg(long, value_name = "json")]
     pub format: Option<Format>,
 
     /// Show captured stdout of successful tests. Currently, outputs only step
     /// function location.
-    #[clap(long)]
+    #[arg(long)]
     pub show_output: bool,
 
     /// Enable nightly-only flags.
-    #[clap(short = 'Z')]
+    #[arg(short = 'Z')]
     pub nightly: Option<String>,
 }
 

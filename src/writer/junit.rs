@@ -38,12 +38,13 @@ const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// CLI options of a [`JUnit`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
+#[group(skip)]
 pub struct Cli {
     /// Verbosity of JUnit XML report output.
     ///
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[clap(long = "junit-v", value_name = "0|1", global = true)]
+    #[arg(long = "junit-v", value_name = "0|1", global = true)]
     pub verbose: Option<u8>,
 }
 

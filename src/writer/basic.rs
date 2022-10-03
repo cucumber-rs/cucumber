@@ -38,16 +38,17 @@ use crate::{
 
 /// CLI options of a [`Basic`] [`Writer`].
 #[derive(clap::Args, Clone, Copy, Debug)]
+#[group(skip)]
 pub struct Cli {
     /// Verbosity of an output.
     ///
     /// `-v` is default verbosity, `-vv` additionally outputs world on failed
     /// steps, `-vvv` additionally outputs step's doc string (if present).
-    #[clap(short, parse(from_occurrences), global = true)]
+    #[arg(short, action = clap::ArgAction::Count, global = true)]
     pub verbose: u8,
 
     /// Coloring policy for a console output.
-    #[clap(
+    #[arg(
         long,
         value_name = "auto|always|never",
         default_value = "auto",

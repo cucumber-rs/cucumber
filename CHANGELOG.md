@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.15.0] · 2022-10-??
+[0.15.0]: /../../tree/v0.15.0
+
+[Diff](/../../compare/v0.14.2...v0.15.0) | [Milestone](/../../milestone/15)
+
+### BC Breaks
+
+- Upgraded [`clap`] crate to 4.0 version. ([#230])
+
+[#230]: /../../pull/230
+
+
+
+
 ## [0.14.2] · 2022-09-19
 [0.14.2]: /../../tree/v0.14.2
 
@@ -224,7 +238,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Bump up [MSRV] to 1.57 for better error reporting in `const` assertions. ([cef3d480])
 - Switch to [`gherkin`] crate instead of [`gherkin_rust`]. ([e2a41ab0])
 - Renamed `@allow_skipped` built-in tag to `@allow.skipped`. ([#181])
-- Switched CLI to `clap` from `structopt`. ([#188], [#155])
+- Switched CLI to [`clap`] from `structopt`. ([#188], [#155])
 - Reworked `verbose` CLI option of `writer::Basic`: ([#193], [#192])
     - Removed long form.
     - Made `-v` default behavior (no additional output). 
@@ -500,6 +514,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+[`clap`]: https://docs.rs/clap
 [`gherkin`]: https://docs.rs/gherkin
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
 
