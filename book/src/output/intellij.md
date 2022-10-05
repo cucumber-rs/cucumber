@@ -5,7 +5,7 @@ IntelliJ Rust integration
 
 Example below is set up to output with the default [`writer::Basic`] if there is no `--format=json` option, or with [`writer::Libtest`] otherwise.
 ```toml
-cucumber = { version = "0.14", features = ["libtest"] }
+cucumber = { version = "0.15", features = ["libtest"] }
 ```
 ```rust
 use cucumber::{writer, World as _};
