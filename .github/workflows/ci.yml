@@ -210,7 +210,7 @@ jobs:
   #############
 
   release-crate:
-    name: Release on crates.io
+    name: release on crates.io
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: ["release-github"]
     runs-on: ubuntu-latest
@@ -232,7 +232,7 @@ jobs:
                            --token ${{ secrets.CRATESIO_TOKEN }}
 
   release-github:
-    name: Release on GitHub
+    name: release on GitHub
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs:
       - clippy
@@ -280,7 +280,7 @@ jobs:
   ##########
 
   deploy-book:
-    name: Deploy Book
+    name: deploy Book
     if: ${{ github.ref == 'refs/heads/main'
          || startsWith(github.ref, 'refs/tags/v') }}
     needs: ["test-book"]
