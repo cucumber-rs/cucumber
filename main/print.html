@@ -2645,8 +2645,8 @@ World::cucumber()
 <span class="boring">Ok(())
 </span><span class="boring">}
 </span></code></pre></pre>
-<h2 id="merging-the-same-writers"><a class="header" href="#merging-the-same-writers">Merging the same <code>Writer</code>s</a></h2>
-<p>While using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a> for different <code>Writer</code>s is ok most of the time, merging the same <code>Writer</code>s isn't so obvious, because they have identical CLI arguments. Because of that you will get runtime panic from <a href="https://docs.rs/clap/"><code>clap</code></a> for using CLI arguments with the same name:</p>
+<h2 id="using-the-same-writer-multiple-times"><a class="header" href="#using-the-same-writer-multiple-times">Using the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times</a></h2>
+<p>While using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a> for different <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a>s is OK and straightforward most of the time, reusing the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times isn't so obvious, because of the <a href="https://docs.rs/clap"><code>clap</code></a> complaining about identical CLI options (unfortunately, in a form of runtime panic only).</p>
 <pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
@@ -2655,30 +2655,30 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>    let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
-    World::cucumber()
-        .with_writer(
-            writer::Basic::raw(
-                io::stdout(),
-                writer::Coloring::Auto,
-                writer::Verbosity::Default,
-            )
-                .tee::&lt;World, _&gt;(writer::Basic::raw(
-                    file,
-                    writer::Coloring::Never,
-                    2,
-                ))
-                .summarized()
-                .normalized(),
+</span>let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+World::cucumber()
+    .with_writer(
+        writer::Basic::raw(
+            io::stdout(),
+            writer::Coloring::Auto,
+            writer::Verbosity::Default,
         )
-        .run_and_exit(&quot;tests/features/book&quot;)
-        .await;
+            .tee::&lt;World, _&gt;(writer::Basic::raw(
+                file,
+                writer::Coloring::Never,
+                2,
+            ))
+            .summarized()
+            .normalized(),
+    )
+    .run_and_exit(&quot;tests/features/book&quot;)
+    .await;
 <span class="boring">Ok(())
 </span><span class="boring">}
 </span></code></pre></pre>
 <pre><code>thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
 </code></pre>
-<p>To avoid this, you should manually construct the <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html"><code>cli::Opts</code></a> and supply it with <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a>. Example below shows 2 <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> outputting to <code>stdout</code> and file:</p>
+<p>To avoid this, you should manually construct the desired <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html"><code>cli::Opts</code></a> and supply them via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method. Example below uses two different <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a>s, where one outputs to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> and another one outputs to a file:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
 </span>use cucumber::{cli, writer, World as _, WriterExt as _};
 
@@ -2687,40 +2687,40 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>    // Parse CLI arguments for a single `writer::Basic`.
-    let cli = cli::Opts::&lt;_, _, writer::basic::Cli&gt;::parsed();
-    let cli = cli::Opts {
-        re_filter: cli.re_filter,
-        tags_filter: cli.tags_filter,
-        parser: cli.parser,
-        runner: cli.runner,
-        // Replicate CLI arguments for every `writer::Basic`. 
-        writer: cli::Compose {
-            left: cli.writer.clone(),
-            right: cli.writer,
-        },
-        custom: cli.custom,
-    };
-    
-    let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
-    World::cucumber()
-        .with_writer(
-            writer::Basic::raw(
-                io::stdout(),
-                writer::Coloring::Auto,
-                writer::Verbosity::Default,
-            )
-                .tee::&lt;World, _&gt;(writer::Basic::raw(
-                    file,
-                    writer::Coloring::Never,
-                    2,
-                ))
-                .summarized()
-                .normalized(),
+</span>// Parse CLI arguments for a single `writer::Basic`.
+let cli = cli::Opts::&lt;_, _, writer::basic::Cli&gt;::parsed();
+let cli = cli::Opts {
+    re_filter: cli.re_filter,
+    tags_filter: cli.tags_filter,
+    parser: cli.parser,
+    runner: cli.runner,
+    // Replicate CLI arguments for every `writer::Basic`. 
+    writer: cli::Compose {
+        left: cli.writer.clone(),
+        right: cli.writer,
+    },
+    custom: cli.custom,
+};
+
+let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+World::cucumber()
+    .with_writer(
+        writer::Basic::raw(
+            io::stdout(),
+            writer::Coloring::Auto,
+            writer::Verbosity::Default,
         )
-        .with_cli(cli) // Supply parsed `cli::Opts`
-        .run_and_exit(&quot;tests/features/book&quot;)
-        .await;
+            .tee::&lt;World, _&gt;(writer::Basic::raw(
+                file,
+                writer::Coloring::Never,
+                2,
+            ))
+            .summarized()
+            .normalized(),
+    )
+    .with_cli(cli) // Supply the parsed `cli::Opts`.
+    .run_and_exit(&quot;tests/features/book&quot;)
+    .await;
 <span class="boring">Ok(())
 </span><span class="boring">}
 </span></code></pre></pre>
