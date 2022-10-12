@@ -124,9 +124,14 @@ jobs:
         with:
           toolchain: nightly
 
+      - run: cargo install cargo-careful
+        if: ${{ matrix.toolchain == 'nightly' }}
+
       - run: cargo +nightly update -Z minimal-versions
 
       - run: make test.cargo crate=${{ matrix.crate }}
+                  careful=${{ (matrix.toolchain == 'nightly' && 'yes')
+                           ||                                   'no' }}
 
   test:
     strategy:
@@ -151,10 +156,15 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
       - run: rustup default ${{ matrix.toolchain }}
 
+      - run: cargo install cargo-careful
+        if: ${{ matrix.toolchain == 'nightly' }}
+
       - run: make test.cargo crate=${{ matrix.crate }}
+                  careful=${{ (matrix.toolchain == 'nightly' && 'yes')
+                           ||                                   'no' }}
 
   test-book:
-    name: Test Book
+    name: test Book
     strategy:
       fail-fast: false
       matrix:
