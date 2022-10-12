@@ -44,7 +44,7 @@ pub struct Cli {
     ///
     /// `0` is default verbosity, `1` additionally outputs world on failed
     /// steps.
-    #[arg(long = "junit-v", value_name = "0|1", global = true)]
+    #[arg(id = "junit-v", long = "junit-v", value_name = "0|1", global = true)]
     pub verbose: Option<u8>,
 }
 
