@@ -124,14 +124,9 @@ jobs:
         with:
           toolchain: nightly
 
-      - run: cargo install cargo-careful
-        if: ${{ matrix.toolchain == 'nightly' }}
-
       - run: cargo +nightly update -Z minimal-versions
 
       - run: make test.cargo crate=${{ matrix.crate }}
-                  careful=${{ (matrix.toolchain == 'nightly' && 'yes')
-                           ||                                   'no' }}
 
   test:
     strategy:
@@ -154,6 +149,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
+          components: rust-src
       - run: rustup default ${{ matrix.toolchain }}
 
       - run: cargo install cargo-careful
