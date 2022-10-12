@@ -6,6 +6,22 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.15.1] · 2022-10-??
+[0.15.1]: /../../tree/v0.15.1
+
+[Diff](/../../compare/v0.15.0...v0.15.1) | [Milestone](/../../milestone/16)
+
+### Fixed
+
+- Conflicting [`Id`][0151-1]s of CLI options. ([#232], [#231])
+
+[#231]: /../../issue/231
+[#232]: /../../pull/232
+[0151-1]: https://docs.rs/clap/latest/clap/struct.Id.html
+
+
+
+
 ## [0.15.0] · 2022-10-05
 [0.15.0]: /../../tree/v0.15.0
 

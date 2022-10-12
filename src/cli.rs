@@ -93,8 +93,9 @@ where
 {
     /// Regex to filter scenarios by their name.
     #[arg(
-        short = 'n',
+        id = "name",
         long = "name",
+        short = 'n',
         value_name = "regex",
         visible_alias = "scenario-name",
         global = true
@@ -106,10 +107,11 @@ where
     /// Note: Tags from Feature, Rule and Scenario are merged together on
     /// filtering, so be careful about conflicting tags on different levels.
     #[arg(
-        short = 't',
+        id = "tags",
         long = "tags",
+        short = 't',
         value_name = "tagexpr",
-        conflicts_with = "re_filter",
+        conflicts_with = "name",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,
