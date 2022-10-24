@@ -6,6 +6,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.15.2] · 2022-10-??
+[0.15.2]: /../../tree/v0.15.2
+
+[Diff](/../../compare/v0.15.1...v0.15.2) | [Milestone](/../../milestone/17)
+
+### Fixed
+
+- Parsing error on a `Feature` having comment and tag simultaneously. ([cucumber-rs/gherkin#37], [cucumber-rs/gherkin#35])
+
+[cucumber-rs/gherkin#35]: https://github.com/cucumber-rs/gherkin/issues/35
+[cucumber-rs/gherkin#37]: https://github.com/cucumber-rs/gherkin/pull/37
+
+
+
+
 ## [0.15.1] · 2022-10-12
 [0.15.1]: /../../tree/v0.15.1
 
