@@ -43,6 +43,7 @@ To filter out running [scenario]s we may use:
 
 [Tags][tag] may be placed above the following [Gherkin] elements:
 - [`Feature`][feature]
+- [`Rule`][rule]
 - [`Scenario`][scenario]
 - [`Scenario Outline`]
 - [`Examples`]
@@ -50,7 +51,7 @@ To filter out running [scenario]s we may use:
 It's _not_ possible to place [tag]s above [`Background`](background.md) or [step]s (`Given`, `When`, `Then`, `And` and `But`).
 
 [Tags][tag] are inherited by child elements:
-- [`Feature`][feature] [tag]s will be inherited by [`Scenario`][scenario], [`Scenario Outline`], or [`Examples`].
+- [`Feature`][feature] and [`Rule`][rule] [tag]s will be inherited by [`Scenario`][scenario], [`Scenario Outline`], or [`Examples`].
 - [`Scenario Outline`] [tag]s will be inherited by [`Examples`].
 
 ```gherkin
@@ -221,7 +222,8 @@ Feature: Animal feature
 [escaping]: https://github.com/cucumber/tag-expressions/tree/6f444830b23bd8e0c5a2617cd51b91bc2e05adde#escaping
 [feature]: https://cucumber.io/docs/gherkin/reference#feature
 [Gherkin]: https://cucumber.io/docs/gherkin/reference
+[rule]: https://cucumber.io/docs/gherkin/reference#rule
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
+[step]: https://cucumber.io/docs/gherkin/reference#steps
 [tag]: https://cucumber.io/docs/cucumber/api#tags
 [tag expressions]: https://cucumber.io/docs/cucumber/api#tag-expressions
-[step]: https://cucumber.io/docs/gherkin/reference#steps

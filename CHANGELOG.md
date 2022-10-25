@@ -11,10 +11,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [Diff](/../../compare/v0.15.1...v0.15.2) | [Milestone](/../../milestone/17)
 
+### Changed
+
+- Upgraded [`gherkin`] crate to 0.13 version. ([4cad49f8])
+
 ### Fixed
 
-- Parsing error on a `Feature` having comment and tag simultaneously. ([cucumber-rs/gherkin#37], [cucumber-rs/gherkin#35])
+- Parsing error on a `Feature` having comment and tag simultaneously. ([4cad49f8], [cucumber-rs/gherkin#37], [cucumber-rs/gherkin#35])
+- `@retry`, `@serial` and `@allow.skipped` tags semantics inheritance. ([#237])
 
+[#237]: /../../pull/237
+[4cad49f8]: /../../commit/4cad49f8d8f5d0458dcb538aa044a5fff1e6fa10
 [cucumber-rs/gherkin#35]: https://github.com/cucumber-rs/gherkin/issues/35
 [cucumber-rs/gherkin#37]: https://github.com/cucumber-rs/gherkin/pull/37
 
