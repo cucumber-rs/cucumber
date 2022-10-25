@@ -209,11 +209,11 @@ impl<Writer> From<Writer> for FailOnSkipped<Writer> {
     fn from(writer: Writer) -> Self {
         Self {
             writer,
-            should_fail: |f, r, sc| {
+            should_fail: |feat, rule, sc| {
                 !sc.tags
                     .iter()
-                    .chain(r.iter().flat_map(|r| &r.tags))
-                    .chain(&f.tags)
+                    .chain(rule.iter().flat_map(|r| &r.tags))
+                    .chain(&feat.tags)
                     .any(|t| t == "allow.skipped")
             },
         }
