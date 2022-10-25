@@ -170,7 +170,11 @@ impl RetryOptions {
         let apply_cli = |options: Option<_>| {
             let matched = cli.retry_tag_filter.as_ref().map_or_else(
                 || cli.retry.is_some() || cli.retry_after.is_some(),
-                |op| op.eval(&scenario.tags),
+                |op| {
+                    op.eval(scenario.tags.iter().chain(
+                        rule.iter().flat_map(|r| &r.tags).chain(&feature.tags),
+                    ))
+                },
             );
 
             (options.is_some() || matched).then(|| Self {
@@ -388,14 +392,14 @@ impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
 
 impl<World> Default for Basic<World> {
     fn default() -> Self {
-        let which_scenario: WhichScenarioFn = |_, _, scenario| {
-            let has_serial_tag =
-                scenario.tags.iter().any(|tag| tag == "serial");
-            if has_serial_tag {
-                ScenarioType::Serial
-            } else {
-                ScenarioType::Concurrent
-            }
+        let which_scenario: WhichScenarioFn = |feature, rule, scenario| {
+            scenario
+                .tags
+                .iter()
+                .chain(rule.iter().flat_map(|r| &r.tags))
+                .chain(&feature.tags)
+                .find(|tag| *tag == "serial")
+                .map_or(ScenarioType::Concurrent, |_| ScenarioType::Serial)
         };
 
         Self {

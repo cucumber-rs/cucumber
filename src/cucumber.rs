@@ -731,10 +731,7 @@ where
                             tags.eval(
                                 feat.tags
                                     .iter()
-                                    .chain(
-                                        rule.into_iter()
-                                            .flat_map(|r| r.tags.iter()),
-                                    )
+                                    .chain(rule.iter().flat_map(|r| &r.tags))
                                     .chain(scenario.tags.iter()),
                             )
                         },
