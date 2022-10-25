@@ -1635,6 +1635,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <p><a href="https://cucumber.io/docs/cucumber/api#tags">Tags</a> may be placed above the following <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> elements:</p>
 <ul>
 <li><a href="https://cucumber.io/docs/gherkin/reference#feature"><code>Feature</code></a></li>
+<li><a href="https://cucumber.io/docs/gherkin/reference#rule"><code>Rule</code></a></li>
 <li><a href="https://cucumber.io/docs/gherkin/reference#example"><code>Scenario</code></a></li>
 <li><a href="writing/scenario_outline.html"><code>Scenario Outline</code></a></li>
 <li><a href="https://cucumber.io/docs/gherkin/reference#examples"><code>Examples</code></a></li>
@@ -1642,7 +1643,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <p>It's <em>not</em> possible to place <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s above <a href="writing/background.html"><code>Background</code></a> or <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s (<code>Given</code>, <code>When</code>, <code>Then</code>, <code>And</code> and <code>But</code>).</p>
 <p><a href="https://cucumber.io/docs/cucumber/api#tags">Tags</a> are inherited by child elements:</p>
 <ul>
-<li><a href="https://cucumber.io/docs/gherkin/reference#feature"><code>Feature</code></a> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s will be inherited by <a href="https://cucumber.io/docs/gherkin/reference#example"><code>Scenario</code></a>, <a href="writing/scenario_outline.html"><code>Scenario Outline</code></a>, or <a href="https://cucumber.io/docs/gherkin/reference#examples"><code>Examples</code></a>.</li>
+<li><a href="https://cucumber.io/docs/gherkin/reference#feature"><code>Feature</code></a> and <a href="https://cucumber.io/docs/gherkin/reference#rule"><code>Rule</code></a> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s will be inherited by <a href="https://cucumber.io/docs/gherkin/reference#example"><code>Scenario</code></a>, <a href="writing/scenario_outline.html"><code>Scenario Outline</code></a>, or <a href="https://cucumber.io/docs/gherkin/reference#examples"><code>Examples</code></a>.</li>
 <li><a href="writing/scenario_outline.html"><code>Scenario Outline</code></a> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s will be inherited by <a href="https://cucumber.io/docs/gherkin/reference#examples"><code>Examples</code></a>.</li>
 </ul>
 <pre><code class="language-gherkin">@feature
