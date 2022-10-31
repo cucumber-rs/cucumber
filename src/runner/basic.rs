@@ -390,7 +390,7 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             retry_filter: self.retry_filter.clone(),
             steps: self.steps.clone(),
             which_scenario: self.which_scenario.clone(),
-            retry_options: self.retry_options.clone(),
+            retry_options: Arc::clone(&self.retry_options),
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
             fail_fast: self.fail_fast,
