@@ -50,9 +50,9 @@ pub struct Normalize<World, Writer> {
     queue: CucumberQueue<World>,
 }
 
-// Manual implementation is required to omit the redundant `World: Clone` trait
-// bound imposed by `#[derive(Clone)]`.
-impl<W, Writer: Clone> Clone for Normalize<W, Writer> {
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World, Writer: Clone> Clone for Normalize<World, Writer> {
     fn clone(&self) -> Self {
         Self {
             writer: self.writer.clone(),
@@ -788,9 +788,9 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 #[derive(Debug)]
 struct ScenariosQueue<World>(Vec<Event<event::RetryableScenario<World>>>);
 
-// Manual implementation is required to omit the redundant `World: Clone` trait
-// bound imposed by `#[derive(Clone)]`.
-impl<W> Clone for ScenariosQueue<W> {
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World> Clone for ScenariosQueue<World> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }

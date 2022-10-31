@@ -780,8 +780,8 @@ where
     }
 }
 
-// Manual implementation is required to omit the redundant `W: Clone` and
-// `I: Clone` trait bounds imposed by `#[derive(Clone)]`.
+// Implemented manually to omit redundant `W: Clone` and `I: Clone` trait
+// bounds, imposed by `#[derive(Clone)]`.
 impl<W, P, I, R, Wr, Cli> Clone for Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,

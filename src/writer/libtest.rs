@@ -167,8 +167,8 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     started_at: Option<SystemTime>,
 }
 
-// Manual implementation is required to omit the redundant `World: Clone` trait
-// bound imposed by `#[derive(Clone)]`.
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
 impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
     fn clone(&self) -> Self {
         Self {
