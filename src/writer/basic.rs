@@ -105,7 +105,7 @@ impl FromStr for Coloring {
 /// [`Normalized`]: writer::Normalized
 /// [`Runner`]: crate::runner::Runner
 /// [`Scenario`]: gherkin::Scenario
-#[derive(Debug, Deref, DerefMut)]
+#[derive(Clone, Debug, Deref, DerefMut)]
 pub struct Basic<Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to write the output into.
     #[deref]

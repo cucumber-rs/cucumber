@@ -266,7 +266,7 @@ pub type WhichScenarioFn = fn(
 /// [`RetryOptions`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub type RetryOptionsFn = Box<
+pub type RetryOptionsFn = Arc<
     dyn Fn(
         &gherkin::Feature,
         Option<&gherkin::Rule>,
@@ -379,6 +379,25 @@ pub struct Basic<
     fail_fast: bool,
 }
 
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
+    fn clone(&self) -> Self {
+        Self {
+            max_concurrent_scenarios: self.max_concurrent_scenarios.clone(),
+            retries: self.retries.clone(),
+            retry_after: self.retry_after.clone(),
+            retry_filter: self.retry_filter.clone(),
+            steps: self.steps.clone(),
+            which_scenario: self.which_scenario.clone(),
+            retry_options: self.retry_options.clone(),
+            before_hook: self.before_hook.clone(),
+            after_hook: self.after_hook.clone(),
+            fail_fast: self.fail_fast.clone(),
+        }
+    }
+}
+
 // Implemented manually to omit redundant trait bounds on `World` and to omit
 // outputting `F`.
 impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
@@ -409,7 +428,7 @@ impl<World> Default for Basic<World> {
             retry_filter: None,
             steps: step::Collection::new(),
             which_scenario,
-            retry_options: Box::new(RetryOptions::parse_from_tags),
+            retry_options: Arc::new(RetryOptions::parse_from_tags),
             before_hook: None,
             after_hook: None,
             fail_fast: false,
@@ -534,7 +553,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             ) -> Option<RetryOptions>
             + 'static,
     {
-        self.retry_options = Box::new(func);
+        self.retry_options = Arc::new(func);
         self
     }
 

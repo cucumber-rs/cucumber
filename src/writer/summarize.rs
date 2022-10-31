@@ -132,7 +132,7 @@ enum State {
 /// format.
 ///
 /// [`ArbitraryWriter`]: writer::Arbitrary
-#[derive(Debug, Deref)]
+#[derive(Clone, Debug, Deref)]
 pub struct Summarize<Writer> {
     /// Original [`Writer`] to summarize output of.
     #[deref]

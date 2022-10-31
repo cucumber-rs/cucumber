@@ -26,7 +26,7 @@ use crate::{event, parser, writer, Event, World, Writer};
 /// [`Failed`]: event::Step::Failed
 /// [`Skipped`]: event::Step::Skipped
 /// [`Step`]: gherkin::Step
-#[derive(Debug, Deref)]
+#[derive(Clone, Copy, Debug, Deref)]
 pub struct FailOnSkipped<W, F = SkipFn> {
     /// Original [`Writer`] to pass transformed event into.
     #[deref]

@@ -780,6 +780,31 @@ where
     }
 }
 
+// Manual implementation is required to omit the redundant `W: Clone` and
+// `I: Clone` trait bounds imposed by `#[derive(Clone)]`.
+impl<W, P, I, R, Wr, Cli> Clone for Cucumber<W, P, I, R, Wr, Cli>
+where
+    W: World,
+    P: Clone + Parser<I>,
+    R: Clone + Runner<W>,
+    Wr: Clone + Writer<W>,
+    Cli: Clone + clap::Args,
+    P::Cli: Clone,
+    R::Cli: Clone,
+    Wr::Cli: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            parser: self.parser.clone(),
+            runner: self.runner.clone(),
+            writer: self.writer.clone(),
+            cli: self.cli.clone(),
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+}
+
 impl<W, P, I, R, Wr, Cli> Debug for Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,

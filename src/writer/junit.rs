@@ -89,6 +89,21 @@ pub struct JUnit<W, Out: io::Write> {
     verbosity: Verbosity,
 }
 
+// Manual implementation is required to omit the redundant `World: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
+    fn clone(&self) -> Self {
+        Self {
+            output: self.output.clone(),
+            report: self.report.clone(),
+            suit: self.suit.clone(),
+            scenario_started_at: self.scenario_started_at.clone(),
+            events: self.events.clone(),
+            verbosity: self.verbosity.clone(),
+        }
+    }
+}
+
 #[async_trait(?Send)]
 impl<W, Out> Writer<W> for JUnit<W, Out>
 where
