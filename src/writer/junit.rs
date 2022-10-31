@@ -97,9 +97,9 @@ impl<World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
             output: self.output.clone(),
             report: self.report.clone(),
             suit: self.suit.clone(),
-            scenario_started_at: self.scenario_started_at.clone(),
+            scenario_started_at: self.scenario_started_at,
             events: self.events.clone(),
-            verbosity: self.verbosity.clone(),
+            verbosity: self.verbosity,
         }
     }
 }

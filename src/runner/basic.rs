@@ -384,16 +384,16 @@ pub struct Basic<
 impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
     fn clone(&self) -> Self {
         Self {
-            max_concurrent_scenarios: self.max_concurrent_scenarios.clone(),
-            retries: self.retries.clone(),
-            retry_after: self.retry_after.clone(),
+            max_concurrent_scenarios: self.max_concurrent_scenarios,
+            retries: self.retries,
+            retry_after: self.retry_after,
             retry_filter: self.retry_filter.clone(),
             steps: self.steps.clone(),
             which_scenario: self.which_scenario.clone(),
             retry_options: self.retry_options.clone(),
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
-            fail_fast: self.fail_fast.clone(),
+            fail_fast: self.fail_fast,
         }
     }
 }

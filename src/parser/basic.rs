@@ -164,7 +164,7 @@ impl Basic {
 }
 
 /// Error of [`gherkin`] not supporting keywords in some language.
-#[derive(Debug, Display, Error)]
+#[derive(Clone, Debug, Display, Error)]
 #[display(fmt = "Language {} isn't supported", _0)]
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,

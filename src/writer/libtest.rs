@@ -174,15 +174,15 @@ impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
         Self {
             output: self.output.clone(),
             events: self.events.clone(),
-            parsed_all: self.parsed_all.clone(),
-            passed: self.passed.clone(),
-            failed: self.failed.clone(),
-            retried: self.retried.clone(),
-            ignored: self.ignored.clone(),
-            parsing_errors: self.parsing_errors.clone(),
-            hook_errors: self.hook_errors.clone(),
-            features_without_path: self.features_without_path.clone(),
-            started_at: self.started_at.clone(),
+            parsed_all: self.parsed_all,
+            passed: self.passed,
+            failed: self.failed,
+            retried: self.retried,
+            ignored: self.ignored,
+            parsing_errors: self.parsing_errors,
+            hook_errors: self.hook_errors,
+            features_without_path: self.features_without_path,
+            started_at: self.started_at,
         }
     }
 }
