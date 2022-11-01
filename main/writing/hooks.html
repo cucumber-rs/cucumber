@@ -138,7 +138,11 @@
 <p><a href="https://cucumber.io/docs/cucumber/api#scenario-hooks">Scenario hooks</a> represent a code running for each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> and not visible in <code>.feature</code> files.</p>
 <h2 id="before-hook"><a class="header" href="#before-hook"><code>Before</code> hook</a></h2>
 <p><a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> runs before the first step of each scenario, even before <a href="background.html"><code>Background</code></a> ones.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::World as _;
 </span><span class="boring">use futures::FutureExt as _;
@@ -164,7 +168,11 @@ Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><co
 </blockquote>
 <h2 id="after-hook"><a class="header" href="#after-hook"><code>After</code> hook</a></h2>
 <p><a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> runs after the last <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> of each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>, even when that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> fails or is skipped.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::World as _;
 </span><span class="boring">use futures::FutureExt as _;

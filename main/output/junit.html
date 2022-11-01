@@ -140,7 +140,10 @@
 <pre><code class="language-toml">cucumber = { version = &quot;0.15&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]

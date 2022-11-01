@@ -147,7 +147,10 @@
 </code></pre>
 <p>These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (<code>Given</code>, <code>When</code>, <code>Then</code>). <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> offers support for <a href="https://cucumber.io/docs/gherkin/languages">languages other than English</a>, as well.</p>
 <p><a href="https://cucumber.io">Cucumber</a> implementations then simply hook into these keywords and execute the logic corresponding to the keywords. <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate is one of such implementations and is the subject of this book.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World as _};
 </span><span class="boring">use tokio::time::sleep;
@@ -211,7 +214,10 @@ harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>To relate the text of the <code>.feature</code> file with the actual tests we would need a <code>World</code> object, holding a state that is newly created for each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> and is changing as <a href="https://cucumber.io">Cucumber</a> goes through each <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> of that <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>.</p>
 <p>To enable testing of our <code>animal.feature</code>, let's add this code to <code>example.rs</code>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021">use cucumber::{given, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span>use cucumber::{given, World};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
@@ -249,7 +255,9 @@ fn main() {
 </code></pre></pre>
 <blockquote>
 <p><strong>TIP</strong>: Using <code>Default::default()</code> for constructing a <code>World</code> object may be not enough. In such case a custom constructor may be specified via <code>#[world(init = my_constructor)]</code> attribute.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::World;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">
+</span><span class="boring">use cucumber::World;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug)]
 </span><span class="boring">struct Cat {
@@ -288,7 +296,10 @@ impl AnimalWorld {
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/gherkin/reference#steps">Unlike official Cucumber implementation</a> the <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate makes explicit separation between <code>given</code>, <code>when</code> and <code>then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s. This allows to prevent ambiguity problems when running tests (i.e. to avoid accidental uses of a <code>then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> as a <code>given</code> one). To remain compliant with existing <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s abusing this, it will be enough to place multiple attributes on the same <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function.</p>
 </blockquote>
 <p>We can add a <code>when</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matcher:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -325,7 +336,10 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
 <img src="rec/quickstart_simple_2.gif" alt="record" /></p>
 <p>Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matcher follows to assert this, as our <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> says:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -370,7 +384,10 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <p><strong>TIP</strong>: In addition to assertions, we may also return a <code>Result&lt;()&gt;</code> from a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function. Returning <code>Err</code> will cause the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to fail. This lets using the <code>?</code> operator for more concise step implementations just like in <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">unit tests</a>.</p>
 </blockquote>
 <p>To assure that assertion is indeed happening, let's reverse it temporarily:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -425,7 +442,10 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
     Then the cat is not hungry
 </code></pre>
 <p>The only thing that is different is the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>. But we don't have to write a new matcher here! We can leverage <a href="https://docs.rs/regex"><code>regex</code></a> support:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -475,7 +495,10 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><strong>NOTE</strong>: Captured values are <strong>bold</strong> to indicate which part of a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> is actually captured.</p>
 </blockquote>
 <p>Alternatively, we also may use <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> for the same purpose (less powerful, but much more readable):</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -529,7 +552,10 @@ name = &quot;example&quot; # this should be the same as the filename of your tes
 harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>And, simply <code>sleep</code> on each <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to test the <code>async</code> support (in the real world, of course, there will be web/database requests, etc.):</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -630,7 +656,10 @@ async fn main() {
 </ul>
 <h2 id="regular-expressions"><a class="header" href="#regular-expressions">Regular expressions</a></h2>
 <p>Using a <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> for a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function is possible with <code>regex =</code> attribute modifier:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -681,7 +710,10 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </blockquote>
 <h2 id="fromstr-arguments"><a class="header" href="#fromstr-arguments"><code>FromStr</code> arguments</a></h2>
 <p>For matching a captured value we are not restricted to use only <code>String</code>. In fact, any type implementing a <a href="https://doc.rust-lang.org/stable/std/str/trait.FromStr.html"><code>FromStr</code></a> trait can be used as a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> function argument (including primitive types).</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
@@ -745,7 +777,10 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
 <h2 id="cucumber-expressions"><a class="header" href="#cucumber-expressions">Cucumber Expressions</a></h2>
 <p>Alternatively, a <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expression</a> may be used to capture values. This is possible with <code>expr =</code> attribute modifier and <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a> usage:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
@@ -813,7 +848,10 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </blockquote>
 <h3 id="custom-parameters"><a class="header" href="#custom-parameters">Custom <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a></a></h3>
 <p>Another useful advantage of using <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> is an ability to declare and reuse <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> in addition to <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">default ones</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span>use cucumber::Parameter;
@@ -885,7 +923,10 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
 <blockquote>
 <p><strong>TIP</strong>: In case <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> of a <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameter</a> consists of several capturing groups, only the first non-empty match will be returned. </p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span>use cucumber::Parameter;
@@ -965,7 +1006,10 @@ fn cat_is(world: &amp;mut AnimalWorld, other: String) {
 </ul>
 <h2 id="panic"><a class="header" href="#panic">Panic</a></h2>
 <p>Throwing a panic in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function makes the appropriate <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> failed:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -1021,7 +1065,10 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 </blockquote>
 <h2 id="result-and-"><a class="header" href="#result-and-"><code>Result</code> and <code>?</code></a></h2>
 <p>Similarly to <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">using the <code>?</code> operator in Rust tests</a>, we may also return a <code>Result&lt;()&gt;</code> from a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, so returning an <code>Err</code> will cause the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to fail (anything implementing <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Display.html"><code>Display</code></a> is sufficient).</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -1076,7 +1123,10 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&
     Then the animal is not hungry
 </code></pre>
 <p>Data, declared in the <a href="https://cucumber.io/docs/gherkin/reference#data-tables">table</a>, may be accessed via <a href="https://docs.rs/gherkin/*/gherkin/struct.Step.html"><code>Step</code></a> argument:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::collections::HashMap;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashMap;
 </span><span class="boring">
 </span>use cucumber::{gherkin::Step, given, then, when, World};
 
@@ -1200,7 +1250,10 @@ pub struct AnimalWorld {
 <p><strong>NOTE</strong>: Whilst <a href="https://docs.rs/cucumber"><code>cucumber</code></a> and <a href="https://docs.rs/gherkin"><code>gherkin</code></a> crates support content types and backticks as the delimiter, many tools like text editors don’t (yet).</p>
 </blockquote>
 <p>In a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, there’s no need to find this text and match it with a pattern. Instead, it may be accessed via <a href="https://docs.rs/gherkin/*/gherkin/struct.Step.html"><code>Step</code></a> argument:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{gherkin::Step, given, then, when, World};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{gherkin::Step, given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -1273,7 +1326,10 @@ async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String)
       When I feed the cat
       Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -1349,7 +1405,10 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
       When I feed the cat
       Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -1434,7 +1493,10 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <blockquote>
 <p><strong>NOTE</strong>: <code>&lt;template&gt;</code>s are replaced even inside <a href="writing/doc_strings.html">doc strings</a> and <a href="writing/data_tables.html">data tables</a>.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{collections::HashMap, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{collections::HashMap, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -1496,7 +1558,11 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 <p><a href="https://cucumber.io/docs/cucumber/api#scenario-hooks">Scenario hooks</a> represent a code running for each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> and not visible in <code>.feature</code> files.</p>
 <h2 id="before-hook"><a class="header" href="#before-hook"><code>Before</code> hook</a></h2>
 <p><a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> runs before the first step of each scenario, even before <a href="writing/background.html"><code>Background</code></a> ones.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::World as _;
 </span><span class="boring">use futures::FutureExt as _;
@@ -1522,7 +1588,11 @@ Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><co
 </blockquote>
 <h2 id="after-hook"><a class="header" href="#after-hook"><code>After</code> hook</a></h2>
 <p><a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> runs after the last <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> of each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>, even when that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> fails or is skipped.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::World as _;
 </span><span class="boring">use futures::FutureExt as _;
@@ -1555,7 +1625,10 @@ Egenskap: Dyr egenskap
     Når jeg mater katten
     Så katten er ikke sulten
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -1708,7 +1781,10 @@ Feature: Animal feature
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -1820,7 +1896,11 @@ async fn main() {
     When I flip the coin
     Then the coin never lands
 </code></pre>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate rand;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use rand::Rng as _;
@@ -1875,7 +1955,7 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 </blockquote>
 <h2 id="cli"><a class="header" href="#cli">CLI</a></h2>
 <p>The following <a href="writing/../cli.html">CLI option</a>s are related to the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> retries:</p>
-<pre><code>--retry &lt;int&gt;
+<pre><code class="language-text">--retry &lt;int&gt;
     Number of times a scenario will be retried in case of a failure
 
 --retry-after &lt;duration&gt;
@@ -1924,7 +2004,7 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 <pre><code class="language-bash">cargo test --test &lt;test-name&gt; -- --help
 </code></pre>
 <p>Default output is:</p>
-<pre><code>Run the tests, pet a dog!
+<pre><code class="language-text">Run the tests, pet a dog!
 
 Usage: cucumber [OPTIONS]
 
@@ -1986,7 +2066,13 @@ Options:
 <h2 id="customizing"><a class="header" href="#customizing">Customizing</a></h2>
 <p>By default, the whole CLI is composed of <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli"><code>Parser::Cli</code></a>, <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli"><code>Runner::Cli</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli"><code>Writer::Cli</code></a>, provided by the used components. Once a custom <a href="architecture/parser.html"><code>Parser</code></a>, <a href="architecture/runner.html"><code>Runner</code></a> or <a href="architecture/writer.html"><code>Writer</code></a> is used, its CLI is automatically emerged into the final CLI.</p>
 <p>CLI may be extended even more with arbitrary options, if required. In such case we should combine the final CLI by ourselves and apply it via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate clap;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate humantime;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;
@@ -2058,7 +2144,13 @@ async fn main() {
 </blockquote>
 <h2 id="aliasing"><a class="header" href="#aliasing">Aliasing</a></h2>
 <p><a href="https://doc.rust-lang.org/cargo/reference/config.html#alias">Cargo alias</a> is a neat way to define shortcuts for regularly used customized tests running commands.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate clap;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate humantime;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;
@@ -2167,7 +2259,10 @@ cargo smoke --tags=@hungry
 <p>Just specifying <code>-v</code> makes no difference, as it refers to the default verbosity level (no additional info).</p>
 <h3 id="output-world-on-failures--vv"><a class="header" href="#output-world-on-failures--vv">Output <code>World</code> on failures (<code>-vv</code>)</a></h3>
 <p>Increasing verbosity level with <code>-vv</code> CLI option, makes the state of the <code>World</code> being printed at the moment of failure.</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2225,7 +2320,10 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2281,7 +2379,10 @@ async fn main() {
 <p><img src="output/../rec/output_terminal_verbose_2.gif" alt="record" /></p>
 <h2 id="coloring"><a class="header" href="#coloring">Coloring</a></h2>
 <p>Coloring may be disabled by specifying <code>--color</code> CLI option:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2343,7 +2444,10 @@ async fn main() {
 <blockquote>
 <p><strong>WARNING:</strong> Moreover, manual printing will very likely interfere with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a> interactive pretty-printing.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2403,7 +2507,10 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 <li>Creating <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html#method.raw"><code>writer::Basic::raw</code></a> with <a href="https://docs.rs/cucumber/*/cucumber/writer/enum.Coloring.html#variant.Never"><code>Coloring::Never</code></a> to avoid interactive pretty-printed output.</li>
 <li>Wrapping it into <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.AssertNormalized.html"><code>writer::AssertNormalized</code></a> to assure <a href="https://docs.rs/cucumber"><code>cucumber</code></a> about the output being <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Normalized.html">normalized</a> already (due to sequential execution).</li>
 </ol>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{io, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{io, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, writer, World, WriterExt as _};
 </span><span class="boring">use tokio::time::sleep;
@@ -2468,7 +2575,10 @@ async fn main() {
 </blockquote>
 <h2 id="repeating-failed-andor-skipped-steps"><a class="header" href="#repeating-failed-andor-skipped-steps">Repeating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s</a></h2>
 <p>As a number of <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s grows, it may become quite difficult to find failed/skipped ones in a large output. This issue may be mitigated by duplicating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s at the and of output via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed"><code>Cucumber::repeat_failed()</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped"><code>Cucumber::repeat_skipped()</code></a> methods respectively.</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{time::Duration};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{time::Duration};
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2523,7 +2633,10 @@ async fn main() {
 }
 </code></pre></pre>
 <p><img src="output/../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{time::Duration};
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;
@@ -2584,7 +2697,10 @@ async fn main() {
 <pre><code class="language-toml">cucumber = { version = &quot;0.15&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -2606,7 +2722,10 @@ World::cucumber()
 <pre><code class="language-toml">cucumber = { version = &quot;0.15&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -2624,7 +2743,10 @@ World::cucumber()
 </span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="multiple-outputs"><a class="header" href="#multiple-outputs">Multiple outputs</a></h1>
 <p>Reporting tests result to multiple outputs simultaneously may be achieved by using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -2648,7 +2770,10 @@ World::cucumber()
 </span></code></pre></pre>
 <h2 id="using-the-same-writer-multiple-times"><a class="header" href="#using-the-same-writer-multiple-times">Using the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times</a></h2>
 <p>While using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a> for different <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a>s is OK and straightforward most of the time, reusing the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times isn't so obvious, because of the <a href="https://docs.rs/clap"><code>clap</code></a> complaining about identical CLI options (unfortunately, in a form of runtime panic only).</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -2677,10 +2802,13 @@ World::cucumber()
 <span class="boring">Ok(())
 </span><span class="boring">}
 </span></code></pre></pre>
-<pre><code>thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
+<pre><code class="language-text">thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
 </code></pre>
 <p>To avoid this, you should manually construct the desired <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html"><code>cli::Opts</code></a> and supply them via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method. Example below uses two different <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a>s, where one outputs to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> and another one outputs to a file:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{cli, writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -2730,7 +2858,10 @@ World::cucumber()
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
 <pre><code class="language-toml">cucumber = { version = &quot;0.15&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021">use cucumber::{writer, World as _};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span>use cucumber::{writer, World as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;
@@ -2774,7 +2905,12 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-parser"><a class="header" href="#custom-parser">Custom <code>Parser</code></a></h1>
 <p>Let's start by implementing a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> which statically emits a single <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> for execution.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> represents anything that emits a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{path::PathBuf, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World};
@@ -2895,7 +3031,13 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-runner"><a class="header" href="#custom-runner">Custom <code>Runner</code></a></h1>
 <p>Now, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> which simply executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s in <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s sequentially, without considering <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s, <a href="https://cucumber.io/docs/gherkin/reference#rule">rule</a>s, <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a>s or other extras, and specifically suitable for our <code>AnimalWorld</code> (for implementation simplicity).</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> represents anything that transforms a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s into a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate once_cell;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{
 </span><span class="boring">    panic::{self, AssertUnwindSafe},
 </span><span class="boring">    path::PathBuf,
 </span><span class="boring">    sync::Arc,
@@ -3151,7 +3293,13 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-writer"><a class="header" href="#custom-writer">Custom <code>Writer</code></a></h1>
 <p>Finally, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> which simply outputs <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a> to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> in the order of receiving.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> represents anything that consumes a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate once_cell;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{
 </span><span class="boring">    panic::{self, AssertUnwindSafe},
 </span><span class="boring">    path::PathBuf,
 </span><span class="boring">    sync::Arc,
@@ -3437,7 +3585,12 @@ async fn main() {
 <blockquote>
 <p><strong>TIP</strong>: <code>CustomWriter</code> will print trash if we feed unordered <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html"><code>event::Cucumber</code></a>s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap <code>CustomWriter</code> into <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Normalize.html"><code>writer::Normalize</code></a>, which will do that for us.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{path::PathBuf, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{

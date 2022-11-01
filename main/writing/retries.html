@@ -171,7 +171,11 @@
     When I flip the coin
     Then the coin never lands
 </code></pre>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate rand;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use rand::Rng as _;
@@ -226,7 +230,7 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 </blockquote>
 <h2 id="cli"><a class="header" href="#cli">CLI</a></h2>
 <p>The following <a href="../cli.html">CLI option</a>s are related to the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> retries:</p>
-<pre><code>--retry &lt;int&gt;
+<pre><code class="language-text">--retry &lt;int&gt;
     Number of times a scenario will be retried in case of a failure
 
 --retry-after &lt;duration&gt;

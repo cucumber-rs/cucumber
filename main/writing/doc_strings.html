@@ -181,7 +181,10 @@
 <p><strong>NOTE</strong>: Whilst <a href="https://docs.rs/cucumber"><code>cucumber</code></a> and <a href="https://docs.rs/gherkin"><code>gherkin</code></a> crates support content types and backticks as the delimiter, many tools like text editors don’t (yet).</p>
 </blockquote>
 <p>In a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, there’s no need to find this text and match it with a pattern. Instead, it may be accessed via <a href="https://docs.rs/gherkin/*/gherkin/struct.Step.html"><code>Step</code></a> argument:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use cucumber::{gherkin::Step, given, then, when, World};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{gherkin::Step, given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {

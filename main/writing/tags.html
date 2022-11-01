@@ -241,7 +241,10 @@ Feature: Animal feature
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">use tokio::time::sleep;

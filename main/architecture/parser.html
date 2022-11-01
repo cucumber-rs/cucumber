@@ -137,7 +137,12 @@
                         <h1 id="custom-parser"><a class="header" href="#custom-parser">Custom <code>Parser</code></a></h1>
 <p>Let's start by implementing a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> which statically emits a single <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> for execution.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> represents anything that emits a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{path::PathBuf, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World};
