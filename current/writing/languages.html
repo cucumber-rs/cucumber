@@ -147,7 +147,10 @@ Egenskap: Dyr egenskap
     Når jeg mater katten
     Så katten er ikke sulten
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {

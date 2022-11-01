@@ -140,7 +140,7 @@
 <pre><code class="language-bash">cargo test --test &lt;test-name&gt; -- --help
 </code></pre>
 <p>Default output is:</p>
-<pre><code>Run the tests, pet a dog!
+<pre><code class="language-text">Run the tests, pet a dog!
 
 Usage: cucumber [OPTIONS]
 
@@ -202,7 +202,13 @@ Options:
 <h2 id="customizing"><a class="header" href="#customizing">Customizing</a></h2>
 <p>By default, the whole CLI is composed of <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html#associatedtype.Cli"><code>Parser::Cli</code></a>, <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html#associatedtype.Cli"><code>Runner::Cli</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html#associatedtype.Cli"><code>Writer::Cli</code></a>, provided by the used components. Once a custom <a href="architecture/parser.html"><code>Parser</code></a>, <a href="architecture/runner.html"><code>Runner</code></a> or <a href="architecture/writer.html"><code>Writer</code></a> is used, its CLI is automatically emerged into the final CLI.</p>
 <p>CLI may be extended even more with arbitrary options, if required. In such case we should combine the final CLI by ourselves and apply it via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate clap;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate humantime;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;
@@ -274,7 +280,13 @@ async fn main() {
 </blockquote>
 <h2 id="aliasing"><a class="header" href="#aliasing">Aliasing</a></h2>
 <p><a href="https://doc.rust-lang.org/cargo/reference/config.html#alias">Cargo alias</a> is a neat way to define shortcuts for regularly used customized tests running commands.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::time::Duration;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate clap;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate humantime;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::time::Duration;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{cli, given, then, when, World};
 </span><span class="boring">use futures::FutureExt as _;

@@ -137,7 +137,13 @@
                         <h1 id="custom-writer"><a class="header" href="#custom-writer">Custom <code>Writer</code></a></h1>
 <p>Finally, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> which simply outputs <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a> to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> in the order of receiving.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> represents anything that consumes a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate once_cell;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{
 </span><span class="boring">    panic::{self, AssertUnwindSafe},
 </span><span class="boring">    path::PathBuf,
 </span><span class="boring">    sync::Arc,
@@ -423,7 +429,12 @@ async fn main() {
 <blockquote>
 <p><strong>TIP</strong>: <code>CustomWriter</code> will print trash if we feed unordered <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html"><code>event::Cucumber</code></a>s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap <code>CustomWriter</code> into <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Normalize.html"><code>writer::Normalize</code></a>, which will do that for us.</p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{path::PathBuf, time::Duration};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
+</span><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate futures;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
 </span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{

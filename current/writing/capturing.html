@@ -142,7 +142,10 @@
 </ul>
 <h2 id="regular-expressions"><a class="header" href="#regular-expressions">Regular expressions</a></h2>
 <p>Using a <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> for a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function is possible with <code>regex =</code> attribute modifier:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use cucumber::{given, then, when, World};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -193,7 +196,10 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </blockquote>
 <h2 id="fromstr-arguments"><a class="header" href="#fromstr-arguments"><code>FromStr</code> arguments</a></h2>
 <p>For matching a captured value we are not restricted to use only <code>String</code>. In fact, any type implementing a <a href="https://doc.rust-lang.org/stable/std/str/trait.FromStr.html"><code>FromStr</code></a> trait can be used as a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> function argument (including primitive types).</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
@@ -257,7 +263,10 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 <p><img src="../rec/writing_capturing_both.gif" alt="record" /></p>
 <h2 id="cucumber-expressions"><a class="header" href="#cucumber-expressions">Cucumber Expressions</a></h2>
 <p>Alternatively, a <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expression</a> may be used to capture values. This is possible with <code>expr =</code> attribute modifier and <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a> usage:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span><span class="boring">
@@ -325,7 +334,10 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </blockquote>
 <h3 id="custom-parameters"><a class="header" href="#custom-parameters">Custom <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a></a></h3>
 <p>Another useful advantage of using <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> is an ability to declare and reuse <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> in addition to <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">default ones</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span>use cucumber::Parameter;
@@ -397,7 +409,10 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
 <blockquote>
 <p><strong>TIP</strong>: In case <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> of a <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameter</a> consists of several capturing groups, only the first non-empty match will be returned. </p>
 </blockquote>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::str::FromStr;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::str::FromStr;
 </span><span class="boring">
 </span><span class="boring">use cucumber::{given, then, when, World};
 </span>use cucumber::Parameter;

@@ -136,7 +136,10 @@
                     <main>
                         <h1 id="multiple-outputs"><a class="header" href="#multiple-outputs">Multiple outputs</a></h1>
 <p>Reporting tests result to multiple outputs simultaneously may be achieved by using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -160,7 +163,10 @@ World::cucumber()
 </span></code></pre></pre>
 <h2 id="using-the-same-writer-multiple-times"><a class="header" href="#using-the-same-writer-multiple-times">Using the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times</a></h2>
 <p>While using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a> for different <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a>s is OK and straightforward most of the time, reusing the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times isn't so obvious, because of the <a href="https://docs.rs/clap"><code>clap</code></a> complaining about identical CLI options (unfortunately, in a form of runtime panic only).</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
@@ -189,10 +195,13 @@ World::cucumber()
 <span class="boring">Ok(())
 </span><span class="boring">}
 </span></code></pre></pre>
-<pre><code>thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
+<pre><code class="language-text">thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
 </code></pre>
 <p>To avoid this, you should manually construct the desired <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html"><code>cli::Opts</code></a> and supply them via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method. Example below uses two different <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a>s, where one outputs to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> and another one outputs to a file:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::{fs, io};
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::{fs, io};
 </span>use cucumber::{cli, writer, World as _, WriterExt as _};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]

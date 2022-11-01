@@ -152,7 +152,10 @@
     Then the animal is not hungry
 </code></pre>
 <p>Data, declared in the <a href="https://cucumber.io/docs/gherkin/reference#data-tables">table</a>, may be accessed via <a href="https://docs.rs/gherkin/*/gherkin/struct.Step.html"><code>Step</code></a> argument:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">use std::collections::HashMap;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">
+</span><span class="boring">use std::collections::HashMap;
 </span><span class="boring">
 </span>use cucumber::{gherkin::Step, given, then, when, World};
 
