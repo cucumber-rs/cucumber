@@ -44,11 +44,12 @@ The output will be in the `_rendered/` directory.
 
 ### Running tests
 
-To run the tests validating all code examples in the book, run:
+To run the tests validating all code examples in the book, run (from project root dir):
 
 ```bash
-OUT_DIR=../target mdbook test -L ../target/debug/deps
+cargo build --all-features --tests
+OUT_DIR=target mdbook test -L target/debug/deps
 
-# or via shortcut from project root dir:
+# or via shortcut:
 make test.book
 ```
