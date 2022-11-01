@@ -53,6 +53,9 @@ Feature: Animal feature
 
 In a [step] matching function, there’s no need to find this text and match it with a pattern. Instead, it may be accessed via [`Step`] argument:
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use cucumber::{gherkin::Step, given, then, when, World};
 #
 # #[derive(Debug, Default)]

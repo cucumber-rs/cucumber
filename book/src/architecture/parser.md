@@ -6,6 +6,11 @@ Let's start by implementing a custom [`Parser`] which statically emits a single 
 [`Parser`] represents anything that emits a [`Stream`] of [feature]s.
 
 ```rust
+# extern crate async_trait;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate tokio;
+#
 # use std::{path::PathBuf, time::Duration};
 #
 # use async_trait::async_trait;

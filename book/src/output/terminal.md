@@ -18,6 +18,9 @@ Just specifying `-v` makes no difference, as it refers to the default verbosity 
 Increasing verbosity level with `-vv` CLI option, makes the state of the `World` being printed at the moment of failure.
 
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
@@ -82,6 +85,9 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
@@ -144,6 +150,9 @@ async fn main() {
 
 Coloring may be disabled by specifying `--color` CLI option:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
@@ -211,6 +220,9 @@ Though [`cucumber`] crate doesn't capture any manual printing produced in a [ste
 > __WARNING:__ Moreover, manual printing will very likely interfere with [default][1] interactive pretty-printing.
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
@@ -272,6 +284,9 @@ To achieve natural output for debugging, the following preparations are required
 3. Wrapping it into [`writer::AssertNormalized`] to assure [`cucumber`] about the output being [normalized][4] already (due to sequential execution).
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{io, time::Duration};
 #
 # use cucumber::{given, then, when, writer, World, WriterExt as _};
@@ -343,6 +358,9 @@ async fn main() {
 As a number of [scenario]s grows, it may become quite difficult to find failed/skipped ones in a large output. This issue may be mitigated by duplicating failed and/or skipped [step]s at the and of output via [`Cucumber::repeat_failed()`] and [`Cucumber::repeat_skipped()`] methods respectively.
 
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{time::Duration};
 #
 # use cucumber::{given, then, when, World};
@@ -400,6 +418,9 @@ async fn main() {
 ![record](../rec/output_terminal_repeat_failed.gif)
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{time::Duration};
 #
 # use cucumber::{given, then, when, World};

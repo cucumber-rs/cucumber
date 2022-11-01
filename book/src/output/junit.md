@@ -10,6 +10,9 @@ cucumber = { version = "0.15", features = ["output-junit"] }
 
 And configuring output to [`writer::JUnit`]:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{fs, io};
 use cucumber::{writer, World as _};
 

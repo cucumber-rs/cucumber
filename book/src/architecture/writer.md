@@ -6,6 +6,12 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 [`Writer`] represents anything that consumes a [`Stream`] of [cucumber events][`event::Cucumber`].
 
 ```rust
+# extern crate async_trait;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate once_cell;
+# extern crate tokio;
+#
 # use std::{
 #     panic::{self, AssertUnwindSafe},
 #     path::PathBuf,
@@ -293,6 +299,11 @@ async fn main() {
 > __TIP__: `CustomWriter` will print trash if we feed unordered [`event::Cucumber`]s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap `CustomWriter` into [`writer::Normalize`], which will do that for us.
 
 ```rust
+# extern crate async_trait;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate tokio;
+#
 # use std::{path::PathBuf, time::Duration};
 #
 # use async_trait::async_trait;

@@ -12,6 +12,9 @@ Using [regular expressions][regex] or [Cucumber Expressions][expr] for our [step
 
 Using a [regular expression][regex] for a [step] matching function is possible with `regex =` attribute modifier:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]
@@ -68,6 +71,9 @@ fn feed_cat(world: &mut AnimalWorld) {
 For matching a captured value we are not restricted to use only `String`. In fact, any type implementing a [`FromStr`] trait can be used as a [step] function argument (including primitive types).
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::str::FromStr;
 #
 # use cucumber::{given, then, when, World};
@@ -138,6 +144,9 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 
 Alternatively, a [Cucumber Expression][expr] may be used to capture values. This is possible with `expr =` attribute modifier and [parameters] usage:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::str::FromStr;
 #
 # use cucumber::{given, then, when, World};
@@ -212,6 +221,9 @@ fn feed_cat(world: &mut AnimalWorld, times: u8) {
 Another useful advantage of using [Cucumber Expressions][expr] is an ability to declare and reuse [custom parameters] in addition to [default ones][parameters].
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::str::FromStr;
 #
 # use cucumber::{given, then, when, World};
@@ -285,6 +297,9 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 > __TIP__: In case [regex] of a [custom parameter][custom parameters] consists of several capturing groups, only the first non-empty match will be returned. 
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::str::FromStr;
 #
 # use cucumber::{given, then, when, World};

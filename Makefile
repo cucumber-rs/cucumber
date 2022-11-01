@@ -104,10 +104,14 @@ endif
 # Run Rust tests of Book.
 #
 # Usage:
-#	make test.book
+#	make test.book [clean=(no|yes)]
 
 test.book:
-	@make test.cargo crate=cucumber-book-tests
+ifeq ($(clean),yes)
+	cargo clean
+endif
+	cargo build --all-features --tests
+	OUT_DIR=target mdbook test book -L target/debug/deps
 
 
 

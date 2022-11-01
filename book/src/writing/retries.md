@@ -43,6 +43,10 @@ Feature: Heads and tails
     Then the coin never lands
 ```
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate rand;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
@@ -102,7 +106,7 @@ async fn never_lands(_: &mut FlipWorld) {
 ## CLI
 
 The following [CLI option]s are related to the [scenario] retries:
-```
+```text
 --retry <int>
     Number of times a scenario will be retried in case of a failure
 

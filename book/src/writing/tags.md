@@ -132,6 +132,9 @@ Feature: Animal feature
     Then the cat is not hungry
 ```
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World};
