@@ -269,7 +269,7 @@ impl Colored for Empty {}
 /// ```
 ///
 /// [`Writer`]: crate::Writer
-#[derive(Args, Debug)]
+#[derive(Args, Clone, Copy, Debug)]
 #[group(skip)]
 pub struct Compose<L: Args, R: Args> {
     /// Left [`clap::Args`] deriver.

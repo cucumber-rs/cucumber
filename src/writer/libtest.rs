@@ -101,7 +101,7 @@ impl FromStr for Format {
 /// [`Normalized`]: writer::Normalized
 /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
 /// [2]: https://github.com/intellij-rust/intellij-rust/issues/9041
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Libtest<W, Out: io::Write = io::Stdout> {
     /// [`io::Write`] implementor to output into.
     output: Out,
@@ -165,6 +165,26 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     ///
     /// [`Started`]: event::Cucumber::Started
     started_at: Option<SystemTime>,
+}
+
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
+    fn clone(&self) -> Self {
+        Self {
+            output: self.output.clone(),
+            events: self.events.clone(),
+            parsed_all: self.parsed_all,
+            passed: self.passed,
+            failed: self.failed,
+            retried: self.retried,
+            ignored: self.ignored,
+            parsing_errors: self.parsing_errors,
+            hook_errors: self.hook_errors,
+            features_without_path: self.features_without_path,
+            started_at: self.started_at,
+        }
+    }
 }
 
 #[async_trait(?Send)]

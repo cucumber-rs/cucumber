@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.15.3] · 2022-??-??
+[0.15.3]: /../../tree/v0.15.3
+
+[Diff](/../../compare/v0.15.2...v0.15.3) | [Milestone](/../../milestone/18)
+
+### Added
+
+- `Clone` implementations to all public types where possible. ([#238])
+
+[#238]: /../../pull/238
+
+
+
+
 ## [0.15.2] · 2022-10-25
 [0.15.2]: /../../tree/v0.15.2
 

@@ -46,6 +46,18 @@ pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     events: Vec<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World, Wr: Clone, F: Clone> Clone for Repeat<World, Wr, F> {
+    fn clone(&self) -> Self {
+        Self {
+            writer: self.writer.clone(),
+            filter: self.filter.clone(),
+            events: self.events.clone(),
+        }
+    }
+}
+
 #[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where

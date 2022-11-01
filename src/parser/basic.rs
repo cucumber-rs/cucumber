@@ -28,7 +28,7 @@ use crate::feature::Ext as _;
 use super::{Error as ParseError, Parser};
 
 /// CLI options of a [`Basic`] [`Parser`].
-#[derive(clap::Args, Debug)]
+#[derive(clap::Args, Clone, Debug)]
 #[group(skip)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. By default, looks for
@@ -164,7 +164,7 @@ impl Basic {
 }
 
 /// Error of [`gherkin`] not supporting keywords in some language.
-#[derive(Debug, Display, Error)]
+#[derive(Clone, Debug, Display, Error)]
 #[display(fmt = "Language {} isn't supported", _0)]
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,

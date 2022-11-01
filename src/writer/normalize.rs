@@ -50,6 +50,17 @@ pub struct Normalize<World, Writer> {
     queue: CucumberQueue<World>,
 }
 
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World, Writer: Clone> Clone for Normalize<World, Writer> {
+    fn clone(&self) -> Self {
+        Self {
+            writer: self.writer.clone(),
+            queue: self.queue.clone(),
+        }
+    }
+}
+
 impl<W, Writer> Normalize<W, Writer> {
     /// Creates a new [`Normalized`] wrapper, which will rearrange [`event`]s
     /// and feed them to the given [`Writer`].
@@ -216,7 +227,7 @@ impl<World, Writer> Normalized for Normalize<World, Writer> {}
 /// >                 set to `1`.
 ///
 /// [1]: crate::runner::Basic::max_concurrent_scenarios
-#[derive(Debug, Deref)]
+#[derive(Clone, Copy, Debug, Deref)]
 pub struct AssertNormalized<W: ?Sized>(W);
 
 impl<Writer> AssertNormalized<Writer> {
@@ -311,7 +322,7 @@ impl<Writer> Normalized for AssertNormalized<Writer> {}
 /// all over again with a [`next()`] item.
 ///
 /// [`next()`]: std::iter::Iterator::next()
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Queue<K: Eq + Hash, V> {
     /// Underlying FIFO queue of values.
     queue: LinkedHashMap<K, V>,
@@ -776,6 +787,14 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Debug)]
 struct ScenariosQueue<World>(Vec<Event<event::RetryableScenario<World>>>);
+
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World> Clone for ScenariosQueue<World> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 impl<World> ScenariosQueue<World> {
     /// Creates a new [`ScenariosQueue`].

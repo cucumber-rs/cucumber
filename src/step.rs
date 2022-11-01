@@ -90,6 +90,18 @@ impl<World> fmt::Debug for Collection<World> {
     }
 }
 
+// Implemented manually to omit redundant `World: Clone` trait bound, imposed by
+// `#[derive(Clone)]`.
+impl<World> Clone for Collection<World> {
+    fn clone(&self) -> Self {
+        Self {
+            given: self.given.clone(),
+            when: self.when.clone(),
+            then: self.then.clone(),
+        }
+    }
+}
+
 // Implemented manually to omit redundant `World: Default` trait bound, imposed
 // by `#[derive(Default)]`.
 impl<World> Default for Collection<World> {
@@ -223,7 +235,7 @@ impl<World> Collection<World> {
 pub type CaptureName = Option<String>;
 
 /// Context for a [`Step`] function execution.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Context {
     /// [`Step`] matched to a [`Step`] function.
     ///

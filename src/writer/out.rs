@@ -18,7 +18,7 @@ use derive_more::{Deref, DerefMut, Display, From, Into};
 use super::Coloring;
 
 /// [`Style`]s for terminal output.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Styles {
     /// [`Style`] for rendering successful events.
     pub ok: Style,
