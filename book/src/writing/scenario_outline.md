@@ -23,6 +23,9 @@ At parsing stage `<template>`s are replaced by value from cells, so we may get t
 > __NOTE__: `<template>`s are replaced even inside [doc strings] and [data tables].
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{collections::HashMap, time::Duration};
 #
 # use cucumber::{given, then, when, World};

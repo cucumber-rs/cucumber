@@ -22,6 +22,9 @@ Feature: Animal feature
 
 Data, declared in the [table], may be accessed via [`Step`] argument:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::collections::HashMap;
 #
 use cucumber::{gherkin::Step, given, then, when, World};

@@ -18,6 +18,9 @@ These features are agnostic to the implementation, the only requirement is that 
 [Cucumber] implementations then simply hook into these keywords and execute the logic corresponding to the keywords. [`cucumber`] crate is one of such implementations and is the subject of this book.
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{given, then, when, World as _};

@@ -6,6 +6,12 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 [`Runner`] represents anything that transforms a [`Stream`] of [feature]s into a [`Stream`] of [cucumber events][`event::Cucumber`].
 
 ```rust
+# extern crate async_trait;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate once_cell;
+# extern crate tokio;
+#
 # use std::{
 #     panic::{self, AssertUnwindSafe},
 #     path::PathBuf,

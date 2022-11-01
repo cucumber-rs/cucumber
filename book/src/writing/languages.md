@@ -18,6 +18,9 @@ Egenskap: Dyr egenskap
     Så katten er ikke sulten
 ```
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use cucumber::{given, then, when, World};
 #
 # #[derive(Debug, Default)]

@@ -9,7 +9,7 @@ cargo test --test <test-name> -- --help
 ```
 
 Default output is:
-```
+```text
 Run the tests, pet a dog!
 
 Usage: cucumber [OPTIONS]
@@ -80,6 +80,12 @@ By default, the whole CLI is composed of [`Parser::Cli`], [`Runner::Cli`] and [`
 CLI may be extended even more with arbitrary options, if required. In such case we should combine the final CLI by ourselves and apply it via [`Cucumber::with_cli()`] method.
 
 ```rust
+# extern crate clap;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate humantime;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{cli, given, then, when, World};
@@ -157,6 +163,12 @@ async fn main() {
 [Cargo alias] is a neat way to define shortcuts for regularly used customized tests running commands.
 
 ```rust
+# extern crate clap;
+# extern crate cucumber;
+# extern crate futures;
+# extern crate humantime;
+# extern crate tokio;
+#
 # use std::time::Duration;
 #
 # use cucumber::{cli, given, then, when, World};

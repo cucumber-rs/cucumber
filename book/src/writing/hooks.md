@@ -11,6 +11,10 @@ Scenario hooks
 [`Before` hook] runs before the first step of each scenario, even before [`Background`] ones.
 
 ```rust
+# extern crate cucumber;
+# extern crate futures;
+# extern crate tokio;
+#
 # use std::time::Duration;
 # 
 # use cucumber::World as _;
@@ -42,6 +46,10 @@ World::cucumber()
 [`After` hook] runs after the last [step] of each [scenario], even when that [step] fails or is skipped.
 
 ```rust
+# extern crate cucumber;
+# extern crate futures;
+# extern crate tokio;
+#
 # use std::time::Duration;
 # 
 # use cucumber::World as _;

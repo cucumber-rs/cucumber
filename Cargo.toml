@@ -74,6 +74,7 @@ junit-report = { version = "0.8", optional = true }
 derive_more = "0.99.17"
 humantime = "2.1"
 once_cell = "1.13"
+rand = "0.8"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "time"] }
 
@@ -106,4 +107,4 @@ required-features = ["libtest"]
 harness = false
 
 [workspace]
-members = ["book/tests", "codegen"]
+members = ["codegen"]

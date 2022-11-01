@@ -10,6 +10,9 @@ cucumber = { version = "0.15", features = ["output-json"] }
 
 And configuring output to [`writer::Json`]:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{fs, io};
 use cucumber::{writer, World as _};
 

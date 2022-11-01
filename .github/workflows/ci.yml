@@ -167,13 +167,17 @@ jobs:
         os:
           - ubuntu
           - macOS
-          #- windows  TODO: fix
+          # TODO: Re-enable once rust-lang/rust#99466 is fixed:
+          #       https://github.com/rust-lang/rust/issues/99466
+          # - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+
+      - run: cargo install mdbook
 
       - run: make test.book
 

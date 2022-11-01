@@ -4,6 +4,9 @@ Multiple outputs
 Reporting tests result to multiple outputs simultaneously may be achieved by using [`writer::Tee`].
 
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{fs, io};
 use cucumber::{writer, World as _, WriterExt as _};
 
@@ -34,6 +37,9 @@ World::cucumber()
 
 While using [`writer::Tee`] for different [`Writer`]s is OK and straightforward most of the time, reusing the same [`Writer`] multiple times isn't so obvious, because of the [`clap`] complaining about identical CLI options (unfortunately, in a form of runtime panic only).
 ```rust,should_panic
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{fs, io};
 use cucumber::{writer, World as _, WriterExt as _};
 
@@ -63,12 +69,15 @@ World::cucumber()
 # Ok(())
 # }
 ```
-```
+```text
 thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
 ```
 
 To avoid this, you should manually construct the desired [`cli::Opts`] and supply them via [`Cucumber::with_cli()`] method. Example below uses two different [`writer::Basic`]s, where one outputs to [STDOUT] and another one outputs to a file:
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 # use std::{fs, io};
 use cucumber::{cli, writer, World as _, WriterExt as _};
 

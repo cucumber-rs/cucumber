@@ -8,6 +8,9 @@ Example below is set up to output with the default [`writer::Basic`] if there is
 cucumber = { version = "0.15", features = ["libtest"] }
 ```
 ```rust
+# extern crate cucumber;
+# extern crate tokio;
+#
 use cucumber::{writer, World as _};
 
 # #[derive(cucumber::World, Debug, Default)]
