@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- `Clone` implementations to all public types, where possible ([#238])
+- `Clone` implementations to all public types where possible. ([#238])
 
 [#238]: /../../pull/238
 

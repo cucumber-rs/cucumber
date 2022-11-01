@@ -262,7 +262,7 @@ pub type WhichScenarioFn = fn(
     &gherkin::Scenario,
 ) -> ScenarioType;
 
-/// Alias for [`Box`]ed [`Fn`] used to determine [`Scenario`]'s
+/// Alias for [`Arc`]ed [`Fn`] used to determine [`Scenario`]'s
 /// [`RetryOptions`].
 ///
 /// [`Scenario`]: gherkin::Scenario
