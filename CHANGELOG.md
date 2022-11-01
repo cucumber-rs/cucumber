@@ -15,7 +15,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `Clone` implementations to all public types where possible. ([#238])
 
+### Changed
+
+- `mdbook test` instead of `skeptic`. ([#239])
+
 [#238]: /../../pull/238
+[#239]: /../../pull/239
 
 
 
