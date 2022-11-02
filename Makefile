@@ -117,8 +117,7 @@ endif
 			$(shell cargo metadata -q \
 			        | jq -r '.packages[] | select(.name == "windows_$(word 1,$(subst -, ,$(target)))_$(word 4,$(subst -, ,$(target)))") | .manifest_path' \
 			        | sed -e 's/^/-L /' \
-			              -e 's/Cargo.toml/lib/' \
-			              -e 's/\\/\\\\/g' )))
+			              -e 's/Cargo.toml/lib/' )))
 
 
 
