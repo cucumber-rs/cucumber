@@ -42,7 +42,6 @@ jobs:
   ##########################
 
   clippy:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -54,7 +53,6 @@ jobs:
       - run: make cargo.lint
 
   rustfmt:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -73,7 +71,6 @@ jobs:
   ###########
 
   feature:
-    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -104,7 +101,6 @@ jobs:
           RUSTFLAGS: -D warnings
 
   msrv:
-    if: ${{ false }}
     name: MSRV
     strategy:
       fail-fast: false
@@ -133,7 +129,6 @@ jobs:
       - run: make test.cargo crate=${{ matrix.crate }}
 
   test:
-    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -170,8 +165,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          #- ubuntu
-          #- macOS
+          - ubuntu
+          - macOS
           - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -191,7 +186,6 @@ jobs:
   #################
 
   rustdoc:
-    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
