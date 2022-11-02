@@ -48,7 +48,7 @@ To run the tests validating all code examples in the book, run (from project roo
 
 ```bash
 cargo build --all-features --tests
-mdbook test -L target/debug/deps
+OUT_DIR=target mdbook test -L target/debug/deps
 
 # or via shortcut:
 make test.book
