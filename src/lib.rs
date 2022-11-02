@@ -133,6 +133,7 @@ pub mod codegen;
 #[cfg(test)]
 mod actually_used_crates_in_tests {
     use humantime as _;
+    use rand as _;
     use tempfile as _;
     use tokio as _;
 }
