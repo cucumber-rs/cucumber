@@ -113,8 +113,8 @@ endif
 	cargo build --all-features --tests
 	OUT_DIR=target mdbook test book -L target/debug/deps $(strip $(shell \
 		cargo metadata -q \
-		| jq -r '.packages[]|select(.name|startswith("windows_"))|.manifest_path' \
-		| sed -e 's/^/-L/' -e 's/Cargo.toml/lib/' ))
+		| jq -r '.packages[]|select(.name|startswith("windows_$(shell uname -m)_"))|.manifest_path' \
+		| sed -e 's/^/-L /' -e 's/Cargo.toml/lib/' ))
 
 
 
