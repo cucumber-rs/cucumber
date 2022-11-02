@@ -175,6 +175,9 @@ jobs:
         with:
           toolchain: stable
       - uses: peaceiris/actions-mdbook@v1
+        if: ${{ matrix.os != 'windows' }}
+      - run: cargo install mdbook
+        if: ${{ matrix.os == 'windows' }}
 
       - run: make test.book
 
