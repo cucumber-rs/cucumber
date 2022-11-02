@@ -113,10 +113,10 @@ endif
 	$(eval target := $(strip $(shell cargo -vV | sed -n 's/host: //p')))
 	cargo build --all-features --tests
 	OUT_DIR=target mdbook test book -L target/debug/deps $(strip \
-		$(if $(call eq,$(findstring windows,$(target)),),,$(subst \,\\,\
+		$(if $(call eq,$(findstring windows,$(target)),),,\
 			$(shell cargo metadata -q \
 			        | jq -r '.packages[] | select(.name == "windows_$(word 1,$(subst -, ,$(target)))_$(word 4,$(subst -, ,$(target)))") | .manifest_path' \
-			        | sed -e 's/^/-L /' -e 's/Cargo.toml/lib/' ))))
+			        | sed -e "s/^/-L '/" -e 's/Cargo.toml/lib/' -e "s/$/'/" )))
 
 
 
