@@ -167,9 +167,7 @@ jobs:
         os:
           - ubuntu
           - macOS
-          # TODO: Re-enable once rust-lang/rust#99466 is fixed:
-          #       https://github.com/rust-lang/rust/issues/99466
-          # - windows
+          - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3

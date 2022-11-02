@@ -111,7 +111,11 @@ ifeq ($(clean),yes)
 	cargo clean
 endif
 	cargo build --all-features --tests
-	OUT_DIR=target mdbook test book -L target/debug/deps
+	OUT_DIR=target mdbook test book -L target/debug/deps $(strip \
+		$(if $(call eq,$(OS),Windows_NT),\
+			-L $$(cargo metadata -q \
+			      | jq -r '.packages[] | select(.name == "windows_x86_64_msvc") | .manifest_path' \
+			      | sed 's/Cargo.toml/lib/'),))
 
 
 
