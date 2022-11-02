@@ -170,8 +170,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu
-          - macOS
+          #- ubuntu
+          #- macOS
           - windows
     runs-on: ${{ matrix.os }}-latest
     steps:
