@@ -42,6 +42,7 @@ jobs:
   ##########################
 
   clippy:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -53,6 +54,7 @@ jobs:
       - run: make cargo.lint
 
   rustfmt:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -71,6 +73,7 @@ jobs:
   ###########
 
   feature:
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -101,6 +104,7 @@ jobs:
           RUSTFLAGS: -D warnings
 
   msrv:
+    if: ${{ false }}
     name: MSRV
     strategy:
       fail-fast: false
@@ -129,6 +133,7 @@ jobs:
       - run: make test.cargo crate=${{ matrix.crate }}
 
   test:
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -175,9 +180,6 @@ jobs:
         with:
           toolchain: stable
       - uses: peaceiris/actions-mdbook@v1
-        if: ${{ matrix.os != 'windows' }}
-      - run: cargo install mdbook
-        if: ${{ matrix.os == 'windows' }}
 
       - run: make test.book
 
@@ -189,6 +191,7 @@ jobs:
   #################
 
   rustdoc:
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
