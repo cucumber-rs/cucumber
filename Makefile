@@ -114,9 +114,9 @@ endif
 	cargo build --all-features --tests
 	OUT_DIR=target mdbook test book -L target/debug/deps $(strip \
 		$(if $(call eq,$(findstring windows,$(target)),),,\
-			$(shell cargo metadata -q \
+			-L $$(cargo metadata -q \
 			        | jq -r '.packages[] | select(.name == "windows_$(word 1,$(subst -, ,$(target)))_$(word 4,$(subst -, ,$(target)))") | .manifest_path' \
-			        | sed -e "s/^/-L '/" -e 's/Cargo.toml/lib/' -e "s/$/'/" )))
+			        | sed 's/Cargo.toml/lib/') ))
 
 
 
