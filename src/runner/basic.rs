@@ -13,7 +13,7 @@
 use std::{
     cmp,
     collections::HashMap,
-    fmt, mem,
+    fmt, iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
@@ -1365,7 +1365,7 @@ where
                     Ok(Ok(w)) => w,
                     Ok(Err(e)) => {
                         let e = event::StepError::Panic(coerce_into_info(
-                            format!("failed to initialize World: {e}"),
+                            format!("failed to initialize `World`: {e}"),
                         ));
                         return Err((e, None, loc, None));
                     }
@@ -1942,8 +1942,7 @@ impl Features {
         retries: Option<RetryOptions>,
     ) {
         self.insert_scenarios(
-            [(scenario_ty, vec![(feature, rule, scenario, retries)])]
-                .into_iter()
+            iter::once((scenario_ty, vec![(feature, rule, scenario, retries)]))
                 .collect(),
         )
         .await;
