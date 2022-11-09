@@ -735,7 +735,7 @@ where
         cli.retry = cli.retry.or(retries);
         cli.retry_after = cli.retry_after.or(retry_after);
         cli.retry_tag_filter = cli.retry_tag_filter.or(retry_filter);
-        let fail_fast = if cli.fail_fast { true } else { fail_fast };
+        let fail_fast = cli.fail_fast || fail_fast;
         let concurrency = cli.concurrency.or(max_concurrent_scenarios);
 
         let buffer = Features::default();
@@ -813,11 +813,11 @@ async fn insert_features<W, S, F>(
 
                 into.insert(f, &which_scenario, &retries, &cli).await;
             }
-            // If the receiver end is dropped, then no one listens for events
-            // so we can just stop from here.
             Err(e) => {
                 parser_errors += 1;
 
+                // If the receiver end is dropped, then no one listens for the
+                // events, so we can just stop from here.
                 if sender.unbounded_send(Err(e)).is_err() || fail_fast {
                     break;
                 }
@@ -920,7 +920,7 @@ async fn execute<W, Before, After>(
         let (runnable, sleep) =
             features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
-            if features.is_finished().await {
+            if features.is_finished(fail_fast).await {
                 break;
             }
 
@@ -2091,10 +2091,14 @@ impl Features {
 
     /// Indicates whether there are more [`Feature`]s to execute.
     ///
+    /// `fail_fast` argument indicates whether not yet executed scenarios should
+    /// be omitted.
+    ///
     /// [`Feature`]: gherkin::Feature
-    async fn is_finished(&self) -> bool {
+    async fn is_finished(&self, fail_fast: bool) -> bool {
         self.finished.load(Ordering::SeqCst)
-            && self.scenarios.lock().await.values().all(Vec::is_empty)
+            && (fail_fast
+                || self.scenarios.lock().await.values().all(Vec::is_empty))
     }
 }
 
