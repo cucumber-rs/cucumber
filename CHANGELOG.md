@@ -15,6 +15,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Bumped up [MSRV] to 1.65 for using `let`-`else` statements.
 
+### Added
+
+- `--ff` CLI alias for `--fail-fast` CLI option.
+
 
 
 

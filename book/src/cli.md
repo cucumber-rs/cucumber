@@ -33,6 +33,8 @@ Options:
 
       --fail-fast
           Run tests until the first failure
+          
+          [aliases: ff]
 
       --retry <int>
           Number of times a scenario will be retried in case of a failure
@@ -63,7 +65,6 @@ Options:
 
   -h, --help
           Print help information (use `-h` for a summary)
-
 ```
 
 ![record](rec/cli.gif)

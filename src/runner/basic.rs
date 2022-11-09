@@ -57,7 +57,7 @@ pub struct Cli {
     pub concurrency: Option<usize>,
 
     /// Run tests until the first failure.
-    #[arg(long, global = true)]
+    #[arg(long, global = true, visible_alias = "ff")]
     pub fail_fast: bool,
 
     /// Number of times a scenario will be retried in case of a failure.
