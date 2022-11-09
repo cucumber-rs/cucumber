@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/after_hook.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/after_hook.rs", "/tests/fail_fast.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -80,6 +80,10 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "ti
 
 [[test]]
 name = "after_hook"
+harness = false
+
+[[test]]
+name = "fail_fast"
 harness = false
 
 [[test]]
