@@ -6,14 +6,16 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
-## [0.16.0] · 2022-??-?? (unreleased)
+## [0.16.0] · 2022-11-09
 [0.16.0]: /../../tree/v0.16.0/codegen
 
 [Milestone](/../../milestone/19)
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.65 for using `let`-`else` statements.
+- Bumped up [MSRV] to 1.65 for using `let`-`else` statements. ([7f52d4a5])
+
+[7f52d4a5]: /../../commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
 
 
 

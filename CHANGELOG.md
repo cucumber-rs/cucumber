@@ -6,14 +6,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.16.0] · 2022-??-?? (unreleased)
+## [0.16.0] · 2022-11-09
 [0.16.0]: /../../tree/v0.16.0
 
 [Diff](/../../compare/v0.15.3...v0.16.0) | [Milestone](/../../milestone/19)
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.65 for using `let`-`else` statements.
+- Bumped up [MSRV] to 1.65 for using `let`-`else` statements. ([7f52d4a5])
 
 ### Added
 
@@ -25,6 +25,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [#241]: /../../issues/241
 [#242]: /../../pull/242
+[7f52d4a5]: /../../commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
 
 
 
