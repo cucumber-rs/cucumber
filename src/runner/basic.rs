@@ -975,7 +975,7 @@ async fn execute<W, Before, After>(
                 executor.send_event(f);
             }
 
-            if fail_fast && scenario_failed {
+            if fail_fast && scenario_failed && !retried {
                 started_scenarios = ControlFlow::Break(());
             }
         }
