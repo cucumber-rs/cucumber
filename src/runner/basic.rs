@@ -920,7 +920,7 @@ async fn execute<W, Before, After>(
         let (runnable, sleep) =
             features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
-            if features.is_finished(fail_fast).await {
+            if features.is_finished(started_scenarios.is_break()).await {
                 break;
             }
 
