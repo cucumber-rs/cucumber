@@ -15,6 +15,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Bumped up [MSRV] to 1.65 for using `let`-`else` statements.
 
+### Added
+
+- `--ff` CLI alias for `--fail-fast` CLI option. ([#242])
+
+### Fixed
+
+- `--fail-fast` CLI option causing execution to hang. ([#242], [#241])
+
+[#241]: /../../issues/241
+[#242]: /../../pull/242
+
 
 
 
@@ -63,7 +74,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Conflicting [`Id`][0151-1]s of CLI options. ([#232], [#231])
 
-[#231]: /../../issue/231
+[#231]: /../../issues/231
 [#232]: /../../pull/232
 [0151-1]: https://docs.rs/clap/latest/clap/struct.Id.html
 
