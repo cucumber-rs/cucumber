@@ -294,6 +294,7 @@ pub type AfterHookFn<World> = for<'a> fn(
     &'a gherkin::Feature,
     Option<&'a gherkin::Rule>,
     &'a gherkin::Scenario,
+    &'a event::ScenarioFinished,
     Option<&'a mut World>,
 ) -> LocalBoxFuture<'a, ()>;
 
@@ -619,6 +620,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
             Option<&'a mut World>,
         ) -> LocalBoxFuture<'a, ()>,
     {
@@ -706,6 +708,7 @@ where
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
@@ -873,6 +876,7 @@ async fn execute<W, Before, After>(
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>,
 {
@@ -1046,6 +1050,7 @@ where
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>,
 {
@@ -1176,13 +1181,21 @@ where
         }
         .await;
 
-        let world = match &mut result {
-            Ok(world) => world.take(),
-            Err(exec_err) => exec_err.take_world(),
+        let (world, scenario_finished_ev) = match &mut result {
+            Ok(world) => (world.take(), event::ScenarioFinished::StepPassed),
+            Err(exec_err) => {
+                (exec_err.take_world(), exec_err.get_scenario_ended_event())
+            }
         };
 
         let (world, after_hook_meta, after_hook_error) = self
-            .run_after_hook(world, &feature, rule.as_ref(), &scenario)
+            .run_after_hook(
+                world,
+                &feature,
+                rule.as_ref(),
+                &scenario,
+                scenario_finished_ev,
+            )
             .await
             .map_or_else(
                 |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
@@ -1512,6 +1525,7 @@ where
         feature: &Arc<gherkin::Feature>,
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
+        ev: event::ScenarioFinished,
     ) -> Result<
         (Option<W>, Option<AfterHookEventsMeta>),
         (Option<W>, AfterHookEventsMeta, Info),
@@ -1521,6 +1535,7 @@ where
                 feature.as_ref(),
                 rule.as_ref().map(AsRef::as_ref),
                 scenario.as_ref(),
+                &ev,
                 world.as_mut(),
             );
 
@@ -2196,6 +2211,21 @@ impl<W> ExecutionFailure<W> {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)
             | Self::StepPanicked { world, .. } => world.take(),
+        }
+    }
+
+    /// Creates [`event::ScenarioFinished`] from this [`ExecutionFailure`].
+    fn get_scenario_ended_event(&self) -> event::ScenarioFinished {
+        use event::ScenarioFinished::{HookFailed, StepFailed, StepSkipped};
+
+        match self {
+            Self::BeforeHookPanicked { panic_info, .. } => {
+                HookFailed(Arc::clone(panic_info))
+            }
+            Self::StepSkipped(_) => StepSkipped,
+            Self::StepPanicked {
+                captures, loc, err, ..
+            } => StepFailed(captures.clone(), *loc, err.clone()),
         }
     }
 }

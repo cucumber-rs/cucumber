@@ -61,7 +61,7 @@ World::cucumber()
 # 
 # fn main() {
 World::cucumber()
-    .after(|_feature, _rule, _scenario, _world| {
+    .after(|_feature, _rule, _scenario, _ev, _world| {
         time::sleep(Duration::from_millis(300)).boxed_local()
     })
     .run_and_exit("tests/features/book");
