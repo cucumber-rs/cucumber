@@ -13,9 +13,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Added `event::ScenarioFinished` argument to after hook handler. ([#245])
+- Added `event::ScenarioFinished` argument to after hook handler. ([#246], [#245])
+
+### Fixed
+
+- Catch panics in user code, when they happen before first `Future::poll()` (on `Future` construction). ([#246])
 
 [#245]: /../../issues/245
+[#246]: /../../pull/246
 
 
 

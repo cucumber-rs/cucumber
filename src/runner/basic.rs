@@ -1273,7 +1273,7 @@ where
         retries: Option<Retries>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
         let init_world = async {
-            AssertUnwindSafe(W::new())
+            AssertUnwindSafe(async { W::new().await })
                 .catch_unwind()
                 .await
                 .map_err(Info::from)
@@ -1297,12 +1297,15 @@ where
             ));
 
             let fut = init_world.and_then(|mut world| async {
-                let fut = (hook)(
-                    feature.as_ref(),
-                    rule.as_ref().map(AsRef::as_ref),
-                    scenario.as_ref(),
-                    &mut world,
-                );
+                let fut = async {
+                    (hook)(
+                        feature.as_ref(),
+                        rule.as_ref().map(AsRef::as_ref),
+                        scenario.as_ref(),
+                        &mut world,
+                    )
+                    .await;
+                };
                 match AssertUnwindSafe(fut).catch_unwind().await {
                     Ok(()) => Ok(world),
                     Err(i) => Err((Info::from(i), Some(world))),
@@ -1374,7 +1377,10 @@ where
             let mut world = if let Some(w) = world {
                 w
             } else {
-                match AssertUnwindSafe(W::new()).catch_unwind().await {
+                match AssertUnwindSafe(async { W::new().await })
+                    .catch_unwind()
+                    .await
+                {
                     Ok(Ok(w)) => w,
                     Ok(Err(e)) => {
                         let e = event::StepError::Panic(coerce_into_info(
@@ -1389,7 +1395,7 @@ where
                 }
             };
 
-            match AssertUnwindSafe(step_fn(&mut world, ctx))
+            match AssertUnwindSafe(async { step_fn(&mut world, ctx).await })
                 .catch_unwind()
                 .await
             {
@@ -1531,13 +1537,16 @@ where
         (Option<W>, AfterHookEventsMeta, Info),
     > {
         if let Some(hook) = self.after_hook.as_ref() {
-            let fut = (hook)(
-                feature.as_ref(),
-                rule.as_ref().map(AsRef::as_ref),
-                scenario.as_ref(),
-                &ev,
-                world.as_mut(),
-            );
+            let fut = async {
+                (hook)(
+                    feature.as_ref(),
+                    rule.as_ref().map(AsRef::as_ref),
+                    scenario.as_ref(),
+                    &ev,
+                    world.as_mut(),
+                )
+                .await;
+            };
 
             let started = event::Metadata::new(());
             let res = AssertUnwindSafe(fut).catch_unwind().await;
