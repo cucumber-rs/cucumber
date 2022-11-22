@@ -6,6 +6,30 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.16.0] · 2022-11-09
+[0.16.0]: /../../tree/v0.16.0
+
+[Diff](/../../compare/v0.15.3...v0.16.0) | [Milestone](/../../milestone/19)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.65 for using `let`-`else` statements. ([7f52d4a5])
+
+### Added
+
+- `--ff` CLI alias for `--fail-fast` CLI option. ([#242])
+
+### Fixed
+
+- `--fail-fast` CLI option causing execution to hang. ([#242], [#241])
+
+[#241]: /../../issues/241
+[#242]: /../../pull/242
+[7f52d4a5]: /../../commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
+
+
+
+
 ## [0.15.3] · 2022-11-01
 [0.15.3]: /../../tree/v0.15.3
 
@@ -51,7 +75,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Conflicting [`Id`][0151-1]s of CLI options. ([#232], [#231])
 
-[#231]: /../../issue/231
+[#231]: /../../issues/231
 [#232]: /../../pull/232
 [0151-1]: https://docs.rs/clap/latest/clap/struct.Id.html
 

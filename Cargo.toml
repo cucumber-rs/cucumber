@@ -1,8 +1,8 @@
 [package]
 name = "cucumber"
-version = "0.15.3"
+version = "0.16.0"
 edition = "2021"
-rust-version = "1.62"
+rust-version = "1.65"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\
@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/after_hook.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/after_hook.rs", "/tests/fail_fast.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -39,7 +39,6 @@ output-junit = ["dep:junit-report", "timestamps"]
 timestamps = []
 
 [dependencies]
-anyhow = { version = "1.0.58", optional = true }
 async-trait = "0.1.43"
 atty = "0.2.14"
 clap = { version = "4.0.6", features = ["derive", "wrap_help"] }
@@ -58,7 +57,8 @@ regex = "1.5.5"
 sealed = "0.4"
 
 # "macros" feature dependencies.
-cucumber-codegen = { version = "0.15", path = "./codegen", optional = true }
+anyhow = { version = "1.0.58", optional = true }
+cucumber-codegen = { version = "0.16", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional = true }
 inventory = { version = "0.3", optional = true }
 
@@ -80,6 +80,10 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "ti
 
 [[test]]
 name = "after_hook"
+harness = false
+
+[[test]]
+name = "fail_fast"
 harness = false
 
 [[test]]

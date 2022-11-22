@@ -13,6 +13,7 @@
     html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
 )]
 #![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(
     macro_use_extern_crate,
     nonstandard_style,
@@ -25,6 +26,7 @@
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     clippy::as_conversions,
+    clippy::assertions_on_result_states,
     clippy::branches_sharing_code,
     clippy::clone_on_ref_ptr,
     clippy::create_dir,
@@ -49,9 +51,10 @@
     clippy::if_then_some_else_none,
     clippy::imprecise_flops,
     clippy::index_refutable_slice,
+    clippy::iter_on_empty_collections,
+    clippy::iter_on_single_items,
     clippy::iter_with_drain,
     clippy::large_include_file,
-    clippy::let_underscore_must_use,
     clippy::lossy_float_literal,
     clippy::map_err_ignore,
     clippy::mem_forget,
@@ -61,7 +64,6 @@
     clippy::mutex_atomic,
     clippy::mutex_integer,
     clippy::nonstandard_macro_braces,
-    clippy::only_used_in_recursion,
     clippy::option_if_let_else,
     clippy::panic_in_result_fn,
     clippy::pedantic,
@@ -72,6 +74,7 @@
     clippy::rest_pat_in_fully_bound_structs,
     clippy::same_name_method,
     clippy::shadow_unrelated,
+    clippy::significant_drop_in_scrutinee,
     clippy::str_to_string,
     clippy::string_add,
     clippy::string_lit_as_bytes,
@@ -88,6 +91,7 @@
     clippy::unimplemented,
     clippy::unnecessary_self_imports,
     clippy::unneeded_field_pattern,
+    clippy::unused_peekable,
     clippy::unwrap_in_result,
     clippy::unwrap_used,
     clippy::use_debug,
@@ -96,6 +100,7 @@
     clippy::verbose_file_reads,
     clippy::wildcard_enum_match_arm,
     future_incompatible,
+    let_underscore_drop,
     meta_variable_misuse,
     missing_copy_implementations,
     missing_debug_implementations,
@@ -113,7 +118,6 @@
     unused_tuple_struct_fields,
     variant_size_differences
 )]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod cli;
 mod cucumber;
@@ -131,8 +135,9 @@ pub mod codegen;
 
 // TODO: Remove once tests run without complains about it.
 #[cfg(test)]
-mod actually_used_crates_in_tests {
+mod actually_used_crates_in_tests_and_book {
     use humantime as _;
+    use rand as _;
     use tempfile as _;
     use tokio as _;
 }
