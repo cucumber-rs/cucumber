@@ -8,7 +8,7 @@ To start, let's create a directory called `tests/` in the root of the project an
 Add this to `Cargo.toml`:
 ```toml
 [dev-dependencies]
-cucumber = "0.16"
+cucumber = "0.17"
 futures = "0.3"
 
 [[test]]
@@ -385,7 +385,7 @@ A contrived example, but it demonstrates that [step]s can be reused as long as t
 Let's switch our runtime to `tokio`:
 ```toml
 [dev-dependencies]
-cucumber = "0.16"
+cucumber = "0.17"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]

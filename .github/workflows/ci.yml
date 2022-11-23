@@ -160,7 +160,7 @@ jobs:
                            ||                                   'no' }}
 
   test-book:
-    name: test Book
+    name: test (Book)
     strategy:
       fail-fast: false
       matrix:
@@ -211,7 +211,7 @@ jobs:
   #############
 
   release-crate:
-    name: release on crates.io
+    name: release (crates.io)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: ["release-github"]
     runs-on: ubuntu-latest
@@ -233,7 +233,7 @@ jobs:
                            --token ${{ secrets.CRATESIO_TOKEN }}
 
   release-github:
-    name: release on GitHub
+    name: release (GitHub)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs:
       - clippy
@@ -281,7 +281,7 @@ jobs:
   ##########
 
   deploy-book:
-    name: deploy Book
+    name: deploy (Book)
     if: ${{ github.ref == 'refs/heads/main'
          || startsWith(github.ref, 'refs/tags/v') }}
     needs: ["test-book"]
