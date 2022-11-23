@@ -657,3 +657,28 @@ impl<World> Clone for RetryableScenario<World> {
         }
     }
 }
+
+/// Event explaining why a [Scenario] has finished.
+///
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+#[allow(variant_size_differences)]
+#[derive(Clone, Debug)]
+pub enum ScenarioFinished {
+    /// [`Before`] [`Hook::Failed`].
+    ///
+    /// [`Before`]: HookType::Before
+    BeforeHookFailed(Info),
+
+    /// [`Step::Passed`].
+    StepPassed,
+
+    /// [`Step::Skipped`].
+    StepSkipped,
+
+    /// [`Step::Failed`].
+    StepFailed(
+        Option<regex::CaptureLocations>,
+        Option<step::Location>,
+        StepError,
+    ),
+}

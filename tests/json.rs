@@ -28,7 +28,7 @@ async fn main() {
                 }
                 .boxed_local()
             })
-            .after(|_, _, sc, _| {
+            .after(|_, _, sc, _, _| {
                 async {
                     assert!(!sc.tags.iter().any(|t| t == "fail_after"), "Tag!");
                 }

@@ -6,6 +6,26 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.17.0] · 2022-??-??
+[0.17.0]: /../../tree/v0.17.0
+
+[Diff](/../../compare/v0.16.0...v0.17.0) | [Milestone](/../../milestone/20)
+
+### BC Breaks
+
+- Added `event::ScenarioFinished` as [`Cucumber::after`][0170-1] hook's argument, explaining why the `Scenario` has finished. ([#246], [#245])
+
+### Fixed
+
+- Uncaught panics of user code, when they happen before first poll of the returned `Future`s. ([#246])
+
+[#245]: /../../discussions/245
+[#246]: /../../pull/246
+[0170-1]: https://docs.rs/cucumber/0.17.0/cucumber/struct.Cucumber.html#method.after
+
+
+
+
 ## [0.16.0] · 2022-11-09
 [0.16.0]: /../../tree/v0.16.0
 

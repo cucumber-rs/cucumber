@@ -28,7 +28,7 @@ async fn main() {
             }
             .boxed_local()
         })
-        .after(move |_, _, _, _| time::sleep(cli.custom.pause).boxed_local())
+        .after(move |_, _, _, _, _| time::sleep(cli.custom.pause).boxed_local())
         .with_writer(writer::Libtest::or_basic())
         .with_cli(cli)
         .run_and_exit("tests/features/wait");

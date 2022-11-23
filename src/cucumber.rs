@@ -922,6 +922,7 @@ where
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
@@ -1083,6 +1084,7 @@ where
                 &'a gherkin::Feature,
                 Option<&'a gherkin::Rule>,
                 &'a gherkin::Scenario,
+                &'a event::ScenarioFinished,
                 Option<&'a mut W>,
             ) -> LocalBoxFuture<'a, ()>
             + 'static,
