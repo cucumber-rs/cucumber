@@ -45,17 +45,17 @@ pub type WithContext<'me, World> = (
 pub struct Collection<World> {
     /// Collection of [Given] [`Step`]s.
     ///
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [When] [`Step`]s.
     ///
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
+    /// [When]: https://cucumber.io/docs/gherkin/reference#when
     when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [Then] [`Step`]s.
     ///
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 }
 
@@ -123,7 +123,7 @@ impl<World> Collection<World> {
 
     /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     #[must_use]
     pub fn given(
         mut self,
@@ -137,7 +137,7 @@ impl<World> Collection<World> {
 
     /// Adds a [When] [`Step`] matching the given `regex`.
     ///
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#when
+    /// [When]: https://cucumber.io/docs/gherkin/reference#when
     #[must_use]
     pub fn when(
         mut self,
@@ -151,7 +151,7 @@ impl<World> Collection<World> {
 
     /// Adds a [Then] [`Step`] matching the given `regex`.
     ///
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     #[must_use]
     pub fn then(
         mut self,

@@ -439,7 +439,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Made test callbacks first argument `&mut World` instead of `World`. ([#128])
 - Made `#[step]` argument of step functions `Step` instead of `StepContext` again, while test callbacks still receive `StepContext` as a second parameter. ([#128])
 - Completely redesign and reworked CLI, making it composable and extendable. ([#144])
-- [Hooks](https://cucumber.io/docs/cucumber/api/#hooks) now accept optional `&mut World` as their last parameter. ([#142])
+- [Hooks](https://cucumber.io/docs/cucumber/api#hooks) now accept optional `&mut World` as their last parameter. ([#142])
 
 ### Added
 

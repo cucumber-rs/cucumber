@@ -662,7 +662,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
 
     /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).given(None, regex, step);
@@ -671,7 +671,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
 
     /// Adds a [When] [`Step`] matching the given `regex`.
     ///
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#given
+    /// [When]: https://cucumber.io/docs/gherkin/reference#given
     #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).when(None, regex, step);
@@ -680,7 +680,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
 
     /// Adds a [Then] [`Step`] matching the given `regex`.
     ///
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).then(None, regex, step);

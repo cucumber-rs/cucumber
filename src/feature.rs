@@ -73,8 +73,8 @@ pub trait Ext: Sized {
     /// Errors if the [`Examples`][2] cannot be expanded.
     /// See [`ExpandExamplesError`] for details.
     ///
-    /// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
-    /// [2]: https://cucumber.io/docs/gherkin/reference/#examples
+    /// [1]: https://cucumber.io/docs/gherkin/reference#scenario-outline
+    /// [2]: https://cucumber.io/docs/gherkin/reference#examples
     fn expand_examples(self) -> Result<Self, ExpandExamplesError>;
 
     /// Counts all the [`Feature`]'s [`Scenario`]s, including [`Rule`]s inside.
@@ -224,7 +224,7 @@ fn expand_scenario(
 
 /// Error of [`Scenario Outline`][1] expansion encountering an unknown template.
 ///
-/// [1]: https://cucumber.io/docs/gherkin/reference/#scenario-outline
+/// [1]: https://cucumber.io/docs/gherkin/reference#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
     fmt = "Failed to resolve <{}> at {}:{}:{}",

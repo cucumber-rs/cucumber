@@ -869,7 +869,7 @@ where
     /// [`ScenarioType`]: runner::basic::ScenarioType
     /// [`Summarize`]: writer::Summarize
     ///
-    /// [tag]: https://cucumber.io/docs/cucumber/api/#tags
+    /// [tag]: https://cucumber.io/docs/cucumber/api#tags
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -1118,7 +1118,7 @@ where
 
     /// Inserts [Given] [`Step`].
     ///
-    /// [Given]: https://cucumber.io/docs/gherkin/reference/#given
+    /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     #[must_use]
     pub fn given(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.given(regex, step);
@@ -1127,7 +1127,7 @@ where
 
     /// Inserts [When] [`Step`].
     ///
-    /// [When]: https://cucumber.io/docs/gherkin/reference/#When
+    /// [When]: https://cucumber.io/docs/gherkin/reference#when
     #[must_use]
     pub fn when(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.when(regex, step);
@@ -1136,7 +1136,7 @@ where
 
     /// Inserts [Then] [`Step`].
     ///
-    /// [Then]: https://cucumber.io/docs/gherkin/reference/#then
+    /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<W>) -> Self {
         self.runner = self.runner.then(regex, step);

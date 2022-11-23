@@ -276,7 +276,7 @@ impl<World> Cucumber<World> {
 
 /// Event specific to a particular [Feature].
 ///
-/// [Feature]: https://cucumber.io/docs/gherkin/reference/#feature
+/// [Feature]: https://cucumber.io/docs/gherkin/reference#feature
 #[derive(Debug)]
 pub enum Feature<World> {
     /// [`Feature`] execution being started.
@@ -311,7 +311,7 @@ impl<World> Clone for Feature<World> {
 
 /// Event specific to a particular [Rule].
 ///
-/// [Rule]: https://cucumber.io/docs/gherkin/reference/#rule
+/// [Rule]: https://cucumber.io/docs/gherkin/reference#rule
 #[derive(Debug)]
 pub enum Rule<World> {
     /// [`Rule`] execution being started.
@@ -342,7 +342,7 @@ impl<World> Clone for Rule<World> {
 
 /// Event specific to a particular [Step].
 ///
-/// [Step]: https://cucumber.io/docs/gherkin/reference/#step
+/// [Step]: https://cucumber.io/docs/gherkin/reference#step
 #[derive(Debug)]
 pub enum Step<World> {
     /// [`Step`] execution being started.
@@ -465,7 +465,7 @@ impl<World> Clone for Hook<World> {
 
 /// Event specific to a particular [Scenario].
 ///
-/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference#example
 #[derive(Debug)]
 pub enum Scenario<World> {
     /// [`Scenario`] execution being started.
@@ -637,7 +637,7 @@ impl<World> Scenario<World> {
 
 /// Event specific to a particular retryable [Scenario].
 ///
-/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference#example
 #[derive(Debug)]
 pub struct RetryableScenario<World> {
     /// Happened [`Scenario`] event.
@@ -660,7 +660,7 @@ impl<World> Clone for RetryableScenario<World> {
 
 /// Event explaining why a [Scenario] has finished.
 ///
-/// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
+/// [Scenario]: https://cucumber.io/docs/gherkin/reference#example
 #[allow(variant_size_differences)]
 #[derive(Clone, Debug)]
 pub enum ScenarioFinished {

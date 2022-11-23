@@ -185,7 +185,7 @@ pub use self::{
 /// between [scenarios][0] (ex. database connection pool), we recommend using
 /// [`once_cell`][1] crate or organize it other way via [shared state][2].
 ///
-/// [0]: https://cucumber.io/docs/gherkin/reference/#descriptions
+/// [0]: https://cucumber.io/docs/gherkin/reference#descriptions
 /// [1]: https://docs.rs/once_cell
 /// [2]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
 /// [Cucumber]: https://cucumber.io
