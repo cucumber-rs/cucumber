@@ -658,14 +658,16 @@ impl<World> Clone for RetryableScenario<World> {
     }
 }
 
-/// Event reasoning why [Scenario] has finished.
+/// Event explaining why a [Scenario] has finished.
 ///
 /// [Scenario]: https://cucumber.io/docs/gherkin/reference/#example
 #[allow(variant_size_differences)]
 #[derive(Clone, Debug)]
 pub enum ScenarioFinished {
-    /// [`Hook::Failed`].
-    HookFailed(Info),
+    /// [`Before`] [`Hook::Failed`].
+    ///
+    /// [`Before`]: HookType::Before
+    BeforeHookFailed(Info),
 
     /// [`Step::Passed`].
     StepPassed,

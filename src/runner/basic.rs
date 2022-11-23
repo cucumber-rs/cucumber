@@ -1183,9 +1183,10 @@ where
 
         let (world, scenario_finished_ev) = match &mut result {
             Ok(world) => (world.take(), event::ScenarioFinished::StepPassed),
-            Err(exec_err) => {
-                (exec_err.take_world(), exec_err.get_scenario_ended_event())
-            }
+            Err(exec_err) => (
+                exec_err.take_world(),
+                exec_err.get_scenario_finished_event(),
+            ),
         };
 
         let (world, after_hook_meta, after_hook_error) = self
@@ -2226,13 +2227,15 @@ impl<W> ExecutionFailure<W> {
         }
     }
 
-    /// Creates [`event::ScenarioFinished`] from this [`ExecutionFailure`].
-    fn get_scenario_ended_event(&self) -> event::ScenarioFinished {
-        use event::ScenarioFinished::{HookFailed, StepFailed, StepSkipped};
+    /// Creates an [`event::ScenarioFinished`] from this [`ExecutionFailure`].
+    fn get_scenario_finished_event(&self) -> event::ScenarioFinished {
+        use event::ScenarioFinished::{
+            BeforeHookFailed, StepFailed, StepSkipped,
+        };
 
         match self {
             Self::BeforeHookPanicked { panic_info, .. } => {
-                HookFailed(Arc::clone(panic_info))
+                BeforeHookFailed(Arc::clone(panic_info))
             }
             Self::StepSkipped(_) => StepSkipped,
             Self::StepPanicked {

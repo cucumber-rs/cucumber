@@ -1,4 +1,5 @@
 use std::{
+    future,
     panic::AssertUnwindSafe,
     sync::atomic::{AtomicUsize, Ordering},
     time::Duration,
@@ -29,11 +30,11 @@ async fn main() {
         })
         .after(move |_, _, _, ev, w| {
             use cucumber::event::ScenarioFinished::{
-                HookFailed, StepFailed, StepPassed, StepSkipped,
+                BeforeHookFailed, StepFailed, StepPassed, StepSkipped,
             };
 
             match ev {
-                HookFailed(_) => &NUMBER_OF_FAILED_HOOKS,
+                BeforeHookFailed(_) => &NUMBER_OF_FAILED_HOOKS,
                 StepPassed => &NUMBER_OF_PASSED_STEPS,
                 StepSkipped => &NUMBER_OF_SKIPPED_STEPS,
                 StepFailed(_, _, _) => &NUMBER_OF_FAILED_STEPS,
@@ -45,10 +46,10 @@ async fn main() {
                     NUMBER_OF_AFTER_WORLDS.fetch_add(1, Ordering::SeqCst);
                 assert_ne!(after, 8, "Too much after `World`s!");
             } else {
-                panic!("No World received");
+                panic!("No `World` received");
             }
 
-            async {}.boxed()
+            future::ready(()).boxed()
         })
         .run_and_exit("tests/features/wait");
 

@@ -70,12 +70,15 @@ World::cucumber()
 
 > __NOTE__: [`After` hook] is enabled globally for all the executed [scenario]s. No exception is possible.
 
+> __TIP__: [`After` hook] receives an [`event::ScenarioFinished`] as one of its arguments, which indicates why the [scenario] has finished (passed, failed or skipped). This information, for example, may be used to decide whether some external resources (like files) should be cleaned up if the [scenario] passes, or leaved "as is" if it fails, so helping to "freeze" the failure conditions for better investigation. 
+
 
 
 
 [`After` hook]: https://cucumber.io/docs/cucumber/api#after
 [`Background`]: background.md
-[`Before` hook]: https://cucumber.io/docs/cucumber/api#before 
+[`Before` hook]: https://cucumber.io/docs/cucumber/api#before
+[`event::ScenarioFinished`]: https://docs.rs/cucumber/*/cucumber/event/struct.ScenarioFinished.html
 [hook]: https://cucumber.io/docs/cucumber/api#scenario-hooks
 [scenario]: https://cucumber.io/docs/gherkin/reference#example
 [step]: https://cucumber.io/docs/gherkin/reference#steps
