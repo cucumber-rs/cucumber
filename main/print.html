@@ -6,7 +6,6 @@
         <title>Cucumber Rust Book</title>
         <meta name="robots" content="noindex" />
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="User guide for Cucumber Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -29,13 +28,13 @@
     </head>
     <body>
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -51,7 +50,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -63,7 +62,7 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
             var sidebar = 'hidden';
             if (document.body.clientWidth >= 1080) {
@@ -94,7 +93,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -125,7 +124,7 @@
                     </div>
                 </div>
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -187,8 +186,7 @@ async fn is_full(w: &amp;mut World) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    World::run(&quot;tests/features/readme&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="rec/readme.gif" alt="record" /></p>
 <p>Since the goal is the testing of externally identifiable behavior of some feature, it would be a misnomer to use <a href="https://cucumber.io">Cucumber</a> to test specific private aspects or isolated modules. <a href="https://cucumber.io">Cucumber</a> tests are more likely to take the form of integration, functional or E2E testing.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
@@ -196,7 +194,7 @@ async fn is_full(w: &amp;mut World) {
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.17&quot;
+cucumber = &quot;0.18&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -251,8 +249,7 @@ fn main() {
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book&quot;));
-}
-</code></pre></pre>
+}</code></pre></pre>
 <blockquote>
 <p><strong>TIP</strong>: Using <code>Default::default()</code> for constructing a <code>World</code> object may be not enough. In such case a custom constructor may be specified via <code>#[world(init = my_constructor)]</code> attribute.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -278,8 +275,7 @@ impl AnimalWorld {
         }
     }
 }
-<span class="boring">fn main() {}
-</span></code></pre></pre>
+<span class="boring">fn main() {}</span></code></pre></pre>
 </blockquote>
 <p>If we run this, we should see an output like this:<br />
 <img src="rec/quickstart_simple_1.gif" alt="record" /></p>
@@ -331,8 +327,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
 <img src="rec/quickstart_simple_2.gif" alt="record" /></p>
 <p>Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matcher follows to assert this, as our <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> says:</p>
@@ -376,8 +371,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests, now we see all steps being accounted for and the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passing:<br />
 <img src="rec/quickstart_simple_3.gif" alt="record" /></p>
 <blockquote>
@@ -421,8 +415,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 }
 <span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>And see the test failing:<br />
 <img src="rec/quickstart_simple_fail.gif" alt="record" /></p>
 <blockquote>
@@ -484,8 +477,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: We surround the regex with <code>^..$</code> to ensure an <strong>exact</strong> match. This is much more useful when adding more and more <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, so they won't accidentally interfere with each other.</p>
 </blockquote>
@@ -537,14 +529,13 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>A contrived example, but it demonstrates that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> was <code>The cat is no longer hungry</code>, it would imply something about the expected initial state, when that is not the purpose of a <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, but rather of the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
 <h2 id="asyncness"><a class="header" href="#asyncness">Asyncness</a></h2>
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.17&quot;
+cucumber = &quot;0.18&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -604,8 +595,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 #[tokio::main]
 async fn main() {
     AnimalWorld::run(&quot;tests/features/book/quickstart&quot;).await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="rec/quickstart_concurrent_async.gif" alt="record" /></p>
 <p>Hm, it looks like the runtime waited only for the first <code>Feature</code>, while the second was printed instantly. What's going on? 🤔</p>
 <p>By default, <a href="https://cucumber.io">Cucumber</a> executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s <a href="https://en.wikipedia.org/wiki/Concurrent_computing">concurrently</a>! That means that runtime actually did wait for all the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, but overlapped! This allows us to execute tests much faster!</p>
@@ -699,8 +689,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: We surround the <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> with <code>^..$</code> to ensure an <strong>exact</strong> match. This is much more useful when adding more and more <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, so they won't accidentally interfere with each other.</p>
 </blockquote>
@@ -772,8 +761,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
 <h2 id="cucumber-expressions"><a class="header" href="#cucumber-expressions">Cucumber Expressions</a></h2>
 <p>Alternatively, a <a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expression</a> may be used to capture values. This is possible with <code>expr =</code> attribute modifier and <a href="https://github.com/cucumber/cucumber-expressions#parameter-types">parameters</a> usage:</p>
@@ -839,8 +827,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> are less powerful in terms of parsing and capturing values, but are much more readable than <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, so it's worth to prefer using them for simple matching.</p>
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
 <blockquote>
@@ -914,8 +901,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: Using <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> allows declaring and reusing complicated and precise matches without a need to repeat them in different <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching functions.</p>
 </blockquote>
@@ -995,8 +981,7 @@ fn cat_is(world: &amp;mut AnimalWorld, other: String) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing_multiple_groups.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_capturing_multiple_groups.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="asserting"><a class="header" href="#asserting">Asserting</a></h1>
 <p>There are two ways of doing <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a>s in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function: </p>
@@ -1051,8 +1036,7 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_asserting_panic.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: Failed <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> prints its location in a <code>.feature</code> file and the captured <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a> message.</p>
@@ -1102,8 +1086,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_asserting_result.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="data-tables"><a class="header" href="#data-tables">Data tables</a></h1>
 <p><a href="https://cucumber.io/docs/gherkin/reference#data-tables">Data tables</a> represent a handy way for passing a list of values to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> definition (and so, to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function). This is a vital ability for writing <a href="https://dave.cheney.net/2019/05/07/prefer-table-driven-tests">table driven tests</a>.</p>
@@ -1191,8 +1174,7 @@ pub struct AnimalWorld {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/data_tables.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: The whole table data is processed during a single <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> run.</p>
 </blockquote>
@@ -1304,8 +1286,7 @@ async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String)
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/doc_strings.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_doc_strings.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rule-keyword"><a class="header" href="#rule-keyword"><code>Rule</code> keyword</a></h1>
 <p>The purpose of the <a href="https://cucumber.io/docs/gherkin/reference#rule"><code>Rule</code> keyword</a> is to represent a business rule that should be implemented. It provides additional information for a <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>. A <a href="https://cucumber.io/docs/gherkin/reference#rule"><code>Rule</code></a> is used to group together several <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s belonging to the business rule. A <a href="https://cucumber.io/docs/gherkin/reference#rule"><code>Rule</code></a> should contain one or more <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s illustrating the particular rule.</p>
@@ -1378,8 +1359,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/rule.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_rule.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="background-keyword"><a class="header" href="#background-keyword"><code>Background</code> keyword</a></h1>
 <p>Occasionally, we may find ourselves repeating the same <a href="https://cucumber.io/docs/gherkin/reference#given"><code>Given</code></a> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s in all the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s of a <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>.</p>
@@ -1457,8 +1437,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/background.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_background.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s indicated by <code>&gt;</code> mark in the output.</p>
@@ -1548,8 +1527,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/scenario_outline.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/gherkin/reference#scenario-outline"><code>Scenario Outline</code></a> runs the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> for each table row separately, unlike <a href="writing/data_tables.html">data tables</a>, which run the whole table inside a single <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
 </blockquote>
@@ -1577,8 +1555,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
         time::sleep(Duration::from_millis(300)).boxed_local()
     })
     .run_and_exit(&quot;tests/features/book&quot;);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> is enabled globally for all the executed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. No exception is possible.</p>
 </blockquote>
@@ -1607,8 +1584,7 @@ Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><co
         time::sleep(Duration::from_millis(300)).boxed_local()
     })
     .run_and_exit(&quot;tests/features/book&quot;);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> is enabled globally for all the executed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. No exception is possible.</p>
 </blockquote>
@@ -1671,8 +1647,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/languages.feature&quot;).await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_languages.gif" alt="record" /></p>
 <blockquote>
 <p><strong>TIP</strong>: In case most of your <code>.feature</code> files aren't written in English and you want to avoid endless <code># language:</code> comments, use <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.language"><code>Cucumber::language()</code></a> method to override the default language globally.</p>
@@ -1839,8 +1814,7 @@ async fn main() {
         .fail_on_skipped()
         .run_and_exit(&quot;tests/features/book/writing/tags_skip_failed.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <blockquote>
 <p><strong>TIP</strong>: Using <code>@allow.skipped</code> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a> allows <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s being skipped even in <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped"><code>Cucumber::fail_on_skipped()</code></a> mode. Use the one to intentionally skip the implementation.</p>
 </blockquote>
@@ -1950,8 +1924,7 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 </span><span class="boring">        .fail_on_skipped()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/retries.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_retries.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: On failure, the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> is re-executed with a new fresh <a href="https://docs.rs/cucumber/latest/cucumber/trait.World.html"><code>World</code></a> instance. </p>
@@ -2137,8 +2110,7 @@ async fn main() {
         .with_cli(opts)
         .run_and_exit(&quot;tests/features/book/cli.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="rec/cli_custom.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: For extending CLI options of exising <a href="architecture/parser.html"><code>Parser</code></a>, <a href="architecture/runner.html"><code>Runner</code></a> or <a href="architecture/writer.html"><code>Writer</code></a> when wrapping it, consider using <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Compose.html"><code>cli::Compose</code></a>.</p>
@@ -2234,8 +2206,7 @@ async fn main() {
         .with_cli(opts)
         .run_and_exit(&quot;tests/features/book/cli.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>The alias should be specified in <code>.cargo/config.toml</code> file of the project:</p>
 <pre><code class="language-yaml">[alias]
 smoke = &quot;test -p cucumber --test cli -- smoke --pre-pause=5s -vv --fail-fast&quot;
@@ -2307,8 +2278,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_terminal_verbose_1.gif" alt="record" /></p>
 <p>This is intended to help debugging failed tests. </p>
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
@@ -2378,8 +2348,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="output/../rec/output_terminal_verbose_2.gif" alt="record" /></p>
 <h2 id="coloring"><a class="header" href="#coloring">Coloring</a></h2>
 <p>Coloring may be disabled by specifying <code>--color</code> CLI option:</p>
@@ -2437,8 +2406,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="output/../rec/output_terminal_color.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate automatically disables coloring for non-interactive terminals, so there is no need to specify <code>--color</code> CLI option explicitly on <a href="https://en.wikipedia.org/wiki/Continuous_integration">CI</a>.</p>
@@ -2502,8 +2470,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_terminal_custom_bad.gif" alt="record" /></p>
 <p>To achieve natural output for debugging, the following preparations are required:</p>
 <ol>
@@ -2571,8 +2538,7 @@ async fn main() {
         )
         .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="output/../rec/output_terminal_custom.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: The custom print is still output before its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, because is printed during the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution. </p>
@@ -2634,8 +2600,7 @@ async fn main() {
         .repeat_failed()
         .run_and_exit(&quot;tests/features/book/output/terminal_repeat_failed.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="output/../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -2692,13 +2657,12 @@ async fn main() {
         .repeat_skipped()
         .run_and_exit(&quot;tests/features/book/output/terminal_repeat_skipped.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="output/../rec/output_terminal_repeat_skipped.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.17&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.18&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2718,12 +2682,11 @@ World::cucumber()
     .run(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.17&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.18&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2743,8 +2706,7 @@ World::cucumber()
     .run(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="multiple-outputs"><a class="header" href="#multiple-outputs">Multiple outputs</a></h1>
 <p>Reporting tests result to multiple outputs simultaneously may be achieved by using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2770,8 +2732,7 @@ World::cucumber()
     .run_and_exit(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="using-the-same-writer-multiple-times"><a class="header" href="#using-the-same-writer-multiple-times">Using the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times</a></h2>
 <p>While using <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Tee.html"><code>writer::Tee</code></a> for different <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a>s is OK and straightforward most of the time, reusing the same <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> multiple times isn't so obvious, because of the <a href="https://docs.rs/clap"><code>clap</code></a> complaining about identical CLI options (unfortunately, in a form of runtime panic only).</p>
 <pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
@@ -2804,8 +2765,7 @@ World::cucumber()
     .run_and_exit(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <pre><code class="language-text">thread 'main' panicked at 'Command cucumber: Argument names must be unique, but 'verbose' is in use by more than one argument or group'
 </code></pre>
 <p>To avoid this, you should manually construct the desired <a href="https://docs.rs/cucumber/*/cucumber/cli/struct.Opts.html"><code>cli::Opts</code></a> and supply them via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.with_cli"><code>Cucumber::with_cli()</code></a> method. Example below uses two different <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a>s, where one outputs to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a> and another one outputs to a file:</p>
@@ -2855,12 +2815,11 @@ World::cucumber()
     .run_and_exit(&quot;tests/features/book&quot;)
     .await;
 <span class="boring">Ok(())
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intellij-rust-integration"><a class="header" href="#intellij-rust-integration">IntelliJ Rust integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.17&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.18&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -2876,8 +2835,7 @@ World::cucumber()
     .with_writer(writer::Libtest::or_basic())
     .run(&quot;tests/features/book&quot;)
     .await;
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_intellij.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: There are currently 2 caveats with <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> integration:</p>
@@ -3029,8 +2987,7 @@ async fn main() {
         .with_parser(CustomParser)
         .run_and_exit(&quot;tests/features/book&quot;) // path doesn't actually matter 
         .await;                              // here due to our implementation
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="architecture/../rec/architecture_parser.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-runner"><a class="header" href="#custom-runner">Custom <code>Runner</code></a></h1>
 <p>Now, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> which simply executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s in <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s sequentially, without considering <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s, <a href="https://cucumber.io/docs/gherkin/reference#rule">rule</a>s, <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a>s or other extras, and specifically suitable for our <code>AnimalWorld</code> (for implementation simplicity).</p>
@@ -3288,8 +3245,7 @@ async fn main() {
         .with_runner(CustomRunner)
         .run_and_exit(&quot;tests/features/book&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="architecture/../rec/architecture_runner.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: Output is printed only after all the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s were executed, because we have implemented the <code>CustomRunner</code> in the way to emit <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html"><code>event::Cucumber</code></a>s only after executing all the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s (see <code>execute_scenario()</code> function).</p>
@@ -3583,8 +3539,7 @@ async fn main() {
         .with_writer(CustomWriter.assert_normalized()) // OK because of `CustomRunner`
         .run(&quot;tests/features/book&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="architecture/../rec/architecture_writer_raw.gif" alt="record" /></p>
 <blockquote>
 <p><strong>TIP</strong>: <code>CustomWriter</code> will print trash if we feed unordered <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html"><code>event::Cucumber</code></a>s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap <code>CustomWriter</code> into <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Normalize.html"><code>writer::Normalize</code></a>, which will do that for us.</p>
@@ -3755,8 +3710,7 @@ async fn main() {
         .with_writer(CustomWriter.normalized()) // wrapping into `writer::Normalize`,
         .run(&quot;tests/features/book&quot;)             // so it works OK with the default
         .await;                                 // concurrent `Runner`
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="architecture/../rec/architecture_writer_normalized.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a>s are easily pipelined. See <a href="https://docs.rs/cucumber/*/cucumber/trait.WriterExt.html"><code>WriterExt</code></a> trait and <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>writer</code></a> module for more <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> machinery &quot;included batteries&quot;.</p>
@@ -3776,18 +3730,18 @@ async fn main() {
 
         </div>
 
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script type="text/javascript">
+        <script>
         window.addEventListener('load', function() {
             window.setTimeout(window.print, 100);
         });

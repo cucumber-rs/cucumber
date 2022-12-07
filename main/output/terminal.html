@@ -5,7 +5,6 @@
         <meta charset="UTF-8">
         <title>Terminal - Cucumber Rust Book</title>
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="User guide for Cucumber Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -28,13 +27,13 @@
     </head>
     <body>
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -50,7 +49,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -62,7 +61,7 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
             var sidebar = 'hidden';
             if (document.body.clientWidth >= 1080) {
@@ -93,7 +92,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -124,7 +123,7 @@
                     </div>
                 </div>
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -185,8 +184,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/output_terminal_verbose_1.gif" alt="record" /></p>
 <p>This is intended to help debugging failed tests. </p>
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
@@ -256,8 +254,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="../rec/output_terminal_verbose_2.gif" alt="record" /></p>
 <h2 id="coloring"><a class="header" href="#coloring">Coloring</a></h2>
 <p>Coloring may be disabled by specifying <code>--color</code> CLI option:</p>
@@ -315,8 +312,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="../rec/output_terminal_color.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate automatically disables coloring for non-interactive terminals, so there is no need to specify <code>--color</code> CLI option explicitly on <a href="https://en.wikipedia.org/wiki/Continuous_integration">CI</a>.</p>
@@ -380,8 +376,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    AnimalWorld::cucumber()
 </span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
 </span><span class="boring">        .await;
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/output_terminal_custom_bad.gif" alt="record" /></p>
 <p>To achieve natural output for debugging, the following preparations are required:</p>
 <ol>
@@ -449,8 +444,7 @@ async fn main() {
         )
         .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="../rec/output_terminal_custom.gif" alt="record" /></p>
 <blockquote>
 <p><strong>NOTE</strong>: The custom print is still output before its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, because is printed during the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution. </p>
@@ -512,8 +506,7 @@ async fn main() {
         .repeat_failed()
         .run_and_exit(&quot;tests/features/book/output/terminal_repeat_failed.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -570,8 +563,7 @@ async fn main() {
         .repeat_skipped()
         .run_and_exit(&quot;tests/features/book/output/terminal_repeat_skipped.feature&quot;)
         .await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="../rec/output_terminal_repeat_skipped.gif" alt="record" /></p>
 
                     </main>
@@ -600,15 +592,15 @@ async fn main() {
 
         </div>
 
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
     </body>
