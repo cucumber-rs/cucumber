@@ -1,22 +1,32 @@
-use std::panic::AssertUnwindSafe;
+use std::io;
 
-use cucumber::World as _;
-use futures::FutureExt as _;
+use cucumber::{writer, StatsWriter as _, World as _, WriterExt as _};
 
 #[derive(cucumber::World, Clone, Copy, Debug, Default)]
 struct World;
 
 #[tokio::main]
 async fn main() {
+    // We place `writer::Summarized` in a pipeline before `writer::Normalized`
+    // to check if the latter one messes up the ordering.
     let res = World::cucumber()
+        .with_writer(
+            writer::Basic::raw(
+                io::stdout(),
+                writer::Coloring::Auto,
+                writer::Verbosity::Default,
+            )
+            .summarized()
+            .normalized(),
+        )
         .fail_on_skipped()
         .retries(1)
-        .run_and_exit("tests/features/readme/eating.feature");
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
-    let err = err.downcast_ref::<String>().unwrap();
+        .run("tests/features/readme/eating.feature")
+        .await;
 
-    assert_eq!(err, "1 step failed");
+    assert_eq!(res.passed_steps(), 0);
+    assert_eq!(res.skipped_steps(), 0);
+    assert_eq!(res.failed_steps(), 1);
+    assert_eq!(res.retried_steps(), 0);
+    assert_eq!(res.hook_errors(), 0);
 }

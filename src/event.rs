@@ -8,6 +8,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+// TODO: Only because of [`derive_more`] macros, try to remove on next update.
+#![allow(clippy::use_self)]
+
 //! Key occurrences in a lifecycle of [Cucumber] execution.
 //!
 //! The top-level enum here is [`Cucumber`].
@@ -396,6 +399,16 @@ impl<World> Clone for Step<World> {
 /// [`Step`]: gherkin::Step
 #[derive(Clone, Debug, Display, Error, From)]
 pub enum StepError {
+    /// [`Step`] wasn't matched by any [`Regex`]es.
+    ///
+    /// Difference between [`Step::Skipped`] and [`StepError::NotFound`] is that
+    /// [`WriterExt::fail_on_skipped()`] is enabled.
+    ///
+    /// [`Regex`]: regex::Regex
+    /// [`WriterExt::fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
+    #[display(fmt = "Step wasn't matched by any regex")]
+    NotFound,
+
     /// [`Step`] matches multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex

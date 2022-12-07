@@ -650,7 +650,12 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.left > 0).is_some() {
+            if retries
+                .filter(|r| {
+                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                })
+                .is_some()
+            {
                 self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
@@ -924,7 +929,12 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.left > 0).is_some() {
+            if retries
+                .filter(|r| {
+                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                })
+                .is_some()
+            {
                 self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)

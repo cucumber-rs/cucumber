@@ -369,8 +369,13 @@ impl<Writer> Summarize<Writer> {
                     .handled_scenarios
                     .insert((feature, rule, scenario), Skipped);
             }
-            Step::Failed(..) => {
-                if retries.filter(|r| r.left > 0).is_some() {
+            Step::Failed(_, _, _, err) => {
+                if retries
+                    .filter(|r| {
+                        r.left > 0 && !matches!(err, event::StepError::NotFound)
+                    })
+                    .is_some()
+                {
                     self.steps.retried += 1;
 
                     let inserted_before = self

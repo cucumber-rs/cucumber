@@ -51,6 +51,7 @@ async fn main() {
 
             future::ready(()).boxed()
         })
+        .fail_on_skipped()
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
@@ -59,12 +60,12 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error, 4 hook errors");
+    assert_eq!(err, "4 steps failed, 1 parsing error, 8 hook errors");
     assert_eq!(NUMBER_OF_BEFORE_WORLDS.load(Ordering::SeqCst), 11);
     assert_eq!(NUMBER_OF_AFTER_WORLDS.load(Ordering::SeqCst), 11);
-    assert_eq!(NUMBER_OF_FAILED_HOOKS.load(Ordering::SeqCst), 2);
-    assert_eq!(NUMBER_OF_PASSED_STEPS.load(Ordering::SeqCst), 6);
-    assert_eq!(NUMBER_OF_SKIPPED_STEPS.load(Ordering::SeqCst), 2);
+    assert_eq!(NUMBER_OF_FAILED_HOOKS.load(Ordering::SeqCst), 4);
+    assert_eq!(NUMBER_OF_PASSED_STEPS.load(Ordering::SeqCst), 4);
+    assert_eq!(NUMBER_OF_SKIPPED_STEPS.load(Ordering::SeqCst), 4);
     assert_eq!(NUMBER_OF_FAILED_STEPS.load(Ordering::SeqCst), 2);
 }
 

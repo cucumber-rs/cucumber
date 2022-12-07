@@ -6,12 +6,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.17.1] · 2022-??-??
-[0.17.1]: /../../tree/v0.17.1
+## [0.18.0] · 2022-??-??
+[0.18.0]: /../../tree/v0.18.0
 
-[Diff](/../../compare/v0.17.0...v0.17.1) | [Milestone](/../../milestone/21)
+[Diff](/../../compare/v0.17.0...v0.18.0) | [Milestone](/../../milestone/21)
 
-# Fixed
+### BC Breaks
+
+- Added `NotFound` variant to `event::StepError`. ([#250])
+
+### Fixed
 
 - Not panicking on `fail_on_skipped()` with retries ([#250], [#249])
 
