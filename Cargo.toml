@@ -106,6 +106,10 @@ name = "retry"
 harness = false
 
 [[test]]
+name = "retry_fail_on_skipped"
+harness = false
+
+[[test]]
 name = "wait"
 required-features = ["libtest"]
 harness = false
