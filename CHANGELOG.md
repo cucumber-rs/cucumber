@@ -6,6 +6,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.17.1] · 2022-??-??
+[0.17.1]: /../../tree/v0.17.1
+
+[Diff](/../../compare/v0.17.0...v0.17.1) | [Milestone](/../../milestone/21)
+
+# Fixed
+
+- Not panicking on `fail_on_skipped()` with retries ([#250], [#249])
+
+[#249]: /../../issues/249
+[#250]: /../../pull/250
+
+
+
+
 ## [0.17.0] · 2022-11-23
 [0.17.0]: /../../tree/v0.17.0
 
