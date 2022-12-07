@@ -7,7 +7,7 @@
   </testsuite>
   <testsuite id="1" name="Feature: Basic: tests/features/wait/rule.feature" package="testsuite/Feature: Basic: tests/features/wait/rule.feature" tests="3" errors="0" failures="2" hostname="localhost" timestamp="2022-12-07T11:54:27.656262Z" time="0.001558">
     <testcase name="Scenario: 1 sec: tests/features/wait/rule.feature:6:3" time="0.001023">
-      <failure type="Step Panicked" message="Step wasn&apos;t matched by any regex"><![CDATA[  Scenario: 1 sec
+      <failure type="Step Panicked" message="Step doesn&apos;t match any function"><![CDATA[  Scenario: 1 sec
    ✔> Given 1 sec
    ✔  Given 1 sec
    ✔  When 1 sec
@@ -38,7 +38,7 @@
   </testsuite>
   <testsuite id="2" name="Feature: Basic: tests/features/wait/nested/rule.feature" package="testsuite/Feature: Basic: tests/features/wait/nested/rule.feature" tests="3" errors="0" failures="2" hostname="localhost" timestamp="2022-12-07T11:54:27.657433Z" time="0.000175">
     <testcase name="Scenario: 1 sec: tests/features/wait/nested/rule.feature:6:3" time="0.000073">
-      <failure type="Step Panicked" message="Step wasn&apos;t matched by any regex"><![CDATA[  Scenario: 1 sec
+      <failure type="Step Panicked" message="Step doesn&apos;t match any function"><![CDATA[  Scenario: 1 sec
    ✔> Given 1 sec
    ✔  Given 1 sec
    ✔  When 1 sec
