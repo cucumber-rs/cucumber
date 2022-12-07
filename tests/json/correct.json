@@ -87,7 +87,7 @@
             "result": {
               "status": "Undefined",
               "duration": 182000,
-              "error_message": "Step wasn't matched by any regex"
+              "error_message": "Step doesn't match any function"
             }
           }
         ]
@@ -343,7 +343,7 @@
             "result": {
               "status": "Undefined",
               "duration": 5000,
-              "error_message": "Step wasn't matched by any regex"
+              "error_message": "Step doesn't match any function"
             }
           }
         ]

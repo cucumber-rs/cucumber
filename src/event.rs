@@ -8,7 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-// TODO: Only because of [`derive_more`] macros, try to remove on next update.
+// TODO: Only because of `derive_more` macros, try to remove on next
+//       `derive_more` upgrade.
 #![allow(clippy::use_self)]
 
 //! Key occurrences in a lifecycle of [Cucumber] execution.
@@ -399,14 +400,14 @@ impl<World> Clone for Step<World> {
 /// [`Step`]: gherkin::Step
 #[derive(Clone, Debug, Display, Error, From)]
 pub enum StepError {
-    /// [`Step`] wasn't matched by any [`Regex`]es.
+    /// [`Step`] doesn't match any [`Regex`].
     ///
-    /// Difference between [`Step::Skipped`] and [`StepError::NotFound`] is that
-    /// [`WriterExt::fail_on_skipped()`] is enabled.
+    /// It's emitted whenever a [`Step::Skipped`] event cannot be tolerated
+    /// (such as when [`fail_on_skipped()`] is used).
     ///
     /// [`Regex`]: regex::Regex
-    /// [`WriterExt::fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
-    #[display(fmt = "Step wasn't matched by any regex")]
+    /// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
+    #[display(fmt = "Step doesn't match any function")]
     NotFound,
 
     /// [`Step`] matches multiple [`Regex`]es.

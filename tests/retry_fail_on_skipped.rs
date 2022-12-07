@@ -8,7 +8,7 @@ struct World;
 #[tokio::main]
 async fn main() {
     // We place `writer::Summarized` in a pipeline before `writer::Normalized`
-    // to check if the latter one messes up the ordering.
+    // to check whether the later one messes up the ordering.
     let res = World::cucumber()
         .with_writer(
             writer::Basic::raw(

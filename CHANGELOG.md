@@ -17,7 +17,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Not panicking on `fail_on_skipped()` with retries ([#250], [#249])
+- Not panicking on `fail_on_skipped()` with retries. ([#250], [#249])
 
 [#249]: /../../issues/249
 [#250]: /../../pull/250

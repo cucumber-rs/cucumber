@@ -14,7 +14,7 @@
    ✘  Then unknown
       Step failed:
       Defined: tests/features/wait/rule.feature:9:5
-      Step wasn't matched by any regex
+      Step doesn't match any function
 ]]></failure>
     </testcase>
     <testcase name="Rule: rule: Scenario: 2 secs: tests/features/wait/rule.feature:21:5" time="0.000535">
@@ -45,7 +45,7 @@
    ✘  Then unknown
       Step failed:
       Defined: tests/features/wait/nested/rule.feature:9:5
-      Step wasn't matched by any regex
+      Step doesn't match any function
 ]]></failure>
     </testcase>
     <testcase name="Rule: rule: Scenario: 2 secs: tests/features/wait/nested/rule.feature:21:5" time="0.000102">

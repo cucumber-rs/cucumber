@@ -8,7 +8,7 @@
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::9:  Then unknown"}
-{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/rule.feature:9:5 (defined)\nStep wasn't matched by any regex\n"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/rule.feature:9:5 (defined)\nStep doesn't match any function\n"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs"}
@@ -32,7 +32,7 @@
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::9:  Then unknown"}
-{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/nested/rule.feature:9:5 (defined)\nStep wasn't matched by any regex\n"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/nested/rule.feature:9:5 (defined)\nStep doesn't match any function\n"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
 {"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
 {"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs"}
