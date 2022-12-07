@@ -5,7 +5,6 @@
         <meta charset="UTF-8">
         <title>Quickstart - Cucumber Rust Book</title>
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="User guide for Cucumber Rust">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -28,13 +27,13 @@
     </head>
     <body>
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -50,7 +49,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -62,7 +61,7 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
             var sidebar = 'hidden';
             if (document.body.clientWidth >= 1080) {
@@ -93,7 +92,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -124,7 +123,7 @@
                     </div>
                 </div>
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -139,7 +138,7 @@
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.17&quot;
+cucumber = &quot;0.18&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -194,8 +193,7 @@ fn main() {
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book&quot;));
-}
-</code></pre></pre>
+}</code></pre></pre>
 <blockquote>
 <p><strong>TIP</strong>: Using <code>Default::default()</code> for constructing a <code>World</code> object may be not enough. In such case a custom constructor may be specified via <code>#[world(init = my_constructor)]</code> attribute.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -221,8 +219,7 @@ impl AnimalWorld {
         }
     }
 }
-<span class="boring">fn main() {}
-</span></code></pre></pre>
+<span class="boring">fn main() {}</span></code></pre></pre>
 </blockquote>
 <p>If we run this, we should see an output like this:<br />
 <img src="rec/quickstart_simple_1.gif" alt="record" /></p>
@@ -274,8 +271,7 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
 <img src="rec/quickstart_simple_2.gif" alt="record" /></p>
 <p>Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The <code>then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matcher follows to assert this, as our <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> says:</p>
@@ -319,8 +315,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests, now we see all steps being accounted for and the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passing:<br />
 <img src="rec/quickstart_simple_3.gif" alt="record" /></p>
 <blockquote>
@@ -364,8 +359,7 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 }
 <span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>And see the test failing:<br />
 <img src="rec/quickstart_simple_fail.gif" alt="record" /></p>
 <blockquote>
@@ -427,8 +421,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: We surround the regex with <code>^..$</code> to ensure an <strong>exact</strong> match. This is much more useful when adding more and more <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, so they won't accidentally interfere with each other.</p>
 </blockquote>
@@ -480,14 +473,13 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>A contrived example, but it demonstrates that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> was <code>The cat is no longer hungry</code>, it would imply something about the expected initial state, when that is not the purpose of a <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, but rather of the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
 <h2 id="asyncness"><a class="header" href="#asyncness">Asyncness</a></h2>
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.17&quot;
+cucumber = &quot;0.18&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -547,8 +539,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 #[tokio::main]
 async fn main() {
     AnimalWorld::run(&quot;tests/features/book/quickstart&quot;).await;
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><img src="rec/quickstart_concurrent_async.gif" alt="record" /></p>
 <p>Hm, it looks like the runtime waited only for the first <code>Feature</code>, while the second was printed instantly. What's going on? 🤔</p>
 <p>By default, <a href="https://cucumber.io">Cucumber</a> executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s <a href="https://en.wikipedia.org/wiki/Concurrent_computing">concurrently</a>! That means that runtime actually did wait for all the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, but overlapped! This allows us to execute tests much faster!</p>
@@ -601,15 +592,15 @@ async fn main() {
 
         </div>
 
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
     </body>
