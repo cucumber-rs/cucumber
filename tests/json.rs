@@ -35,6 +35,7 @@ async fn main() {
                 .boxed_local()
             })
             .with_writer(writer::Json::new(file.reopen().unwrap()))
+            .fail_on_skipped()
             .run("tests/features/wait")
             .await,
     );

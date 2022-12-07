@@ -68,17 +68,12 @@ where
     ) {
         use event::{
             Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
-            StepError::Panic,
+            StepError::NotFound,
         };
 
         let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
             if (self.should_fail)(f, r.as_deref(), sc) {
-                Step::Failed(
-                    None,
-                    None,
-                    None,
-                    Panic(Arc::new("not allowed to skip")),
-                )
+                Step::Failed(None, None, None, NotFound)
             } else {
                 Step::Skipped
             }

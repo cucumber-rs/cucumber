@@ -20,6 +20,7 @@ async fn main() {
             .with_writer(
                 writer::Libtest::new(file.reopen().unwrap()).normalized(),
             )
+            .fail_on_skipped()
             .run("tests/features/wait")
             .await,
     );

@@ -1001,7 +1001,6 @@ struct Executor<W, Before, After> {
     /// [`Step`]s [`Collection`].
     ///
     /// [`Collection`]: step::Collection
-    /// [`Step`]: step::Step
     collection: step::Collection<W>,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,

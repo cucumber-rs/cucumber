@@ -18,6 +18,7 @@ async fn main() {
     drop(
         World::cucumber()
             .with_writer(writer::JUnit::new(file.reopen().unwrap(), 1))
+            .fail_on_skipped()
             .run("tests/features/wait")
             .await,
     );

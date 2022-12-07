@@ -9,6 +9,13 @@ Feature: Basic
     Then unknown
     Then 1 sec
 
+  @allow.skipped
+  Scenario: 1 sec
+    Given 1 sec
+    When 1 sec
+    Then unknown
+    Then 1 sec
+
   Rule: rule
     @fail_before
     Scenario: 2 secs

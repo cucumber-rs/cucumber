@@ -291,6 +291,7 @@ impl<Out: io::Write> Json<Out> {
             },
             event::Step::Failed(_, loc, _, err) => {
                 let status = match &err {
+                    event::StepError::NotFound => Status::Undefined,
                     event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
                     event::StepError::Panic(..) => Status::Failed,
                 };
@@ -405,10 +406,7 @@ mod status {
         /// [`event::StepError::AmbiguousMatch`].
         Ambiguous,
 
-        /// Never constructed and is here only to fully describe
-        /// [JSON schema][1].
-        ///
-        /// [1]: https://github.com/cucumber/cucumber-json-schema
+        /// [`event::Step::Failed`] with an [`event::StepError::NotFound`].
         Undefined,
 
         /// Never constructed and is here only to fully describe

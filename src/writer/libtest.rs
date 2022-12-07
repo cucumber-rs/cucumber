@@ -590,7 +590,12 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 }
             }
             Step::Failed(_, loc, world, err) => {
-                if retries.map(|r| r.left > 0).unwrap_or_default() {
+                if retries
+                    .map(|r| {
+                        r.left > 0 && !matches!(err, event::StepError::NotFound)
+                    })
+                    .unwrap_or_default()
+                {
                     self.retried += 1;
                 } else {
                     self.failed += 1;

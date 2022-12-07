@@ -30,6 +30,7 @@ async fn main() {
         })
         .after(move |_, _, _, _, _| time::sleep(cli.custom.pause).boxed_local())
         .with_writer(writer::Libtest::or_basic())
+        .fail_on_skipped()
         .with_cli(cli)
         .run_and_exit("tests/features/wait");
 
@@ -39,7 +40,7 @@ async fn main() {
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
-    assert_eq!(err, "2 steps failed, 1 parsing error");
+    assert_eq!(err, "4 steps failed, 1 parsing error");
 }
 
 #[given(regex = r"(\d+) secs?")]
