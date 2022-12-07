@@ -5,7 +5,7 @@ IntelliJ Rust integration
 
 Example below is set up to output with the default [`writer::Basic`] if there is no `--format=json` option, or with [`writer::Libtest`] otherwise.
 ```toml
-cucumber = { version = "0.17", features = ["libtest"] }
+cucumber = { version = "0.18", features = ["libtest"] }
 ```
 ```rust
 # extern crate cucumber;
