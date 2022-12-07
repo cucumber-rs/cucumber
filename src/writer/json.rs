@@ -291,9 +291,9 @@ impl<Out: io::Write> Json<Out> {
             },
             event::Step::Failed(_, loc, _, err) => {
                 let status = match &err {
+                    event::StepError::NotFound => Status::Undefined,
                     event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
                     event::StepError::Panic(..) => Status::Failed,
-                    event::StepError::NotFound => Status::Undefined,
                 };
                 RunResult {
                     status,
