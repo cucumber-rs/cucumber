@@ -1,14 +1,33 @@
+use std::{convert::Infallible, str::FromStr};
+
 use cucumber::{given, Parameter, StatsWriter as _, World};
-use derive_more::FromStr;
 
-#[derive(FromStr, Parameter)]
-#[param(regex = "\\d+", name = "u64")]
-struct U64(u64);
+#[derive(Debug, Parameter, PartialEq)]
+#[param(regex = "'([^']*)'|(\\d+)", name = "param")]
+enum Param {
+    Int(u64),
+    Quoted(String),
+}
 
-#[given(regex = "^regex: (\\d+)$")]
-#[given(expr = "expression: {u64}")]
-fn assert(_: &mut W, v: U64) {
-    assert_eq!(v.0, 42);
+impl FromStr for Param {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(s.parse::<u64>()
+            .map_or_else(|_| Self::Quoted(s.to_owned()), Param::Int))
+    }
+}
+
+#[given(regex = "^regex: int: (\\d+)$")]
+#[given(expr = "expr: int: {param}")]
+fn assert_int(_: &mut W, v: Param) {
+    assert_eq!(v, Param::Int(42));
+}
+
+#[given(regex = "^regex: quoted: '([^']*)'$")]
+#[given(expr = "expr: quoted: {param}")]
+fn assert_quoted(_: &mut W, v: Param) {
+    assert_eq!(v, Param::Quoted("inner".to_owned()));
 }
 
 #[derive(Clone, Copy, Debug, Default, World)]
@@ -17,7 +36,7 @@ struct W;
 #[tokio::main]
 async fn main() {
     let writer = W::cucumber().run("tests/features/from_str").await;
-    assert_eq!(writer.passed_steps(), 2);
+    assert_eq!(writer.passed_steps(), 4);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 0);
     assert_eq!(writer.parsing_errors(), 0);
