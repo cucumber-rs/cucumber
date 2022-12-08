@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Syntax highlighting for `gherkin` inside a book. ([#251]) 
+- Syntax highlighting for `gherkin` inside the book. ([#251]) 
 
 [#251]: /../../pull/251
 
