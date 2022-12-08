@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.18.1] · 2022-??-??
+[0.18.1]: /../../tree/v0.18.1
+
+[Diff](/../../compare/v0.18.0...v0.18.1) | [Milestone](/../../milestone/22)
+
+### Added
+
+- Syntax highlighting for `gherkin` inside a book. ([#251]) 
+
+[#251]: /../../pull/251
+
+
+
+
 ## [0.18.0] · 2022-12-07
 [0.18.0]: /../../tree/v0.18.0
 
