@@ -134,6 +134,29 @@ book.build:
 	mdbook build book/ $(if $(call eq,$(out),),,-d $(out))
 
 
+# Build `highlight.js` library with Gherkin syntax support for Book.
+#
+# Usage:
+#	make book.highlight.js [ver=(10.7.3|<version>)]
+
+book-highlight-js-ver = $(or $(ver),10.7.3)
+book-highlight-js-tmp-dir := book/highlight.js
+
+book.highlight.js:
+	@rm -rf $(book-highlight-js-tmp-dir)
+	git clone https://github.com/highlightjs/highlight.js \
+	          $(book-highlight-js-tmp-dir)/
+	cd $(book-highlight-js-tmp-dir)/ && \
+	git checkout $(book-highlight-js-ver)
+	cd $(book-highlight-js-tmp-dir)/ && \
+	npm install
+	cd $(book-highlight-js-tmp-dir)/ && \
+	node tools/build.js :common gherkin
+	cp -f $(book-highlight-js-tmp-dir)/build/highlight.min.js \
+	      book/theme/highlight.js
+	rm -rf $(book-highlight-js-tmp-dir)
+
+
 # Serve Book on some port.
 #
 # Usage:
@@ -192,6 +215,6 @@ endif
 
 .PHONY: book docs fmt lint record test \
         cargo.doc cargo.fmt cargo.lint \
-        book.build book.serve book.test book.tests \
+        book.build book.highlight.js book.serve book.test book.tests \
         record.gif \
         test.cargo test.book
