@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Syntax highlighting for `gherkin` inside the book. ([#251]) 
+- [Gherkin] syntax highlighting in the Book. ([#251]) 
 
 [#251]: /../../pull/251
 
@@ -649,5 +649,6 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 [Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
+[Gherkin]: https://cucumber.io/docs/gherkin
 [MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org
