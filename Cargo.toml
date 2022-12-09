@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/after_hook.rs", "/tests/fail_fast.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/retry.rs", "/tests/retry_fail_on_skipped.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/after_hook.rs", "/tests/fail_fast.rs", "/tests/from_str_and_parameter.rs", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/result.rs", "/tests/retry.rs", "/tests/retry_fail_fast.rs", "/tests/retry_fail_on_skipped.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -87,6 +87,10 @@ name = "fail_fast"
 harness = false
 
 [[test]]
+name = "from_str_and_parameter"
+harness = false
+
+[[test]]
 name = "json"
 required-features = ["output-json"]
 harness = false
@@ -102,7 +106,15 @@ required-features = ["libtest"]
 harness = false
 
 [[test]]
+name = "result"
+harness = false
+
+[[test]]
 name = "retry"
+harness = false
+
+[[test]]
+name = "retry_fail_fast"
 harness = false
 
 [[test]]

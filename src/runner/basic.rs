@@ -484,10 +484,13 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         self
     }
 
-    /// Run tests until the first failure.
+    /// Makes stop running tests on the first failure.
     ///
     /// __NOTE__: All the already started [`Scenario`]s at the moment of failure
     ///           will be finished.
+    ///
+    /// __NOTE__: Retried [`Scenario`]s are considered as failed, only in case
+    ///           they exhaust all retry attempts and still fail.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
@@ -2053,6 +2056,10 @@ impl Features {
         Option<Duration>,
     ) {
         use ScenarioType::{Concurrent, Serial};
+
+        if max_concurrent_scenarios == Some(0) {
+            return (Vec::new(), None);
+        }
 
         let mut min_dur = None;
         let mut drain =

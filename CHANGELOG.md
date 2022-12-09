@@ -14,8 +14,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Added
 
 - [Gherkin] syntax highlighting in the Book. ([#251]) 
+- `runner::Basic::fail_fast()` method as `Cucumber::fail_fast()`. ([#252])
+
+### Fixed
+
+- `@serial` `Scenario`s continue running after failure when `--fail-fast()` CLI option is specified. ([#252])
 
 [#251]: /../../pull/251
+[#252]: /../../pull/252
 
 
 
