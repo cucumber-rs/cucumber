@@ -136,14 +136,13 @@ The following [CLI option]s are related to the [scenario] retries:
 - `@retry.after(1s)` [tag] always delays 1 second before next retry attempt, even if `--retry-after` [CLI option] provides another value. Number of retries is taken from `--retry-after` [CLI option], if it's specified, otherwise defaults a single retry attempt.
 - `@retry(3).after(1s)` always retries failed scenarios at most 3 times with 1 second delay before each attempt, ignoring `--retry` and `--retry-after` [CLI option]s.
 
-> __NOTE__: When using with `--fail-fast` [CLI option] or [`fail_fast()` builder config], [scenario]s are considered as failed only in case they exhaust all retry attempts and then still fail.
+> __NOTE__: When using with `--fail-fast` [CLI option] (or [`.fail_fast()` builder config][1]), [scenario]s are considered as failed only in case they exhaust all retry attempts and then still do fail.
 
 > __TIP__: It could be handy to specify `@retry` [tags][tag] only, without any explicit values, and use `--retry=n --retry-after=d --retry-tag-filter=@retry` [CLI option]s to overwrite retrying parameters without affecting any other [scenario]s.
 
 
 
 
-[`fail_fast()` builder config]: https://docs.rs/cucumber/latest/cucumber/struct.Cucumber.html#method.fail_fast
 [`World`]: https://docs.rs/cucumber/latest/cucumber/trait.World.html
 [CLI option]: ../cli.md
 [controlling time in tests]: https://docs.rs/tokio/1.0/tokio/time/fn.pause.html
@@ -153,3 +152,5 @@ The following [CLI option]s are related to the [scenario] retries:
 [simulation testing]: https://github.com/madsys-dev/madsim
 [step]: https://cucumber.io/docs/gherkin/reference#steps
 [tag]: https://cucumber.io/docs/cucumber/api#tags
+
+[1]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_fast

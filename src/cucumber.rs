@@ -949,13 +949,13 @@ where
         self
     }
 
-    /// Run tests until the first failure.
+    /// Makes stop running tests on the first failure.
     ///
     /// __NOTE__: All the already started [`Scenario`]s at the moment of failure
     ///           will be finished.
     ///
     /// __NOTE__: Retried [`Scenario`]s are considered as failed, only in case
-    ///           they exhaust all retry attempts and still fail.
+    ///           they exhaust all retry attempts and still do fail.
     ///
     /// [`Scenario`]: gherkin::Scenario
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const

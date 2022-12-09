@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use cucumber::{given, StatsWriter as _, World};
 
@@ -9,7 +9,7 @@ struct W;
 async fn assert(_: &mut W) {
     static TIMES_CALLED: AtomicUsize = AtomicUsize::new(0);
 
-    match TIMES_CALLED.fetch_add(1, SeqCst) {
+    match TIMES_CALLED.fetch_add(1, Ordering::SeqCst) {
         n @ 1..=5 if n % 2 != 0 => panic!("flake"),
         0..=5 => {}
         _ => panic!("too much!"),
@@ -24,6 +24,7 @@ async fn main() {
         .fail_fast()
         .run("tests/features/retry_fail_fast")
         .await;
+
     assert_eq!(writer.passed_steps(), 3);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 1);

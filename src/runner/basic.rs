@@ -484,7 +484,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         self
     }
 
-    /// Run tests until the first failure.
+    /// Makes stop running tests on the first failure.
     ///
     /// __NOTE__: All the already started [`Scenario`]s at the moment of failure
     ///           will be finished.

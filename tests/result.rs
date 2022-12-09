@@ -20,6 +20,7 @@ struct W;
 #[tokio::main]
 async fn main() {
     let writer = W::cucumber().run("tests/features/result").await;
+
     assert_eq!(writer.passed_steps(), 3);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 3);

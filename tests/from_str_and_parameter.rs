@@ -3,7 +3,7 @@ use std::{convert::Infallible, str::FromStr};
 use cucumber::{given, Parameter, StatsWriter as _, World};
 
 #[derive(Debug, Parameter, PartialEq)]
-#[param(regex = "'([^']*)'|(\\d+)", name = "param")]
+#[param(name = "param", regex = "'([^']*)'|(\\d+)")]
 enum Param {
     Int(u64),
     Quoted(String),
@@ -38,6 +38,7 @@ async fn main() {
     let writer = W::cucumber()
         .run("tests/features/from_str_and_parameter")
         .await;
+
     assert_eq!(writer.passed_steps(), 4);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 0);
