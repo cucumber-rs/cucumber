@@ -23,7 +23,7 @@ async fn main() {
     assert_eq!(writer.passed_steps(), 3);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 3);
-    assert_eq!(writer.retried_steps(), 3);
+    assert_eq!(writer.retried_steps(), 0);
     assert_eq!(writer.parsing_errors(), 0);
     assert_eq!(writer.hook_errors(), 0);
 }
