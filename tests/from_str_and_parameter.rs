@@ -35,10 +35,13 @@ struct W;
 
 #[tokio::main]
 async fn main() {
-    let writer = W::cucumber().run("tests/features/from_str").await;
+    let writer = W::cucumber()
+        .run("tests/features/from_str_and_parameter")
+        .await;
     assert_eq!(writer.passed_steps(), 4);
     assert_eq!(writer.skipped_steps(), 0);
     assert_eq!(writer.failed_steps(), 0);
+    assert_eq!(writer.retried_steps(), 0);
     assert_eq!(writer.parsing_errors(), 0);
     assert_eq!(writer.hook_errors(), 0);
 }

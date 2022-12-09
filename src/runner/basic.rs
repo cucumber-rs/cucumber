@@ -2054,6 +2054,10 @@ impl Features {
     ) {
         use ScenarioType::{Concurrent, Serial};
 
+        if max_concurrent_scenarios == Some(0) {
+            return (Vec::new(), None);
+        }
+
         let mut min_dur = None;
         let mut drain =
             |storage: &mut Vec<(_, _, _, Option<RetryOptionsWithDeadline>)>,

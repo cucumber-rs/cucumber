@@ -949,6 +949,18 @@ where
         self
     }
 
+    /// Run tests until the first failure.
+    ///
+    /// __NOTE__: All the already started [`Scenario`]s at the moment of failure
+    ///           will be finished.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub fn fail_fast(mut self) -> Self {
+        self.runner = self.runner.fail_fast();
+        self
+    }
+
     /// Makes failed [`Scenario`]s being retried after the specified
     /// [`Duration`] passes.
     ///

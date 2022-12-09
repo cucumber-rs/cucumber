@@ -13,7 +13,12 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Syntax highlighting for `gherkin` inside the book. ([#251]) 
+- Syntax highlighting for `gherkin` inside the book. ([#251])
+- Make `runner::Basic::fail_fast()` also available on `Cucumber::fail_fast()`. ([#252])
+
+### Fixed
+
+- `@serial` steps being continued to be run after failure and `fail_fast()` option. ([#252])
 
 [#251]: /../../pull/251
 

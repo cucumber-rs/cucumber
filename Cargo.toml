@@ -87,7 +87,7 @@ name = "fail_fast"
 harness = false
 
 [[test]]
-name = "from_str"
+name = "from_str_and_parameter"
 harness = false
 
 [[test]]
@@ -106,7 +106,15 @@ required-features = ["libtest"]
 harness = false
 
 [[test]]
+name = "result"
+harness = false
+
+[[test]]
 name = "retry"
+harness = false
+
+[[test]]
+name = "retry_fail_fast"
 harness = false
 
 [[test]]
