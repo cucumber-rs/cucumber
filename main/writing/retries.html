@@ -257,6 +257,9 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 <li><code>@retry(3).after(1s)</code> always retries failed scenarios at most 3 times with 1 second delay before each attempt, ignoring <code>--retry</code> and <code>--retry-after</code> <a href="../cli.html">CLI option</a>s.</li>
 </ul>
 <blockquote>
+<p><strong>NOTE</strong>: When using with <code>--fail-fast</code> <a href="../cli.html">CLI option</a> (or <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_fast"><code>.fail_fast()</code> builder config</a>), <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s are considered as failed only in case they exhaust all retry attempts and then still do fail.</p>
+</blockquote>
+<blockquote>
 <p><strong>TIP</strong>: It could be handy to specify <code>@retry</code> <a href="https://cucumber.io/docs/cucumber/api#tags">tags</a> only, without any explicit values, and use <code>--retry=n --retry-after=d --retry-tag-filter=@retry</code> <a href="../cli.html">CLI option</a>s to overwrite retrying parameters without affecting any other <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s.</p>
 </blockquote>
 
