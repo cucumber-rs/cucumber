@@ -21,6 +21,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `@serial` steps being continued to be run after failure and `fail_fast()` option. ([#252])
 
 [#251]: /../../pull/251
+[#252]: /../../pull/252
 
 
 
