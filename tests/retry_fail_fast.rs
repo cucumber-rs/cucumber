@@ -1,7 +1,4 @@
-use std::{
-    sync::atomic::{AtomicUsize, Ordering::SeqCst},
-    time::Duration,
-};
+use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
 
 use cucumber::{given, StatsWriter as _, World};
 
@@ -11,8 +8,6 @@ struct W;
 #[given(regex = "attempt (\\d+)")]
 async fn assert(_: &mut W) {
     static TIMES_CALLED: AtomicUsize = AtomicUsize::new(0);
-
-    tokio::time::sleep(Duration::from_secs(5)).await;
 
     match TIMES_CALLED.fetch_add(1, SeqCst) {
         n @ 1..=5 if n % 2 != 0 => panic!("flake"),

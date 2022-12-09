@@ -958,6 +958,7 @@ where
     ///           they exhaust all retry attempts and still fail.
     ///
     /// [`Scenario`]: gherkin::Scenario
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn fail_fast(mut self) -> Self {
         self.runner = self.runner.fail_fast();
