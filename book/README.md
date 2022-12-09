@@ -1,6 +1,6 @@
-# cucumber book
+# `cucumber` Book
 
-Book containing the [`cucumber`](https://crates.io/crates/cucumber) documentation.
+Book containing the [`cucumber` crate](https://crates.io/crates/cucumber) user guide.
 
 
 
@@ -10,7 +10,7 @@ Book containing the [`cucumber`](https://crates.io/crates/cucumber) documentatio
 
 ### Requirements
 
-The Book is built with [mdBook](https://github.com/rust-lang-nursery/mdBook).
+The Book is built with [mdBook].
 
 You can install it with:
 ```bash
@@ -44,19 +44,16 @@ The output will be in the `_rendered/` directory.
 
 ### Syntax highlighting
 
-As [default support languages](https://rust-lang.github.io/mdBook/format/theme/syntax-highlighting.html#supported-languages) for [mdBook](https://github.com/rust-lang-nursery/mdBook)'s build of [`highlight.js`](https://github.com/highlightjs/highlight.js) doesn't include [`gherkin`](https://cucumber.io/docs/gherkin/), we build our own version:
-
+As the [default supported languages][1] for [mdBook]'s build of [`highlight.js`] don't include [Gherkin], we build our own version:
 ```bash
-git clone git@github.com:highlightjs/highlight.js.git
-cd highlight.js
-git checkout 10.7.3
-npm install
-node tools/build.js :common gherkin
-cp build/highlight.min.js ../book/theme/highlight.js
-cd ../ && rm -rf highlight.js/
+# from project root dir:
+make book.highlight.js
+
+# or concrete version:
+make book.highlight.js ver=10.7.3
 ```
 
-> __NOTE__: [mdBook](https://github.com/rust-lang-nursery/mdBook) doesn't work with versions of [`highlight.js`](https://github.com/highlightjs/highlight.js) from `0.11`: [rust-lang/mdBook#1622](https://github.com/rust-lang/mdBook/issues/1622)
+> __WARNING__: [mdBook] doesn't work with [`highlight.js`] of versions > `10` (see [rust-lang/mdBook#1622](https://github.com/rust-lang/mdBook/issues/1622) for details).
 
 
 ### Running tests
@@ -70,3 +67,12 @@ OUT_DIR=target mdbook test -L target/debug/deps
 # or via shortcut:
 make test.book
 ```
+
+
+
+
+[`highlight.js`]: https://github.com/highlightjs/highlight.js
+[Gherkin]: https://cucumber.io/docs/gherkin
+[mdBook]: https://github.com/rust-lang/mdBook
+
+[1]: https://rust-lang.github.io/mdBook/format/theme/syntax-highlighting.html#supported-languages
