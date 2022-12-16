@@ -16,12 +16,13 @@ async fn assert(_: &mut W) {
     }
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn fails() {
     let writer = W::cucumber()
         .max_concurrent_scenarios(1)
         .retries(3)
         .fail_fast()
+        .with_default_cli()
         .run("tests/features/retry_fail_fast")
         .await;
 

@@ -631,6 +631,7 @@ where
     ///
     /// [`Feature`]: gherkin::Feature
     #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
+    #[must_use]
     pub fn with_cli<CustomCli>(
         self,
         cli: cli::Opts<P::Cli, R::Cli, Wr::Cli, CustomCli>,
@@ -652,6 +653,19 @@ where
             _world: PhantomData,
             _parser_input: PhantomData,
         }
+    }
+
+    /// Initializes [`Default`] [`cli::Opts`].
+    ///
+    /// This method allows to omit parsing real [`cli::Opts`], as eagerly
+    /// initializes [`Default`] ones instead.
+    #[must_use]
+    pub fn with_default_cli(mut self) -> Self
+    where
+        cli::Opts<P::Cli, R::Cli, Wr::Cli, Cli>: Default,
+    {
+        self.cli = Some(cli::Opts::default());
+        self
     }
 
     /// Runs [`Cucumber`] with [`Scenario`]s filter.
@@ -809,15 +823,19 @@ impl<W, P, I, R, Wr, Cli> Debug for Cucumber<W, P, I, R, Wr, Cli>
 where
     W: World,
     P: Debug + Parser<I>,
+    <P as Parser<I>>::Cli: Debug,
     R: Debug + Runner<W>,
+    <R as Runner<W>>::Cli: Debug,
     Wr: Debug + Writer<W>,
-    Cli: clap::Args,
+    <Wr as Writer<W>>::Cli: Debug,
+    Cli: clap::Args + Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cucumber")
             .field("parser", &self.parser)
             .field("runner", &self.runner)
             .field("writer", &self.writer)
+            .field("cli", &self.cli)
             .finish()
     }
 }
@@ -861,12 +879,10 @@ where
     ///
     /// * [`Writer`] — [`Normalize`] and [`Summarize`] [`writer::Basic`].
     ///
-    /// [`Concurrent`]: runner::basic::ScenarioType::Concurrent
+    /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Normalize`]: writer::Normalize
-    /// [`Parser`]: parser::Parser
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Serial`]: runner::basic::ScenarioType::Serial
-    /// [`ScenarioType`]: runner::basic::ScenarioType
+    /// [`Serial`]: ScenarioType::Serial
     /// [`Summarize`]: writer::Summarize
     ///
     /// [tag]: https://cucumber.io/docs/cucumber/api#tags

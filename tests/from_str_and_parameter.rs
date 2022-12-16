@@ -33,9 +33,10 @@ fn assert_quoted(_: &mut W, v: Param) {
 #[derive(Clone, Copy, Debug, Default, World)]
 struct W;
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn passes() {
     let writer = W::cucumber()
+        .with_default_cli()
         .run("tests/features/from_str_and_parameter")
         .await;
 

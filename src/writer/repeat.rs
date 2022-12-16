@@ -37,7 +37,7 @@ pub type FilterEvent<W> =
 pub struct Repeat<W, Wr, F = FilterEvent<W>> {
     /// Original [`Writer`].
     #[deref]
-    pub writer: Wr,
+    writer: Wr,
 
     /// Predicate to decide whether an event should be re-outputted or not.
     filter: F,
@@ -89,6 +89,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val> for Repeat<W, Wr, F>
 where
@@ -105,6 +106,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr, F> writer::Stats<W> for Repeat<W, Wr, F>
 where
     Wr: writer::Stats<W> + writer::NonTransforming,
@@ -133,10 +135,16 @@ where
     fn hook_errors(&self) -> usize {
         self.writer.hook_errors()
     }
+
+    fn execution_has_failed(&self) -> bool {
+        self.writer.execution_has_failed()
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr: writer::Normalized, F> writer::Normalized for Repeat<W, Wr, F> {}
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr, F> writer::Summarizable for Repeat<W, Wr, F> {}
 
 impl<W, Wr, F> Repeat<W, Wr, F> {
@@ -244,5 +252,11 @@ impl<W, Wr> Repeat<W, Wr> {
             },
             events: Vec::new(),
         }
+    }
+
+    /// Returns the original [`Writer`], wrapped by this [`Repeat`] one.
+    #[must_use]
+    pub fn inner_writer(&self) -> &Wr {
+        &self.writer
     }
 }

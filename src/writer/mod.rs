@@ -413,7 +413,6 @@ impl<T> Ext for T {
 /// ```
 ///
 /// [`Failed`]: event::Step::Failed
-/// [`FailOnSkipped`]: crate::writer::FailOnSkipped
 /// [`Skipped`]: event::Step::Skipped
 pub trait NonTransforming {}
 

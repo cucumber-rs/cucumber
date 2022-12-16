@@ -250,15 +250,28 @@ pub struct Context {
 
 /// Error of a [`gherkin::Step`] matching multiple [`Step`] [`Regex`]es inside a
 /// [`Collection`].
-#[derive(Clone, Debug, Display, Error)]
-#[display(fmt = "Possible matches: {:#?}", possible_matches)]
+#[derive(Clone, Debug, Error)]
 pub struct AmbiguousMatchError {
     /// Possible [`Regex`]es the [`gherkin::Step`] matches.
     pub possible_matches: Vec<(HashableRegex, Option<Location>)>,
 }
 
+impl fmt::Display for AmbiguousMatchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Possible matches:")?;
+        for (reg, loc_opt) in &self.possible_matches {
+            write!(f, "\n{reg}")?;
+            if let Some(loc) = loc_opt {
+                write!(f, " --> {loc}")?;
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Location of a [`Step`] [`fn`] automatically filled by a proc macro.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Display, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[display(fmt = "{}:{}:{}", path, line, column)]
 pub struct Location {
     /// Path to the file where [`Step`] [`fn`] is located.
     pub path: &'static str,
@@ -271,7 +284,7 @@ pub struct Location {
 }
 
 /// [`Regex`] wrapper implementing [`Eq`], [`Ord`] and [`Hash`].
-#[derive(Clone, Debug, Deref, DerefMut)]
+#[derive(Clone, Debug, Deref, DerefMut, Display)]
 pub struct HashableRegex(Regex);
 
 impl From<Regex> for HashableRegex {

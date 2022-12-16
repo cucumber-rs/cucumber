@@ -44,7 +44,7 @@ use crate::{
 pub struct Normalize<World, Writer> {
     /// Original [`Writer`] to normalize output of.
     #[deref]
-    pub writer: Writer,
+    writer: Writer,
 
     /// Normalization queue of happened events.
     queue: CucumberQueue<World>,
@@ -70,6 +70,12 @@ impl<W, Writer> Normalize<W, Writer> {
             writer,
             queue: CucumberQueue::new(Metadata::new(())),
         }
+    }
+
+    /// Returns the original [`Writer`], wrapped by this [`Normalized`] one.
+    #[must_use]
+    pub const fn inner_writer(&self) -> &Writer {
+        &self.writer
     }
 }
 
@@ -146,6 +152,7 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Normalize<W, Wr>
 where
@@ -160,6 +167,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr> writer::Stats<W> for Normalize<W, Wr>
 where
     Wr: writer::Stats<W>,
@@ -188,8 +196,13 @@ where
     fn hook_errors(&self) -> usize {
         self.writer.hook_errors()
     }
+
+    fn execution_has_failed(&self) -> bool {
+        self.writer.execution_has_failed()
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr: writer::NonTransforming> writer::NonTransforming
     for Normalize<W, Wr>
 {
@@ -247,6 +260,7 @@ impl<Writer> AssertNormalized<Writer> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
     type Cli = Wr::Cli;
@@ -260,6 +274,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for AssertNormalized<Wr>
 where
@@ -275,6 +290,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr> writer::Stats<W> for AssertNormalized<Wr>
 where
     Wr: writer::Stats<W>,
@@ -303,13 +319,19 @@ where
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
     }
+
+    fn execution_has_failed(&self) -> bool {
+        self.0.execution_has_failed()
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::NonTransforming> writer::NonTransforming
     for AssertNormalized<Wr>
 {
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Writer> Normalized for AssertNormalized<Writer> {}
 
 /// Normalization queue for incoming events.
@@ -321,7 +343,7 @@ impl<Writer> Normalized for AssertNormalized<Writer> {}
 /// current item, as all its events have been printed out and we should do it
 /// all over again with a [`next()`] item.
 ///
-/// [`next()`]: std::iter::Iterator::next()
+/// [`next()`]: Iterator::next()
 #[derive(Clone, Debug)]
 struct Queue<K: Eq + Hash, V> {
     /// Underlying FIFO queue of values.

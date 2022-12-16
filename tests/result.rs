@@ -17,9 +17,12 @@ fn error(_: &mut W) -> Result<(), &'static str> {
 #[derive(Clone, Copy, Debug, Default, World)]
 struct W;
 
-#[tokio::main]
-async fn main() {
-    let writer = W::cucumber().run("tests/features/result").await;
+#[tokio::test]
+async fn fails() {
+    let writer = W::cucumber()
+        .with_default_cli()
+        .run("tests/features/result")
+        .await;
 
     assert_eq!(writer.passed_steps(), 3);
     assert_eq!(writer.skipped_steps(), 0);

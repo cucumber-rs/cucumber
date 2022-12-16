@@ -23,6 +23,7 @@ use derive_more::{Deref, DerefMut};
 use itertools::Itertools as _;
 use once_cell::sync::Lazy;
 use regex::CaptureLocations;
+use smart_default::SmartDefault;
 
 use crate::{
     cli::Colored,
@@ -37,7 +38,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug)]
+#[derive(clap::Args, Clone, Copy, Debug, SmartDefault)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of an output.
@@ -54,6 +55,7 @@ pub struct Cli {
         default_value = "auto",
         global = true
     )]
+    #[default(Coloring::Auto)]
     pub color: Coloring,
 }
 

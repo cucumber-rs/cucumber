@@ -382,39 +382,28 @@ pub struct Tag {
     pub line: usize,
 }
 
-pub use self::status::Status;
+/// Possible statuses of running [`gherkin::Step`].
+#[derive(Clone, Copy, Debug, Serialize)]
+pub enum Status {
+    /// [`event::Step::Passed`].
+    Passed,
 
-/// TODO: Only because of [`Serialize`] deriving, try to remove on next
-///       [`serde`] update.
-#[allow(clippy::use_self, clippy::wildcard_imports)]
-mod status {
-    use super::*;
+    /// [`event::Step::Failed`] with an [`event::StepError::Panic`].
+    Failed,
 
-    /// Possible statuses of running [`gherkin::Step`].
-    #[derive(Clone, Copy, Debug, Serialize)]
-    pub enum Status {
-        /// [`event::Step::Passed`].
-        Passed,
+    /// [`event::Step::Skipped`].
+    Skipped,
 
-        /// [`event::Step::Failed`] with an [`event::StepError::Panic`].
-        Failed,
+    /// [`event::Step::Failed`] with an [`event::StepError::AmbiguousMatch`].
+    Ambiguous,
 
-        /// [`event::Step::Skipped`].
-        Skipped,
+    /// [`event::Step::Failed`] with an [`event::StepError::NotFound`].
+    Undefined,
 
-        /// [`event::Step::Failed`] with an
-        /// [`event::StepError::AmbiguousMatch`].
-        Ambiguous,
-
-        /// [`event::Step::Failed`] with an [`event::StepError::NotFound`].
-        Undefined,
-
-        /// Never constructed and is here only to fully describe
-        /// [JSON schema][1].
-        ///
-        /// [1]: https://github.com/cucumber/cucumber-json-schema
-        Pending,
-    }
+    /// Never constructed and is here only to fully describe [JSON schema][1].
+    ///
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
+    Pending,
 }
 
 /// [`Serialize`]able result of running something.

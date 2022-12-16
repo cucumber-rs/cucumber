@@ -18,10 +18,10 @@ use crate::{cli, event, parser, writer, Event, World, Writer};
 #[derive(Clone, Copy, Debug)]
 pub struct Or<L, R, F> {
     /// Left [`Writer`].
-    pub left: L,
+    left: L,
 
     /// Right [`Writer`].
-    pub right: R,
+    right: R,
 
     /// Predicate indicating which [`Writer`] should be used.
     /// `left` is used on [`true`] and `right` on [`false`].
@@ -42,8 +42,21 @@ impl<L, R, F> Or<L, R, F> {
             predicate,
         }
     }
+
+    /// Returns the left [`Writer`] of this [`Or`] one.
+    #[must_use]
+    pub const fn left_writer(&self) -> &L {
+        &self.left
+    }
+
+    /// Returns the right [`Writer`] of this [`Or`] one.
+    #[must_use]
+    pub const fn right_writer(&self) -> &R {
+        &self.right
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<W, L, R, F> Writer<W> for Or<L, R, F>
 where
@@ -105,6 +118,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<L, R, F> writer::Normalized for Or<L, R, F>
 where
     L: writer::Normalized,
@@ -112,6 +126,7 @@ where
 {
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<L, R, F> writer::NonTransforming for Or<L, R, F>
 where
     L: writer::NonTransforming,

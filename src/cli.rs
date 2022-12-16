@@ -78,7 +78,7 @@ pub use clap::{Args, Parser};
 /// [`Parser`]: crate::Parser
 /// [`Runner`]: crate::Runner
 /// [`Writer`]: crate::Writer
-#[derive(Debug, Clone, clap::Parser)]
+#[derive(clap::Parser, Clone, Debug, Default)]
 #[command(
     name = "cucumber",
     about = "Run the tests, pet a dog!",
@@ -169,7 +169,7 @@ pub trait Colored {
 }
 
 /// Empty CLI options.
-#[derive(Args, Clone, Copy, Debug)]
+#[derive(Args, Clone, Copy, Debug, Default)]
 #[group(skip)]
 pub struct Empty;
 
@@ -269,7 +269,7 @@ impl Colored for Empty {}
 /// ```
 ///
 /// [`Writer`]: crate::Writer
-#[derive(Args, Clone, Copy, Debug)]
+#[derive(Args, Clone, Copy, Debug, Default)]
 #[group(skip)]
 pub struct Compose<L: Args, R: Args> {
     /// Left [`clap::Args`] deriver.
@@ -291,6 +291,7 @@ impl<L: Args, R: Args> Compose<L, R> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<L, R> Colored for Compose<L, R>
 where
     L: Args + Colored,

@@ -5,8 +5,8 @@ use cucumber::{writer, StatsWriter as _, World as _, WriterExt as _};
 #[derive(cucumber::World, Clone, Copy, Debug, Default)]
 struct World;
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn fails() {
     // We place `writer::Summarized` in a pipeline before `writer::Normalized`
     // to check whether the later one messes up the ordering.
     let res = World::cucumber()
@@ -21,6 +21,7 @@ async fn main() {
         )
         .fail_on_skipped()
         .retries(1)
+        .with_default_cli()
         .run("tests/features/readme/eating.feature")
         .await;
 

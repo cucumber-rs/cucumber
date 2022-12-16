@@ -26,6 +26,7 @@
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     clippy::as_conversions,
+    clippy::as_ptr_cast_mut,
     clippy::assertions_on_result_states,
     clippy::branches_sharing_code,
     clippy::clone_on_ref_ptr,
@@ -34,6 +35,7 @@
     clippy::debug_assert_with_mut_call,
     clippy::decimal_literal_representation,
     clippy::default_union_representation,
+    clippy::derive_partial_eq_without_eq,
     clippy::else_if_without_else,
     clippy::empty_drop,
     clippy::empty_line_after_outer_attr,
@@ -66,6 +68,7 @@
     clippy::nonstandard_macro_braces,
     clippy::option_if_let_else,
     clippy::panic_in_result_fn,
+    clippy::partial_pub_fields,
     clippy::pedantic,
     clippy::print_stderr,
     clippy::print_stdout,
@@ -118,6 +121,8 @@
     unused_tuple_struct_fields,
     variant_size_differences
 )]
+// TODO: Remove on next `derive_more` major version.
+#![allow(clippy::uninlined_format_args)]
 
 pub mod cli;
 mod cucumber;
@@ -136,7 +141,6 @@ pub mod codegen;
 // TODO: Remove once tests run without complains about it.
 #[cfg(test)]
 mod actually_used_crates_in_tests_and_book {
-    use humantime as _;
     use rand as _;
     use tempfile as _;
     use tokio as _;
@@ -200,10 +204,6 @@ pub trait World: Sized + 'static {
     #[cfg(feature = "macros")]
     /// Returns runner for tests with auto-wired steps marked by [`given`],
     /// [`when`] and [`then`] attributes.
-    ///
-    /// [`given`]: crate::given
-    /// [`then`]: crate::then
-    /// [`when`]: crate::when
     #[must_use]
     fn collection() -> step::Collection<Self>
     where
@@ -251,10 +251,6 @@ pub trait World: Sized + 'static {
     /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
-    /// [`Step`]: crate::Step
-    /// [`Writer`]: crate::Writer
     async fn run<I: AsRef<Path>>(input: I)
     where
         Self: Debug + WorldInventory,
@@ -274,11 +270,8 @@ pub trait World: Sized + 'static {
     /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
-    /// [`Parser`]: crate::Parser
-    /// [`Runner`]: crate::Runner
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    /// [`Writer`]: crate::Writer
     async fn filter_run<I, F>(input: I, filter: F)
     where
         Self: Debug + WorldInventory,

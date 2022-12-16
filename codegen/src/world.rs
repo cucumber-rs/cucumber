@@ -86,12 +86,11 @@ impl Definition {
     };
 
     /// Generates code of implementing a `WorldInventory` trait.
-    #[allow(clippy::similar_names)] // because of `when_ty` vs `then_ty`
     fn impl_world_inventory(&self) -> TokenStream {
         let world = &self.ident;
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
 
-        let (given_ty, when_ty, then_ty) = self
+        let (given_ty, when_step_ty, then_ty) = self
             .step_types()
             .collect_tuple()
             .unwrap_or_else(|| unreachable!("{:?}", Self::EXACTLY_3_STEPS));
@@ -103,7 +102,7 @@ impl Definition {
                  #where_clause
             {
                 type Given = #given_ty;
-                type When = #when_ty;
+                type When = #when_step_ty;
                 type Then = #then_ty;
             }
         }

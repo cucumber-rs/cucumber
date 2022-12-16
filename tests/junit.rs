@@ -12,13 +12,14 @@ fn step(world: &mut World) {
     assert!(world.0 < 4, "Too much!");
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn output() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
             .with_writer(writer::JUnit::new(file.reopen().unwrap(), 1))
             .fail_on_skipped()
+            .with_default_cli()
             .run("tests/features/wait")
             .await,
     );

@@ -13,8 +13,8 @@ fn step(world: &mut World) {
     assert!(world.0 < 4, "Too much!");
 }
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn test() {
     let mut file = NamedTempFile::new().unwrap();
     drop(
         World::cucumber()
@@ -36,6 +36,7 @@ async fn main() {
             })
             .with_writer(writer::Json::new(file.reopen().unwrap()))
             .fail_on_skipped()
+            .with_default_cli()
             .run("tests/features/wait")
             .await,
     );

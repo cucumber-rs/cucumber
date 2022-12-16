@@ -6,15 +6,28 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.18.1] · 2022-??-??
-[0.18.1]: /../../tree/v0.18.1
+## [0.19.0] · 2022-??-??
+[0.19.0]: /../../tree/v0.19.0
 
-[Diff](/../../compare/v0.18.0...v0.18.1) | [Milestone](/../../milestone/22)
+[Diff](/../../compare/v0.18.0...v0.19.0) | [Milestone](/../../milestone/22)
+
+### BC Breaks
+
+- Replaced `writer::FailOnSkipped::writer` field with `writer::FailOnSkipped::inner_writer()` method. ([commit])
+- Replaced `writer::Normalized::writer` field with `writer::Normalized::inner_writer()` method. ([commit])
+- Replaced `writer::Or::left`/`writer::Or::right` fields with `writer::Or::left_writer()`/`writer::Or::right_writer()` methods. ([commit])
+- Replaced `writer::Repeat::writer` field with `writer::Repeat::inner_writer()` method. ([commit])
+- Replaced `writer::Summarize::writer` field with `writer::Summarize::inner_writer()` method. ([commit])
+- Replaced `writer::Summarize::scenarios`/`writer::Summarize::steps` fields with `writer::Summarize::scenarios_stats()`/`writer::Summarize::steps_stats()` methods. ([commit])
+- Made `writer::Summarize::features`/`writer::Summarize::rules` fields private. ([commit])
+- Made `writer::Summarize::parsing_errors`/`writer::Summarize::failed_hooks` fields private in favour of `writer::Stats::parsing_errors()`/`writer::Stats::failed_hooks()` methods. ([commit])
 
 ### Added
 
-- [Gherkin] syntax highlighting in the Book. ([#251]) 
+- [Gherkin] syntax highlighting in the Book. ([#251])
 - `runner::Basic::fail_fast()` method as `Cucumber::fail_fast()`. ([#252])
+- `Cucumber::with_default_cli()` method. ([commit])
+- `Default` implementation for CLI types. ([commit])
 
 ### Fixed
 

@@ -71,8 +71,6 @@ pub trait Parameter {
     ///
     /// Validated during [`Parameter`](macro@crate::Parameter) derive macro
     /// expansion.
-    ///
-    /// [`Regex`]: regex::Regex
     const REGEX: &'static str;
 
     /// Name of this [`Parameter`] to be referenced by in

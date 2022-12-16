@@ -73,6 +73,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, L, R, Val> writer::Arbitrary<'val, W, Val> for Tee<L, R>
 where
@@ -126,6 +127,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<L, R> writer::Normalized for Tee<L, R>
 where
     L: writer::Normalized,
@@ -133,6 +135,7 @@ where
 {
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<L, R> writer::NonTransforming for Tee<L, R>
 where
     L: writer::NonTransforming,

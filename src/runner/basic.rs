@@ -48,7 +48,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
-#[derive(clap::Args, Clone, Debug)]
+#[derive(clap::Args, Clone, Debug, Default)]
 #[group(skip)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
@@ -405,7 +405,11 @@ impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Basic")
             .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
+            .field("retries", &self.retries)
+            .field("retry_after", &self.retry_after)
+            .field("retry_filter", &self.retry_filter)
             .field("steps", &self.steps)
+            .field("fail_fast", &self.fail_fast)
             .finish_non_exhaustive()
     }
 }
@@ -1350,7 +1354,7 @@ where
     /// [`Step::Failed`]: event::Step::Failed
     async fn run_step<St, Ps, Sk>(
         &self,
-        world: Option<W>,
+        world_opt: Option<W>,
         step: Arc<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
@@ -1370,14 +1374,14 @@ where
             let (step_fn, captures, loc, ctx) =
                 match self.collection.find(&step) {
                     Ok(Some(f)) => f,
-                    Ok(None) => return Ok((None, None, world)),
+                    Ok(None) => return Ok((None, None, world_opt)),
                     Err(e) => {
                         let e = event::StepError::AmbiguousMatch(e);
-                        return Err((e, None, None, world));
+                        return Err((e, None, None, world_opt));
                     }
                 };
 
-            let mut world = if let Some(w) = world {
+            let mut world = if let Some(w) = world_opt {
                 w
             } else {
                 match AssertUnwindSafe(async { W::new().await })
@@ -1410,7 +1414,6 @@ where
             }
         };
 
-        #[allow(clippy::shadow_unrelated)]
         match run.await {
             Ok((Some(captures), loc, Some(world))) => {
                 self.send_event(passed(step, captures, loc));

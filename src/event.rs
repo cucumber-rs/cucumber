@@ -8,10 +8,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-// TODO: Only because of `derive_more` macros, try to remove on next
-//       `derive_more` upgrade.
-#![allow(clippy::use_self)]
-
 //! Key occurrences in a lifecycle of [Cucumber] execution.
 //!
 //! The top-level enum here is [`Cucumber`].
@@ -443,6 +439,7 @@ pub enum HookType {
     After,
 }
 
+#[allow(clippy::use_debug)] // `Debug` usage is intentional here
 impl fmt::Display for HookType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")

@@ -17,8 +17,8 @@ static NUMBER_OF_PASSED_STEPS: AtomicUsize = AtomicUsize::new(0);
 static NUMBER_OF_SKIPPED_STEPS: AtomicUsize = AtomicUsize::new(0);
 static NUMBER_OF_FAILED_STEPS: AtomicUsize = AtomicUsize::new(0);
 
-#[tokio::main]
-async fn main() {
+#[tokio::test]
+async fn fires_each_time() {
     let res = World::cucumber()
         .before(move |_, _, _, _| {
             async move {
@@ -52,6 +52,7 @@ async fn main() {
             future::ready(()).boxed()
         })
         .fail_on_skipped()
+        .with_default_cli()
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)

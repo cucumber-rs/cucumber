@@ -30,7 +30,7 @@ use crate::{event, parser, writer, Event, World, Writer};
 pub struct FailOnSkipped<W, F = SkipFn> {
     /// Original [`Writer`] to pass transformed event into.
     #[deref]
-    pub writer: W,
+    writer: W,
 
     /// [`Fn`] to determine whether [`Skipped`] test should be considered as
     /// [`Failed`] or not.
@@ -151,6 +151,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val>
     for FailOnSkipped<Wr, F>
@@ -168,6 +169,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr, F> writer::Stats<W> for FailOnSkipped<Wr, F>
 where
     Wr: writer::Stats<W>,
@@ -196,8 +198,13 @@ where
     fn hook_errors(&self) -> usize {
         self.writer.hook_errors()
     }
+
+    fn execution_has_failed(&self) -> bool {
+        self.writer.execution_has_failed()
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::Normalized, F> writer::Normalized for FailOnSkipped<Wr, F> {}
 
 impl<Writer> From<Writer> for FailOnSkipped<Writer> {
@@ -245,5 +252,11 @@ impl<Writer> FailOnSkipped<Writer> {
             writer,
             should_fail: predicate,
         }
+    }
+
+    /// Returns the original [`Writer`], wrapped by this [`FailOnSkipped`] one.
+    #[must_use]
+    pub fn inner_writer(&self) -> &Writer {
+        &self.writer
     }
 }

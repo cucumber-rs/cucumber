@@ -109,10 +109,7 @@ jobs:
         crate:
           - cucumber-codegen
           - cucumber
-        os:
-          - ubuntu
-          - macOS
-          - windows
+        os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
@@ -135,14 +132,8 @@ jobs:
         crate:
           - cucumber-codegen
           - cucumber
-        os:
-          - ubuntu
-          - macOS
-          - windows
-        toolchain:
-          - stable
-          - beta
-          - nightly
+        toolchain: ["stable", "beta", "nightly"]
+        os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
@@ -164,10 +155,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu
-          - macOS
-          - windows
+        os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
@@ -202,6 +190,8 @@ jobs:
       - run: make cargo.doc crate=${{ matrix.crate }}
                             private=yes docsrs=yes
                             open=no
+        env:
+          RUSTFLAGS: -D warnings
 
 
 
@@ -224,9 +214,6 @@ jobs:
       - run: cargo publish -p cucumber-codegen
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
-
-      - name: Wait crates.io index is updated
-        run: sleep 120
 
       - run: cargo publish -p cucumber
         env:

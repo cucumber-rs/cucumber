@@ -24,6 +24,7 @@ use crate::{event::Cucumber, writer, Event, World, Writer};
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
 pub struct Arbitrary<Wr: ?Sized>(Wr);
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
     type Cli = Wr::Cli;
@@ -37,6 +38,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Arbitrary<Wr>
 where
@@ -53,6 +55,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<W, Wr> writer::Stats<W> for Arbitrary<Wr>
 where
     Wr: writer::Stats<W> + ?Sized,
@@ -81,16 +84,22 @@ where
     fn hook_errors(&self) -> usize {
         self.0.hook_errors()
     }
+
+    fn execution_has_failed(&self) -> bool {
+        self.0.execution_has_failed()
+    }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::Normalized> writer::Normalized for Arbitrary<Wr> {}
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::NonTransforming> writer::NonTransforming for Arbitrary<Wr> {}
 
 impl<Wr> Arbitrary<Wr> {
     /// Wraps the given [`Writer`] into a [`discard::Arbitrary`] one.
     ///
-    /// [`discard::Arbitrary`]: crate::writer::discard::Arbitrary
+    /// [`discard::Arbitrary`]: Arbitrary
     #[must_use]
     pub const fn wrap(writer: Wr) -> Self {
         Self(writer)
@@ -106,6 +115,7 @@ impl<Wr> Arbitrary<Wr> {
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
 pub struct Stats<Wr: ?Sized>(Wr);
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
     type Cli = Wr::Cli;
@@ -119,6 +129,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Stats<Wr>
 where
@@ -170,14 +181,16 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::Normalized> writer::Normalized for Stats<Wr> {}
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::NonTransforming> writer::NonTransforming for Stats<Wr> {}
 
 impl<Wr> Stats<Wr> {
     /// Wraps the given [`Writer`] into a [`discard::Stats`] one.
     ///
-    /// [`discard::Stats`]: crate::writer::discard::Stats
+    /// [`discard::Stats`]: Stats
     #[must_use]
     pub const fn wrap(writer: Wr) -> Self {
         Self(writer)

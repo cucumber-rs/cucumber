@@ -196,6 +196,7 @@ mod spec {
             .collect::<String>();
             let normalized = World::cucumber()
                 .with_writer(DebugWriter::default().normalized())
+                .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
 

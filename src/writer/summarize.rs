@@ -136,37 +136,37 @@ enum State {
 pub struct Summarize<Writer> {
     /// Original [`Writer`] to summarize output of.
     #[deref]
-    pub writer: Writer,
+    writer: Writer,
 
     /// Number of started [`Feature`]s.
     ///
     /// [`Feature`]: gherkin::Feature
-    pub features: usize,
+    features: usize,
 
     /// Number of started [`Rule`]s.
     ///
     /// [`Rule`]: gherkin::Rule
-    pub rules: usize,
+    rules: usize,
 
     /// [`Scenario`]s [`Stats`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    pub scenarios: Stats,
+    scenarios: Stats,
 
     /// [`Step`]s [`Stats`].
     ///
     /// [`Step`]: gherkin::Step
-    pub steps: Stats,
+    steps: Stats,
 
     /// Number of [`Parser`] errors.
     ///
     /// [`Parser`]: crate::Parser
-    pub parsing_errors: usize,
+    parsing_errors: usize,
 
     /// Number of failed [`Scenario`] hooks.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    pub failed_hooks: usize,
+    failed_hooks: usize,
 
     /// Current [`State`] of this [`Writer`].
     state: State,
@@ -258,6 +258,7 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 #[async_trait(?Send)]
 impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Summarize<Wr>
 where
@@ -304,8 +305,10 @@ where
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::Normalized> writer::Normalized for Summarize<Wr> {}
 
+#[warn(clippy::missing_trait_methods)]
 impl<Wr: writer::NonTransforming> writer::NonTransforming for Summarize<Wr> {}
 
 impl<Writer> From<Writer> for Summarize<Writer> {
@@ -465,6 +468,29 @@ impl<Writer> Summarize<Writer> {
     #[must_use]
     pub fn new(writer: Writer) -> Self {
         Self::from(writer)
+    }
+
+    /// Returns the original [`Writer`], wrapped by this [`Summarize`]d one.
+    #[must_use]
+    pub const fn inner_writer(&self) -> &Writer {
+        &self.writer
+    }
+
+    /// Returns collected [`Scenario`]s [`Stats`] of this [`Summarize`]d
+    /// [`Writer`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub const fn scenarios_stats(&self) -> &Stats {
+        &self.scenarios
+    }
+
+    /// Returns collected [`Step`]s [`Stats`] of this [`Summarize`]d [`Writer`].
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub const fn steps_stats(&self) -> &Stats {
+        &self.steps
     }
 }
 
