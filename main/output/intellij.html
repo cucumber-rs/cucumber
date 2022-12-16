@@ -144,7 +144,7 @@
                         <h1 id="intellij-rust-integration"><a class="header" href="#intellij-rust-integration">IntelliJ Rust integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.18&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.19&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
