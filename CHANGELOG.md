@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.19.1] · 2022-12-??
+[0.19.1]: /../../tree/v0.19.1
+
+[Diff](/../../compare/v0.19.0...v0.19.1) | [Milestone](/../../milestone/23)
+
+### Fixed
+
+- Using autodetect for colors on `color=always|never` CLI options. ([#253])
+
+[#253]: /../../pull/253
+
+
+
+
 ## [0.19.0] · 2022-12-16
 [0.19.0]: /../../tree/v0.19.0
 
