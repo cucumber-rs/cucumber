@@ -10,7 +10,7 @@
 
 //! Tools for writing output.
 
-use std::{borrow::Cow, io, str};
+use std::{borrow::Cow, io, mem, str};
 
 use console::Style;
 use derive_more::{Deref, DerefMut, Display, From, Into};
@@ -68,11 +68,20 @@ impl Styles {
 
     /// Applies the given [`Coloring`] to these [`Styles`].
     pub fn apply_coloring(&mut self, color: Coloring) {
-        match color {
-            Coloring::Auto => {}
-            Coloring::Always => self.is_present = true,
-            Coloring::Never => self.is_present = false,
-        }
+        let is_present = match color {
+            Coloring::Always => true,
+            Coloring::Never => false,
+            Coloring::Auto => return,
+        };
+
+        let this = mem::take(self);
+        self.ok = this.ok.force_styling(is_present);
+        self.skipped = this.skipped.force_styling(is_present);
+        self.err = this.err.force_styling(is_present);
+        self.retry = this.retry.force_styling(is_present);
+        self.header = this.header.force_styling(is_present);
+        self.bold = this.bold.force_styling(is_present);
+        self.is_present = is_present;
     }
 
     /// Returns [`Styles`] with brighter colors.
