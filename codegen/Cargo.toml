@@ -1,6 +1,6 @@
 [package]
 name = "cucumber-codegen"
-version = "0.19.0" # should be the same as main crate version
+version = "0.19.1" # should be the same as main crate version
 edition = "2021"
 rust-version = "1.65"
 description = "Code generation for `cucumber` crate."
