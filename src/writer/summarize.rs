@@ -213,7 +213,7 @@ where
         // without collecting `Stats`.
         // This is done to avoid miscalculations if this `Writer` happens to be
         // wrapped by a `writer::Repeat` or similar.
-        if let State::InProgress = self.state {
+        if matches!(self.state, State::InProgress) {
             match ev.as_deref() {
                 Err(_) => self.parsing_errors += 1,
                 Ok(Cucumber::Feature(feat, ev)) => match ev {
@@ -248,7 +248,7 @@ where
 
         self.writer.handle_event(ev, cli).await;
 
-        if let State::FinishedButNotOutput = self.state {
+        if matches!(self.state, State::FinishedButNotOutput) {
             self.state = State::FinishedAndOutput;
 
             let mut styles = Styles::new();

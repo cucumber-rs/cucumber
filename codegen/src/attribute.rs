@@ -312,9 +312,7 @@ impl Step {
                     ::std::borrow::Borrow::borrow(&__cucumber_ctx.step);
             }
         } else {
-            let ty = if let syn::Type::Path(p) = ty {
-                p
-            } else {
+            let syn::Type::Path(ty) = ty else {
                 return Err(syn::Error::new(ty.span(), "Type path expected"));
             };
 
