@@ -311,6 +311,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     })
                     .add_testcase(case);
             }
+            Scenario::Log(_) => todo!(),
         }
     }
 
@@ -393,6 +394,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     sc.name,
                 );
             }
+            Scenario::Log(_) => todo!(),
         };
 
         // We should be passing normalized events here,

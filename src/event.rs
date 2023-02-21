@@ -495,6 +495,8 @@ pub enum Scenario<World> {
     /// [`Step`] event.
     Step(Arc<gherkin::Step>, Step<World>),
 
+    Log(String),
+
     /// [`Scenario`] execution being finished.
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -512,6 +514,7 @@ impl<World> Clone for Scenario<World> {
                 Self::Background(Arc::clone(bg), ev.clone())
             }
             Self::Step(st, ev) => Self::Step(Arc::clone(st), ev.clone()),
+            Self::Log(msg) => Self::Log(msg.clone()),
             Self::Finished => Self::Finished,
         }
     }

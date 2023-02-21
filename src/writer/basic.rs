@@ -371,6 +371,7 @@ impl<Out: io::Write> Basic<Out> {
             Scenario::Finished => {
                 self.indent = self.indent.saturating_sub(2);
             }
+            Scenario::Log(_) => todo!(),
         }
         Ok(())
     }

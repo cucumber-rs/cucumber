@@ -13,17 +13,19 @@
 use std::{
     cmp,
     collections::HashMap,
+    convert::Infallible,
     fmt, iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
     },
     thread,
     time::{Duration, Instant},
 };
 
+use derive_more::{Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
     channel::{mpsc, oneshot},
@@ -38,6 +40,8 @@ use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
+#[cfg(feature = "tracing")]
+use crate::runner::tracing::{self, Instrument};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
@@ -751,6 +755,9 @@ where
         let buffer = Features::default();
         let (sender, receiver) = mpsc::unbounded();
 
+        #[cfg(feature = "tracing")]
+        let (logs_sender, logs_receiver) = mpsc::unbounded();
+
         let insert = insert_features(
             buffer.clone(),
             features,
@@ -768,9 +775,11 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            tracing::Collector::new(logs_receiver),
         );
 
-        stream::select(
+        let stream = stream::select(
             receiver.map(Either::Left),
             future::join(insert, execute)
                 .into_stream()
@@ -781,8 +790,29 @@ where
                 Either::Left(ev) => Some(ev),
                 Either::Right(_) => None,
             }
-        })
-        .boxed_local()
+        });
+        #[cfg(feature = "tracing")]
+        let stream = {
+            use tracing_subscriber::layer::SubscriberExt as _;
+
+            let subscriber = tracing_subscriber::registry()
+                .with(tracing::RecordScenarioId)
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .map_fmt_fields(tracing::SkipScenarioIdSpan)
+                        .map_event_format(tracing::AppendScenarioId)
+                        .map_writer(|writer| {
+                            tracing::MakePostponedWriter::new(
+                                logs_sender,
+                                writer,
+                            )
+                        }),
+                );
+
+            let dispatch = tracing::Dispatch::new(subscriber);
+            tracing::DefaultDispatch::new(stream, dispatch)
+        };
+        stream.boxed_local()
     }
 }
 
@@ -869,6 +899,7 @@ async fn execute<W, Before, After>(
     before_hook: Option<Before>,
     after_hook: Option<After>,
     fail_fast: bool,
+    #[cfg(feature = "tracing")] mut logs_collector: tracing::Collector,
 ) where
     W: World,
     Before: 'static
@@ -956,18 +987,46 @@ async fn execute<W, Before, After>(
         let started = storage.start_scenarios(&runnable);
         executor.send_all_events(started);
 
+        #[cfg(feature = "tracing")]
+        let collect_logs = {
+            fn infer_return<F: future::Future<Output = Infallible>>(f: F) -> F {
+                f
+            }
+            logs_collector.start_scenarios(&runnable);
+            infer_return(async {
+                loop {
+                    executor
+                        .send_all_events(logs_collector.collect_logs().await);
+                }
+            })
+        };
+        #[cfg(feature = "tracing")]
+        pin_mut!(collect_logs);
+        #[cfg(not(feature = "tracing"))]
+        let collect_logs = future::pending::<Infallible>();
+
         if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
             *sc -= runnable.len();
         }
 
-        for (f, r, s, ty, retries) in runnable {
-            run_scenarios.push(executor.run_scenario(f, r, s, ty, retries));
+        for (id, f, r, s, ty, retries) in runnable {
+            let run = executor.run_scenario(id, f, r, s, ty, retries);
+            #[cfg(feature = "tracing")]
+            let run = Instrument::instrument(run, id.span());
+            run_scenarios.push(run);
         }
 
-        if run_scenarios.next().await.is_some() {
-            if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-                *sc += 1;
+        match future::select(run_scenarios.next(), collect_logs).await {
+            Either::Left((next, _)) => {
+                if next.is_some() {
+                    if let ControlFlow::Continue(Some(sc)) =
+                        &mut started_scenarios
+                    {
+                        *sc += 1;
+                    }
+                }
             }
+            Either::Right((inf, _)) => match inf {},
         }
 
         while let Ok(Some((feat, rule, scenario_failed, retried))) =
@@ -1093,6 +1152,7 @@ where
     #[allow(clippy::too_many_lines)]
     async fn run_scenario(
         &self,
+        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
@@ -1252,6 +1312,7 @@ where
         if let Some(next_try) = next_try {
             self.storage
                 .insert_retried_scenario(
+                    id,
                     Arc::clone(&feature),
                     rule.clone(),
                     scenario,
@@ -1665,7 +1726,7 @@ where
     /// [`Cucumber`]: event::Cucumber
     fn send_all_events(
         &self,
-        events: impl Iterator<Item = event::Cucumber<W>>,
+        events: impl IntoIterator<Item = event::Cucumber<W>>,
     ) {
         for v in events {
             // If the receiver end is dropped, then no one listens for events,
@@ -1674,6 +1735,16 @@ where
                 break;
             }
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]
+pub(crate) struct ScenarioId(pub(crate) u64);
+
+impl ScenarioId {
+    fn new() -> Self {
+        static ID: AtomicU64 = AtomicU64::new(0);
+        Self(ID.fetch_add(1, Ordering::Relaxed))
     }
 }
 
@@ -1825,6 +1896,7 @@ impl FinishedRulesAndFeatures {
         &mut self,
         runnable: impl AsRef<
             [(
+                ScenarioId,
                 Arc<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
@@ -1836,7 +1908,7 @@ impl FinishedRulesAndFeatures {
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
-        for feature in runnable.iter().map(|(f, ..)| Arc::clone(f)).dedup() {
+        for feature in runnable.iter().map(|(_, f, ..)| Arc::clone(f)).dedup() {
             let _ = self
                 .features_scenarios_count
                 .entry(Arc::clone(&feature))
@@ -1849,7 +1921,7 @@ impl FinishedRulesAndFeatures {
         let mut started_rules = Vec::new();
         for (feat, rule) in runnable
             .iter()
-            .filter_map(|(feat, rule, _, _, _)| {
+            .filter_map(|(_, feat, rule, _, _, _)| {
                 rule.clone().map(|r| (Arc::clone(feat), r))
             })
             .dedup()
@@ -1880,6 +1952,7 @@ impl FinishedRulesAndFeatures {
 type Scenarios = HashMap<
     ScenarioType,
     Vec<(
+        ScenarioId,
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
@@ -1891,6 +1964,7 @@ type Scenarios = HashMap<
 type InsertedScenarios = HashMap<
     ScenarioType,
     Vec<(
+        ScenarioId,
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
@@ -1946,13 +2020,14 @@ impl Features {
             .map(|(feat, rule, scenario)| {
                 let retries = retry(feat, rule, scenario, cli);
                 (
+                    ScenarioId::new(),
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
                     retries,
                 )
             })
-            .into_group_map_by(|(f, r, s, _)| {
+            .into_group_map_by(|(_, f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
 
@@ -1965,6 +2040,7 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_retried_scenario(
         &self,
+        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
@@ -1972,8 +2048,11 @@ impl Features {
         retries: Option<RetryOptions>,
     ) {
         self.insert_scenarios(
-            iter::once((scenario_ty, vec![(feature, rule, scenario, retries)]))
-                .collect(),
+            iter::once((
+                scenario_ty,
+                vec![(id, feature, rule, scenario, retries)],
+            ))
+            .collect(),
         )
         .await;
     }
@@ -1987,7 +2066,7 @@ impl Features {
         let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
         for (which, values) in scenarios {
-            for (f, r, s, ret) in values {
+            for (id, f, r, s, ret) in values {
                 match ret {
                     ret @ (None
                     | Some(RetryOptions {
@@ -2000,14 +2079,14 @@ impl Features {
                         without_retries
                             .entry(which)
                             .or_default()
-                            .push((f, r, s, ret));
+                            .push((id, f, r, s, ret));
                     }
                     Some(ret) => {
                         let ret = ret.with_deadline(now);
                         with_retries
                             .entry(which)
                             .or_default()
-                            .push((f, r, s, ret));
+                            .push((id, f, r, s, ret));
                     }
                 }
             }
@@ -2017,8 +2096,8 @@ impl Features {
 
         for (which, values) in with_retries {
             let ty_storage = storage.entry(which).or_default();
-            for (f, r, s, ret) in values {
-                ty_storage.insert(0, (f, r, s, Some(ret)));
+            for (id, f, r, s, ret) in values {
+                ty_storage.insert(0, (id, f, r, s, Some(ret)));
             }
         }
 
@@ -2050,6 +2129,7 @@ impl Features {
         max_concurrent_scenarios: Option<usize>,
     ) -> (
         Vec<(
+            ScenarioId,
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
             Arc<gherkin::Scenario>,
@@ -2058,6 +2138,7 @@ impl Features {
         )>,
         Option<Duration>,
     ) {
+        use RetryOptionsWithDeadline as WithDeadline;
         use ScenarioType::{Concurrent, Serial};
 
         if max_concurrent_scenarios == Some(0) {
@@ -2066,14 +2147,14 @@ impl Features {
 
         let mut min_dur = None;
         let mut drain =
-            |storage: &mut Vec<(_, _, _, Option<RetryOptionsWithDeadline>)>,
+            |storage: &mut Vec<(_, _, _, _, Option<WithDeadline>)>,
              ty,
              count: Option<usize>| {
                 let mut i = 0;
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
                 let drained =
-                    VecExt::drain_filter(storage, |(_, _, _, ret)| {
+                    VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
                         // Because `drain_filter` runs over entire `Vec` on
                         // `Drop`, we can't just `.take(count)`.
                         if count.filter(|c| i >= *c).is_some() {
@@ -2081,9 +2162,7 @@ impl Features {
                         }
 
                         ret.as_ref()
-                            .and_then(
-                                RetryOptionsWithDeadline::left_until_retry,
-                            )
+                            .and_then(WithDeadline::left_until_retry)
                             .map_or_else(
                                 || {
                                     i += 1;
@@ -2097,7 +2176,9 @@ impl Features {
                                 },
                             )
                     })
-                    .map(|(f, r, s, ret)| (f, r, s, ty, ret.map(Into::into)))
+                    .map(|(id, f, r, s, ret)| {
+                        (id, f, r, s, ty, ret.map(Into::into))
+                    })
                     .collect::<Vec<_>>();
                 (!drained.is_empty()).then_some(drained)
             };

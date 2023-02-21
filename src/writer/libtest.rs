@@ -479,6 +479,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Scenario::Step(step, ev) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, false, cli,
             ),
+            Scenario::Log(_) => todo!(),
         }
     }
 

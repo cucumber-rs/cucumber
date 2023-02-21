@@ -190,6 +190,7 @@ impl<Out: io::Write> Json<Out> {
                 );
             }
             Scenario::Started | Scenario::Finished => {}
+            Scenario::Log(_) => todo!(),
         }
     }
 
