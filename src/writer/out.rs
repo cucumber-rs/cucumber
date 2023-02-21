@@ -14,6 +14,7 @@ use std::{borrow::Cow, io, mem, str};
 
 use console::Style;
 use derive_more::{Deref, DerefMut, Display, From, Into};
+use is_terminal::IsTerminal;
 
 use super::Coloring;
 
@@ -53,7 +54,7 @@ impl Default for Styles {
             retry: Style::new().magenta(),
             header: Style::new().blue(),
             bold: Style::new().bold(),
-            is_present: atty::is(atty::Stream::Stdout)
+            is_present: std::io::stdout().is_terminal()
                 && console::colors_enabled(),
         }
     }
