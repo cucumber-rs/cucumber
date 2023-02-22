@@ -952,13 +952,6 @@ async fn execute<W, Before, After>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        // We yield once on every iteration, because there is a chance, that
-        // this function never yields otherwise. In this case event sender won't
-        // send anything to the `Writer` until the end. This is the case, when
-        // all the parsing is done, so there is no contention on the `Mutex`
-        // inside `Features` storage and all `Step` functions don't yield.
-        yield_now().await;
-
         let (runnable, sleep) =
             features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
@@ -1018,8 +1011,9 @@ async fn execute<W, Before, After>(
             run_scenarios.push(run);
         }
 
-        match future::select(run_scenarios.next(), collect_logs).await {
-            Either::Left((next, _)) => {
+        match future::select(collect_logs, run_scenarios.next()).await {
+            Either::Left((inf, _)) => match inf {},
+            Either::Right((next, _)) => {
                 if next.is_some() {
                     if let ControlFlow::Continue(Some(sc)) =
                         &mut started_scenarios
@@ -1028,7 +1022,6 @@ async fn execute<W, Before, After>(
                     }
                 }
             }
-            Either::Right((inf, _)) => match inf {},
         }
 
         while let Ok(Some((feat, rule, scenario_failed, retried))) =

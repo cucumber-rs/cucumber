@@ -35,14 +35,10 @@ impl Future for YieldNow {
     }
 }
 
+type ThenYield<F, O> = Then<F, YieldThenReturn<O>, fn(O) -> YieldThenReturn<O>>;
+
 pub(crate) trait FutureExt: Future + Sized {
-    fn then_yield(
-        self,
-    ) -> Then<
-        Self,
-        YieldThenReturn<Self::Output>,
-        fn(Self::Output) -> YieldThenReturn<Self::Output>,
-    > {
+    fn then_yield(self) -> ThenYield<Self, Self::Output> {
         self.then(YieldThenReturn::new)
     }
 }
