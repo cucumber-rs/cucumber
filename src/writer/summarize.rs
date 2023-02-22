@@ -459,7 +459,7 @@ impl<Writer> Summarize<Writer> {
                     self.scenarios.passed += 1;
                 }
             }
-            Scenario::Log(_) => todo!(),
+            Scenario::Log(_) => {}
         }
     }
 }

@@ -1,7 +1,7 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
 use cucumber::{cli, given, then, when, writer, Parameter, World as _};
-use derive_more::{Deref, FromStr};
+use derive_more::{Deref, Display, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
@@ -47,13 +47,17 @@ async fn main() {
 #[when(regex = r"(\d+) secs?")]
 #[then(expr = "{u64} sec(s)")]
 async fn step(world: &mut World, secs: CustomU64) {
+    tracing::warn!("before waiting {secs}s");
     time::sleep(Duration::from_secs(*secs)).await;
+    tracing::warn!("in between waiting {secs}s");
+    time::sleep(Duration::from_secs(*secs)).await;
+    tracing::warn!("after waiting {secs}s");
 
     world.0 += 1;
     assert!(world.0 < 4, "Too much!");
 }
 
-#[derive(Deref, FromStr, Parameter)]
+#[derive(Clone, Copy, Deref, Display, FromStr, Parameter)]
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 

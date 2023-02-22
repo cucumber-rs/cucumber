@@ -1,9 +1,12 @@
+#![allow(dead_code)]
+#![allow(missing_docs)]
+
 use std::{
     collections::HashMap, fmt, future::Future, io, mem, pin::Pin, sync::Arc,
     task,
 };
 
-use futures::{channel::mpsc, Stream, StreamExt as _};
+use futures::{channel::mpsc, Stream};
 use pin_project::pin_project;
 use tracing::{info_span, Span};
 use tracing_core::{
@@ -34,6 +37,7 @@ pub(crate) struct Collector {
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
             Arc<gherkin::Scenario>,
+            Option<RetryOptions>,
         ),
     >,
     logs_receiver: mpsc::UnboundedReceiver<(ScenarioId, String)>,
@@ -62,10 +66,15 @@ impl Collector {
             )],
         >,
     ) {
-        for (id, f, r, s, ..) in runnable.as_ref() {
+        for (id, f, r, s, _, ret) in runnable.as_ref() {
             drop(self.scenarios.insert(
                 *id,
-                (Arc::clone(f), r.as_ref().map(Arc::clone), Arc::clone(s)),
+                (
+                    Arc::clone(f),
+                    r.as_ref().map(Arc::clone),
+                    Arc::clone(s),
+                    *ret,
+                ),
             ));
         }
     }
@@ -74,11 +83,13 @@ impl Collector {
         drop(self.scenarios.remove(&id));
     }
 
-    pub(crate) async fn collect_logs<W>(&mut self) -> Vec<event::Cucumber<W>> {
+    pub(crate) fn next_log<W>(&mut self) -> Option<event::Cucumber<W>> {
         self.logs_receiver
-            .by_ref()
+            .try_next()
+            .ok()
+            .flatten()
             .map(|(id, msg)| {
-                let (f, r, s) = self
+                let (f, r, s, opt) = self
                     .scenarios
                     .get(&id)
                     .unwrap_or_else(|| panic!("No `Scenario` with ID: {id}"));
@@ -88,12 +99,10 @@ impl Collector {
                     Arc::clone(s),
                     event::RetryableScenario {
                         event: event::Scenario::Log(msg),
-                        retries: None,
+                        retries: opt.map(|opt| opt.retries),
                     },
                 )
             })
-            .collect()
-            .await
     }
 }
 

@@ -45,7 +45,7 @@ use crate::runner::tracing::{self, Instrument};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
-    future::yield_now,
+    future::{yield_now, FutureExt as _},
     parser, step,
     tag::Ext as _,
     Event, Runner, Step, World,
@@ -995,8 +995,10 @@ async fn execute<W, Before, After>(
             logs_collector.start_scenarios(&runnable);
             infer_return(async {
                 loop {
-                    executor
-                        .send_all_events(logs_collector.collect_logs().await);
+                    while let Some(log) = logs_collector.next_log() {
+                        executor.send_event(log);
+                    }
+                    yield_now().await;
                 }
             })
         };
@@ -1341,7 +1343,7 @@ where
         retries: Option<Retries>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
         let init_world = async {
-            AssertUnwindSafe(async { W::new().await })
+            AssertUnwindSafe(async { W::new().then_yield().await })
                 .catch_unwind()
                 .await
                 .map_err(Info::from)
@@ -1372,6 +1374,7 @@ where
                         scenario.as_ref(),
                         &mut world,
                     )
+                    .then_yield()
                     .await;
                 };
                 match AssertUnwindSafe(fut).catch_unwind().await {
@@ -1445,7 +1448,7 @@ where
             let mut world = if let Some(w) = world_opt {
                 w
             } else {
-                match AssertUnwindSafe(async { W::new().await })
+                match AssertUnwindSafe(async { W::new().then_yield().await })
                     .catch_unwind()
                     .await
                 {
@@ -1463,9 +1466,11 @@ where
                 }
             };
 
-            match AssertUnwindSafe(async { step_fn(&mut world, ctx).await })
-                .catch_unwind()
-                .await
+            match AssertUnwindSafe(async {
+                step_fn(&mut world, ctx).then_yield().await
+            })
+            .catch_unwind()
+            .await
             {
                 Ok(()) => Ok((Some(captures), loc, Some(world))),
                 Err(e) => {
@@ -1612,6 +1617,7 @@ where
                     &ev,
                     world.as_mut(),
                 )
+                .then_yield()
                 .await;
             };
 
