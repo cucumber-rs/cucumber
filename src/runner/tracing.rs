@@ -449,11 +449,33 @@ impl<W: io::Write> io::Write for PostponedWriter<W> {
                 State::WaitingForStart => {
                     if let Some((before, after)) = msg.split_once(escape::START)
                     {
-                        self.other.write_all(before.as_bytes())?;
-                        msg = after;
-                        self.state = State::CollectingMsg {
-                            buffer: String::with_capacity(128),
-                        };
+                        if let Some((id, complete_msg)) = before
+                            .is_empty()
+                            .then(|| after.split_once(escape::END))
+                            .flatten()
+                            .and_then(|(msg, rest)| {
+                                let (id, rest) =
+                                    rest.split_once(escape::AFTER_SCENARIO_ID)?;
+                                rest.is_empty()
+                                    .then(|| id.parse::<ScenarioId>().ok())
+                                    .flatten()
+                                    .map(|id| (id, msg))
+                            })
+                        {
+                            // Optimization for exactly one complete escaped
+                            // `tracing` `Event`.
+                            msg = "";
+                            self.state = State::FoundEscape {
+                                id,
+                                msg: complete_msg.to_owned(),
+                            };
+                        } else {
+                            self.other.write_all(before.as_bytes())?;
+                            msg = after;
+                            self.state = State::CollectingMsg {
+                                buffer: String::with_capacity(128),
+                            };
+                        }
                     } else {
                         self.other.write_all(msg.as_bytes())?;
                         break;
