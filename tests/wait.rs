@@ -47,11 +47,11 @@ async fn main() {
 #[when(regex = r"(\d+) secs?")]
 #[then(expr = "{u64} sec(s)")]
 async fn step(world: &mut World, secs: CustomU64) {
-    tracing::warn!("before waiting {secs}s");
-    time::sleep(Duration::from_secs(*secs)).await;
-    tracing::warn!("in between waiting {secs}s");
-    time::sleep(Duration::from_secs(*secs)).await;
-    tracing::warn!("after waiting {secs}s");
+    tracing::info!("before waiting {secs}s");
+    time::sleep(Duration::from_secs(*secs) / 2).await;
+    tracing::info!("in between waiting {secs}s");
+    time::sleep(Duration::from_secs(*secs) / 2).await;
+    tracing::info!("after waiting {secs}s");
 
     world.0 += 1;
     assert!(world.0 < 4, "Too much!");

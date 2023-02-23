@@ -13,7 +13,6 @@
 use std::{
     cmp,
     collections::HashMap,
-    convert::Infallible,
     fmt, iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
@@ -45,7 +44,7 @@ use crate::runner::tracing::{self, Instrument};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
-    future::{yield_now, FutureExt as _},
+    future::{assert_future, select_with_biased_first, FutureExt as _},
     parser, step,
     tag::Ext as _,
     Event, Runner, Step, World,
@@ -800,7 +799,7 @@ where
                 .with(
                     tracing_subscriber::fmt::layer()
                         .map_fmt_fields(tracing::SkipScenarioIdSpan)
-                        .map_event_format(tracing::AppendScenarioId)
+                        .map_event_format(tracing::EscapeScenarioMsg)
                         .map_writer(|writer| {
                             tracing::MakePostponedWriter::new(
                                 logs_sender,
@@ -889,6 +888,7 @@ async fn insert_features<W, S, F>(
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
+#[allow(clippy::too_many_arguments)]
 async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
@@ -981,24 +981,21 @@ async fn execute<W, Before, After>(
         executor.send_all_events(started);
 
         #[cfg(feature = "tracing")]
-        let collect_logs = {
-            fn infer_return<F: future::Future<Output = Infallible>>(f: F) -> F {
-                f
-            }
+        let forward_logs = {
             logs_collector.start_scenarios(&runnable);
-            infer_return(async {
+            assert_future::<Option<()>, _>(async {
                 loop {
                     while let Some(log) = logs_collector.next_log() {
                         executor.send_event(log);
                     }
-                    yield_now().await;
+                    future::ready(()).then_yield().await;
                 }
             })
         };
         #[cfg(feature = "tracing")]
-        pin_mut!(collect_logs);
+        pin_mut!(forward_logs);
         #[cfg(not(feature = "tracing"))]
-        let collect_logs = future::pending::<Infallible>();
+        let forward_logs = assert_future::<Option<()>, _>(future::pending());
 
         if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
             *sc -= runnable.len();
@@ -1011,20 +1008,17 @@ async fn execute<W, Before, After>(
             run_scenarios.push(run);
         }
 
-        match future::select(collect_logs, run_scenarios.next()).await {
-            Either::Left((inf, _)) => match inf {},
-            Either::Right((next, _)) => {
-                if next.is_some() {
-                    if let ControlFlow::Continue(Some(sc)) =
-                        &mut started_scenarios
-                    {
-                        *sc += 1;
-                    }
-                }
+        let (finished_scenario, _) =
+            select_with_biased_first(forward_logs, run_scenarios.next())
+                .await
+                .factor_first();
+        if finished_scenario.is_some() {
+            if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
+                *sc += 1;
             }
         }
 
-        while let Ok(Some((feat, rule, scenario_failed, retried))) =
+        while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
             if let Some(rule) = rule {
@@ -1039,6 +1033,8 @@ async fn execute<W, Before, After>(
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);
             }
+            #[cfg(feature = "tracing")]
+            logs_collector.finish_scenario(id);
 
             if fail_fast && scenario_failed && !retried {
                 started_scenarios = ControlFlow::Break(());
@@ -1307,7 +1303,6 @@ where
         if let Some(next_try) = next_try {
             self.storage
                 .insert_retried_scenario(
-                    id,
                     Arc::clone(&feature),
                     rule.clone(),
                     scenario,
@@ -1317,7 +1312,13 @@ where
                 .await;
         }
 
-        self.scenario_finished(feature, rule, is_failed, next_try.is_some());
+        self.scenario_finished(
+            id,
+            feature,
+            rule,
+            is_failed,
+            next_try.is_some(),
+        );
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1460,7 +1461,7 @@ where
             };
 
             match AssertUnwindSafe(async {
-                step_fn(&mut world, ctx).then_yield().await
+                step_fn(&mut world, ctx).then_yield().await;
             })
             .catch_unwind()
             .await
@@ -1684,6 +1685,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     fn scenario_finished(
         &self,
+        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         is_failed: IsFailed,
@@ -1693,7 +1695,7 @@ where
         // so we can just ignore it.
         drop(
             self.finished_sender
-                .unbounded_send((feature, rule, is_failed, is_retried)),
+                .unbounded_send((id, feature, rule, is_failed, is_retried)),
         );
     }
 
@@ -1737,12 +1739,20 @@ where
     }
 }
 
+/// ID of the [`Scenario`] for uniquely identifying it.
+///
+/// Note that retried [`Scenario`] has different ID from failed one.
+///
+/// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]
 pub(crate) struct ScenarioId(pub(crate) u64);
 
 impl ScenarioId {
+    /// Creates a new unique [`ScenarioId`].
     fn new() -> Self {
+        /// [`AtomicU64`] ID.
         static ID: AtomicU64 = AtomicU64::new(0);
+
         Self(ID.fetch_add(1, Ordering::Relaxed))
     }
 }
@@ -1781,6 +1791,7 @@ struct FinishedRulesAndFeatures {
 ///
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesSender = mpsc::UnboundedSender<(
+    ScenarioId,
     Arc<gherkin::Feature>,
     Option<Arc<gherkin::Rule>>,
     IsFailed,
@@ -1792,6 +1803,7 @@ type FinishedFeaturesSender = mpsc::UnboundedSender<(
 ///
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesReceiver = mpsc::UnboundedReceiver<(
+    ScenarioId,
     Arc<gherkin::Feature>,
     Option<Arc<gherkin::Rule>>,
     IsFailed,
@@ -2039,7 +2051,6 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_retried_scenario(
         &self,
-        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
@@ -2049,7 +2060,7 @@ impl Features {
         self.insert_scenarios(
             iter::once((
                 scenario_ty,
-                vec![(id, feature, rule, scenario, retries)],
+                vec![(ScenarioId::new(), feature, rule, scenario, retries)],
             ))
             .collect(),
         )

@@ -495,7 +495,7 @@ pub enum Scenario<World> {
     /// [`Step`] event.
     Step(Arc<gherkin::Step>, Step<World>),
 
-    /// TODO
+    /// [`Scenario`] log emitted.
     Log(String),
 
     /// [`Scenario`] execution being finished.

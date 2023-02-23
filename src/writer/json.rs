@@ -189,8 +189,8 @@ impl<Out: io::Write> Json<Out> {
                     feature, rule, scenario, "scenario", &st, ev, meta,
                 );
             }
-            Scenario::Started | Scenario::Finished => {}
-            Scenario::Log(_) => todo!(),
+            // TODO: report logs for each `Scenario`.
+            Scenario::Started | Scenario::Finished | Scenario::Log(_) => {}
         }
     }
 

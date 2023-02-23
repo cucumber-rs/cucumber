@@ -2,7 +2,10 @@
 
 use std::{future::Future, pin::Pin, task};
 
-use futures::{future::Then, FutureExt as _};
+use futures::{
+    future::{Either, FusedFuture, Then},
+    FutureExt as _,
+};
 use pin_project::pin_project;
 
 /// Wakes the current task and returns [`task::Poll::Pending`] once.
@@ -35,9 +38,13 @@ impl Future for YieldNow {
     }
 }
 
+/// Return type of [`FutureExt::then_yield()`].
 type ThenYield<F, O> = Then<F, YieldThenReturn<O>, fn(O) -> YieldThenReturn<O>>;
 
+/// [`Future`] extensions.
 pub(crate) trait FutureExt: Future + Sized {
+    /// Yields after [`Future`] is resolved to allow other [`Future`]s to make
+    /// progress.
     fn then_yield(self) -> ThenYield<Self, Self::Output> {
         self.then(YieldThenReturn::new)
     }
@@ -45,16 +52,22 @@ pub(crate) trait FutureExt: Future + Sized {
 
 impl<T: Future> FutureExt for T {}
 
+/// [`Future`] that returns [`task::Poll::Pending`] once and then returns the
+/// value.
 #[derive(Debug)]
 #[pin_project]
 pub(crate) struct YieldThenReturn<V> {
+    /// Returned value.
     value: Option<V>,
+
+    /// [`YieldNow`] [`Future`].
     #[pin]
     r#yield: YieldNow,
 }
 
 impl<V> YieldThenReturn<V> {
-    fn new(v: V) -> Self {
+    /// Creates new [`YieldThenReturn`].
+    const fn new(v: V) -> Self {
         Self {
             value: Some(v),
             r#yield: yield_now(),
@@ -75,4 +88,77 @@ impl<V> Future for YieldThenReturn<V> {
             .take()
             .map_or(task::Poll::Pending, task::Poll::Ready)
     }
+}
+
+/// [`select`] that always [`task::Poll`]s `biased` [`Future`] first and only
+/// if it returns [`task::Poll::Pending`] tries to [`task::Poll`] `regular`.
+///
+/// Implementation is exactly the same, as [`select`] at the moment, but
+/// documentation has no guarantee about this behaviour, so can be changed.
+///
+/// [`select`]: futures::future::select
+pub(crate) const fn select_with_biased_first<A, B>(
+    biased: A,
+    regular: B,
+) -> SelectWithBiasedFirst<A, B>
+where
+    A: Future + Unpin,
+    B: Future + Unpin,
+{
+    assert_future::<Either<(A::Output, B), (B::Output, A)>, _>(
+        SelectWithBiasedFirst {
+            inner: Some((biased, regular)),
+        },
+    )
+}
+
+/// [`Future`] of [`select_with_biased_first`].
+pub(crate) struct SelectWithBiasedFirst<A, B> {
+    /// Inner [`Future`]s.
+    inner: Option<(A, B)>,
+}
+
+impl<A, B> Future for SelectWithBiasedFirst<A, B>
+where
+    A: Future + Unpin,
+    B: Future + Unpin,
+{
+    type Output = Either<(A::Output, B), (B::Output, A)>;
+
+    #[allow(clippy::expect_used)]
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+    ) -> task::Poll<Self::Output> {
+        let (mut a, mut b) = self
+            .inner
+            .take()
+            .expect("cannot poll `SelectWithBiasedFirst` twice");
+
+        if let task::Poll::Ready(val) = a.poll_unpin(cx) {
+            return task::Poll::Ready(Either::Left((val, b)));
+        }
+
+        if let task::Poll::Ready(val) = b.poll_unpin(cx) {
+            return task::Poll::Ready(Either::Right((val, a)));
+        }
+
+        self.inner = Some((a, b));
+        task::Poll::Pending
+    }
+}
+
+impl<A, B> FusedFuture for SelectWithBiasedFirst<A, B>
+where
+    A: Future + Unpin,
+    B: Future + Unpin,
+{
+    fn is_terminated(&self) -> bool {
+        self.inner.is_none()
+    }
+}
+
+/// Statically checks that [`Future::Output`] is expected.
+pub(crate) const fn assert_future<R, F: Future<Output = R>>(f: F) -> F {
+    f
 }

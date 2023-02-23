@@ -44,7 +44,7 @@ async-trait = "0.1.43"
 atty = "0.2.14"
 clap = { version = "4.0.6", features = ["derive", "wrap_help"] }
 console = "0.15"
-derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
+derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"], default_features = false }
 drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"

@@ -417,7 +417,8 @@ impl<Writer> Summarize<Writer> {
         let ret = ev.retries;
         match &ev.event {
             Scenario::Started
-            | Scenario::Hook(_, Hook::Passed | Hook::Started) => {}
+            | Scenario::Hook(_, Hook::Passed | Hook::Started)
+            | Scenario::Log(_) => {}
             Scenario::Hook(_, Hook::Failed(..)) => {
                 // - If Scenario's last Step failed and then After Hook failed
                 //   too, we don't need to track second failure;
@@ -459,7 +460,6 @@ impl<Writer> Summarize<Writer> {
                     self.scenarios.passed += 1;
                 }
             }
-            Scenario::Log(_) => {}
         }
     }
 }
