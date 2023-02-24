@@ -771,6 +771,7 @@ where
                 );
 
             let dispatch = tracing::Dispatch::new(subscriber);
+            #[allow(clippy::unwrap_used)]
             tracing::set_global_default(dispatch).unwrap();
             logs_receiver
         };
@@ -885,7 +886,7 @@ async fn insert_features<W, S, F>(
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
@@ -1032,6 +1033,8 @@ async fn execute<W, Before, After>(
             }
             #[cfg(feature = "tracing")]
             logs_collector.finish_scenario(id);
+            #[cfg(not(feature = "tracing"))]
+            let _ = id;
 
             if fail_fast && scenario_failed && !retried {
                 started_scenarios = ControlFlow::Break(());

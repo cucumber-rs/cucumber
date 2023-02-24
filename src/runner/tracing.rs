@@ -1,14 +1,11 @@
 //! [`tracing`] integration layer.
 
-use std::{
-    collections::HashMap, fmt, future::Future, io, pin::Pin, sync::Arc, task,
-};
+use std::{collections::HashMap, fmt, io, iter, sync::Arc};
 
-use futures::{channel::mpsc, Stream};
+use futures::channel::mpsc;
 use itertools::Either;
-use pin_project::pin_project;
 use tracing::{error_span, Span};
-use tracing_core::{dispatcher, field::Visit, span, Event, Field, Subscriber};
+use tracing_core::{field::Visit, span, Event, Field, Subscriber};
 use tracing_subscriber::{
     field::RecordFields,
     fmt::{format, FmtContext, FormatEvent, FormatFields, MakeWriter},
@@ -31,7 +28,7 @@ pub(crate) struct Collector {
     /// [`Scenarios`] with their IDs.
     scenarios: Scenarios,
 
-    /// Receiver for [`tracing`] [`Event`]s messages with corresponding
+    /// Receiver for [`tracing`] [`Event`]s messages with optional corresponding
     /// [`ScenarioId`].
     logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
 }
@@ -97,16 +94,21 @@ impl Collector {
     }
 
     /// Tries to receive next [`event::Scenario::Log`].
+    ///
+    /// In case [`tracing`] [`Event`] received doesn't contain [`Scenario`]
+    /// [`Span`], this [`Event`] will be forwarded to all active [`Scenario`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
     pub(crate) fn next_logs<W>(&mut self) -> Option<Vec<event::Cucumber<W>>> {
         self.logs_receiver
             .try_next()
             .ok()
             .flatten()
             .map(|(id, msg)| {
-                id.and_then(|id| self.scenarios.get(&id))
+                id.and_then(|k| self.scenarios.get(&k))
                     .map_or_else(
                         || Either::Left(self.scenarios.values()),
-                        |p| Either::Right(Some(p).into_iter()),
+                        |p| Either::Right(iter::once(p)),
                     )
                     .map(|(f, r, s, opt)| {
                         event::Cucumber::scenario(
@@ -121,54 +123,6 @@ impl Collector {
                     })
                     .collect()
             })
-    }
-}
-
-/// Sets default [`Dispatch`] for wrapped [`Future`] or [`Stream`].
-#[pin_project]
-pub(crate) struct DefaultDispatch<F> {
-    /// Wrapped [`Future`] or [`Stream`].
-    #[pin]
-    inner: F,
-
-    /// Default [`Dispatch`].
-    dispatch: Dispatch,
-}
-
-impl<S> DefaultDispatch<S> {
-    /// Creates a new [`DefaultDispatch`].
-    pub(crate) const fn new(inner: S, dispatch: Dispatch) -> Self {
-        Self { inner, dispatch }
-    }
-}
-
-impl<F: Future> Future for DefaultDispatch<F> {
-    type Output = F::Output;
-
-    fn poll(
-        self: Pin<&mut Self>,
-        cx: &mut task::Context<'_>,
-    ) -> task::Poll<Self::Output> {
-        let this = self.project();
-        let _guard = dispatcher::set_default(this.dispatch);
-        this.inner.poll(cx)
-    }
-}
-
-impl<S: Stream> Stream for DefaultDispatch<S> {
-    type Item = S::Item;
-
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut task::Context<'_>,
-    ) -> task::Poll<Option<Self::Item>> {
-        let this = self.project();
-        let _guard = dispatcher::set_default(this.dispatch);
-        this.inner.poll_next(cx)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
     }
 }
 
@@ -246,7 +200,7 @@ impl Visit for GetScenarioId {
     fn record_debug(&mut self, _: &Field, _: &dyn fmt::Debug) {}
 }
 
-/// [`FormatFields`] wrapper that skips [`Span`] with [`ScenarioId`].
+/// [`FormatFields`] wrapper that skips [`Span`]s with [`ScenarioId`].
 #[derive(Debug)]
 pub(crate) struct SkipScenarioIdSpan<F>(pub(crate) F);
 
@@ -278,8 +232,8 @@ impl Visit for IsScenarioIdSpan {
     }
 }
 
-/// [`FormatEvent`] wrapper that escapes [`tracing`] [`Event`]s that are emitted
-/// inside [`Scenario`] [`Span`].
+/// [`FormatEvent`] wrapper that appends [`tracing`] [`Event`]s to later parse
+/// them and retrieve optional [`ScenarioId`].
 ///
 /// [`Scenario`]: gherkin::Scenario
 pub(crate) struct AppendScenarioMsg<F>(pub(crate) F);
@@ -328,7 +282,7 @@ mod suffix {
     //! [`Event`]: tracing::Event
     //! [`ScenarioId`]: super::ScenarioId
 
-    /// Separator of [`tracing`] [`Event`] messages.
+    /// End of [`tracing`] [`Event`] message.
     ///
     /// [`Event`]: tracing::Event
     pub(super) const END: &str = "__cucumber__scenario";
@@ -338,9 +292,13 @@ mod suffix {
     /// [`ScenarioId`]: super::ScenarioId
     pub(super) const BEFORE_SCENARIO_ID: &str = "__";
 
+    /// Separator in case there is no [`ScenarioId`].
+    ///
+    /// [`ScenarioId`]: super::ScenarioId
     pub(super) const NO_SCENARIO_ID: &str = "__unknown";
 }
 
+/// [`io::Write`]r that sends [`tracing`] [`Event`]s to the [`Collector`].
 #[derive(Clone, Debug)]
 pub(crate) struct CollectorWriter {
     /// Sender for notifying [`Collector`] about [`tracing`] [`Event`]s.
@@ -348,7 +306,8 @@ pub(crate) struct CollectorWriter {
 }
 
 impl CollectorWriter {
-    pub(crate) fn new(
+    /// Creates a new [`CollectorWriter`].
+    pub(crate) const fn new(
         sender: mpsc::UnboundedSender<(Option<ScenarioId>, String)>,
     ) -> Self {
         Self { sender }
@@ -365,8 +324,15 @@ impl<'a> MakeWriter<'a> for CollectorWriter {
 
 impl io::Write for CollectorWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let msg = String::from_utf8_lossy(buf);
-        for msg in msg.split_terminator(suffix::END) {
+        // Although this is not documented explicitly anywhere, `io::Write`rs
+        // inside `tracing::fmt::Layer` always receives fully formatted
+        // messages at once, not as parts.
+        // Inside docs of `fmt::Layer::with_writer`, non-locked `io::stderr` is
+        // passed as an `io::Writer`. So if this guarantee fails, parts of log
+        // messages will be able to interleave each other, making result
+        // unreadable.
+        let msgs = String::from_utf8_lossy(buf);
+        for msg in msgs.split_terminator(suffix::END) {
             if let Some((before, after)) =
                 msg.rsplit_once(suffix::NO_SCENARIO_ID)
             {

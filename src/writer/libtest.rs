@@ -469,10 +469,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
         let retries = ev.retries;
         match ev.event {
-            // TODO: maybe `println!()` logs to display them in case of failure?
-            Scenario::Started | Scenario::Finished | Scenario::Log(_) => {
-                Vec::new()
-            }
+            Scenario::Started | Scenario::Finished => Vec::new(),
             Scenario::Hook(ty, ev) => {
                 self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
             }
@@ -482,6 +479,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Scenario::Step(step, ev) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, false, cli,
             ),
+            #[allow(clippy::print_stdout)]
+            Scenario::Log(msg) => {
+                print!("{msg}");
+                Vec::new()
+            }
         }
     }
 
