@@ -54,8 +54,7 @@ impl Default for Styles {
             retry: Style::new().magenta(),
             header: Style::new().blue(),
             bold: Style::new().bold(),
-            is_present: std::io::stdout().is_terminal()
-                && console::colors_enabled(),
+            is_present: io::stdout().is_terminal() && console::colors_enabled(),
         }
     }
 }
