@@ -24,6 +24,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(feature = "tracing")]
+use crossbeam_utils::atomic::AtomicCell;
 use derive_more::{Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
@@ -38,9 +40,11 @@ use futures::{
 use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
+#[cfg(feature = "tracing")]
+use tracing::Instrument;
 
 #[cfg(feature = "tracing")]
-use crate::runner::tracing::{self, Instrument};
+use crate::tracing::Collector as TracingCollector;
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
@@ -381,6 +385,10 @@ pub struct Basic<
 
     /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
+
+    /// [`TracingCollector`] for forwarding [`event::Scenario::Log`]s.
+    #[cfg(feature = "tracing")]
+    pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -398,6 +406,8 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
             fail_fast: self.fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::clone(&self.logs_collector),
         }
     }
 }
@@ -440,6 +450,8 @@ impl<World> Default for Basic<World> {
             before_hook: None,
             after_hook: None,
             fail_fast: false,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
         }
     }
 }
@@ -523,6 +535,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             ) -> ScenarioType
             + 'static,
     {
+        #[cfg(feature = "tracing")]
+        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -546,6 +560,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -585,6 +601,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             &'a mut World,
         ) -> LocalBoxFuture<'a, ()>,
     {
+        #[cfg(feature = "tracing")]
+        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -608,6 +626,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook: Some(func),
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -634,6 +654,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             Option<&'a mut World>,
         ) -> LocalBoxFuture<'a, ()>,
     {
+        #[cfg(feature = "tracing")]
+        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -657,6 +679,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook: Some(func),
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -732,6 +756,8 @@ where
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
+        #[cfg(feature = "tracing")]
+        let logs_collector = *self.logs_collector.swap(Box::new(None));
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -743,6 +769,7 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            ..
         } = self;
 
         cli.retry = cli.retry.or(retries);
@@ -753,28 +780,6 @@ where
 
         let buffer = Features::default();
         let (sender, receiver) = mpsc::unbounded();
-
-        #[cfg(feature = "tracing")]
-        let logs_receiver = {
-            use tracing_subscriber::layer::SubscriberExt as _;
-
-            let (logs_sender, logs_receiver) = mpsc::unbounded();
-            let subscriber = tracing_subscriber::registry()
-                .with(tracing::RecordScenarioId)
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .map_fmt_fields(tracing::SkipScenarioIdSpan)
-                        .map_event_format(tracing::AppendScenarioMsg)
-                        .with_writer(tracing::CollectorWriter::new(
-                            logs_sender,
-                        )),
-                );
-
-            let dispatch = tracing::Dispatch::new(subscriber);
-            #[allow(clippy::unwrap_used)]
-            tracing::set_global_default(dispatch).unwrap();
-            logs_receiver
-        };
 
         let insert = insert_features(
             buffer.clone(),
@@ -794,7 +799,7 @@ where
             after_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
-            tracing::Collector::new(logs_receiver),
+            logs_collector,
         );
 
         stream::select(
@@ -897,7 +902,7 @@ async fn execute<W, Before, After>(
     before_hook: Option<Before>,
     after_hook: Option<After>,
     fail_fast: bool,
-    #[cfg(feature = "tracing")] mut logs_collector: tracing::Collector,
+    #[cfg(feature = "tracing")] mut logs_collector: Option<TracingCollector>,
 ) where
     W: World,
     Before: 'static
@@ -980,10 +985,15 @@ async fn execute<W, Before, After>(
 
         #[cfg(feature = "tracing")]
         let forward_logs = {
-            logs_collector.start_scenarios(&runnable);
+            if let Some(logs_collector) = logs_collector.as_mut() {
+                logs_collector.start_scenarios(&runnable);
+            }
             assert_future::<Option<()>, _>(async {
                 loop {
-                    while let Some(logs) = logs_collector.next_logs() {
+                    while let Some(logs) = logs_collector
+                        .as_mut()
+                        .and_then(TracingCollector::emitted_logs)
+                    {
                         executor.send_all_events(logs);
                     }
                     future::ready(()).then_yield().await;
@@ -1032,7 +1042,11 @@ async fn execute<W, Before, After>(
                 executor.send_event(f);
             }
             #[cfg(feature = "tracing")]
-            logs_collector.finish_scenario(id);
+            {
+                if let Some(logs_collector) = logs_collector.as_mut() {
+                    logs_collector.finish_scenario(id);
+                }
+            }
             #[cfg(not(feature = "tracing"))]
             let _ = id;
 
@@ -1745,15 +1759,21 @@ where
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]
-pub(crate) struct ScenarioId(pub(crate) u64);
+pub struct ScenarioId(pub(crate) u64);
 
 impl ScenarioId {
     /// Creates a new unique [`ScenarioId`].
-    fn new() -> Self {
+    pub fn new() -> Self {
         /// [`AtomicU64`] ID.
         static ID: AtomicU64 = AtomicU64::new(0);
 
         Self(ID.fetch_add(1, Ordering::Relaxed))
+    }
+}
+
+impl Default for ScenarioId {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -5,25 +5,133 @@ use std::{collections::HashMap, fmt, io, iter, sync::Arc};
 use futures::channel::mpsc;
 use itertools::Either;
 use tracing::{error_span, Span};
-use tracing_core::{field::Visit, span, Event, Field, Subscriber};
+use tracing_core::{
+    field::Visit, span, Dispatch, Event, Field, LevelFilter, Subscriber,
+};
 use tracing_subscriber::{
     field::RecordFields,
-    fmt::{format, FmtContext, FormatEvent, FormatFields, MakeWriter},
-    layer,
+    filter,
+    fmt::{
+        format::{self, Format},
+        FmtContext, FormatEvent, FormatFields, MakeWriter,
+    },
+    layer::{self, Layered, SubscriberExt as _},
     registry::LookupSpan,
+    util::SubscriberInitExt as _,
     Layer,
 };
 
 use crate::{
     event,
-    runner::basic::{RetryOptions, ScenarioId},
-    ScenarioType,
+    runner::{
+        self,
+        basic::{RetryOptions, ScenarioId},
+    },
+    Cucumber, Parser, Runner, ScenarioType, World, Writer,
 };
 
-pub use tracing::{dispatcher::set_global_default, Instrument};
-pub use tracing_core::Dispatch;
+impl<W, P, I, Wr, Cli, WhichSc, Before, After>
+    Cucumber<W, P, I, runner::Basic<W, WhichSc, Before, After>, Wr, Cli>
+where
+    W: World,
+    P: Parser<I>,
+    runner::Basic<W, WhichSc, Before, After>: Runner<W>,
+    Wr: Writer<W>,
+    Cli: clap::Args,
+{
+    /// Initializes global [`Subscriber`].
+    #[must_use]
+    pub fn init_tracing(self) -> Self {
+        self.configure_and_init_tracing(
+            format::DefaultFields::new(),
+            Format::default(),
+            |layer| {
+                tracing_subscriber::registry()
+                    .with(LevelFilter::INFO.and_then(layer))
+            },
+        )
+    }
+
+    /// Configures [`fmt::Layer`], additionally wraps it (for example in
+    /// [`LevelFilter`]) and initializes as global [`Subscriber`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use cucumber::{Cucumber, World as _};
+    /// # use tracing_subscriber::{
+    /// #     filter::LevelFilter,
+    /// #     fmt::format::{self, Format},
+    /// #     layer::SubscriberExt,
+    /// #     Layer,
+    /// # };
+    /// #
+    /// # #[derive(Debug, Default, cucumber::World)]
+    /// # struct World;
+    /// #
+    /// # let _ = async {
+    /// World::cucumber()
+    ///     .configure_and_init_tracing(
+    ///         format::DefaultFields::new(),
+    ///         Format::default(),
+    ///         |fmt_layer| {
+    ///             tracing_subscriber::registry()
+    ///                 .with(LevelFilter::INFO.and_then(fmt_layer))
+    ///         },
+    ///     )
+    ///     .run_and_exit("./tests/features/doctests.feature")
+    ///     .await
+    /// # };
+    /// ```
+    ///
+    /// [`fmt::Layer`]: tracing_subscriber::fmt::Layer
+    #[must_use]
+    pub fn configure_and_init_tracing<Event, Fields, Sub, Conf, Out>(
+        self,
+        fmt_fields: Fields,
+        event_format: Event,
+        configure: Conf,
+    ) -> Self
+    where
+        Fields: for<'a> FormatFields<'a> + 'static,
+        Event: FormatEvent<Sub, SkipScenarioIdSpan<Fields>> + 'static,
+        Sub: Subscriber + for<'a> LookupSpan<'a>,
+        Out: Subscriber + Send + Sync,
+        Conf: FnOnce(
+            Layered<
+                tracing_subscriber::fmt::Layer<
+                    Sub,
+                    SkipScenarioIdSpan<Fields>,
+                    AppendScenarioMsg<Event>,
+                    CollectorWriter,
+                >,
+                RecordScenarioId,
+                Sub,
+            >,
+        ) -> Out,
+    {
+        let (logs_sender, logs_receiver) = mpsc::unbounded();
+
+        let layer = RecordScenarioId.and_then(
+            tracing_subscriber::fmt::layer()
+                .fmt_fields(SkipScenarioIdSpan(fmt_fields))
+                .event_format(AppendScenarioMsg(event_format))
+                .with_writer(CollectorWriter::new(logs_sender)),
+        );
+        Dispatch::new(configure(layer)).init();
+
+        drop(
+            self.runner
+                .logs_collector
+                .swap(Box::new(Some(Collector::new(logs_receiver)))),
+        );
+
+        self
+    }
+}
 
 /// [`tracing`] [`Event`]s collector.
+#[derive(Debug)]
 pub(crate) struct Collector {
     /// [`Scenarios`] with their IDs.
     scenarios: Scenarios,
@@ -93,13 +201,16 @@ impl Collector {
         drop(self.scenarios.remove(&id));
     }
 
-    /// Tries to receive next [`event::Scenario::Log`].
+    /// Returns all emitted [`event::Scenario::Log`] since this method was last
+    /// called.
     ///
     /// In case [`tracing`] [`Event`] received doesn't contain [`Scenario`]
     /// [`Span`], this [`Event`] will be forwarded to all active [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    pub(crate) fn next_logs<W>(&mut self) -> Option<Vec<event::Cucumber<W>>> {
+    pub(crate) fn emitted_logs<W>(
+        &mut self,
+    ) -> Option<Vec<event::Cucumber<W>>> {
         self.logs_receiver
             .try_next()
             .ok()
@@ -144,7 +255,8 @@ impl ScenarioId {
 /// [`Layer`] recording [`ScenarioId`] in [`Span`]'s [`Extensions`].
 ///
 /// [`Extensions`]: tracing_subscriber::registry::Extensions
-pub(crate) struct RecordScenarioId;
+#[derive(Clone, Copy, Debug)]
+pub struct RecordScenarioId;
 
 impl<S> Layer<S> for RecordScenarioId
 where
@@ -202,7 +314,7 @@ impl Visit for GetScenarioId {
 
 /// [`FormatFields`] wrapper that skips [`Span`]s with [`ScenarioId`].
 #[derive(Debug)]
-pub(crate) struct SkipScenarioIdSpan<F>(pub(crate) F);
+pub struct SkipScenarioIdSpan<F>(pub F);
 
 impl<'w, F: FormatFields<'w>> FormatFields<'w> for SkipScenarioIdSpan<F> {
     fn format_fields<R: RecordFields>(
@@ -236,7 +348,8 @@ impl Visit for IsScenarioIdSpan {
 /// them and retrieve optional [`ScenarioId`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub(crate) struct AppendScenarioMsg<F>(pub(crate) F);
+#[derive(Debug)]
+pub struct AppendScenarioMsg<F>(pub F);
 
 impl<S, N, F> FormatEvent<S, N> for AppendScenarioMsg<F>
 where
@@ -285,29 +398,30 @@ mod suffix {
     /// End of [`tracing`] [`Event`] message.
     ///
     /// [`Event`]: tracing::Event
-    pub(super) const END: &str = "__cucumber__scenario";
+    pub(crate) const END: &str = "__cucumber__scenario";
 
     /// Separator before [`ScenarioId`].
     ///
     /// [`ScenarioId`]: super::ScenarioId
-    pub(super) const BEFORE_SCENARIO_ID: &str = "__";
+    pub(crate) const BEFORE_SCENARIO_ID: &str = "__";
 
     /// Separator in case there is no [`ScenarioId`].
     ///
     /// [`ScenarioId`]: super::ScenarioId
-    pub(super) const NO_SCENARIO_ID: &str = "__unknown";
+    pub(crate) const NO_SCENARIO_ID: &str = "__unknown";
 }
 
-/// [`io::Write`]r that sends [`tracing`] [`Event`]s to the [`Collector`].
+/// [`io::Write`]r that sends [`tracing`] [`Event`]s to the `Collector`.
 #[derive(Clone, Debug)]
-pub(crate) struct CollectorWriter {
+pub struct CollectorWriter {
     /// Sender for notifying [`Collector`] about [`tracing`] [`Event`]s.
     sender: mpsc::UnboundedSender<(Option<ScenarioId>, String)>,
 }
 
 impl CollectorWriter {
     /// Creates a new [`CollectorWriter`].
-    pub(crate) const fn new(
+    #[must_use]
+    pub const fn new(
         sender: mpsc::UnboundedSender<(Option<ScenarioId>, String)>,
     ) -> Self {
         Self { sender }

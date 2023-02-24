@@ -15,8 +15,6 @@
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference/
 
 pub mod basic;
-#[cfg(feature = "tracing")]
-pub mod tracing;
 
 use futures::Stream;
 

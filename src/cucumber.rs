@@ -66,7 +66,7 @@ where
     /// [`Runner`] executing [`Scenario`]s and producing [`event`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    runner: R,
+    pub(crate) runner: R,
 
     /// [`Writer`] outputting [`event`]s to some output.
     writer: Wr,

@@ -32,6 +32,7 @@ async fn main() {
         .with_writer(writer::Libtest::or_basic())
         .fail_on_skipped()
         .with_cli(cli)
+        .init_tracing()
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
