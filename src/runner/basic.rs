@@ -755,7 +755,25 @@ where
         let (sender, receiver) = mpsc::unbounded();
 
         #[cfg(feature = "tracing")]
-        let (logs_sender, logs_receiver) = mpsc::unbounded();
+        let logs_receiver = {
+            use tracing_subscriber::layer::SubscriberExt as _;
+
+            let (logs_sender, logs_receiver) = mpsc::unbounded();
+            let subscriber = tracing_subscriber::registry()
+                .with(tracing::RecordScenarioId)
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .map_fmt_fields(tracing::SkipScenarioIdSpan)
+                        .map_event_format(tracing::AppendScenarioMsg)
+                        .with_writer(tracing::CollectorWriter::new(
+                            logs_sender,
+                        )),
+                );
+
+            let dispatch = tracing::Dispatch::new(subscriber);
+            tracing::set_global_default(dispatch).unwrap();
+            logs_receiver
+        };
 
         let insert = insert_features(
             buffer.clone(),
@@ -778,7 +796,7 @@ where
             tracing::Collector::new(logs_receiver),
         );
 
-        let stream = stream::select(
+        stream::select(
             receiver.map(Either::Left),
             future::join(insert, execute)
                 .into_stream()
@@ -789,29 +807,8 @@ where
                 Either::Left(ev) => Some(ev),
                 Either::Right(_) => None,
             }
-        });
-        #[cfg(feature = "tracing")]
-        let stream = {
-            use tracing_subscriber::layer::SubscriberExt as _;
-
-            let subscriber = tracing_subscriber::registry()
-                .with(tracing::RecordScenarioId)
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .map_fmt_fields(tracing::SkipScenarioIdSpan)
-                        .map_event_format(tracing::EscapeScenarioMsg)
-                        .map_writer(|writer| {
-                            tracing::MakePostponedWriter::new(
-                                logs_sender,
-                                writer,
-                            )
-                        }),
-                );
-
-            let dispatch = tracing::Dispatch::new(subscriber);
-            tracing::DefaultDispatch::new(stream, dispatch)
-        };
-        stream.boxed_local()
+        })
+        .boxed_local()
     }
 }
 
@@ -985,8 +982,8 @@ async fn execute<W, Before, After>(
             logs_collector.start_scenarios(&runnable);
             assert_future::<Option<()>, _>(async {
                 loop {
-                    while let Some(log) = logs_collector.next_log() {
-                        executor.send_event(log);
+                    while let Some(logs) = logs_collector.next_logs() {
+                        executor.send_all_events(logs);
                     }
                     future::ready(()).then_yield().await;
                 }

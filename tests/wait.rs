@@ -49,7 +49,9 @@ async fn main() {
 async fn step(world: &mut World, secs: CustomU64) {
     tracing::info!("before waiting {secs}s");
     time::sleep(Duration::from_secs(*secs) / 2).await;
-    tracing::info!("in between waiting {secs}s");
+    tokio::spawn(async move {
+        tracing::info!("in between waiting {secs}s");
+    });
     time::sleep(Duration::from_secs(*secs) / 2).await;
     tracing::info!("after waiting {secs}s");
 

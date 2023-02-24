@@ -1,16 +1,14 @@
 //! [`tracing`] integration layer.
 
 use std::{
-    collections::HashMap, fmt, future::Future, io, mem, pin::Pin, sync::Arc,
-    task,
+    collections::HashMap, fmt, future::Future, io, pin::Pin, sync::Arc, task,
 };
 
 use futures::{channel::mpsc, Stream};
+use itertools::Either;
 use pin_project::pin_project;
 use tracing::{error_span, Span};
-use tracing_core::{
-    dispatcher, field::Visit, span, Event, Field, Metadata, Subscriber,
-};
+use tracing_core::{dispatcher, field::Visit, span, Event, Field, Subscriber};
 use tracing_subscriber::{
     field::RecordFields,
     fmt::{format, FmtContext, FormatEvent, FormatFields, MakeWriter},
@@ -25,7 +23,7 @@ use crate::{
     ScenarioType,
 };
 
-pub use tracing::Instrument;
+pub use tracing::{dispatcher::set_global_default, Instrument};
 pub use tracing_core::Dispatch;
 
 /// [`tracing`] [`Event`]s collector.
@@ -35,7 +33,7 @@ pub(crate) struct Collector {
 
     /// Receiver for [`tracing`] [`Event`]s messages with corresponding
     /// [`ScenarioId`].
-    logs_receiver: mpsc::UnboundedReceiver<(ScenarioId, String)>,
+    logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
 }
 
 /// [`HashMap`] from [`ScenarioId`] to [`Scenario`] and it's full path.
@@ -54,7 +52,7 @@ type Scenarios = HashMap<
 impl Collector {
     /// Creates a new [`tracing`] [`Event`]s [`Collector`].
     pub(crate) fn new(
-        logs_receiver: mpsc::UnboundedReceiver<(ScenarioId, String)>,
+        logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
     ) -> Self {
         Self {
             scenarios: HashMap::new(),
@@ -99,34 +97,30 @@ impl Collector {
     }
 
     /// Tries to receive next [`event::Scenario::Log`].
-    pub(crate) fn next_log<W>(&mut self) -> Option<event::Cucumber<W>> {
-        loop {
-            if let Ok(res) = self
-                .logs_receiver
-                .try_next()
-                .ok()
-                .flatten()
-                .map(|(id, msg)| {
-                    // In case `Scenario` is already finished, but `tracing`
-                    // events from that `Span` still received, we just ignore
-                    // them.
-                    self.scenarios.get(&id).map_or(Err(()), |(f, r, s, opt)| {
-                        Ok(event::Cucumber::scenario(
+    pub(crate) fn next_logs<W>(&mut self) -> Option<Vec<event::Cucumber<W>>> {
+        self.logs_receiver
+            .try_next()
+            .ok()
+            .flatten()
+            .map(|(id, msg)| {
+                id.and_then(|id| self.scenarios.get(&id))
+                    .map_or_else(
+                        || Either::Left(self.scenarios.values()),
+                        |p| Either::Right(Some(p).into_iter()),
+                    )
+                    .map(|(f, r, s, opt)| {
+                        event::Cucumber::scenario(
                             Arc::clone(f),
                             r.as_ref().map(Arc::clone),
                             Arc::clone(s),
                             event::RetryableScenario {
-                                event: event::Scenario::Log(msg),
+                                event: event::Scenario::Log(msg.clone()),
                                 retries: opt.map(|o| o.retries),
                             },
-                        ))
+                        )
                     })
-                })
-                .transpose()
-            {
-                return res;
-            }
-        }
+                    .collect()
+            })
     }
 }
 
@@ -288,9 +282,9 @@ impl Visit for IsScenarioIdSpan {
 /// inside [`Scenario`] [`Span`].
 ///
 /// [`Scenario`]: gherkin::Scenario
-pub(crate) struct EscapeScenarioMsg<F>(pub(crate) F);
+pub(crate) struct AppendScenarioMsg<F>(pub(crate) F);
 
-impl<S, N, F> FormatEvent<S, N> for EscapeScenarioMsg<F>
+impl<S, N, F> FormatEvent<S, N> for AppendScenarioMsg<F>
 where
     S: Subscriber + for<'a> LookupSpan<'a>,
     N: for<'a> FormatFields<'a> + 'static,
@@ -302,234 +296,109 @@ where
         mut writer: format::Writer<'_>,
         event: &Event<'_>,
     ) -> fmt::Result {
-        let scenario_id = ctx.event_scope().and_then(|scope| {
+        self.0.format_event(ctx, writer.by_ref(), event)?;
+        if let Some(scenario_id) = ctx.event_scope().and_then(|scope| {
             scope
                 .from_root()
                 .find_map(|span| span.extensions().get::<ScenarioId>().copied())
-        });
-        if scenario_id.is_some() {
-            writer.write_str(escape::START)?;
-        }
-        self.0.format_event(ctx, writer.by_ref(), event)?;
-        if let Some(scenario_id) = scenario_id {
+        }) {
             writer.write_fmt(format_args!(
                 "{}{}{}",
-                escape::END,
+                suffix::BEFORE_SCENARIO_ID,
                 scenario_id,
-                escape::AFTER_SCENARIO_ID,
-            ))?;
+                suffix::END,
+            ))
+        } else {
+            writer.write_fmt(format_args!(
+                "{}{}",
+                suffix::NO_SCENARIO_ID,
+                suffix::END,
+            ))
         }
-        Ok(())
     }
 }
 
-mod escape {
-    //! [`str`]ings for escaping [`tracing`] [`Event`]s.
+mod suffix {
+    //! [`str`]ings appending [`tracing`] [`Event`]s to separate them later.
     //!
-    //! Format is the following:
+    //! Every [`tracing`] [`Event`] ends with:
     //!
-    //! [`START`]log[`END`][`ScenarioId`][`AFTER_SCENARIO_ID`]
+    //! ([`BEFORE_SCENARIO_ID`][`ScenarioId`][`END`]|[`NO_SCENARIO_ID`][`END`])
     //!
     //! [`Event`]: tracing::Event
     //! [`ScenarioId`]: super::ScenarioId
 
-    /// Start of the [`tracing`] [`Event`] message.
+    /// Separator of [`tracing`] [`Event`] messages.
     ///
     /// [`Event`]: tracing::Event
-    pub(super) const START: &str = "__cucumber_scenario_start__";
+    pub(super) const END: &str = "__cucumber__scenario";
 
-    /// End of the [`tracing`] [`Event`] message.
-    ///
-    /// [`Event`]: tracing::Event
-    pub(super) const END: &str = "__cucumber_scenario_end__";
-
-    /// End of the [`ScenarioId`].
+    /// Separator before [`ScenarioId`].
     ///
     /// [`ScenarioId`]: super::ScenarioId
-    pub(super) const AFTER_SCENARIO_ID: &str = "_";
+    pub(super) const BEFORE_SCENARIO_ID: &str = "__";
+
+    pub(super) const NO_SCENARIO_ID: &str = "__unknown";
 }
 
-/// [`MakeWriter`] implementor returning [`PostponedWriter`].
-pub(crate) struct MakePostponedWriter<W> {
+#[derive(Clone, Debug)]
+pub(crate) struct CollectorWriter {
     /// Sender for notifying [`Collector`] about [`tracing`] [`Event`]s.
-    sender: mpsc::UnboundedSender<(ScenarioId, String)>,
-
-    /// Inner [`MakeWriter`].
-    other: W,
+    sender: mpsc::UnboundedSender<(Option<ScenarioId>, String)>,
 }
 
-impl<W> MakePostponedWriter<W> {
-    /// Creates a new [`MakePostponedWriter`].
-    pub(crate) const fn new(
-        sender: mpsc::UnboundedSender<(ScenarioId, String)>,
-        other: W,
+impl CollectorWriter {
+    pub(crate) fn new(
+        sender: mpsc::UnboundedSender<(Option<ScenarioId>, String)>,
     ) -> Self {
-        Self { sender, other }
+        Self { sender }
     }
 }
 
-impl<'a, W: MakeWriter<'a>> MakeWriter<'a> for MakePostponedWriter<W> {
-    type Writer = PostponedWriter<W::Writer>;
+impl<'a> MakeWriter<'a> for CollectorWriter {
+    type Writer = Self;
 
     fn make_writer(&'a self) -> Self::Writer {
-        PostponedWriter {
-            sender: self.sender.clone(),
-            other: self.other.make_writer(),
-            state: PostponedWriterState::WaitingForStart,
-        }
-    }
-
-    fn make_writer_for(&'a self, meta: &Metadata<'_>) -> Self::Writer {
-        PostponedWriter {
-            sender: self.sender.clone(),
-            other: self.other.make_writer_for(meta),
-            state: PostponedWriterState::WaitingForStart,
-        }
+        self.clone()
     }
 }
 
-/// [`io::Write`]er for parsing [`escape`]d [`tracing`] [`Event`]s and sending
-/// then to the [`Collector`].
-pub(crate) struct PostponedWriter<W> {
-    /// Sender for notifying [`Collector`] about [`tracing`] [`Event`]s.
-    sender: mpsc::UnboundedSender<(ScenarioId, String)>,
-
-    /// Other [`io::Write`]r for unescaped [`tracing`] [`Event`]s.
-    other: W,
-
-    /// State of this [`io::Write`]r.
-    state: PostponedWriterState,
-}
-
-/// State of the [`PostponedWriter`].
-enum PostponedWriterState {
-    /// No [`escape::START`] found.
-    ///
-    /// All [`tracing`] [`Event`]s received in this state will be forwarded to
-    /// inner [`io::Write`]r.
-    WaitingForStart,
-
-    /// [`escape::START`] encountered, collecting [`tracing`] [`Event`] into
-    /// `buffer`.
-    CollectingMsg {
-        /// [`tracing`] [`Event`] buffer.
-        buffer: String,
-    },
-
-    /// [`escape::END`] encountered, collecting [`ScenarioId`] into `buffer`.
-    CollectingScenarioId {
-        /// [`ScenarioId`] buffer.
-        buffer: String,
-
-        /// Complete [`tracing`] [`Event`].
-        msg: String,
-    },
-
-    /// [`escape::AFTER_SCENARIO_ID`] found, sending `id` and `msg` to
-    /// [`Collector`].
-    FoundEscape {
-        /// ID of the [`Scenario`].
-        ///
-        /// [`Scenario`]: gherkin::Scenario
-        id: ScenarioId,
-
-        /// [`tracing`] [`Event`].
-        msg: String,
-    },
-}
-
-impl<W: io::Write> io::Write for PostponedWriter<W> {
+impl io::Write for CollectorWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        use PostponedWriterState as State;
-
         let msg = String::from_utf8_lossy(buf);
-        let mut msg = msg.as_ref();
-        loop {
-            match &mut self.state {
-                State::WaitingForStart => {
-                    if let Some((before, after)) = msg.split_once(escape::START)
-                    {
-                        if let Some((id, complete_msg)) = before
-                            .is_empty()
-                            .then(|| after.split_once(escape::END))
-                            .flatten()
-                            .and_then(|(msg, rest)| {
-                                let (id, rest) =
-                                    rest.split_once(escape::AFTER_SCENARIO_ID)?;
-                                rest.is_empty()
-                                    .then(|| id.parse::<ScenarioId>().ok())
-                                    .flatten()
-                                    .map(|id| (id, msg))
-                            })
-                        {
-                            // Optimization for exactly one complete escaped
-                            // `tracing` `Event`.
-                            msg = "";
-                            self.state = State::FoundEscape {
-                                id,
-                                msg: complete_msg.to_owned(),
-                            };
-                        } else {
-                            self.other.write_all(before.as_bytes())?;
-                            msg = after;
-                            self.state = State::CollectingMsg {
-                                buffer: String::with_capacity(128),
-                            };
-                        }
-                    } else {
-                        self.other.write_all(msg.as_bytes())?;
-                        break;
-                    }
+        for msg in msg.split_terminator(suffix::END) {
+            if let Some((before, after)) =
+                msg.rsplit_once(suffix::NO_SCENARIO_ID)
+            {
+                if !after.is_empty() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "wrong separator",
+                    ));
                 }
-                State::CollectingMsg { buffer } => {
-                    if let Some((before, after)) = msg.split_once(escape::END) {
-                        buffer.push_str(before);
-                        msg = after;
-                        self.state = State::CollectingScenarioId {
-                            msg: mem::take(buffer),
-                            buffer: String::new(),
-                        };
-                    } else {
-                        buffer.push_str(msg);
-                        break;
-                    }
-                }
-                State::CollectingScenarioId {
-                    msg: complete_msg,
-                    buffer: id_buffer,
-                } => {
-                    if let Some((before, after)) =
-                        msg.split_once(escape::AFTER_SCENARIO_ID)
-                    {
-                        id_buffer.push_str(before);
-                        msg = after;
-                        self.state = State::FoundEscape {
-                            msg: mem::take(complete_msg),
-                            id: id_buffer.parse().map_err(|e| {
-                                io::Error::new(io::ErrorKind::InvalidData, e)
-                            })?,
-                        };
-                    } else {
-                        id_buffer.push_str(msg);
-                        break;
-                    }
-                }
-                State::FoundEscape {
-                    msg: complete_msg,
-                    id,
-                } => {
-                    let _ = self
-                        .sender
-                        .unbounded_send((*id, mem::take(complete_msg)))
-                        .ok();
-                    self.state = State::WaitingForStart;
-                }
+                let _ =
+                    self.sender.unbounded_send((None, before.to_owned())).ok();
+            } else if let Some((before, after)) =
+                msg.rsplit_once(suffix::BEFORE_SCENARIO_ID)
+            {
+                let scenario_id = after.parse().map_err(|e| {
+                    io::Error::new(io::ErrorKind::InvalidData, e)
+                })?;
+                let _ = self
+                    .sender
+                    .unbounded_send((Some(scenario_id), before.to_owned()))
+                    .ok();
+            } else {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "missing separator",
+                ));
             }
         }
         Ok(buf.len())
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.other.flush()
+        Ok(())
     }
 }
