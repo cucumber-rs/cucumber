@@ -10,7 +10,6 @@ use tracing_core::{
 };
 use tracing_subscriber::{
     field::RecordFields,
-    filter,
     fmt::{
         format::{self, Format},
         FmtContext, FormatEvent, FormatFields, MakeWriter,
