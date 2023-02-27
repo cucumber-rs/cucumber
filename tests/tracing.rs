@@ -56,7 +56,11 @@ async fn main() {
     assert_eq!(
         non_deterministic
             .replace_all(String::from_utf8_lossy(&out).as_ref(), ""),
-        fs::read_to_string("tests/features/tracing/correct.stdout").unwrap(),
+        non_deterministic.replace_all(
+            &fs::read_to_string("tests/features/tracing/correct.stdout")
+                .unwrap(),
+            "",
+        ),
     );
 }
 
