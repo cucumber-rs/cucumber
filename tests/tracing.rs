@@ -5,6 +5,7 @@ use cucumber::{
 };
 use derive_more::Display;
 use futures::FutureExt as _;
+use regex::Regex;
 use tracing_subscriber::{
     filter::LevelFilter,
     fmt::format::{DefaultFields, Format},
@@ -45,8 +46,16 @@ async fn main() {
     let err = err.downcast_ref::<String>().unwrap();
     assert_eq!(err, "1 step failed");
 
+    // Required to strip out non-deterministic parts of output, so we could
+    // compare them well.
+    let non_deterministic = Regex::new(
+        " ([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?",
+    )
+    .unwrap();
+
     assert_eq!(
-        String::from_utf8_lossy(&out),
+        non_deterministic
+            .replace_all(String::from_utf8_lossy(&out).as_ref(), ""),
         fs::read_to_string("tests/features/tracing/correct.stdout").unwrap(),
     );
 }

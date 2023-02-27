@@ -10,7 +10,7 @@ Feature: Basic
    ✔  When step 1
    ✘  Then unknown
       Step failed:
-      Defined: tests/features/tracing/.feature:7:5
+      Defined:
       Step doesn't match any function
   Scenario: allow skipped
  INFO scenario: tracing: before increment: 0: 2
@@ -22,7 +22,7 @@ Feature: Basic
  INFO tracing: after increment without `Span`: 2: 2
    ✔  When step 2
    ?  Then unknown
-      Step skipped: tests/features/tracing/.feature:14:5
+      Step skipped:
   Scenario Outline: steps
  INFO scenario: tracing: before increment: 0: 3
  INFO scenario: tracing: after increment in `Span`: 1: 3
