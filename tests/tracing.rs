@@ -43,7 +43,7 @@ async fn main() {
         .await
         .expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
-    assert_eq!(err, "2 steps failed");
+    assert_eq!(err, "1 step failed");
 
     assert_eq!(
         String::from_utf8_lossy(&out),
@@ -51,12 +51,10 @@ async fn main() {
     );
 }
 
-#[given(regex = "step(?: (\\d+))?")]
-#[when(regex = "step(?: (\\d+))?")]
-#[then(regex = "step(?: (\\d+))?")]
-fn step(world: &mut World, n: String) {
-    let n = (!n.is_empty()).then(|| n.parse::<usize>().unwrap());
-
+#[given(regex = "step (\\d+)")]
+#[when(regex = "step (\\d+)")]
+#[then(regex = "step (\\d+)")]
+fn step(world: &mut World, n: usize) {
     tracing::info!("before increment: {world}: {n:?}");
 
     world.counter += 1;
