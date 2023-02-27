@@ -49,7 +49,7 @@ async fn main() {
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
     let non_deterministic = Regex::new(
-        " ([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?",
+        " ([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?|\n",
     )
     .unwrap();
 
