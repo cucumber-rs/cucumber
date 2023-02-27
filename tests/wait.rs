@@ -1,7 +1,7 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
 use cucumber::{cli, given, then, when, writer, Parameter, World as _};
-use derive_more::{Deref, Display, FromStr};
+use derive_more::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
@@ -32,7 +32,6 @@ async fn main() {
         .with_writer(writer::Libtest::or_basic())
         .fail_on_skipped()
         .with_cli(cli)
-        .init_tracing()
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)
@@ -48,19 +47,13 @@ async fn main() {
 #[when(regex = r"(\d+) secs?")]
 #[then(expr = "{u64} sec(s)")]
 async fn step(world: &mut World, secs: CustomU64) {
-    tracing::info!("before waiting {secs}s");
-    time::sleep(Duration::from_secs(*secs) / 2).await;
-    tokio::spawn(async move {
-        tracing::info!("in between waiting {secs}s");
-    });
-    time::sleep(Duration::from_secs(*secs) / 2).await;
-    tracing::info!("after waiting {secs}s");
+    time::sleep(Duration::from_secs(*secs)).await;
 
     world.0 += 1;
     assert!(world.0 < 4, "Too much!");
 }
 
-#[derive(Clone, Copy, Deref, Display, FromStr, Parameter)]
+#[derive(Deref, FromStr, Parameter)]
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 

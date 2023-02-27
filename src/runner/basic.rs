@@ -40,8 +40,6 @@ use futures::{
 use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
-#[cfg(feature = "tracing")]
-use tracing::Instrument;
 
 #[cfg(feature = "tracing")]
 use crate::tracing::Collector as TracingCollector;
@@ -1012,7 +1010,7 @@ async fn execute<W, Before, After>(
         for (id, f, r, s, ty, retries) in runnable {
             let run = executor.run_scenario(id, f, r, s, ty, retries);
             #[cfg(feature = "tracing")]
-            let run = Instrument::instrument(run, id.span());
+            let run = tracing::Instrument::instrument(run, id.span());
             run_scenarios.push(run);
         }
 

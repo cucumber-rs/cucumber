@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/tracing.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -84,7 +84,6 @@ derive_more = "0.99.17"
 rand = "0.8"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "time"] }
-tracing = "0.1"
 
 [[test]]
 name = "json"
@@ -99,8 +98,13 @@ name = "libtest"
 required-features = ["libtest"]
 
 [[test]]
+name = "tracing"
+required-features = ["tracing"]
+harness = false
+
+[[test]]
 name = "wait"
-required-features = ["libtest", "tracing"]
+required-features = ["libtest"]
 harness = false
 
 [workspace]
