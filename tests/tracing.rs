@@ -61,12 +61,20 @@ fn step(world: &mut World, n: String) {
 
     world.counter += 1;
 
+    let span = tracing::Span::current();
     thread::scope(|s| {
         s.spawn(|| {
+            let _guard = span.enter();
+            tracing::info!("after increment in `Span`: {world}: {n:?}");
+        })
+        .join()
+        .unwrap();
+        s.spawn(|| {
             tracing::info!("after increment without `Span`: {world}: {n:?}");
-        });
+        })
+        .join()
+        .unwrap();
     });
-    tracing::info!("after increment in `Span`: {world}: {n:?}");
 
     assert!(world.counter < 4, "Too much!");
 }

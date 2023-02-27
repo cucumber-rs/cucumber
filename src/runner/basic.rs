@@ -1389,7 +1389,7 @@ where
                 }
             });
 
-            match fut.await {
+            match fut.then_yield().await {
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
                         Arc::clone(feature),
@@ -1486,7 +1486,7 @@ where
             }
         };
 
-        match run.await {
+        match run.then_yield().await {
             Ok((Some(captures), loc, Some(world))) => {
                 self.send_event(passed(step, captures, loc));
                 Ok(world)
@@ -1628,7 +1628,7 @@ where
             };
 
             let started = event::Metadata::new(());
-            let res = AssertUnwindSafe(fut).catch_unwind().await;
+            let res = AssertUnwindSafe(fut).catch_unwind().then_yield().await;
             let finished = event::Metadata::new(());
             let meta = AfterHookEventsMeta { started, finished };
 
