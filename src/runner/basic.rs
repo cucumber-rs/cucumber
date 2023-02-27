@@ -981,46 +981,50 @@ async fn execute<W, Before, After>(
         let started = storage.start_scenarios(&runnable);
         executor.send_all_events(started);
 
-        #[cfg(feature = "tracing")]
-        let forward_logs = {
-            if let Some(logs_collector) = logs_collector.as_mut() {
-                logs_collector.start_scenarios(&runnable);
-            }
-            assert_future::<Option<()>, _>(async {
-                loop {
-                    while let Some(logs) = logs_collector
-                        .as_mut()
-                        .and_then(TracingCollector::emitted_logs)
-                    {
-                        executor.send_all_events(logs);
-                    }
-                    future::ready(()).then_yield().await;
-                }
-            })
-        };
-        #[cfg(feature = "tracing")]
-        pin_mut!(forward_logs);
-        #[cfg(not(feature = "tracing"))]
-        let forward_logs = assert_future::<Option<()>, _>(future::pending());
-
-        if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-            *sc -= runnable.len();
-        }
-
-        for (id, f, r, s, ty, retries) in runnable {
-            let run = executor.run_scenario(id, f, r, s, ty, retries);
+        {
             #[cfg(feature = "tracing")]
-            let run = tracing::Instrument::instrument(run, id.span());
-            run_scenarios.push(run);
-        }
+            let forward_logs = {
+                if let Some(logs_collector) = logs_collector.as_mut() {
+                    logs_collector.start_scenarios(&runnable);
+                }
+                assert_future::<Option<()>, _>(async {
+                    loop {
+                        while let Some(logs) = logs_collector
+                            .as_mut()
+                            .and_then(TracingCollector::emitted_logs)
+                        {
+                            executor.send_all_events(logs);
+                        }
+                        future::ready(()).then_yield().await;
+                    }
+                })
+            };
+            #[cfg(feature = "tracing")]
+            pin_mut!(forward_logs);
+            #[cfg(not(feature = "tracing"))]
+            let forward_logs =
+                assert_future::<Option<()>, _>(future::pending());
 
-        let (finished_scenario, _) =
-            select_with_biased_first(forward_logs, run_scenarios.next())
-                .await
-                .factor_first();
-        if finished_scenario.is_some() {
             if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-                *sc += 1;
+                *sc -= runnable.len();
+            }
+
+            for (id, f, r, s, ty, retries) in runnable {
+                let run = executor.run_scenario(id, f, r, s, ty, retries);
+                #[cfg(feature = "tracing")]
+                let run = tracing::Instrument::instrument(run, id.span());
+                run_scenarios.push(run);
+            }
+
+            let (finished_scenario, _) =
+                select_with_biased_first(forward_logs, run_scenarios.next())
+                    .await
+                    .factor_first();
+            if finished_scenario.is_some() {
+                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+                {
+                    *sc += 1;
+                }
             }
         }
 
