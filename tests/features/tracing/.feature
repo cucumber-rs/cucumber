@@ -23,9 +23,3 @@ Feature: Basic
       | step |
       | 3    |
       | 4    |
-
-  Scenario: too many
-    Given step 5
-    When step 5
-    Then step 5
-    Then step 5

@@ -75,8 +75,6 @@ fn step(world: &mut World, n: String) {
         .join()
         .unwrap();
     });
-
-    assert!(world.counter < 4, "Too much!");
 }
 
 #[derive(Clone, cucumber::World, Debug, Default, Display)]

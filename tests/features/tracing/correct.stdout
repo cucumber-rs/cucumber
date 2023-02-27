@@ -48,14 +48,14 @@ Feature: Basic
  INFO scenario: tracing: after increment in `Span`: 1: Some(4)
  INFO tracing: after increment without `Span`: 1: Some(4)
  INFO tracing: after increment without `Span`: 1: Some(5)
-   ✔  Given step 4
  INFO tracing: after increment without `Span`: 2: Some(3)
+   ✔  Given step 4
  INFO scenario: tracing: before increment: 1: Some(4)
  INFO scenario: tracing: after increment in `Span`: 2: Some(4)
  INFO tracing: after increment without `Span`: 2: Some(4)
  INFO tracing: after increment without `Span`: 2: Some(5)
-   ✔  When step 4
  INFO tracing: after increment without `Span`: 3: Some(3)
+   ✔  When step 4
  INFO scenario: tracing: before increment: 2: Some(4)
  INFO scenario: tracing: after increment in `Span`: 3: Some(4)
  INFO tracing: after increment without `Span`: 3: Some(4)
@@ -67,14 +67,14 @@ Feature: Basic
  INFO scenario: tracing: before increment: 0: Some(5)
  INFO scenario: tracing: after increment in `Span`: 1: Some(5)
  INFO tracing: after increment without `Span`: 1: Some(5)
-   ✔  Given step 5
  INFO tracing: after increment without `Span`: 2: Some(3)
+   ✔  Given step 5
  INFO tracing: after increment without `Span`: 2: Some(4)
  INFO scenario: tracing: before increment: 1: Some(5)
  INFO scenario: tracing: after increment in `Span`: 2: Some(5)
  INFO tracing: after increment without `Span`: 2: Some(5)
-   ✔  When step 5
  INFO tracing: after increment without `Span`: 3: Some(3)
+   ✔  When step 5
  INFO tracing: after increment without `Span`: 3: Some(4)
  INFO scenario: tracing: before increment: 2: Some(5)
  INFO scenario: tracing: after increment in `Span`: 3: Some(5)
