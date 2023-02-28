@@ -459,7 +459,7 @@ where
             .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
             .get(id)
             .copied()
-            .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id}"));
+            .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id:?}"));
         let _ = self
             .span_close_sender
             .unbounded_send((id, SpanEvent::Exit))
@@ -472,7 +472,7 @@ where
             .lock()
             .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
             .remove(&id)
-            .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id}"));
+            .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id:?}"));
         let _ = self
             .span_close_sender
             .unbounded_send((id, SpanEvent::Close))
