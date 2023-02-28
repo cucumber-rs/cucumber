@@ -258,6 +258,7 @@ impl Collector {
         }
     }
 
+    /// Creates a new [`SpanEventWaiter`].
     pub(crate) fn scenario_span_event_waiter(&self) -> SpanEventWaiter {
         SpanEventWaiter {
             wait_span_event_sender: self.wait_span_event_sender.clone(),
@@ -429,7 +430,7 @@ where
                 let _ = self
                     .span_to_scenario_ids
                     .lock()
-                    .unwrap()
+                    .unwrap_or_else(|e| panic!("Poisoned `Mutex`: {e}"))
                     .insert(id.clone(), scenario_id);
             }
         }
@@ -456,7 +457,7 @@ where
         let id = self
             .span_to_scenario_ids
             .lock()
-            .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
+            .unwrap_or_else(|e| panic!("Poisoned `Mutex`: {e}"))
             .get(id)
             .copied()
             .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id:?}"));
@@ -470,7 +471,7 @@ where
         let id = self
             .span_to_scenario_ids
             .lock()
-            .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
+            .unwrap_or_else(|e| panic!("Poisoned `Mutex`: {e}"))
             .remove(&id)
             .unwrap_or_else(|| panic!("No `Scenario` for `span::Id`: {id:?}"));
         let _ = self
