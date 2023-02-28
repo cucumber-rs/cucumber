@@ -21,6 +21,7 @@
     - [JUnit XML report](output/junit.md)
     - [Cucumber JSON format](output/json.md)
     - [Multiple outputs](output/multiple.md)
+    - [`tracing` integration](output/tracing.md)
     - [IntelliJ Rust integration](output/intellij.md)
 - [Architecture](architecture/index.md)
     - [Custom `Parser`](architecture/parser.md) 

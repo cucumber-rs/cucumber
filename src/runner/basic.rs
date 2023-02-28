@@ -42,7 +42,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 #[cfg(feature = "tracing")]
-use crate::tracing::Collector as TracingCollector;
+use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
@@ -927,8 +927,8 @@ async fn execute<W, Before, After>(
     //    down the line to the Writer, which will print it at a right time.
     // 3. We restore original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
-    let hook = panic::take_hook();
-    panic::set_hook(Box::new(|_| {}));
+    // let hook = panic::take_hook();
+    // panic::set_hook(Box::new(|_| {}));
 
     let (finished_sender, finished_receiver) = mpsc::unbounded();
     let mut storage = FinishedRulesAndFeatures::new(finished_receiver);
@@ -949,6 +949,11 @@ async fn execute<W, Before, After>(
         ControlFlow::Continue(cont) => cont,
         ControlFlow::Break(()) => Some(0),
     };
+
+    #[cfg(feature = "tracing")]
+    let scenario_span_close_waiter = logs_collector
+        .as_ref()
+        .map(TracingCollector::scenario_span_close_waiter);
 
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
@@ -1010,10 +1015,16 @@ async fn execute<W, Before, After>(
             }
 
             for (id, f, r, s, ty, retries) in runnable {
-                let run = executor.run_scenario(id, f, r, s, ty, retries);
-                #[cfg(feature = "tracing")]
-                let run = tracing::Instrument::instrument(run, id.span());
-                run_scenarios.push(run);
+                run_scenarios.push(executor.run_scenario(
+                    id,
+                    f,
+                    r,
+                    s,
+                    ty,
+                    retries,
+                    #[cfg(feature = "tracing")]
+                    scenario_span_close_waiter.clone(),
+                ));
             }
 
             let (finished_scenario, _) =
@@ -1064,7 +1075,7 @@ async fn execute<W, Before, After>(
 
     executor.send_event(event::Cucumber::Finished);
 
-    panic::set_hook(hook);
+    // panic::set_hook(hook);
 }
 
 /// Runs [`Scenario`]s and notifies about their state of completion.
@@ -1165,6 +1176,9 @@ where
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
+        #[cfg(feature = "tracing")] scenario_span_close_waiter: Option<
+            SpanCloseWaiter,
+        >,
     ) {
         let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_) -> event::Scenario<W>| {
@@ -1205,106 +1219,128 @@ where
             event::Scenario::Started.with_retries(retry_num),
         ));
 
-        let mut result = async {
-            let before_hook = self
-                .run_before_hook(&feature, rule.as_ref(), &scenario, retry_num)
-                .await?;
+        let is_failed = async {
+            let mut result = async {
+                let before_hook = self
+                    .run_before_hook(
+                        &feature,
+                        rule.as_ref(),
+                        &scenario,
+                        retry_num,
+                    )
+                    .await?;
 
-            let feature_background = feature
-                .background
-                .as_ref()
-                .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                .into_iter()
-                .flatten();
+                let feature_background = feature
+                    .background
+                    .as_ref()
+                    .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                    .into_iter()
+                    .flatten();
 
-            let feature_background = stream::iter(feature_background)
-                .map(Ok)
-                .try_fold(before_hook, |world, bg_step| {
-                    self.run_step(world, bg_step, true, into_bg_step_ev)
-                        .map_ok(Some)
-                })
-                .await?;
+                let feature_background = stream::iter(feature_background)
+                    .map(Ok)
+                    .try_fold(before_hook, |world, bg_step| {
+                        self.run_step(world, bg_step, true, into_bg_step_ev)
+                            .map_ok(Some)
+                    })
+                    .await?;
 
-            let rule_background = rule
-                .as_ref()
-                .map(|r| {
-                    r.background
-                        .as_ref()
-                        .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                        .into_iter()
-                        .flatten()
-                })
-                .into_iter()
-                .flatten();
+                let rule_background = rule
+                    .as_ref()
+                    .map(|r| {
+                        r.background
+                            .as_ref()
+                            .map(|b| {
+                                b.steps.iter().map(|s| Arc::new(s.clone()))
+                            })
+                            .into_iter()
+                            .flatten()
+                    })
+                    .into_iter()
+                    .flatten();
 
-            let rule_background = stream::iter(rule_background)
-                .map(Ok)
-                .try_fold(feature_background, |world, bg_step| {
-                    self.run_step(world, bg_step, true, into_bg_step_ev)
-                        .map_ok(Some)
-                })
-                .await?;
+                let rule_background = stream::iter(rule_background)
+                    .map(Ok)
+                    .try_fold(feature_background, |world, bg_step| {
+                        self.run_step(world, bg_step, true, into_bg_step_ev)
+                            .map_ok(Some)
+                    })
+                    .await?;
 
-            stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
-                .map(Ok)
-                .try_fold(rule_background, |world, step| {
-                    self.run_step(world, step, false, into_step_ev).map_ok(Some)
-                })
+                stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
+                    .map(Ok)
+                    .try_fold(rule_background, |world, step| {
+                        self.run_step(world, step, false, into_step_ev)
+                            .map_ok(Some)
+                    })
+                    .await
+            }
+            .await;
+
+            let (world, scenario_finished_ev) = match &mut result {
+                Ok(world) => {
+                    (world.take(), event::ScenarioFinished::StepPassed)
+                }
+                Err(exec_err) => (
+                    exec_err.take_world(),
+                    exec_err.get_scenario_finished_event(),
+                ),
+            };
+
+            let (world, after_hook_meta, after_hook_error) = self
+                .run_after_hook(
+                    world,
+                    &feature,
+                    rule.as_ref(),
+                    &scenario,
+                    scenario_finished_ev,
+                )
                 .await
-        }
-        .await;
+                .map_or_else(
+                    |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
+                    |(w, meta)| (w.map(Arc::new), meta, None),
+                );
 
-        let (world, scenario_finished_ev) = match &mut result {
-            Ok(world) => (world.take(), event::ScenarioFinished::StepPassed),
-            Err(exec_err) => (
-                exec_err.take_world(),
-                exec_err.get_scenario_finished_event(),
-            ),
-        };
+            let scenario_failed = match &result {
+                Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
+                Err(
+                    ExecutionFailure::BeforeHookPanicked { .. }
+                    | ExecutionFailure::StepPanicked { .. },
+                ) => true,
+            };
+            let is_failed = scenario_failed || after_hook_error.is_some();
 
-        let (world, after_hook_meta, after_hook_error) = self
-            .run_after_hook(
-                world,
-                &feature,
-                rule.as_ref(),
-                &scenario,
-                scenario_finished_ev,
-            )
-            .await
-            .map_or_else(
-                |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
-                |(w, meta)| (w.map(Arc::new), meta, None),
-            );
+            if let Some(exec_error) = result.err() {
+                self.emit_failed_events(
+                    Arc::clone(&feature),
+                    rule.clone(),
+                    Arc::clone(&scenario),
+                    world.clone(),
+                    exec_error,
+                    retry_num,
+                );
+            }
 
-        let scenario_failed = match &result {
-            Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
-            Err(
-                ExecutionFailure::BeforeHookPanicked { .. }
-                | ExecutionFailure::StepPanicked { .. },
-            ) => true,
-        };
-        let is_failed = scenario_failed || after_hook_error.is_some();
-
-        if let Some(exec_error) = result.err() {
-            self.emit_failed_events(
+            self.emit_after_hook_events(
                 Arc::clone(&feature),
                 rule.clone(),
                 Arc::clone(&scenario),
-                world.clone(),
-                exec_error,
+                world,
+                after_hook_meta,
+                after_hook_error,
                 retry_num,
             );
-        }
 
-        self.emit_after_hook_events(
-            Arc::clone(&feature),
-            rule.clone(),
-            Arc::clone(&scenario),
-            world,
-            after_hook_meta,
-            after_hook_error,
-            retry_num,
-        );
+            is_failed
+        };
+        #[cfg(feature = "tracing")]
+        let is_failed = tracing::Instrument::instrument(is_failed, id.span());
+        let is_failed = is_failed.await;
+
+        #[cfg(feature = "tracing")]
+        if let Some(waiter) = &scenario_span_close_waiter {
+            waiter.wait_for_scenario_span_close(id).then_yield().await;
+        }
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),

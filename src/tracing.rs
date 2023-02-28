@@ -1,8 +1,12 @@
 //! [`tracing`] integration layer.
 
-use std::{collections::HashMap, fmt, io, iter, sync::Arc};
+use std::{
+    collections::HashMap,
+    fmt, io, iter,
+    sync::{Arc, Mutex},
+};
 
-use futures::channel::mpsc;
+use futures::channel::{mpsc, oneshot};
 use itertools::Either;
 use tracing::{error_span, Span};
 use tracing_core::{
@@ -110,8 +114,9 @@ where
         ) -> Out,
     {
         let (logs_sender, logs_receiver) = mpsc::unbounded();
+        let (span_close_sender, span_close_receiver) = mpsc::unbounded();
 
-        let layer = RecordScenarioId.and_then(
+        let layer = RecordScenarioId::new(span_close_sender).and_then(
             tracing_subscriber::fmt::layer()
                 .fmt_fields(SkipScenarioIdSpan(fmt_fields))
                 .event_format(AppendScenarioMsg(event_format))
@@ -122,7 +127,10 @@ where
         drop(
             self.runner
                 .logs_collector
-                .swap(Box::new(Some(Collector::new(logs_receiver)))),
+                .swap(Box::new(Some(Collector::new(
+                    logs_receiver,
+                    span_close_receiver,
+                )))),
         );
 
         self
@@ -138,6 +146,40 @@ pub(crate) struct Collector {
     /// Receiver for [`tracing`] [`Event`]s messages with optional corresponding
     /// [`ScenarioId`].
     logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
+
+    closed_spans: HashMap<ScenarioId, (Option<oneshot::Sender<()>>, IsClosed)>,
+
+    span_close_receiver: mpsc::UnboundedReceiver<ScenarioId>,
+
+    wait_span_close_sender:
+        mpsc::UnboundedSender<(ScenarioId, oneshot::Sender<()>)>,
+
+    wait_span_close_receiver:
+        mpsc::UnboundedReceiver<(ScenarioId, oneshot::Sender<()>)>,
+}
+
+type IsClosed = bool;
+
+enum StepEvent {
+    Exit,
+    Close,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct SpanCloseWaiter {
+    wait_span_close_sender:
+        mpsc::UnboundedSender<(ScenarioId, oneshot::Sender<()>)>,
+}
+
+impl SpanCloseWaiter {
+    pub(crate) async fn wait_for_scenario_span_close(&self, id: ScenarioId) {
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .wait_span_close_sender
+            .unbounded_send((id, sender))
+            .ok();
+        let _ = receiver.await.ok();
+    }
 }
 
 /// [`HashMap`] from [`ScenarioId`] to [`Scenario`] and it's full path.
@@ -157,10 +199,22 @@ impl Collector {
     /// Creates a new [`tracing`] [`Event`]s [`Collector`].
     pub(crate) fn new(
         logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
+        span_close_receiver: mpsc::UnboundedReceiver<ScenarioId>,
     ) -> Self {
+        let (sender, receiver) = mpsc::unbounded();
         Self {
             scenarios: HashMap::new(),
             logs_receiver,
+            closed_spans: HashMap::new(),
+            span_close_receiver,
+            wait_span_close_sender: sender,
+            wait_span_close_receiver: receiver,
+        }
+    }
+
+    pub(crate) fn scenario_span_close_waiter(&self) -> SpanCloseWaiter {
+        SpanCloseWaiter {
+            wait_span_close_sender: self.wait_span_close_sender.clone(),
         }
     }
 
@@ -210,6 +264,8 @@ impl Collector {
     pub(crate) fn emitted_logs<W>(
         &mut self,
     ) -> Option<Vec<event::Cucumber<W>>> {
+        self.notify_about_closing_spans();
+
         self.logs_receiver
             .try_next()
             .ok()
@@ -234,6 +290,26 @@ impl Collector {
                     .collect()
             })
     }
+
+    fn notify_about_closing_spans(&mut self) {
+        while let Some(id) = self.span_close_receiver.try_next().ok().flatten()
+        {
+            self.closed_spans.entry(id).or_default().1 = true;
+        }
+        while let Some((id, sender)) =
+            self.wait_span_close_receiver.try_next().ok().flatten()
+        {
+            self.closed_spans.entry(id).or_default().0 = Some(sender);
+        }
+        self.closed_spans.retain(|id, (sender, is_closed)| {
+            if sender.is_some() && *is_closed {
+                let _ = sender.take().unwrap().send(()).ok();
+                false
+            } else {
+                true
+            }
+        })
+    }
 }
 
 #[allow(clippy::multiple_inherent_impl)]
@@ -254,8 +330,20 @@ impl ScenarioId {
 /// [`Layer`] recording [`ScenarioId`] in [`Span`]'s [`Extensions`].
 ///
 /// [`Extensions`]: tracing_subscriber::registry::Extensions
-#[derive(Clone, Copy, Debug)]
-pub struct RecordScenarioId;
+#[derive(Debug)]
+pub struct RecordScenarioId {
+    span_to_scenario_ids: Mutex<HashMap<span::Id, ScenarioId>>,
+    span_close_sender: mpsc::UnboundedSender<ScenarioId>,
+}
+
+impl RecordScenarioId {
+    fn new(span_close_sender: mpsc::UnboundedSender<ScenarioId>) -> Self {
+        Self {
+            span_to_scenario_ids: Mutex::new(HashMap::new()),
+            span_close_sender,
+        }
+    }
+}
 
 impl<S> Layer<S> for RecordScenarioId
 where
@@ -274,6 +362,12 @@ where
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();
                 let _ = ext.replace(scenario_id);
+                drop(
+                    self.span_to_scenario_ids
+                        .lock()
+                        .unwrap()
+                        .insert(id.clone(), scenario_id),
+                );
             }
         }
     }
@@ -293,6 +387,16 @@ where
                 let _ = ext.replace(scenario_id);
             }
         }
+    }
+
+    fn on_close(&self, id: span::Id, _ctx: layer::Context<'_, S>) {
+        let id = self
+            .span_to_scenario_ids
+            .lock()
+            .unwrap()
+            .remove(&id)
+            .unwrap();
+        let _ = self.span_close_sender.unbounded_send(id).ok();
     }
 }
 
@@ -323,9 +427,9 @@ impl<'w, F: FormatFields<'w>> FormatFields<'w> for SkipScenarioIdSpan<F> {
     ) -> fmt::Result {
         let mut is_scenario_span = IsScenarioIdSpan(false);
         fields.record(&mut is_scenario_span);
-        if !is_scenario_span.0 {
-            self.0.format_fields(writer, fields)?;
-        }
+        // if !is_scenario_span.0 {
+        self.0.format_fields(writer, fields)?;
+        // }
         Ok(())
     }
 }
