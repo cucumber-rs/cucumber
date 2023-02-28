@@ -927,8 +927,8 @@ async fn execute<W, Before, After>(
     //    down the line to the Writer, which will print it at a right time.
     // 3. We restore original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
-    // let hook = panic::take_hook();
-    // panic::set_hook(Box::new(|_| {}));
+    let hook = panic::take_hook();
+    panic::set_hook(Box::new(|_| {}));
 
     let (finished_sender, finished_receiver) = mpsc::unbounded();
     let mut storage = FinishedRulesAndFeatures::new(finished_receiver);
@@ -951,7 +951,7 @@ async fn execute<W, Before, After>(
     };
 
     #[cfg(feature = "tracing")]
-    let scenario_span_close_waiter = logs_collector
+    let waiter = logs_collector
         .as_ref()
         .map(TracingCollector::scenario_span_event_waiter);
 
@@ -1023,7 +1023,7 @@ async fn execute<W, Before, After>(
                     ty,
                     retries,
                     #[cfg(feature = "tracing")]
-                    scenario_span_close_waiter.as_ref(),
+                    waiter.as_ref(),
                 ));
             }
 
@@ -1075,7 +1075,7 @@ async fn execute<W, Before, After>(
 
     executor.send_event(event::Cucumber::Finished);
 
-    // panic::set_hook(hook);
+    panic::set_hook(hook);
 }
 
 /// Runs [`Scenario`]s and notifies about their state of completion.
@@ -1552,9 +1552,12 @@ where
 
         let result = run.then_yield().await;
 
+        #[cfg(feature = "tracing")]
         if let Some(waiter) = waiter {
             waiter.wait_for_scenario_span_exit(scenario_id).await;
         }
+        #[cfg(not(feature = "tracing"))]
+        let _ = scenario_id;
 
         match result {
             Ok((Some(captures), loc, Some(world))) => {

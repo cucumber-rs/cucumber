@@ -1,57 +1,25 @@
 Feature: Basic
   Scenario: deny skipped
- INFO scenario: tracing: before increment: 0: 1
- INFO scenario: tracing: after increment in `Span`: 1: 1
- INFO tracing: after increment without `Span`: 1: 1
+ INFO tracing: not in span: 0
+ INFO scenario: tracing: in span: 1
    ✔  Given step 1
- INFO scenario: tracing: before increment: 1: 1
- INFO scenario: tracing: after increment in `Span`: 2: 1
- INFO tracing: after increment without `Span`: 2: 1
-   ✔  When step 1
-   ✘  Then unknown
-      Step failed:
-      Defined: tests/features/tracing/.feature:7:5
-      Step doesn't match any function
-  Scenario: allow skipped
- INFO scenario: tracing: before increment: 0: 2
- INFO scenario: tracing: after increment in `Span`: 1: 2
- INFO tracing: after increment without `Span`: 1: 2
+  Scenario Outline: steps
+ INFO tracing: not in span: 1
+ INFO tracing: not in span: 2
+ INFO scenario: tracing: in span: 2
    ✔  Given step 2
- INFO scenario: tracing: before increment: 1: 2
- INFO scenario: tracing: after increment in `Span`: 2: 2
- INFO tracing: after increment without `Span`: 2: 2
-   ✔  When step 2
-   ?  Then unknown
-      Step skipped: tests/features/tracing/.feature:14:5
   Scenario Outline: steps
- INFO scenario: tracing: before increment: 0: 3
- INFO scenario: tracing: after increment in `Span`: 1: 3
- INFO tracing: after increment without `Span`: 1: 3
- INFO tracing: after increment without `Span`: 1: 4
+ INFO tracing: not in span: 1
+ INFO tracing: not in span: 2
+ INFO scenario: tracing: in span: 3
    ✔  Given step 3
- INFO scenario: tracing: before increment: 1: 3
- INFO scenario: tracing: after increment in `Span`: 2: 3
- INFO tracing: after increment without `Span`: 2: 3
- INFO tracing: after increment without `Span`: 2: 4
-   ✔  When step 3
- INFO scenario: tracing: before increment: 2: 3
- INFO scenario: tracing: after increment in `Span`: 3: 3
- INFO tracing: after increment without `Span`: 3: 3
- INFO tracing: after increment without `Span`: 3: 4
-   ✔  Then step 3
   Scenario Outline: steps
- INFO tracing: after increment without `Span`: 1: 3
- INFO scenario: tracing: before increment: 0: 4
- INFO scenario: tracing: after increment in `Span`: 1: 4
- INFO tracing: after increment without `Span`: 1: 4
+ INFO tracing: not in span: 1
+ INFO tracing: not in span: 2
+ INFO scenario: tracing: in span: 4
    ✔  Given step 4
- INFO tracing: after increment without `Span`: 2: 3
- INFO scenario: tracing: before increment: 1: 4
- INFO scenario: tracing: after increment in `Span`: 2: 4
- INFO tracing: after increment without `Span`: 2: 4
-   ✔  When step 4
- INFO tracing: after increment without `Span`: 3: 3
- INFO scenario: tracing: before increment: 2: 4
- INFO scenario: tracing: after increment in `Span`: 3: 4
- INFO tracing: after increment without `Span`: 3: 4
-   ✔  Then step 4
+  Scenario Outline: steps
+ INFO tracing: not in span: 1
+ INFO tracing: not in span: 2
+ INFO scenario: tracing: in span: 5
+   ✔  Given step 5

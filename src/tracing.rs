@@ -147,52 +147,20 @@ pub(crate) struct Collector {
     /// [`ScenarioId`].
     logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
 
+    /// All [`Callback`]s for [`SpanEvent`]s with their completion status.
     span_events:
         HashMap<(ScenarioId, SpanEvent), (Option<Vec<Callback>>, IsReceived)>,
 
+    /// [`SpanEvent`]s receiver.
     span_event_receiver: mpsc::UnboundedReceiver<(ScenarioId, SpanEvent)>,
 
+    /// Sender for subscribing to [`SpanEvent`].
     wait_span_event_sender:
         mpsc::UnboundedSender<(ScenarioId, SpanEvent, Callback)>,
 
+    /// Receiver for subscribing to [`SpanEvent`].
     wait_span_event_receiver:
         mpsc::UnboundedReceiver<(ScenarioId, SpanEvent, Callback)>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum SpanEvent {
-    Exit,
-    Close,
-}
-
-type IsReceived = bool;
-
-type Callback = oneshot::Sender<()>;
-
-#[derive(Clone, Debug)]
-pub(crate) struct SpanEventWaiter {
-    wait_span_event_sender:
-        mpsc::UnboundedSender<(ScenarioId, SpanEvent, Callback)>,
-}
-
-impl SpanEventWaiter {
-    pub(crate) async fn wait_for_scenario_span_exit(&self, id: ScenarioId) {
-        let (sender, receiver) = oneshot::channel();
-        let _ = self
-            .wait_span_event_sender
-            .unbounded_send((id, SpanEvent::Exit, sender))
-            .ok();
-        let _ = receiver.await.ok();
-    }
-
-    pub(crate) async fn wait_for_scenario_span_close(&self, id: ScenarioId) {
-        let (sender, receiver) = oneshot::channel();
-        let _ = self
-            .wait_span_event_sender
-            .unbounded_send((id, SpanEvent::Close, sender))
-            .ok();
-        let _ = receiver.await.ok();
-    }
 }
 
 /// [`HashMap`] from [`ScenarioId`] to [`Scenario`] and it's full path.
@@ -207,6 +175,68 @@ type Scenarios = HashMap<
         Option<RetryOptions>,
     ),
 >;
+
+/// Events of [`Span`] that [`Runner`] can wait for.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum SpanEvent {
+    /// Exiting the [`Span`].
+    ///
+    /// Can be received multiple times for a single [`Span`] on re-entering.
+    Exit,
+
+    /// Closing the [`Span`].
+    ///
+    /// Received only once for a single [`Span`], because all other references
+    /// to it where [`drop`]ped.
+    Close,
+}
+
+/// Whether [`SpanEvent`] was received.
+type IsReceived = bool;
+
+/// Callback for notifying [`Runner`] about [`SpanEvent`].
+type Callback = oneshot::Sender<()>;
+
+/// As [`CollectorWriter`] can notify about [`event::Scenario::Log`] after
+/// [`Scenario`] is considered [`event::Scenario::Finished`] because of
+/// implementation details of a [`Subscriber`], this struct provides capability
+/// to wait for a particular [`SpanEvent`]s.
+///
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Debug)]
+pub(crate) struct SpanEventWaiter {
+    /// Sender for subscribing to [`SpanEvent`].
+    wait_span_event_sender:
+        mpsc::UnboundedSender<(ScenarioId, SpanEvent, Callback)>,
+}
+
+impl SpanEventWaiter {
+    /// Waits for [`Exit`] event of [`Scenario`]'s [`Span`].
+    ///
+    /// [`Exit`]: SpanEvent::Exit
+    /// [`Scenario`]: gherkin::Scenario
+    pub(crate) async fn wait_for_scenario_span_exit(&self, id: ScenarioId) {
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .wait_span_event_sender
+            .unbounded_send((id, SpanEvent::Exit, sender))
+            .ok();
+        let _ = receiver.await.ok();
+    }
+
+    /// Waits for [`Close`] event of [`Scenario`]'s [`Span`].
+    ///
+    /// [`Close`]: SpanEvent::Close
+    /// [`Scenario`]: gherkin::Scenario
+    pub(crate) async fn wait_for_scenario_span_close(&self, id: ScenarioId) {
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .wait_span_event_sender
+            .unbounded_send((id, SpanEvent::Close, sender))
+            .ok();
+        let _ = receiver.await.ok();
+    }
+}
 
 impl Collector {
     /// Creates a new [`tracing`] [`Event`]s [`Collector`].
@@ -304,6 +334,7 @@ impl Collector {
             })
     }
 
+    /// Notifies subscribers of [`SpanEvent`]s.
     fn notify_about_span_events(&mut self) {
         if let Some((id, event)) =
             self.span_event_receiver.try_next().ok().flatten()
@@ -353,11 +384,15 @@ impl ScenarioId {
 /// [`Extensions`]: tracing_subscriber::registry::Extensions
 #[derive(Debug)]
 pub struct RecordScenarioId {
+    /// [`span::Id`] to [`ScenarioId`] relation.
     span_to_scenario_ids: Mutex<HashMap<span::Id, ScenarioId>>,
+
+    /// Sender for [`SpanEvent`]s.
     span_close_sender: mpsc::UnboundedSender<(ScenarioId, SpanEvent)>,
 }
 
 impl RecordScenarioId {
+    /// Creates a new [`RecordScenarioId`].
     fn new(
         span_close_sender: mpsc::UnboundedSender<(ScenarioId, SpanEvent)>,
     ) -> Self {
@@ -467,9 +502,9 @@ impl<'w, F: FormatFields<'w>> FormatFields<'w> for SkipScenarioIdSpan<F> {
     ) -> fmt::Result {
         let mut is_scenario_span = IsScenarioIdSpan(false);
         fields.record(&mut is_scenario_span);
-        // if !is_scenario_span.0 {
-        self.0.format_fields(writer, fields)?;
-        // }
+        if !is_scenario_span.0 {
+            self.0.format_fields(writer, fields)?;
+        }
         Ok(())
     }
 }
