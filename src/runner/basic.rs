@@ -1167,7 +1167,7 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     async fn run_scenario(
         &self,
         id: ScenarioId,

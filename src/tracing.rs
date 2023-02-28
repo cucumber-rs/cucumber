@@ -148,8 +148,7 @@ pub(crate) struct Collector {
     logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
 
     /// All [`Callback`]s for [`SpanEvent`]s with their completion status.
-    span_events:
-        HashMap<(ScenarioId, SpanEvent), (Option<Vec<Callback>>, IsReceived)>,
+    span_events: SpanEventsCallbacks,
 
     /// [`SpanEvent`]s receiver.
     span_event_receiver: mpsc::UnboundedReceiver<(ScenarioId, SpanEvent)>,
@@ -196,6 +195,10 @@ type IsReceived = bool;
 
 /// Callback for notifying [`Runner`] about [`SpanEvent`].
 type Callback = oneshot::Sender<()>;
+
+/// All [`Callback`]s for [`SpanEvent`]s with their completion status.
+type SpanEventsCallbacks =
+    HashMap<(ScenarioId, SpanEvent), (Option<Vec<Callback>>, IsReceived)>;
 
 /// As [`CollectorWriter`] can notify about [`event::Scenario::Log`] after
 /// [`Scenario`] is considered [`event::Scenario::Finished`] because of
@@ -353,14 +356,17 @@ impl Collector {
         }
         self.span_events.retain(|_, (callbacks, is_received)| {
             if callbacks.is_some() && *is_received {
-                for callback in callbacks.take().unwrap() {
+                for callback in callbacks
+                    .take()
+                    .unwrap_or_else(|| unreachable!("`callbacks.is_some()`"))
+                {
                     let _ = callback.send(()).ok();
                 }
                 false
             } else {
                 true
             }
-        })
+        });
     }
 }
 
@@ -420,12 +426,11 @@ where
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();
                 let _ = ext.replace(scenario_id);
-                drop(
-                    self.span_to_scenario_ids
-                        .lock()
-                        .unwrap()
-                        .insert(id.clone(), scenario_id),
-                );
+                let _ = self
+                    .span_to_scenario_ids
+                    .lock()
+                    .unwrap()
+                    .insert(id.clone(), scenario_id);
             }
         }
     }
@@ -451,10 +456,10 @@ where
         let id = self
             .span_to_scenario_ids
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
             .get(id)
             .copied()
-            .unwrap();
+            .unwrap_or_else(|_| panic!("No `Scenario` for `span::Id`: {id}"));
         let _ = self
             .span_close_sender
             .unbounded_send((id, SpanEvent::Exit))
@@ -465,9 +470,9 @@ where
         let id = self
             .span_to_scenario_ids
             .lock()
-            .unwrap()
+            .unwrap_or_else(|e| panic!("Poisoned Mutex: {e}"))
             .remove(&id)
-            .unwrap();
+            .unwrap_or_else(|_| panic!("No `Scenario` for `span::Id`: {id}"));
         let _ = self
             .span_close_sender
             .unbounded_send((id, SpanEvent::Close))
