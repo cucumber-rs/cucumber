@@ -147,31 +147,49 @@ pub(crate) struct Collector {
     /// [`ScenarioId`].
     logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
 
-    closed_spans: HashMap<ScenarioId, (Option<oneshot::Sender<()>>, IsClosed)>,
+    span_events:
+        HashMap<(ScenarioId, SpanEvent), (Option<Vec<Callback>>, IsReceived)>,
 
-    span_close_receiver: mpsc::UnboundedReceiver<ScenarioId>,
+    span_event_receiver: mpsc::UnboundedReceiver<(ScenarioId, SpanEvent)>,
 
-    wait_span_close_sender:
-        mpsc::UnboundedSender<(ScenarioId, oneshot::Sender<()>)>,
+    wait_span_event_sender:
+        mpsc::UnboundedSender<(ScenarioId, SpanEvent, Callback)>,
 
-    wait_span_close_receiver:
-        mpsc::UnboundedReceiver<(ScenarioId, oneshot::Sender<()>)>,
+    wait_span_event_receiver:
+        mpsc::UnboundedReceiver<(ScenarioId, SpanEvent, Callback)>,
 }
 
-type IsClosed = bool;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum SpanEvent {
+    Exit,
+    Close,
+}
+
+type IsReceived = bool;
+
+type Callback = oneshot::Sender<()>;
 
 #[derive(Clone, Debug)]
-pub(crate) struct SpanCloseWaiter {
-    wait_span_close_sender:
-        mpsc::UnboundedSender<(ScenarioId, oneshot::Sender<()>)>,
+pub(crate) struct SpanEventWaiter {
+    wait_span_event_sender:
+        mpsc::UnboundedSender<(ScenarioId, SpanEvent, Callback)>,
 }
 
-impl SpanCloseWaiter {
+impl SpanEventWaiter {
+    pub(crate) async fn wait_for_scenario_span_exit(&self, id: ScenarioId) {
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .wait_span_event_sender
+            .unbounded_send((id, SpanEvent::Exit, sender))
+            .ok();
+        let _ = receiver.await.ok();
+    }
+
     pub(crate) async fn wait_for_scenario_span_close(&self, id: ScenarioId) {
         let (sender, receiver) = oneshot::channel();
         let _ = self
-            .wait_span_close_sender
-            .unbounded_send((id, sender))
+            .wait_span_event_sender
+            .unbounded_send((id, SpanEvent::Close, sender))
             .ok();
         let _ = receiver.await.ok();
     }
@@ -194,22 +212,22 @@ impl Collector {
     /// Creates a new [`tracing`] [`Event`]s [`Collector`].
     pub(crate) fn new(
         logs_receiver: mpsc::UnboundedReceiver<(Option<ScenarioId>, String)>,
-        span_close_receiver: mpsc::UnboundedReceiver<ScenarioId>,
+        span_event_receiver: mpsc::UnboundedReceiver<(ScenarioId, SpanEvent)>,
     ) -> Self {
         let (sender, receiver) = mpsc::unbounded();
         Self {
             scenarios: HashMap::new(),
             logs_receiver,
-            closed_spans: HashMap::new(),
-            span_close_receiver,
-            wait_span_close_sender: sender,
-            wait_span_close_receiver: receiver,
+            span_events: HashMap::new(),
+            span_event_receiver,
+            wait_span_event_sender: sender,
+            wait_span_event_receiver: receiver,
         }
     }
 
-    pub(crate) fn scenario_span_close_waiter(&self) -> SpanCloseWaiter {
-        SpanCloseWaiter {
-            wait_span_close_sender: self.wait_span_close_sender.clone(),
+    pub(crate) fn scenario_span_event_waiter(&self) -> SpanEventWaiter {
+        SpanEventWaiter {
+            wait_span_event_sender: self.wait_span_event_sender.clone(),
         }
     }
 
@@ -259,7 +277,7 @@ impl Collector {
     pub(crate) fn emitted_logs<W>(
         &mut self,
     ) -> Option<Vec<event::Cucumber<W>>> {
-        self.notify_about_closing_spans();
+        self.notify_about_span_events();
 
         self.logs_receiver
             .try_next()
@@ -286,19 +304,27 @@ impl Collector {
             })
     }
 
-    fn notify_about_closing_spans(&mut self) {
-        while let Some(id) = self.span_close_receiver.try_next().ok().flatten()
+    fn notify_about_span_events(&mut self) {
+        if let Some((id, event)) =
+            self.span_event_receiver.try_next().ok().flatten()
         {
-            self.closed_spans.entry(id).or_default().1 = true;
+            self.span_events.entry((id, event)).or_default().1 = true;
         }
-        while let Some((id, sender)) =
-            self.wait_span_close_receiver.try_next().ok().flatten()
+        while let Some((id, event, callback)) =
+            self.wait_span_event_receiver.try_next().ok().flatten()
         {
-            self.closed_spans.entry(id).or_default().0 = Some(sender);
+            self.span_events
+                .entry((id, event))
+                .or_default()
+                .0
+                .get_or_insert(Vec::new())
+                .push(callback);
         }
-        self.closed_spans.retain(|id, (sender, is_closed)| {
-            if sender.is_some() && *is_closed {
-                let _ = sender.take().unwrap().send(()).ok();
+        self.span_events.retain(|_, (callbacks, is_received)| {
+            if callbacks.is_some() && *is_received {
+                for callback in callbacks.take().unwrap() {
+                    let _ = callback.send(()).ok();
+                }
                 false
             } else {
                 true
@@ -328,11 +354,13 @@ impl ScenarioId {
 #[derive(Debug)]
 pub struct RecordScenarioId {
     span_to_scenario_ids: Mutex<HashMap<span::Id, ScenarioId>>,
-    span_close_sender: mpsc::UnboundedSender<ScenarioId>,
+    span_close_sender: mpsc::UnboundedSender<(ScenarioId, SpanEvent)>,
 }
 
 impl RecordScenarioId {
-    fn new(span_close_sender: mpsc::UnboundedSender<ScenarioId>) -> Self {
+    fn new(
+        span_close_sender: mpsc::UnboundedSender<(ScenarioId, SpanEvent)>,
+    ) -> Self {
         Self {
             span_to_scenario_ids: Mutex::new(HashMap::new()),
             span_close_sender,
@@ -384,6 +412,20 @@ where
         }
     }
 
+    fn on_exit(&self, id: &span::Id, _ctx: layer::Context<'_, S>) {
+        let id = self
+            .span_to_scenario_ids
+            .lock()
+            .unwrap()
+            .get(id)
+            .copied()
+            .unwrap();
+        let _ = self
+            .span_close_sender
+            .unbounded_send((id, SpanEvent::Exit))
+            .ok();
+    }
+
     fn on_close(&self, id: span::Id, _ctx: layer::Context<'_, S>) {
         let id = self
             .span_to_scenario_ids
@@ -391,7 +433,10 @@ where
             .unwrap()
             .remove(&id)
             .unwrap();
-        let _ = self.span_close_sender.unbounded_send(id).ok();
+        let _ = self
+            .span_close_sender
+            .unbounded_send((id, SpanEvent::Close))
+            .ok();
     }
 }
 

@@ -42,7 +42,7 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 #[cfg(feature = "tracing")]
-use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
+use crate::tracing::{Collector as TracingCollector, SpanEventWaiter};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
@@ -953,7 +953,7 @@ async fn execute<W, Before, After>(
     #[cfg(feature = "tracing")]
     let scenario_span_close_waiter = logs_collector
         .as_ref()
-        .map(TracingCollector::scenario_span_close_waiter);
+        .map(TracingCollector::scenario_span_event_waiter);
 
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
@@ -1023,7 +1023,7 @@ async fn execute<W, Before, After>(
                     ty,
                     retries,
                     #[cfg(feature = "tracing")]
-                    scenario_span_close_waiter.clone(),
+                    scenario_span_close_waiter.as_ref(),
                 ));
             }
 
@@ -1176,9 +1176,7 @@ where
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
-        #[cfg(feature = "tracing")] scenario_span_close_waiter: Option<
-            SpanCloseWaiter,
-        >,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanEventWaiter>,
     ) {
         let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_) -> event::Scenario<W>| {
@@ -1240,8 +1238,16 @@ where
                 let feature_background = stream::iter(feature_background)
                     .map(Ok)
                     .try_fold(before_hook, |world, bg_step| {
-                        self.run_step(world, bg_step, true, into_bg_step_ev)
-                            .map_ok(Some)
+                        self.run_step(
+                            world,
+                            bg_step,
+                            true,
+                            into_bg_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
+                        .map_ok(Some)
                     })
                     .await?;
 
@@ -1262,16 +1268,32 @@ where
                 let rule_background = stream::iter(rule_background)
                     .map(Ok)
                     .try_fold(feature_background, |world, bg_step| {
-                        self.run_step(world, bg_step, true, into_bg_step_ev)
-                            .map_ok(Some)
+                        self.run_step(
+                            world,
+                            bg_step,
+                            true,
+                            into_bg_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
+                        .map_ok(Some)
                     })
                     .await?;
 
                 stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
                     .map(Ok)
                     .try_fold(rule_background, |world, step| {
-                        self.run_step(world, step, false, into_step_ev)
-                            .map_ok(Some)
+                        self.run_step(
+                            world,
+                            step,
+                            false,
+                            into_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
+                        .map_ok(Some)
                     })
                     .await
             }
@@ -1338,7 +1360,7 @@ where
         let is_failed = is_failed.await;
 
         #[cfg(feature = "tracing")]
-        if let Some(waiter) = &scenario_span_close_waiter {
+        if let Some(waiter) = waiter {
             waiter.wait_for_scenario_span_close(id).then_yield().await;
         }
 
@@ -1468,6 +1490,8 @@ where
         step: Arc<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanEventWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
@@ -1526,7 +1550,13 @@ where
             }
         };
 
-        match run.then_yield().await {
+        let result = run.then_yield().await;
+
+        if let Some(waiter) = waiter {
+            waiter.wait_for_scenario_span_exit(scenario_id).await;
+        }
+
+        match result {
             Ok((Some(captures), loc, Some(world))) => {
                 self.send_event(passed(step, captures, loc));
                 Ok(world)
