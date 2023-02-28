@@ -160,11 +160,6 @@ pub(crate) struct Collector {
 
 type IsClosed = bool;
 
-enum StepEvent {
-    Exit,
-    Close,
-}
-
 #[derive(Clone, Debug)]
 pub(crate) struct SpanCloseWaiter {
     wait_span_close_sender:
