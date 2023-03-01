@@ -90,7 +90,7 @@ required-features = ["output-json"]
 
 [[test]]
 name = "junit"
-required-features = ["output-junit"]
+required-features = ["output-junit", "tracing"]
 
 [[test]]
 name = "libtest"

@@ -290,7 +290,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                 self.scenario_started_at = Some(meta.at);
                 self.events.push(ev);
             }
-            Scenario::Hook(..)
+            Scenario::Log(_)
+            | Scenario::Hook(..)
             | Scenario::Background(..)
             | Scenario::Step(..) => {
                 self.events.push(ev);
@@ -311,8 +312,6 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     })
                     .add_testcase(case);
             }
-            // TODO: report logs for each `Scenario`.
-            Scenario::Log(_) => {}
         }
     }
 
@@ -333,10 +332,11 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             .find(|ev| {
                 !matches!(
                     ev.event,
-                    Scenario::Hook(
-                        HookType::After,
-                        Hook::Passed | Hook::Started,
-                    ),
+                    Scenario::Log(_)
+                        | Scenario::Hook(
+                            HookType::After,
+                            Hook::Passed | Hook::Started,
+                        ),
                 )
             })
             .unwrap_or_else(|| {
@@ -362,6 +362,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
 
         let mut case = match &last_event.event {
             Scenario::Started
+            | Scenario::Log(_)
             | Scenario::Hook(_, Hook::Started | Hook::Passed)
             | Scenario::Background(_, Step::Started | Step::Passed(_, _))
             | Scenario::Step(_, Step::Started | Step::Passed(_, _)) => {
@@ -395,8 +396,6 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     sc.name,
                 );
             }
-            // TODO: report logs for each `Scenario`.
-            Scenario::Log(_) => unreachable!(),
         };
 
         // We should be passing normalized events here,
