@@ -6,6 +6,25 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.20.0] · 2023-??-??
+[0.20.0]: /../../tree/v0.20.0
+
+[Diff](/../../compare/v0.19.1...v0.20.0) | [Milestone](/../../milestone/24)
+
+### BC Breaks
+
+- Added `Log` variant to `event::Scenario`. ([#258])
+
+### Added
+
+- Added integration with `tracing` crate under `tracing` feature gate. ([#258], [#213])
+
+[#213]: /../../issues/213
+[#258]: /../../pull/258
+
+
+
+
 ## [0.19.1] · 2022-12-29
 [0.19.1]: /../../tree/v0.19.1
 

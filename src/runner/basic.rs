@@ -42,11 +42,11 @@ use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
 #[cfg(feature = "tracing")]
-use crate::tracing::{Collector as TracingCollector, SpanEventWaiter};
+use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
-    future::{assert_future, select_with_biased_first, FutureExt as _},
+    future::{select_with_biased_first, FutureExt as _},
     parser, step,
     tag::Ext as _,
     Event, Runner, Step, World,
@@ -388,6 +388,12 @@ pub struct Basic<
     #[cfg(feature = "tracing")]
     pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
+
+#[cfg(feature = "tracing")]
+/// Assertion that [`Basic::logs_collector`] [`AtomicCell::is_lock_free`].
+const _: () = {
+    assert!(AtomicCell::<Box<Option<TracingCollector>>>::is_lock_free());
+};
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
 // `#[derive(Clone)]`.
@@ -992,7 +998,7 @@ async fn execute<W, Before, After>(
                 if let Some(logs_collector) = logs_collector.as_mut() {
                     logs_collector.start_scenarios(&runnable);
                 }
-                assert_future::<Option<()>, _>(async {
+                async {
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1002,29 +1008,32 @@ async fn execute<W, Before, After>(
                         }
                         future::ready(()).then_yield().await;
                     }
-                })
+                }
             };
             #[cfg(feature = "tracing")]
             pin_mut!(forward_logs);
             #[cfg(not(feature = "tracing"))]
-            let forward_logs =
-                assert_future::<Option<()>, _>(future::pending());
+            let forward_logs = future::pending();
 
             if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
                 *sc -= runnable.len();
             }
 
             for (id, f, r, s, ty, retries) in runnable {
-                run_scenarios.push(executor.run_scenario(
-                    id,
-                    f,
-                    r,
-                    s,
-                    ty,
-                    retries,
-                    #[cfg(feature = "tracing")]
-                    waiter.as_ref(),
-                ));
+                run_scenarios.push(
+                    executor
+                        .run_scenario(
+                            id,
+                            f,
+                            r,
+                            s,
+                            ty,
+                            retries,
+                            #[cfg(feature = "tracing")]
+                            waiter.as_ref(),
+                        )
+                        .then_yield(),
+                );
             }
 
             let (finished_scenario, _) =
@@ -1176,7 +1185,7 @@ where
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
-        #[cfg(feature = "tracing")] waiter: Option<&SpanEventWaiter>,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
         let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_) -> event::Scenario<W>| {
@@ -1225,6 +1234,9 @@ where
                         rule.as_ref(),
                         &scenario,
                         retry_num,
+                        id,
+                        #[cfg(feature = "tracing")]
+                        waiter,
                     )
                     .await?;
 
@@ -1316,6 +1328,9 @@ where
                     rule.as_ref(),
                     &scenario,
                     scenario_finished_ev,
+                    id,
+                    #[cfg(feature = "tracing")]
+                    waiter,
                 )
                 .await
                 .map_or_else(
@@ -1356,12 +1371,17 @@ where
             is_failed
         };
         #[cfg(feature = "tracing")]
-        let is_failed = tracing::Instrument::instrument(is_failed, id.span());
-        let is_failed = is_failed.await;
+        let (is_failed, span_id) = {
+            let span = id.scenario_span();
+            let span_id = span.id();
+            let is_failed = tracing::Instrument::instrument(is_failed, span);
+            (is_failed, span_id)
+        };
+        let is_failed = is_failed.then_yield().await;
 
         #[cfg(feature = "tracing")]
-        if let Some(waiter) = waiter {
-            waiter.wait_for_scenario_span_close(id).then_yield().await;
+        if let Some((waiter, span_id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(span_id).then_yield().await;
         }
 
         self.send_event(event::Cucumber::scenario(
@@ -1409,10 +1429,13 @@ where
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
         retries: Option<Retries>,
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
         let init_world = async {
-            AssertUnwindSafe(async { W::new().then_yield().await })
+            AssertUnwindSafe(async { W::new().await })
                 .catch_unwind()
+                .then_yield()
                 .await
                 .map_err(Info::from)
                 .and_then(|r| {
@@ -1442,7 +1465,6 @@ where
                         scenario.as_ref(),
                         &mut world,
                     )
-                    .then_yield()
                     .await;
                 };
                 match AssertUnwindSafe(fut).catch_unwind().await {
@@ -1451,7 +1473,22 @@ where
                 }
             });
 
-            match fut.then_yield().await {
+            #[cfg(feature = "tracing")]
+            let (fut, span_id) = {
+                let span = scenario_id.hook_span(HookType::Before);
+                let span_id = span.id();
+                let fut = tracing::Instrument::instrument(fut, span);
+                (fut, span_id)
+            };
+
+            let result = fut.then_yield().await;
+
+            #[cfg(feature = "tracing")]
+            if let Some((waiter, id)) = waiter.zip(span_id) {
+                waiter.wait_for_span_close(id).then_yield().await;
+            }
+
+            match result {
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
                         Arc::clone(feature),
@@ -1491,7 +1528,7 @@ where
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
         scenario_id: ScenarioId,
-        #[cfg(feature = "tracing")] waiter: Option<&SpanEventWaiter>,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
@@ -1518,8 +1555,9 @@ where
             let mut world = if let Some(w) = world_opt {
                 w
             } else {
-                match AssertUnwindSafe(async { W::new().then_yield().await })
+                match AssertUnwindSafe(async { W::new().await })
                     .catch_unwind()
+                    .then_yield()
                     .await
                 {
                     Ok(Ok(w)) => w,
@@ -1536,11 +1574,9 @@ where
                 }
             };
 
-            match AssertUnwindSafe(async {
-                step_fn(&mut world, ctx).then_yield().await;
-            })
-            .catch_unwind()
-            .await
+            match AssertUnwindSafe(async { step_fn(&mut world, ctx).await })
+                .catch_unwind()
+                .await
             {
                 Ok(()) => Ok((Some(captures), loc, Some(world))),
                 Err(e) => {
@@ -1550,11 +1586,18 @@ where
             }
         };
 
+        #[cfg(feature = "tracing")]
+        let (run, span_id) = {
+            let span = scenario_id.step_span(is_background);
+            let span_id = span.id();
+            let run = tracing::Instrument::instrument(run, span);
+            (run, span_id)
+        };
         let result = run.then_yield().await;
 
         #[cfg(feature = "tracing")]
-        if let Some(waiter) = waiter {
-            waiter.wait_for_scenario_span_exit(scenario_id).await;
+        if let Some((waiter, id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(id).then_yield().await;
         }
         #[cfg(not(feature = "tracing"))]
         let _ = scenario_id;
@@ -1676,6 +1719,7 @@ where
     ///
     /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
     /// details.
+    #[allow(clippy::too_many_arguments)]
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
@@ -1683,6 +1727,8 @@ where
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
         ev: event::ScenarioFinished,
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<
         (Option<W>, Option<AfterHookEventsMeta>),
         (Option<W>, AfterHookEventsMeta, Info),
@@ -1696,12 +1742,27 @@ where
                     &ev,
                     world.as_mut(),
                 )
-                .then_yield()
                 .await;
             };
 
             let started = event::Metadata::new(());
-            let res = AssertUnwindSafe(fut).catch_unwind().then_yield().await;
+            let fut = AssertUnwindSafe(fut).catch_unwind();
+
+            #[cfg(feature = "tracing")]
+            let (fut, span_id) = {
+                let span = scenario_id.hook_span(HookType::After);
+                let span_id = span.id();
+                let fut = tracing::Instrument::instrument(fut, span);
+                (fut, span_id)
+            };
+
+            let res = fut.then_yield().await;
+
+            #[cfg(feature = "tracing")]
+            if let Some((waiter, id)) = waiter.zip(span_id) {
+                waiter.wait_for_span_close(id).then_yield().await;
+            }
+
             let finished = event::Metadata::new(());
             let meta = AfterHookEventsMeta { started, finished };
 

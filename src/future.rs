@@ -105,11 +105,9 @@ where
     A: Future + Unpin,
     B: Future + Unpin,
 {
-    assert_future::<Either<(A::Output, B), (B::Output, A)>, _>(
-        SelectWithBiasedFirst {
-            inner: Some((biased, regular)),
-        },
-    )
+    SelectWithBiasedFirst {
+        inner: Some((biased, regular)),
+    }
 }
 
 /// [`Future`] of [`select_with_biased_first`].
@@ -156,9 +154,4 @@ where
     fn is_terminated(&self) -> bool {
         self.inner.is_none()
     }
-}
-
-/// Statically checks that [`Future::Output`] is expected.
-pub(crate) const fn assert_future<R, F: Future<Output = R>>(f: F) -> F {
-    f
 }

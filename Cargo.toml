@@ -37,7 +37,7 @@ output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
-tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-core", "dep:tracing-subscriber"]
+tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
 async-trait = "0.1.43"
@@ -76,7 +76,6 @@ junit-report = { version = "0.8", optional = true }
 # "tracing" feature dependencies.
 crossbeam-utils = { version = "0.8.14", optional = true }
 tracing = { version = "0.1", optional = true }
-tracing-core = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3.16", optional = true }
 
 [dev-dependencies]
