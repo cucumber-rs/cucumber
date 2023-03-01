@@ -1480,6 +1480,8 @@ where
                 let fut = tracing::Instrument::instrument(fut, span);
                 (fut, span_id)
             };
+            #[cfg(not(feature = "tracing"))]
+            let _ = scenario_id;
 
             let result = fut.then_yield().await;
 
@@ -1755,6 +1757,8 @@ where
                 let fut = tracing::Instrument::instrument(fut, span);
                 (fut, span_id)
             };
+            #[cfg(not(feature = "tracing"))]
+            let _ = scenario_id;
 
             let res = fut.then_yield().await;
 
