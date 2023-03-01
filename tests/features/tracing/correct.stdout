@@ -1,25 +1,25 @@
 Feature: Basic
   Scenario: deny skipped
  INFO tracing: not in span: 0
- INFO scenario: tracing: in span: 1
+ INFO scenario:step: tracing: in span: 1
    ✔  Given step 1
   Scenario Outline: steps
  INFO tracing: not in span: 1
  INFO tracing: not in span: 2
- INFO scenario: tracing: in span: 2
+ INFO scenario:step: tracing: in span: 2
    ✔  Given step 2
   Scenario Outline: steps
  INFO tracing: not in span: 1
  INFO tracing: not in span: 2
- INFO scenario: tracing: in span: 3
+ INFO scenario:step: tracing: in span: 3
    ✔  Given step 3
   Scenario Outline: steps
  INFO tracing: not in span: 1
  INFO tracing: not in span: 2
- INFO scenario: tracing: in span: 4
+ INFO scenario:step: tracing: in span: 4
    ✔  Given step 4
   Scenario Outline: steps
  INFO tracing: not in span: 1
  INFO tracing: not in span: 2
- INFO scenario: tracing: in span: 5
+ INFO scenario:step: tracing: in span: 5
    ✔  Given step 5
