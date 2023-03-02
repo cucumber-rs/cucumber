@@ -38,13 +38,13 @@ impl Future for YieldNow {
     }
 }
 
-/// Return type of [`FutureExt::then_yield()`].
+/// Return type of a [`FutureExt::then_yield()`] method.
 type ThenYield<F, O> = Then<F, YieldThenReturn<O>, fn(O) -> YieldThenReturn<O>>;
 
-/// [`Future`] extensions.
+/// Extensions of a [`Future`], used inside this crate.
 pub(crate) trait FutureExt: Future + Sized {
-    /// Yields after [`Future`] is resolved to allow other [`Future`]s to make
-    /// progress.
+    /// Yields after this [`Future`] is resolved allowing other [`Future`]s
+    /// making progress.
     fn then_yield(self) -> ThenYield<Self, Self::Output> {
         self.then(YieldThenReturn::new)
     }
@@ -52,21 +52,20 @@ pub(crate) trait FutureExt: Future + Sized {
 
 impl<T: Future> FutureExt for T {}
 
-/// [`Future`] that returns [`task::Poll::Pending`] once and then returns the
-/// value.
+/// [`Future`] returning a [`task::Poll::Pending`] once, before returning a
+/// contained value.
 #[derive(Debug)]
 #[pin_project]
 pub(crate) struct YieldThenReturn<V> {
-    /// Returned value.
+    /// Value to be returned.
     value: Option<V>,
 
     /// [`YieldNow`] [`Future`].
-    #[pin]
     r#yield: YieldNow,
 }
 
 impl<V> YieldThenReturn<V> {
-    /// Creates new [`YieldThenReturn`].
+    /// Creates a new [`YieldThenReturn`] [`Future`].
     const fn new(v: V) -> Self {
         Self {
             value: Some(v),
@@ -83,19 +82,20 @@ impl<V> Future for YieldThenReturn<V> {
         cx: &mut task::Context<'_>,
     ) -> task::Poll<Self::Output> {
         let this = self.project();
-        task::ready!(this.r#yield.poll(cx));
+        task::ready!(this.r#yield.poll_unpin(cx));
         this.value
             .take()
             .map_or(task::Poll::Pending, task::Poll::Ready)
     }
 }
 
-/// [`select`] that always [`task::Poll`]s `biased` [`Future`] first and only
-/// if it returns [`task::Poll::Pending`] tries to [`task::Poll`] `regular`.
+/// [`select`] that always [`poll()`]s the `biased` [`Future`] first, and only
+/// if it returns [`task::Poll::Pending`] tries to [`poll()`] the `regular` one.
 ///
 /// Implementation is exactly the same, as [`select`] at the moment, but
-/// documentation has no guarantee about this behaviour, so can be changed.
+/// documentation has no guarantees about this behaviour, so can be changed.
 ///
+/// [`poll()`]: Future::poll
 /// [`select`]: futures::future::select
 pub(crate) const fn select_with_biased_first<A, B>(
     biased: A,
@@ -110,7 +110,7 @@ where
     }
 }
 
-/// [`Future`] of [`select_with_biased_first`].
+/// [`Future`] returned by a [`select_with_biased_first()`] function.
 pub(crate) struct SelectWithBiasedFirst<A, B> {
     /// Inner [`Future`]s.
     inner: Option<(A, B)>,

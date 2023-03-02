@@ -311,7 +311,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     })
                     .add_testcase(case);
             }
-            // TODO: report logs for each `Scenario`.
+            // TODO: Report logs for each `Scenario`.
             Scenario::Log(_) => {}
         }
     }
@@ -395,7 +395,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     sc.name,
                 );
             }
-            // TODO: report logs for each `Scenario`.
+            // TODO: Report logs for each `Scenario`.
             Scenario::Log(_) => unreachable!(),
         };
 

@@ -123,8 +123,9 @@ pub struct Basic<Out: io::Write = io::Stdout> {
     /// Number of lines to clear.
     lines_to_clear: usize,
 
-    /// Buffer to be re-outputted after
-    /// [`Self::clear_last_lines_if_term_present()`].
+    /// Buffer to be re-output after [`clear_last_lines_if_term_present()`][0].
+    ///
+    /// [0]: Self::clear_last_lines_if_term_present
     re_output_after_clear: String,
 
     /// [`Verbosity`] of this [`Writer`].
@@ -383,7 +384,7 @@ impl<Out: io::Write> Basic<Out> {
         Ok(())
     }
 
-    /// Outputs [`event::Scenario::Log`].
+    /// Outputs the [`event::Scenario::Log`].
     pub(crate) fn emit_log(&mut self, msg: impl AsRef<str>) -> io::Result<()> {
         self.lines_to_clear += msg.as_ref().lines().count();
         self.re_output_after_clear.push_str(msg.as_ref());
