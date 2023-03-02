@@ -62,7 +62,7 @@ async fn output() {
     .unwrap();
 
     assert_eq!(
-        buffer,
+        non_deterministic.replace_all(&buffer, ""),
         non_deterministic.replace_all(
             &fs::read_to_string("tests/junit/correct.xml").unwrap(),
             "",
