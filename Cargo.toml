@@ -32,11 +32,12 @@ libtest = ["dep:serde", "dep:serde_json", "timestamps"]
 # Enables step attributes and auto-wiring.
 macros = ["dep:anyhow", "dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
 # Enables support for outputting in Cucumber JSON format.
-output-json = ["dep:Inflector", "dep:mime", "dep:serde", "dep:serde_json", "timestamps"]
+output-json = ["dep:base64", "dep:Inflector", "dep:mime", "dep:serde", "dep:serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
+# Enables integraion with `tracing` crate.
 tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
