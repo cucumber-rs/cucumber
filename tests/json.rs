@@ -4,12 +4,20 @@ use cucumber::{given, then, when, writer, World as _};
 use futures::FutureExt as _;
 use regex::RegexBuilder;
 use tempfile::NamedTempFile;
+use tracing_subscriber::{
+    filter::LevelFilter,
+    fmt::format::{DefaultFields, Format},
+    layer::SubscriberExt as _,
+    Layer as _,
+};
 
 #[given(regex = r"(\d+) secs?")]
 #[when(regex = r"(\d+) secs?")]
 #[then(regex = r"(\d+) secs?")]
 fn step(world: &mut World) {
+    tracing::info!("step");
     world.0 += 1;
+    tracing::info!("world: {world:?}");
     assert!(world.0 < 4, "Too much!");
 }
 
@@ -20,6 +28,7 @@ async fn test() {
         World::cucumber()
             .before(|_, _, sc, _| {
                 async {
+                    tracing::info!("before");
                     assert!(
                         !(sc.name == "wait"
                             && sc.tags.iter().any(|t| t == "fail_before")),
@@ -30,6 +39,7 @@ async fn test() {
             })
             .after(|_, _, sc, _, _| {
                 async {
+                    tracing::info!("after");
                     assert!(!sc.tags.iter().any(|t| t == "fail_after"), "Tag!");
                 }
                 .boxed_local()
@@ -37,6 +47,14 @@ async fn test() {
             .with_writer(writer::Json::new(file.reopen().unwrap()))
             .fail_on_skipped()
             .with_default_cli()
+            .configure_and_init_tracing(
+                DefaultFields::new(),
+                Format::default().with_ansi(false).without_time(),
+                |layer| {
+                    tracing_subscriber::registry()
+                        .with(LevelFilter::INFO.and_then(layer))
+                },
+            )
             .run("tests/features/wait")
             .await,
     );

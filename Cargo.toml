@@ -32,7 +32,7 @@ libtest = ["dep:serde", "dep:serde_json", "timestamps"]
 # Enables step attributes and auto-wiring.
 macros = ["dep:anyhow", "dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
 # Enables support for outputting in Cucumber JSON format.
-output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
+output-json = ["dep:Inflector", "dep:mime", "dep:serde", "dep:serde_json", "timestamps"]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
@@ -66,9 +66,11 @@ cucumber-expressions = { version = "0.2.1", features = ["into-regex"], optional 
 inventory = { version = "0.3", optional = true }
 
 # "output-json" and/or "libtest" features dependencies.
+base64 = { version = "0.21", optional = true }
+Inflector = { version = "0.11", default-features = false, optional = true }
+mime = { version = "0.3.16", optional = true }
 serde = { version = "1.0.103", features = ["derive"], optional = true }
 serde_json = { version = "1.0.18", optional = true }
-Inflector = { version = "0.11", default-features = false, optional = true }
 
 # "output-junit" feature dependencies.
 junit-report = { version = "0.8", optional = true }
@@ -86,7 +88,7 @@ tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "ti
 
 [[test]]
 name = "json"
-required-features = ["output-json"]
+required-features = ["output-json", "tracing"]
 
 [[test]]
 name = "junit"

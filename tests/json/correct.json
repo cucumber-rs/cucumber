@@ -38,16 +38,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 3000
-            }
+              "duration": 186000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 11000
-            }
+              "duration": 385000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -68,8 +80,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 33000
-            }
+              "duration": 293000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -77,8 +99,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 392000
-            }
+              "duration": 601000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -86,7 +118,7 @@
             "name": "unknown",
             "result": {
               "status": "Undefined",
-              "duration": 182000,
+              "duration": 317000,
               "error_message": "Step doesn't match any function"
             }
           }
@@ -111,8 +143,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 420000
-            }
+              "duration": 757000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -121,7 +163,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 565000
             }
           }
         ],
@@ -129,8 +171,14 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1660000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -151,8 +199,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 48000
-            }
+              "duration": 1405000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -160,8 +218,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 48000
-            }
+              "duration": 1567000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -169,9 +237,23 @@
             "name": "2 secs",
             "result": {
               "status": "Failed",
-              "duration": 450000,
-              "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
-            }
+              "duration": 1240000,
+              "error_message": "Matched: tests/json.rs:16:1\nStep panicked. Captured output: Too much!"
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDQpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -194,8 +276,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 21000
-            }
+              "duration": 2000000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -204,16 +296,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
-            }
+              "duration": 885000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1791000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -234,8 +338,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 19000
-            }
+              "duration": 1957000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -243,8 +357,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 14000
-            }
+              "duration": 1981000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -252,7 +376,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 5000
+              "duration": 879000
             }
           }
         ]
@@ -276,8 +400,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 22000
-            }
+              "duration": 1423000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       }
@@ -294,16 +428,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
-            }
+              "duration": 156000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 280000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -324,8 +470,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 15000
-            }
+              "duration": 250000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -333,8 +489,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 16000
-            }
+              "duration": 246000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -342,7 +508,7 @@
             "name": "unknown",
             "result": {
               "status": "Undefined",
-              "duration": 5000,
+              "duration": 139000,
               "error_message": "Step doesn't match any function"
             }
           }
@@ -367,8 +533,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 22000
-            }
+              "duration": 250000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -377,7 +553,7 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
+              "duration": 453000
             }
           }
         ],
@@ -385,8 +561,14 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1128000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -407,8 +589,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 16000
-            }
+              "duration": 1865000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -416,8 +608,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 14000
-            }
+              "duration": 1176000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -425,9 +627,23 @@
             "name": "2 secs",
             "result": {
               "status": "Failed",
-              "duration": 38000,
-              "error_message": "Matched: tests/json.rs:10:1\nStep panicked. Captured output: Too much!"
-            }
+              "duration": 1099000,
+              "error_message": "Matched: tests/json.rs:16:1\nStep panicked. Captured output: Too much!"
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDQpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -450,8 +666,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 21000
-            }
+              "duration": 2654000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -460,16 +686,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
-            }
+              "duration": 1003000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
-            }
+              "duration": 1907000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario",
@@ -490,8 +728,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 15000
-            }
+              "duration": 922000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -499,8 +747,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 18000
-            }
+              "duration": 2237000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -508,7 +766,7 @@
             "name": "unknown",
             "result": {
               "status": "Skipped",
-              "duration": 7000
+              "duration": 1337000
             }
           }
         ]
@@ -532,8 +790,18 @@
             "name": "1 sec",
             "result": {
               "status": "Passed",
-              "duration": 22000
-            }
+              "duration": 1641000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiBzdGVwCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmFja2dyb3VuZCBzdGVwOiBqc29uOiB3b3JsZDogV29ybGQoMSkK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       }
@@ -550,17 +818,29 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 61000,
+              "duration": 1145000,
               "error_message": "Tag!"
-            }
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1214000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -585,8 +865,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 1815000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -594,8 +884,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 15000
-            }
+              "duration": 2124000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -603,8 +903,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 1584000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -613,17 +923,29 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 27000,
+              "duration": 937000,
               "error_message": "Tag!"
-            }
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1953000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -648,8 +970,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 23000
-            }
+              "duration": 1452000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -657,8 +989,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 15000
-            }
+              "duration": 2115000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -666,8 +1008,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 1400000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -676,17 +1028,29 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 22000,
+              "duration": 1044000,
               "error_message": "Tag!"
-            }
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 1303000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -711,8 +1075,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 2005000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -720,8 +1094,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 14000
-            }
+              "duration": 1569000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -729,8 +1113,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 2080000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -739,17 +1133,29 @@
           {
             "result": {
               "status": "Failed",
-              "duration": 22000,
+              "duration": 1571000,
               "error_message": "Tag!"
-            }
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 2001000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -778,8 +1184,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 1211000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -787,8 +1203,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 17000
-            }
+              "duration": 1961000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -796,8 +1222,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 14000
-            }
+              "duration": 1182000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       }
@@ -814,16 +1250,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 2000
-            }
+              "duration": 1171000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 6000
-            }
+              "duration": 2119000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -839,8 +1287,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 1469000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -848,8 +1306,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 839000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -857,8 +1325,18 @@
             "name": "2 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 2183000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -867,16 +1345,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
-            }
+              "duration": 1532000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
-            }
+              "duration": 1328000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -892,8 +1382,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 19000
-            }
+              "duration": 1405000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -901,8 +1401,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 2630000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -910,8 +1420,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 1057000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -920,16 +1440,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
-            }
+              "duration": 1629000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
-            }
+              "duration": 2175000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -945,8 +1477,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 901000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -954,8 +1496,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 2116000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -963,8 +1515,18 @@
             "name": "1 secs",
             "result": {
               "status": "Passed",
-              "duration": 12000
-            }
+              "duration": 1055000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       },
@@ -973,16 +1535,28 @@
           {
             "result": {
               "status": "Passed",
-              "duration": 1000
-            }
+              "duration": 994000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YWZ0ZXIgaG9vazoganNvbjogYWZ0ZXIK",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "before": [
           {
             "result": {
               "status": "Passed",
-              "duration": 5000
-            }
+              "duration": 1370000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86YmVmb3JlIGhvb2s6IGpzb246IGJlZm9yZQo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ],
         "keyword": "Scenario Outline",
@@ -998,8 +1572,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 20000
-            }
+              "duration": 1443000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDEpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "When ",
@@ -1007,8 +1591,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 18000
-            }
+              "duration": 2435000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDIpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           },
           {
             "keyword": "Then ",
@@ -1016,8 +1610,18 @@
             "name": "5 secs",
             "result": {
               "status": "Passed",
-              "duration": 13000
-            }
+              "duration": 1510000
+            },
+            "embeddings": [
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogc3RlcAo=",
+                "mime_type": "text/x.cucumber.log+plain"
+              },
+              {
+                "data": "IElORk8gc2NlbmFyaW86c3RlcDoganNvbjogd29ybGQ6IFdvcmxkKDMpCg==",
+                "mime_type": "text/x.cucumber.log+plain"
+              }
+            ]
           }
         ]
       }
