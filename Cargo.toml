@@ -37,6 +37,7 @@ output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
+# Enables integraion with `tracing` crate.
 tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
