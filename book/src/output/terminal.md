@@ -213,9 +213,9 @@ async fn main() {
 
 
 
-## Manual printing
+## Debug printing and/or logging
 
-Though [`cucumber`] crate doesn't capture any manual printing produced in a [step] matching function (such as [`dbg!`] or [`println!`] macros), it may be [quite misleading][#177] to produce and use it for debugging purposes. The reason is simply because [`cucumber`] crate executes [scenario]s concurrently and [normalizes][3] their results before outputting, while any manual print is produced instantly at the moment of its [step] execution.
+Though [`cucumber`] crate doesn't capture any manual debug printing produced in a [step] matching function (such as [`dbg!`] or [`println!`] macros), it may be [quite misleading][#177] to produce and use it for debugging purposes. The reason is simply because [`cucumber`] crate executes [scenario]s concurrently and [normalizes][3] their results before outputting, while any manual print is produced instantly at the moment of its [step] execution.
 
 > __WARNING:__ Moreover, manual printing will very likely interfere with [default][1] interactive pretty-printing.
 
@@ -348,7 +348,48 @@ async fn main() {
 ```
 ![record](../rec/output_terminal_custom.gif)
 
-> __NOTE__: The custom print is still output before its [step], because is printed during the [step] execution. 
+> __NOTE__: The custom print is still output before its [step], because is printed during the [step] execution.
+
+Much better option for debugging would be using [`tracing` crate integration](tracing.md) instead of [`dbg!`]/[`println!`] for doing logs.
+
+```rust
+# extern crate cucumber;
+# extern crate tokio;
+# extern crate tracing;
+#
+use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
+
+use cucumber::{given, then, when, World as _};
+use tokio::time;
+
+#[derive(cucumber::World, Debug, Default)]
+struct World;
+
+#[given(regex = r"(\d+) secs?")]
+#[when(regex = r"(\d+) secs?")]
+#[then(regex = r"(\d+) secs?")]
+async fn sleep(_: &mut World, secs: u64) {
+    static ID: AtomicUsize = AtomicUsize::new(0);
+
+    let id = ID.fetch_add(1, Ordering::Relaxed);
+
+    tracing::info!("before {secs}s sleep: {id}");
+    time::sleep(Duration::from_secs(secs)).await;
+    tracing::info!("after {secs}s sleep: {id}");
+}
+
+#[tokio::main]
+async fn main() {
+    World::cucumber()
+        .init_tracing()
+        .run("tests/features/wait")
+        .await;
+}
+```
+![record](../rec/tracing_basic_writer.gif)
 
 
 

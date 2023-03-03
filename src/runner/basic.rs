@@ -17,13 +17,16 @@ use std::{
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
     },
     thread,
     time::{Duration, Instant},
 };
 
+#[cfg(feature = "tracing")]
+use crossbeam_utils::atomic::AtomicCell;
+use derive_more::{Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
     channel::{mpsc, oneshot},
@@ -38,10 +41,12 @@ use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
 use regex::{CaptureLocations, Regex};
 
+#[cfg(feature = "tracing")]
+use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
     event::{self, HookType, Info, Retries},
     feature::Ext as _,
-    future::yield_now,
+    future::{select_with_biased_first, FutureExt as _},
     parser, step,
     tag::Ext as _,
     Event, Runner, Step, World,
@@ -378,7 +383,17 @@ pub struct Basic<
 
     /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
+
+    #[cfg(feature = "tracing")]
+    /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
+    pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
+
+#[cfg(feature = "tracing")]
+/// Assertion that [`Basic::logs_collector`] [`AtomicCell::is_lock_free`].
+const _: () = {
+    assert!(AtomicCell::<Box<Option<TracingCollector>>>::is_lock_free());
+};
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
 // `#[derive(Clone)]`.
@@ -395,6 +410,8 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
             fail_fast: self.fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::clone(&self.logs_collector),
         }
     }
 }
@@ -437,6 +454,8 @@ impl<World> Default for Basic<World> {
             before_hook: None,
             after_hook: None,
             fail_fast: false,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
         }
     }
 }
@@ -530,6 +549,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -543,6 +564,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -592,6 +615,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -605,6 +630,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook: Some(func),
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -641,6 +668,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -654,6 +683,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook: Some(func),
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         }
     }
 
@@ -729,6 +760,8 @@ where
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
+        #[cfg(feature = "tracing")]
+        let logs_collector = *self.logs_collector.swap(Box::new(None));
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -740,6 +773,7 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            ..
         } = self;
 
         cli.retry = cli.retry.or(retries);
@@ -768,6 +802,8 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
         );
 
         stream::select(
@@ -859,6 +895,7 @@ async fn insert_features<W, S, F>(
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
@@ -869,6 +906,7 @@ async fn execute<W, Before, After>(
     before_hook: Option<Before>,
     after_hook: Option<After>,
     fail_fast: bool,
+    #[cfg(feature = "tracing")] mut logs_collector: Option<TracingCollector>,
 ) where
     W: World,
     Before: 'static
@@ -918,16 +956,14 @@ async fn execute<W, Before, After>(
         ControlFlow::Break(()) => Some(0),
     };
 
+    #[cfg(feature = "tracing")]
+    let waiter = logs_collector
+        .as_ref()
+        .map(TracingCollector::scenario_span_event_waiter);
+
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        // We yield once on every iteration, because there is a chance, that
-        // this function never yields otherwise. In this case event sender won't
-        // send anything to the `Writer` until the end. This is the case, when
-        // all the parsing is done, so there is no contention on the `Mutex`
-        // inside `Features` storage and all `Step` functions don't yield.
-        yield_now().await;
-
         let (runnable, sleep) =
             features.get(map_break(started_scenarios)).await;
         if run_scenarios.is_empty() && runnable.is_empty() {
@@ -956,21 +992,63 @@ async fn execute<W, Before, After>(
         let started = storage.start_scenarios(&runnable);
         executor.send_all_events(started);
 
-        if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-            *sc -= runnable.len();
-        }
+        {
+            #[cfg(feature = "tracing")]
+            let forward_logs = {
+                if let Some(coll) = logs_collector.as_mut() {
+                    coll.start_scenarios(&runnable);
+                }
+                async {
+                    loop {
+                        while let Some(logs) = logs_collector
+                            .as_mut()
+                            .and_then(TracingCollector::emitted_logs)
+                        {
+                            executor.send_all_events(logs);
+                        }
+                        future::ready(()).then_yield().await;
+                    }
+                }
+            };
+            #[cfg(feature = "tracing")]
+            pin_mut!(forward_logs);
+            #[cfg(not(feature = "tracing"))]
+            let forward_logs = future::pending();
 
-        for (f, r, s, ty, retries) in runnable {
-            run_scenarios.push(executor.run_scenario(f, r, s, ty, retries));
-        }
-
-        if run_scenarios.next().await.is_some() {
             if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-                *sc += 1;
+                *sc -= runnable.len();
+            }
+
+            for (id, f, r, s, ty, retries) in runnable {
+                run_scenarios.push(
+                    executor
+                        .run_scenario(
+                            id,
+                            f,
+                            r,
+                            s,
+                            ty,
+                            retries,
+                            #[cfg(feature = "tracing")]
+                            waiter.as_ref(),
+                        )
+                        .then_yield(),
+                );
+            }
+
+            let (finished_scenario, _) =
+                select_with_biased_first(forward_logs, run_scenarios.next())
+                    .await
+                    .factor_first();
+            if finished_scenario.is_some() {
+                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+                {
+                    *sc += 1;
+                }
             }
         }
 
-        while let Ok(Some((feat, rule, scenario_failed, retried))) =
+        while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
             if let Some(rule) = rule {
@@ -985,6 +1063,14 @@ async fn execute<W, Before, After>(
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);
             }
+            #[cfg(feature = "tracing")]
+            {
+                if let Some(coll) = logs_collector.as_mut() {
+                    coll.finish_scenario(id);
+                }
+            }
+            #[cfg(not(feature = "tracing"))]
+            let _ = id;
 
             if fail_fast && scenario_failed && !retried {
                 started_scenarios = ControlFlow::Break(());
@@ -1090,14 +1176,16 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     async fn run_scenario(
         &self,
+        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
         let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_) -> event::Scenario<W>| {
@@ -1138,106 +1226,163 @@ where
             event::Scenario::Started.with_retries(retry_num),
         ));
 
-        let mut result = async {
-            let before_hook = self
-                .run_before_hook(&feature, rule.as_ref(), &scenario, retry_num)
-                .await?;
+        let is_failed = async {
+            let mut result = async {
+                let before_hook = self
+                    .run_before_hook(
+                        &feature,
+                        rule.as_ref(),
+                        &scenario,
+                        retry_num,
+                        id,
+                        #[cfg(feature = "tracing")]
+                        waiter,
+                    )
+                    .await?;
 
-            let feature_background = feature
-                .background
-                .as_ref()
-                .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                .into_iter()
-                .flatten();
+                let feature_background = feature
+                    .background
+                    .as_ref()
+                    .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                    .into_iter()
+                    .flatten();
 
-            let feature_background = stream::iter(feature_background)
-                .map(Ok)
-                .try_fold(before_hook, |world, bg_step| {
-                    self.run_step(world, bg_step, true, into_bg_step_ev)
+                let feature_background = stream::iter(feature_background)
+                    .map(Ok)
+                    .try_fold(before_hook, |world, bg_step| {
+                        self.run_step(
+                            world,
+                            bg_step,
+                            true,
+                            into_bg_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
                         .map_ok(Some)
-                })
-                .await?;
+                    })
+                    .await?;
 
-            let rule_background = rule
-                .as_ref()
-                .map(|r| {
-                    r.background
-                        .as_ref()
-                        .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
-                        .into_iter()
-                        .flatten()
-                })
-                .into_iter()
-                .flatten();
+                let rule_background = rule
+                    .as_ref()
+                    .map(|r| {
+                        r.background
+                            .as_ref()
+                            .map(|b| {
+                                b.steps.iter().map(|s| Arc::new(s.clone()))
+                            })
+                            .into_iter()
+                            .flatten()
+                    })
+                    .into_iter()
+                    .flatten();
 
-            let rule_background = stream::iter(rule_background)
-                .map(Ok)
-                .try_fold(feature_background, |world, bg_step| {
-                    self.run_step(world, bg_step, true, into_bg_step_ev)
+                let rule_background = stream::iter(rule_background)
+                    .map(Ok)
+                    .try_fold(feature_background, |world, bg_step| {
+                        self.run_step(
+                            world,
+                            bg_step,
+                            true,
+                            into_bg_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
                         .map_ok(Some)
-                })
-                .await?;
+                    })
+                    .await?;
 
-            stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
-                .map(Ok)
-                .try_fold(rule_background, |world, step| {
-                    self.run_step(world, step, false, into_step_ev).map_ok(Some)
-                })
+                stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
+                    .map(Ok)
+                    .try_fold(rule_background, |world, step| {
+                        self.run_step(
+                            world,
+                            step,
+                            false,
+                            into_step_ev,
+                            id,
+                            #[cfg(feature = "tracing")]
+                            waiter,
+                        )
+                        .map_ok(Some)
+                    })
+                    .await
+            }
+            .await;
+
+            let (world, scenario_finished_ev) = match &mut result {
+                Ok(world) => {
+                    (world.take(), event::ScenarioFinished::StepPassed)
+                }
+                Err(exec_err) => (
+                    exec_err.take_world(),
+                    exec_err.get_scenario_finished_event(),
+                ),
+            };
+
+            let (world, after_hook_meta, after_hook_error) = self
+                .run_after_hook(
+                    world,
+                    &feature,
+                    rule.as_ref(),
+                    &scenario,
+                    scenario_finished_ev,
+                    id,
+                    #[cfg(feature = "tracing")]
+                    waiter,
+                )
                 .await
-        }
-        .await;
+                .map_or_else(
+                    |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
+                    |(w, meta)| (w.map(Arc::new), meta, None),
+                );
 
-        let (world, scenario_finished_ev) = match &mut result {
-            Ok(world) => (world.take(), event::ScenarioFinished::StepPassed),
-            Err(exec_err) => (
-                exec_err.take_world(),
-                exec_err.get_scenario_finished_event(),
-            ),
-        };
+            let scenario_failed = match &result {
+                Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
+                Err(
+                    ExecutionFailure::BeforeHookPanicked { .. }
+                    | ExecutionFailure::StepPanicked { .. },
+                ) => true,
+            };
+            let is_failed = scenario_failed || after_hook_error.is_some();
 
-        let (world, after_hook_meta, after_hook_error) = self
-            .run_after_hook(
-                world,
-                &feature,
-                rule.as_ref(),
-                &scenario,
-                scenario_finished_ev,
-            )
-            .await
-            .map_or_else(
-                |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
-                |(w, meta)| (w.map(Arc::new), meta, None),
-            );
+            if let Some(exec_error) = result.err() {
+                self.emit_failed_events(
+                    Arc::clone(&feature),
+                    rule.clone(),
+                    Arc::clone(&scenario),
+                    world.clone(),
+                    exec_error,
+                    retry_num,
+                );
+            }
 
-        let scenario_failed = match &result {
-            Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
-            Err(
-                ExecutionFailure::BeforeHookPanicked { .. }
-                | ExecutionFailure::StepPanicked { .. },
-            ) => true,
-        };
-        let is_failed = scenario_failed || after_hook_error.is_some();
-
-        if let Some(exec_error) = result.err() {
-            self.emit_failed_events(
+            self.emit_after_hook_events(
                 Arc::clone(&feature),
                 rule.clone(),
                 Arc::clone(&scenario),
-                world.clone(),
-                exec_error,
+                world,
+                after_hook_meta,
+                after_hook_error,
                 retry_num,
             );
-        }
 
-        self.emit_after_hook_events(
-            Arc::clone(&feature),
-            rule.clone(),
-            Arc::clone(&scenario),
-            world,
-            after_hook_meta,
-            after_hook_error,
-            retry_num,
-        );
+            is_failed
+        };
+        #[cfg(feature = "tracing")]
+        let (is_failed, span_id) = {
+            let span = id.scenario_span();
+            let span_id = span.id();
+            let is_failed = tracing::Instrument::instrument(is_failed, span);
+            (is_failed, span_id)
+        };
+        let is_failed = is_failed.then_yield().await;
+
+        #[cfg(feature = "tracing")]
+        if let Some((waiter, span_id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(span_id).then_yield().await;
+        }
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),
@@ -1261,7 +1406,13 @@ where
                 .await;
         }
 
-        self.scenario_finished(feature, rule, is_failed, next_try.is_some());
+        self.scenario_finished(
+            id,
+            feature,
+            rule,
+            is_failed,
+            next_try.is_some(),
+        );
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1278,10 +1429,13 @@ where
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
         retries: Option<Retries>,
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
         let init_world = async {
             AssertUnwindSafe(async { W::new().await })
                 .catch_unwind()
+                .then_yield()
                 .await
                 .map_err(Info::from)
                 .and_then(|r| {
@@ -1319,7 +1473,24 @@ where
                 }
             });
 
-            match fut.await {
+            #[cfg(feature = "tracing")]
+            let (fut, span_id) = {
+                let span = scenario_id.hook_span(HookType::Before);
+                let span_id = span.id();
+                let fut = tracing::Instrument::instrument(fut, span);
+                (fut, span_id)
+            };
+            #[cfg(not(feature = "tracing"))]
+            let _ = scenario_id;
+
+            let result = fut.then_yield().await;
+
+            #[cfg(feature = "tracing")]
+            if let Some((waiter, id)) = waiter.zip(span_id) {
+                waiter.wait_for_span_close(id).then_yield().await;
+            }
+
+            match result {
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
                         Arc::clone(feature),
@@ -1358,6 +1529,8 @@ where
         step: Arc<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
         St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
@@ -1386,6 +1559,7 @@ where
             } else {
                 match AssertUnwindSafe(async { W::new().await })
                     .catch_unwind()
+                    .then_yield()
                     .await
                 {
                     Ok(Ok(w)) => w,
@@ -1414,7 +1588,23 @@ where
             }
         };
 
-        match run.await {
+        #[cfg(feature = "tracing")]
+        let (run, span_id) = {
+            let span = scenario_id.step_span(is_background);
+            let span_id = span.id();
+            let run = tracing::Instrument::instrument(run, span);
+            (run, span_id)
+        };
+        let result = run.then_yield().await;
+
+        #[cfg(feature = "tracing")]
+        if let Some((waiter, id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(id).then_yield().await;
+        }
+        #[cfg(not(feature = "tracing"))]
+        let _ = scenario_id;
+
+        match result {
             Ok((Some(captures), loc, Some(world))) => {
                 self.send_event(passed(step, captures, loc));
                 Ok(world)
@@ -1531,6 +1721,7 @@ where
     ///
     /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
     /// details.
+    #[allow(clippy::too_many_arguments)]
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
@@ -1538,6 +1729,8 @@ where
         rule: Option<&Arc<gherkin::Rule>>,
         scenario: &Arc<gherkin::Scenario>,
         ev: event::ScenarioFinished,
+        scenario_id: ScenarioId,
+        #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<
         (Option<W>, Option<AfterHookEventsMeta>),
         (Option<W>, AfterHookEventsMeta, Info),
@@ -1555,7 +1748,25 @@ where
             };
 
             let started = event::Metadata::new(());
-            let res = AssertUnwindSafe(fut).catch_unwind().await;
+            let fut = AssertUnwindSafe(fut).catch_unwind();
+
+            #[cfg(feature = "tracing")]
+            let (fut, span_id) = {
+                let span = scenario_id.hook_span(HookType::After);
+                let span_id = span.id();
+                let fut = tracing::Instrument::instrument(fut, span);
+                (fut, span_id)
+            };
+            #[cfg(not(feature = "tracing"))]
+            let _ = scenario_id;
+
+            let res = fut.then_yield().await;
+
+            #[cfg(feature = "tracing")]
+            if let Some((waiter, id)) = waiter.zip(span_id) {
+                waiter.wait_for_span_close(id).then_yield().await;
+            }
+
             let finished = event::Metadata::new(());
             let meta = AfterHookEventsMeta { started, finished };
 
@@ -1624,6 +1835,7 @@ where
     /// [`Scenario`]: gherkin::Scenario
     fn scenario_finished(
         &self,
+        id: ScenarioId,
         feature: Arc<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         is_failed: IsFailed,
@@ -1633,7 +1845,7 @@ where
         // so we can just ignore it.
         drop(
             self.finished_sender
-                .unbounded_send((feature, rule, is_failed, is_retried)),
+                .unbounded_send((id, feature, rule, is_failed, is_retried)),
         );
     }
 
@@ -1665,7 +1877,7 @@ where
     /// [`Cucumber`]: event::Cucumber
     fn send_all_events(
         &self,
-        events: impl Iterator<Item = event::Cucumber<W>>,
+        events: impl IntoIterator<Item = event::Cucumber<W>>,
     ) {
         for v in events {
             // If the receiver end is dropped, then no one listens for events,
@@ -1674,6 +1886,30 @@ where
                 break;
             }
         }
+    }
+}
+
+/// ID of a [`Scenario`], uniquely identifying it.
+///
+/// **NOTE**: Retried [`Scenario`] has a different ID from a failed one.
+///
+/// [`Scenario`]: gherkin::Scenario
+#[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]
+pub struct ScenarioId(pub(crate) u64);
+
+impl ScenarioId {
+    /// Creates a new unique [`ScenarioId`].
+    pub fn new() -> Self {
+        /// [`AtomicU64`] ID.
+        static ID: AtomicU64 = AtomicU64::new(0);
+
+        Self(ID.fetch_add(1, Ordering::Relaxed))
+    }
+}
+
+impl Default for ScenarioId {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -1711,6 +1947,7 @@ struct FinishedRulesAndFeatures {
 ///
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesSender = mpsc::UnboundedSender<(
+    ScenarioId,
     Arc<gherkin::Feature>,
     Option<Arc<gherkin::Rule>>,
     IsFailed,
@@ -1722,6 +1959,7 @@ type FinishedFeaturesSender = mpsc::UnboundedSender<(
 ///
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesReceiver = mpsc::UnboundedReceiver<(
+    ScenarioId,
     Arc<gherkin::Feature>,
     Option<Arc<gherkin::Rule>>,
     IsFailed,
@@ -1825,6 +2063,7 @@ impl FinishedRulesAndFeatures {
         &mut self,
         runnable: impl AsRef<
             [(
+                ScenarioId,
                 Arc<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
@@ -1836,7 +2075,7 @@ impl FinishedRulesAndFeatures {
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
-        for feature in runnable.iter().map(|(f, ..)| Arc::clone(f)).dedup() {
+        for feature in runnable.iter().map(|(_, f, ..)| Arc::clone(f)).dedup() {
             let _ = self
                 .features_scenarios_count
                 .entry(Arc::clone(&feature))
@@ -1849,7 +2088,7 @@ impl FinishedRulesAndFeatures {
         let mut started_rules = Vec::new();
         for (feat, rule) in runnable
             .iter()
-            .filter_map(|(feat, rule, _, _, _)| {
+            .filter_map(|(_, feat, rule, _, _, _)| {
                 rule.clone().map(|r| (Arc::clone(feat), r))
             })
             .dedup()
@@ -1880,6 +2119,7 @@ impl FinishedRulesAndFeatures {
 type Scenarios = HashMap<
     ScenarioType,
     Vec<(
+        ScenarioId,
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
@@ -1891,6 +2131,7 @@ type Scenarios = HashMap<
 type InsertedScenarios = HashMap<
     ScenarioType,
     Vec<(
+        ScenarioId,
         Arc<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
@@ -1946,13 +2187,14 @@ impl Features {
             .map(|(feat, rule, scenario)| {
                 let retries = retry(feat, rule, scenario, cli);
                 (
+                    ScenarioId::new(),
                     Arc::new(feat.clone()),
                     rule.map(|r| Arc::new(r.clone())),
                     Arc::new(scenario.clone()),
                     retries,
                 )
             })
-            .into_group_map_by(|(f, r, s, _)| {
+            .into_group_map_by(|(_, f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
 
@@ -1972,8 +2214,11 @@ impl Features {
         retries: Option<RetryOptions>,
     ) {
         self.insert_scenarios(
-            iter::once((scenario_ty, vec![(feature, rule, scenario, retries)]))
-                .collect(),
+            iter::once((
+                scenario_ty,
+                vec![(ScenarioId::new(), feature, rule, scenario, retries)],
+            ))
+            .collect(),
         )
         .await;
     }
@@ -1987,7 +2232,7 @@ impl Features {
         let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
         for (which, values) in scenarios {
-            for (f, r, s, ret) in values {
+            for (id, f, r, s, ret) in values {
                 match ret {
                     ret @ (None
                     | Some(RetryOptions {
@@ -2000,14 +2245,14 @@ impl Features {
                         without_retries
                             .entry(which)
                             .or_default()
-                            .push((f, r, s, ret));
+                            .push((id, f, r, s, ret));
                     }
                     Some(ret) => {
                         let ret = ret.with_deadline(now);
                         with_retries
                             .entry(which)
                             .or_default()
-                            .push((f, r, s, ret));
+                            .push((id, f, r, s, ret));
                     }
                 }
             }
@@ -2017,8 +2262,8 @@ impl Features {
 
         for (which, values) in with_retries {
             let ty_storage = storage.entry(which).or_default();
-            for (f, r, s, ret) in values {
-                ty_storage.insert(0, (f, r, s, Some(ret)));
+            for (id, f, r, s, ret) in values {
+                ty_storage.insert(0, (id, f, r, s, Some(ret)));
             }
         }
 
@@ -2050,6 +2295,7 @@ impl Features {
         max_concurrent_scenarios: Option<usize>,
     ) -> (
         Vec<(
+            ScenarioId,
             Arc<gherkin::Feature>,
             Option<Arc<gherkin::Rule>>,
             Arc<gherkin::Scenario>,
@@ -2058,6 +2304,7 @@ impl Features {
         )>,
         Option<Duration>,
     ) {
+        use RetryOptionsWithDeadline as WithDeadline;
         use ScenarioType::{Concurrent, Serial};
 
         if max_concurrent_scenarios == Some(0) {
@@ -2066,14 +2313,14 @@ impl Features {
 
         let mut min_dur = None;
         let mut drain =
-            |storage: &mut Vec<(_, _, _, Option<RetryOptionsWithDeadline>)>,
+            |storage: &mut Vec<(_, _, _, _, Option<WithDeadline>)>,
              ty,
              count: Option<usize>| {
                 let mut i = 0;
                 // TODO: Replace with `drain_filter`, once stabilized.
                 //       https://github.com/rust-lang/rust/issues/43244
                 let drained =
-                    VecExt::drain_filter(storage, |(_, _, _, ret)| {
+                    VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
                         // Because `drain_filter` runs over entire `Vec` on
                         // `Drop`, we can't just `.take(count)`.
                         if count.filter(|c| i >= *c).is_some() {
@@ -2081,9 +2328,7 @@ impl Features {
                         }
 
                         ret.as_ref()
-                            .and_then(
-                                RetryOptionsWithDeadline::left_until_retry,
-                            )
+                            .and_then(WithDeadline::left_until_retry)
                             .map_or_else(
                                 || {
                                     i += 1;
@@ -2097,7 +2342,9 @@ impl Features {
                                 },
                             )
                     })
-                    .map(|(f, r, s, ret)| (f, r, s, ty, ret.map(Into::into)))
+                    .map(|(id, f, r, s, ret)| {
+                        (id, f, r, s, ty, ret.map(Into::into))
+                    })
                     .collect::<Vec<_>>();
                 (!drained.is_empty()).then_some(drained)
             };

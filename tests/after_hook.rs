@@ -53,6 +53,7 @@ async fn fires_each_time() {
         })
         .fail_on_skipped()
         .with_default_cli()
+        .max_concurrent_scenarios(1)
         .run_and_exit("tests/features/wait");
 
     let err = AssertUnwindSafe(res)

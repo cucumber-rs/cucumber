@@ -123,6 +123,11 @@ pub struct Basic<Out: io::Write = io::Stdout> {
     /// Number of lines to clear.
     lines_to_clear: usize,
 
+    /// Buffer to be re-output after [`clear_last_lines_if_term_present()`][0].
+    ///
+    /// [0]: Self::clear_last_lines_if_term_present
+    re_output_after_clear: String,
+
     /// [`Verbosity`] of this [`Writer`].
     verbosity: Verbosity,
 }
@@ -224,6 +229,7 @@ impl<Out: io::Write> Basic<Out> {
             styles: Styles::new(),
             indent: 0,
             lines_to_clear: 0,
+            re_output_after_clear: String::new(),
             verbosity: verbosity.into(),
         };
         basic.apply_cli(Cli {
@@ -248,6 +254,8 @@ impl<Out: io::Write> Basic<Out> {
     fn clear_last_lines_if_term_present(&mut self) -> io::Result<()> {
         if self.styles.is_present && self.lines_to_clear > 0 {
             self.output.clear_last_lines(self.lines_to_clear)?;
+            self.output.write_str(&self.re_output_after_clear)?;
+            self.re_output_after_clear.clear();
             self.lines_to_clear = 0;
         }
         Ok(())
@@ -371,8 +379,16 @@ impl<Out: io::Write> Basic<Out> {
             Scenario::Finished => {
                 self.indent = self.indent.saturating_sub(2);
             }
+            Scenario::Log(msg) => self.emit_log(msg)?,
         }
         Ok(())
+    }
+
+    /// Outputs the [`event::Scenario::Log`].
+    pub(crate) fn emit_log(&mut self, msg: impl AsRef<str>) -> io::Result<()> {
+        self.lines_to_clear += msg.as_ref().lines().count();
+        self.re_output_after_clear.push_str(msg.as_ref());
+        self.output.write_str(msg)
     }
 
     /// Outputs the [failed] [`Scenario`]'s hook.
@@ -534,7 +550,7 @@ impl<Out: io::Write> Basic<Out> {
                     .unwrap_or_default(),
                 indent = " ".repeat(self.indent),
             );
-            self.lines_to_clear = output.lines().count();
+            self.lines_to_clear += output.lines().count();
             self.write_line(&output)?;
         }
         Ok(())
@@ -809,7 +825,7 @@ impl<Out: io::Write> Basic<Out> {
                     .unwrap_or_default(),
                 indent = " ".repeat(self.indent.saturating_sub(2)),
             );
-            self.lines_to_clear = output.lines().count();
+            self.lines_to_clear += output.lines().count();
             self.write_line(&output)?;
         }
         Ok(())

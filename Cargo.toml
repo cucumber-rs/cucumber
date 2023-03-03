@@ -19,7 +19,7 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/tracing.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -37,12 +37,14 @@ output-json = ["dep:Inflector", "dep:serde", "dep:serde_json", "timestamps"]
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
 timestamps = []
+# Enables integraion with `tracing` crate.
+tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
 async-trait = "0.1.43"
 clap = { version = "4.0.27", features = ["derive", "wrap_help"] }
 console = "0.15"
-derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "into"], default_features = false }
+derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"], default_features = false }
 drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"
@@ -53,6 +55,7 @@ is-terminal = "0.4.4"
 itertools = "0.10"
 linked-hash-map = "0.5.3"
 once_cell = "1.13"
+pin-project = "1.0"
 regex = "1.5.5"
 sealed = "0.4"
 smart-default = "0.6"
@@ -71,6 +74,11 @@ Inflector = { version = "0.11", default-features = false, optional = true }
 # "output-junit" feature dependencies.
 junit-report = { version = "0.8", optional = true }
 
+# "tracing" feature dependencies.
+crossbeam-utils = { version = "0.8.14", optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3.16", optional = true }
+
 [dev-dependencies]
 derive_more = "0.99.17"
 rand = "0.8"
@@ -88,6 +96,11 @@ required-features = ["output-junit"]
 [[test]]
 name = "libtest"
 required-features = ["libtest"]
+
+[[test]]
+name = "tracing"
+required-features = ["tracing"]
+harness = false
 
 [[test]]
 name = "wait"

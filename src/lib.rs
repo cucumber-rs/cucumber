@@ -143,6 +143,8 @@ pub mod writer;
 
 #[cfg(feature = "macros")]
 pub mod codegen;
+#[cfg(feature = "tracing")]
+pub mod tracing;
 
 // TODO: Remove once tests run without complains about it.
 #[cfg(test)]
