@@ -90,7 +90,7 @@ For more examples check out the Book ([current][1] | [edge][2]).
 - `output-json` (implies `timestamps`): Enables support for outputting in [Cucumber JSON format].
 - `output-junit` (implies `timestamps`): Enables support for outputting [JUnit XML report].
 - `libtest` (implies `timestamps`): Enables compatibility with [Rust `libtest`][4]'s JSON output format. Useful for [IntelliJ Rust plugin integration][3].
-- `tracing`: Enables [integration with `tracing` crate][4].
+- `tracing`: Enables [integration with `tracing` crate][5].
 
 
 
