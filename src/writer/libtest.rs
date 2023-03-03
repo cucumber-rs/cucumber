@@ -479,10 +479,15 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Scenario::Step(step, ev) => self.expand_step_event(
                 feature, rule, scenario, &step, ev, retries, false, cli,
             ),
+            // We do use `print!()` intentionally here to support `libtest`
+            // output capturing properly, which can only capture output from
+            // the standard library’s `print!()` macro.
+            // This is the same as `tracing_subscriber::fmt::TestWriter` does
+            // (check its documentation for details).
             #[allow(clippy::print_stdout)]
             Scenario::Log(msg) => {
                 print!("{msg}");
-                Vec::new()
+                vec![]
             }
         }
     }
