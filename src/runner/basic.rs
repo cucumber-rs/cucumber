@@ -384,8 +384,8 @@ pub struct Basic<
     /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
 
-    /// [`TracingCollector`] for forwarding [`event::Scenario::Log`]s.
     #[cfg(feature = "tracing")]
+    /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
     pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
 
@@ -539,8 +539,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             ) -> ScenarioType
             + 'static,
     {
-        #[cfg(feature = "tracing")]
-        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -551,6 +549,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -605,8 +605,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             &'a mut World,
         ) -> LocalBoxFuture<'a, ()>,
     {
-        #[cfg(feature = "tracing")]
-        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -617,6 +615,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             after_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -658,8 +658,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             Option<&'a mut World>,
         ) -> LocalBoxFuture<'a, ()>,
     {
-        #[cfg(feature = "tracing")]
-        let logs_collector = self.logs_collector;
         let Self {
             max_concurrent_scenarios,
             retries,
@@ -670,6 +668,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
             ..
         } = self;
         Basic {
@@ -995,8 +995,8 @@ async fn execute<W, Before, After>(
         {
             #[cfg(feature = "tracing")]
             let forward_logs = {
-                if let Some(logs_collector) = logs_collector.as_mut() {
-                    logs_collector.start_scenarios(&runnable);
+                if let Some(coll) = logs_collector.as_mut() {
+                    coll.start_scenarios(&runnable);
                 }
                 async {
                     loop {
@@ -1065,8 +1065,8 @@ async fn execute<W, Before, After>(
             }
             #[cfg(feature = "tracing")]
             {
-                if let Some(logs_collector) = logs_collector.as_mut() {
-                    logs_collector.finish_scenario(id);
+                if let Some(coll) = logs_collector.as_mut() {
+                    coll.finish_scenario(id);
                 }
             }
             #[cfg(not(feature = "tracing"))]
@@ -1889,9 +1889,9 @@ where
     }
 }
 
-/// ID of the [`Scenario`] for uniquely identifying it.
+/// ID of a [`Scenario`], uniquely identifying it.
 ///
-/// Note that retried [`Scenario`] has different ID from failed one.
+/// **NOTE**: Retried [`Scenario`] has a different ID from a failed one.
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]

@@ -1,7 +1,7 @@
 `tracing` integration
 =====================
 
-[`Cucumber::init_tracing()`] (enabled by `tracing` feature in `Cargo.toml`) initializes global [`tracing::Subscriber`] that intercepts all [`tracing` events][1] and transforms them into [`event::Scenario::Log`]s. Each [`Writer`] can handle those events in its own way. [`writer::Basic`] for example, emits all `Scenario` logs, only when `Scenario` itself is outputted:
+[`Cucumber::init_tracing()`] (enabled by `tracing` feature in `Cargo.toml`) initializes global [`tracing::Subscriber`] that intercepts all the [`tracing` events][1] and transforms them into [`event::Scenario::Log`]s. Each [`Writer`] can handle those [`event::Scenario::Log`]s in its own way. [`writer::Basic`], for example, emits all the [`event::Scenario::Log`]s only whenever [scenario] itself is outputted.
 
 ```rust
 # extern crate cucumber;
@@ -40,12 +40,14 @@ async fn main() {
         .await;
 }
 ```
-
 ![record](../rec/tracing_basic_writer.gif)
 
----
 
-Tracking which `Scenario` log is emitted in is done with [`tracing::Span`]s: each `Scenario` is executed in its own [`tracing::Span`]. In case [`tracing` event][1] is emitted outside the [`tracing::Span`] of a `Scenario`, it will be propagated to every running `Scenario`:
+
+
+## Loosing [`tracing::Span`]
+
+[`tracing::Span`] is used to wire emitted [`tracing` events][1] (logs) to concrete [scenario]s: each [scenario] is executed in its own [`tracing::Span`]. In case a [`tracing` event][1] is emitted outside the [`tracing::Span`] of a [scenario], it will be propagated to every running [scenario] at the moment.
 
 ```rust
 # extern crate cucumber;
@@ -78,7 +80,7 @@ Tracking which `Scenario` log is emitted in is done with [`tracing::Span`]s: eac
 # 
 #[tokio::main]
 async fn main() {
-    // Background task outside of any `Scenario`.
+    // Background task outside of any scenario.
     tokio::spawn(async {
         let mut id = 0;
         loop {
@@ -88,26 +90,30 @@ async fn main() {
         }
     });
 
-
     World::cucumber()
         .init_tracing()
         .run("tests/features/wait")
         .await;
 }
 ```
-
 ![record](../rec/tracing_outside_span.gif)
 
-`Background: 2`/`3`/`4` is shown in multiple `Scenario`s. 
+As we see, `Background: 2`/`3`/`4` is shown in multiple [scenario]s, while being emitted only once each.
+
+> __TIP__: If you're [`spawn`]ing a [`Future`] inside your [step] matching function, consider to [propagate][2] its [`tracing::Span`] into the [`spawn`]ed [`Future`] for outputting its logs properly.
 
 
 
 
-[`Cucumber::init_tracing()`]: https://docs.rs/cucumber/latest/cucumber/struct.Cucumber.html#method.init_tracing
-[`event::Scenario::Log`]: https://docs.rs/cucumber/latest/cucumber/event/enum.Scenario.html#variant.Log
-[`tracing::Span`]: https://docs.rs/tracing/latest/tracing/struct.Span.html
-[`tracing::Subscriber`]: https://docs.rs/tracing/latest/tracing/trait.Subscriber.html
-[`Writer`]: https://docs.rs/cucumber/latest/cucumber/writer/trait.Writer.html
-[`writer::Basic`]: https://docs.rs/cucumber/latest/cucumber/writer/struct.Basic.html
-
-[1]: https://docs.rs/tracing/latest/tracing/index.html#events
+[`Cucumber::init_tracing()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.init_tracing
+[`event::Scenario::Log`]: https://docs.rs/cucumber/*/cucumber/event/enum.Scenario.html#variant.Log
+[`Future`]: https://doc.rust-lang.org/stable/std/future/trait.Future.html
+[`spawn`]: https://docs.rs/tokio/*/tokio/fn.spawn.html
+[`tracing::Span`]: https://docs.rs/tracing/*/tracing/struct.Span.html
+[`tracing::Subscriber`]: https://docs.rs/tracing/*/tracing/trait.Subscriber.html
+[`Writer`]: https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html
+[`writer::Basic`]: https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html
+[scenario]: https://cucumber.io/docs/gherkin/reference#example
+[step]: https://cucumber.io/docs/gherkin/reference#steps
+[1]: https://docs.rs/tracing/*/tracing/index.html#events
+[2]: https://docs.rs/tracing/*/tracing/struct.Span.html#method.enter

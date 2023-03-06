@@ -18,7 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- Added integration with `tracing` crate under `tracing` feature gate. ([#258], [#213])
+- [`tracing`] crate integration behind the `tracing` feature flag. ([#213], [#258])
 
 [#213]: /../../issues/213
 [#258]: /../../pull/258
@@ -701,6 +701,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [`clap`]: https://docs.rs/clap
 [`gherkin`]: https://docs.rs/gherkin
 [`gherkin_rust`]: https://docs.rs/gherkin_rust
+[`tracing`]: https://docs.rs/tracing
 
 [Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions

@@ -9,7 +9,7 @@ use tracing_subscriber::{
     filter::LevelFilter,
     fmt::format::{DefaultFields, Format},
     layer::SubscriberExt as _,
-    Layer as _,
+    Layer,
 };
 
 #[tokio::main]
