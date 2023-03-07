@@ -12,11 +12,19 @@
 //!
 //! [1]: https://github.com/cucumber/cucumber-json-schema
 
-use std::{fmt::Debug, io, time::SystemTime};
+use std::{
+    fmt::{self, Debug},
+    io, mem,
+    time::SystemTime,
+};
 
 use async_trait::async_trait;
+use base64::Engine as _;
+use derive_more::Display;
 use inflector::Inflector as _;
-use serde::Serialize;
+use mime::Mime;
+use once_cell::sync::Lazy;
+use serde::{Serialize, Serializer};
 
 use crate::{
     cli, event,
@@ -55,9 +63,13 @@ pub struct Json<Out: io::Write> {
 
     /// [`SystemTime`] when the current [`Hook`]/[`Step`] has started.
     ///
-    /// [`Scenario`]: gherkin::Scenario
     /// [`Hook`]: event::Hook
     started: Option<SystemTime>,
+
+    /// [`event::Scenario::Log`]s of the current [`Hook`]/[`Step`].
+    ///
+    /// [`Hook`]: event::Hook
+    logs: Vec<String>,
 }
 
 #[async_trait(?Send)]
@@ -153,8 +165,9 @@ impl<Out: io::Write> Json<Out> {
     pub const fn raw(output: Out) -> Self {
         Self {
             output,
-            features: Vec::new(),
+            features: vec![],
             started: None,
+            logs: vec![],
         }
     }
 
@@ -170,6 +183,7 @@ impl<Out: io::Write> Json<Out> {
         use event::Scenario;
 
         match ev {
+            Scenario::Started => {}
             Scenario::Hook(ty, ev) => {
                 self.handle_hook_event(feature, rule, scenario, ty, ev, meta);
             }
@@ -189,8 +203,12 @@ impl<Out: io::Write> Json<Out> {
                     feature, rule, scenario, "scenario", &st, ev, meta,
                 );
             }
-            // TODO: Report logs for each `Scenario`.
-            Scenario::Started | Scenario::Finished | Scenario::Log(_) => {}
+            Scenario::Log(msg) => {
+                self.logs.push(msg);
+            }
+            Scenario::Finished => {
+                self.logs.clear();
+            }
         }
     }
 
@@ -233,6 +251,10 @@ impl<Out: io::Write> Json<Out> {
                     duration: duration(),
                     error_message: None,
                 },
+                embeddings: mem::take(&mut self.logs)
+                    .into_iter()
+                    .map(Embedding::from_log)
+                    .collect(),
             },
             Hook::Failed(_, info) => HookResult {
                 result: RunResult {
@@ -240,6 +262,10 @@ impl<Out: io::Write> Json<Out> {
                     duration: duration(),
                     error_message: Some(coerce_error(&info).into_owned()),
                 },
+                embeddings: mem::take(&mut self.logs)
+                    .into_iter()
+                    .map(Embedding::from_log)
+                    .collect(),
             },
         };
 
@@ -316,14 +342,19 @@ impl<Out: io::Write> Json<Out> {
             },
         };
 
-        let el = self.mut_or_insert_element(feature, rule, scenario, ty);
-        el.steps.push(Step {
+        let step = Step {
             keyword: step.keyword.clone(),
             line: step.position.line,
             name: step.value.clone(),
             hidden: false,
             result,
-        });
+            embeddings: mem::take(&mut self.logs)
+                .into_iter()
+                .map(Embedding::from_log)
+                .collect(),
+        };
+        let el = self.mut_or_insert_element(feature, rule, scenario, ty);
+        el.steps.push(step);
     }
 
     /// Inserts the given `scenario`, if not present, and then returns a mutable
@@ -367,6 +398,69 @@ impl<Out: io::Write> Json<Out> {
                 f.elements.len() - 1
             });
         f.elements.get_mut(el_pos).unwrap_or_else(|| unreachable!())
+    }
+}
+
+/// [`base64`] encoded data.
+#[derive(Clone, Debug, Display, Serialize)]
+#[serde(transparent)]
+pub struct Base64(String);
+
+impl Base64 {
+    /// Used [`base64::engine`].
+    const ENGINE: base64::engine::GeneralPurpose =
+        base64::engine::general_purpose::STANDARD;
+
+    /// Encodes `bytes` as [`base64`].
+    #[must_use]
+    pub fn encode(bytes: impl AsRef<[u8]>) -> Self {
+        Self(Self::ENGINE.encode(bytes))
+    }
+
+    /// Decodes this [`base64`] encoded data.
+    #[must_use]
+    pub fn decode(&self) -> Vec<u8> {
+        Self::ENGINE.decode(&self.0).unwrap_or_else(|_| {
+            unreachable!(
+                "the only way to construct this type is `Base64::encode`, so \
+                 should contain a valid `base64` encoded `String`",
+            )
+        })
+    }
+}
+
+/// Data embedded to [Cucumber JSON format][1] output.
+///
+/// [1]: https://github.com/cucumber/cucumber-json-schema
+#[derive(Clone, Debug, Serialize)]
+pub struct Embedding {
+    /// [`base64`] encoded data.
+    pub data: Base64,
+
+    /// [`Mime`] of this [`Embedding::data`].
+    #[serde(serialize_with = "serialize_display")]
+    pub mime_type: Mime,
+
+    /// Optional name of the [`Embedding`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+impl Embedding {
+    /// Creates [`Embedding`] from the provided [`event::Scenario::Log`].
+    fn from_log(msg: impl AsRef<str>) -> Self {
+        /// [`Mime`] of the [`event::Scenario::Log`] [`Embedding`].
+        static LOG_MIME: Lazy<Mime> = Lazy::new(|| {
+            "text/x.cucumber.log+plain"
+                .parse()
+                .unwrap_or_else(|_| unreachable!("valid MIME"))
+        });
+
+        Self {
+            data: Base64::encode(msg.as_ref()),
+            mime_type: LOG_MIME.clone(),
+            name: None,
+        }
     }
 }
 
@@ -445,6 +539,18 @@ pub struct Step {
 
     /// [`RunResult`] of this [`Step`].
     pub result: RunResult,
+
+    /// [`Embedding`]s of this [`Step`].
+    ///
+    /// Although this field isn't present in the [JSON schema][1], all major
+    /// implementations have it (see [Java], [JavaScript], [Ruby]).
+    ///
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
+    /// [Java]: https://bit.ly/3J66vxT
+    /// [JavaScript]: https://bit.ly/41HSTAf
+    /// [Ruby]: https://bit.ly/3kAJRof
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub embeddings: Vec<Embedding>,
 }
 
 /// [`Serialize`]able result of running a [`Before`] or [`After`] hook.
@@ -455,6 +561,19 @@ pub struct Step {
 pub struct HookResult {
     /// [`RunResult`] of the hook.
     pub result: RunResult,
+
+    /// [`Embedding`]s of this [`Hook`].
+    ///
+    /// Although this field isn't present in [JSON schema][1], all major
+    /// implementations have it (see [Java], [JavaScript], [Ruby]).
+    ///
+    /// [`Hook`]: event::Hook
+    /// [1]: https://github.com/cucumber/cucumber-json-schema
+    /// [Java]: https://bit.ly/3J66vxT
+    /// [JavaScript]: https://bit.ly/41HSTAf
+    /// [Ruby]: https://bit.ly/3kAJRof
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub embeddings: Vec<Embedding>,
 }
 
 /// [`Serialize`]able [`gherkin::Background`] or [`gherkin::Scenario`].
@@ -518,8 +637,8 @@ impl Element {
         ty: &'static str,
     ) -> Self {
         Self {
-            after: Vec::new(),
-            before: Vec::new(),
+            after: vec![],
+            before: vec![],
             keyword: (ty == "background")
                 .then(|| feature.background.as_ref().map(|bg| &bg.keyword))
                 .flatten()
@@ -547,7 +666,7 @@ impl Element {
                     line: scenario.position.line,
                 })
                 .collect(),
-            steps: Vec::new(),
+            steps: vec![],
         }
     }
 }
@@ -590,7 +709,7 @@ impl Feature {
                     line: feature.position.line,
                 })
                 .collect(),
-            elements: Vec::new(),
+            elements: vec![],
         }
     }
 
@@ -604,10 +723,10 @@ impl Feature {
                 .map(str::to_owned),
             keyword: String::new(),
             name: String::new(),
-            tags: Vec::new(),
+            tags: vec![],
             elements: vec![Element {
-                after: Vec::new(),
-                before: Vec::new(),
+                after: vec![],
+                before: vec![],
                 keyword: String::new(),
                 r#type: "scenario",
                 id: format!(
@@ -619,7 +738,7 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: Vec::new(),
+                tags: vec![],
                 steps: vec![Step {
                     keyword: String::new(),
                     line: err.pos.line,
@@ -630,6 +749,7 @@ impl Feature {
                         duration: 0,
                         error_message: Some(err.to_string()),
                     },
+                    embeddings: vec![],
                 }],
             }],
         }
@@ -651,8 +771,8 @@ impl Feature {
             name: String::new(),
             tags: vec![],
             elements: vec![Element {
-                after: Vec::new(),
-                before: Vec::new(),
+                after: vec![],
+                before: vec![],
                 keyword: String::new(),
                 r#type: "scenario",
                 id: format!(
@@ -661,7 +781,7 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: Vec::new(),
+                tags: vec![],
                 steps: vec![Step {
                     keyword: String::new(),
                     line: 0,
@@ -672,6 +792,7 @@ impl Feature {
                         duration: 0,
                         error_message: Some(err.to_string()),
                     },
+                    embeddings: vec![],
                 }],
             }],
         }
@@ -692,4 +813,14 @@ impl PartialEq<gherkin::Feature> for Feature {
             .unwrap_or_default()
             && self.name == feature.name
     }
+}
+
+/// Helper to use `#[serde(serialize_with = "serialize_display")]` with any type
+/// implementing [`fmt::Display`].
+fn serialize_display<T, S>(display: &T, ser: S) -> Result<S::Ok, S::Error>
+where
+    T: fmt::Display,
+    S: Serializer,
+{
+    format_args!("{display}").serialize(ser)
 }
