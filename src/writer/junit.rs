@@ -215,7 +215,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             report: Report::new(),
             suit: None,
             scenario_started_at: None,
-            events: Vec::new(),
+            events: vec![],
             verbosity: verbosity.into(),
         }
     }

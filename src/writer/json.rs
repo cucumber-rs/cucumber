@@ -63,13 +63,11 @@ pub struct Json<Out: io::Write> {
 
     /// [`SystemTime`] when the current [`Hook`]/[`Step`] has started.
     ///
-    /// [`Scenario`]: gherkin::Scenario
     /// [`Hook`]: event::Hook
     started: Option<SystemTime>,
 
-    /// [`event::Scenario::Log`]s of current [`Hook`] or [`Step`].
+    /// [`event::Scenario::Log`]s of the current [`Hook`]/[`Step`].
     ///
-    /// [`Scenario`]: gherkin::Scenario
     /// [`Hook`]: event::Hook
     logs: Vec<String>,
 }
@@ -167,9 +165,9 @@ impl<Out: io::Write> Json<Out> {
     pub const fn raw(output: Out) -> Self {
         Self {
             output,
-            features: Vec::new(),
+            features: vec![],
             started: None,
-            logs: Vec::new(),
+            logs: vec![],
         }
     }
 
@@ -414,6 +412,7 @@ impl Base64 {
         base64::engine::general_purpose::STANDARD;
 
     /// Encodes `bytes` as [`base64`].
+    #[must_use]
     pub fn encode(bytes: impl AsRef<[u8]>) -> Self {
         Self(Self::ENGINE.encode(bytes))
     }
@@ -423,14 +422,16 @@ impl Base64 {
     pub fn decode(&self) -> Vec<u8> {
         Self::ENGINE.decode(&self.0).unwrap_or_else(|_| {
             unreachable!(
-                "Only way to construct this type is `Base64::encode`, so \
-                 should contain valid `base64` encoded `String`",
+                "the only way to construct this type is `Base64::encode`, so \
+                 should contain a valid `base64` encoded `String`",
             )
         })
     }
 }
 
-/// Embedded data.
+/// Data embedded to [Cucumber JSON format][1] output.
+///
+/// [1]: https://github.com/cucumber/cucumber-json-schema
 #[derive(Clone, Debug, Serialize)]
 pub struct Embedding {
     /// [`base64`] encoded data.
@@ -446,7 +447,7 @@ pub struct Embedding {
 }
 
 impl Embedding {
-    /// Creates [`Embedding`] from [`event::Scenario::Log`].
+    /// Creates [`Embedding`] from the provided [`event::Scenario::Log`].
     fn from_log(msg: impl AsRef<str>) -> Self {
         /// [`Mime`] of the [`event::Scenario::Log`] [`Embedding`].
         static LOG_MIME: Lazy<Mime> = Lazy::new(|| {
@@ -541,8 +542,8 @@ pub struct Step {
 
     /// [`Embedding`]s of this [`Step`].
     ///
-    /// Although this field isn't present in [JSON schema][1], all major
-    /// implementations have it: [Java], [JavaScript], [Ruby]
+    /// Although this field isn't present in the [JSON schema][1], all major
+    /// implementations have it (see [Java], [JavaScript], [Ruby]).
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [Java]: https://bit.ly/3J66vxT
@@ -564,7 +565,7 @@ pub struct HookResult {
     /// [`Embedding`]s of this [`Hook`].
     ///
     /// Although this field isn't present in [JSON schema][1], all major
-    /// implementations have it: [Java], [JavaScript], [Ruby]
+    /// implementations have it (see [Java], [JavaScript], [Ruby]).
     ///
     /// [`Hook`]: event::Hook
     /// [1]: https://github.com/cucumber/cucumber-json-schema
@@ -636,8 +637,8 @@ impl Element {
         ty: &'static str,
     ) -> Self {
         Self {
-            after: Vec::new(),
-            before: Vec::new(),
+            after: vec![],
+            before: vec![],
             keyword: (ty == "background")
                 .then(|| feature.background.as_ref().map(|bg| &bg.keyword))
                 .flatten()
@@ -665,7 +666,7 @@ impl Element {
                     line: scenario.position.line,
                 })
                 .collect(),
-            steps: Vec::new(),
+            steps: vec![],
         }
     }
 }
@@ -708,7 +709,7 @@ impl Feature {
                     line: feature.position.line,
                 })
                 .collect(),
-            elements: Vec::new(),
+            elements: vec![],
         }
     }
 
@@ -722,10 +723,10 @@ impl Feature {
                 .map(str::to_owned),
             keyword: String::new(),
             name: String::new(),
-            tags: Vec::new(),
+            tags: vec![],
             elements: vec![Element {
-                after: Vec::new(),
-                before: Vec::new(),
+                after: vec![],
+                before: vec![],
                 keyword: String::new(),
                 r#type: "scenario",
                 id: format!(
@@ -737,7 +738,7 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: Vec::new(),
+                tags: vec![],
                 steps: vec![Step {
                     keyword: String::new(),
                     line: err.pos.line,
@@ -748,7 +749,7 @@ impl Feature {
                         duration: 0,
                         error_message: Some(err.to_string()),
                     },
-                    embeddings: Vec::new(),
+                    embeddings: vec![],
                 }],
             }],
         }
@@ -770,8 +771,8 @@ impl Feature {
             name: String::new(),
             tags: vec![],
             elements: vec![Element {
-                after: Vec::new(),
-                before: Vec::new(),
+                after: vec![],
+                before: vec![],
                 keyword: String::new(),
                 r#type: "scenario",
                 id: format!(
@@ -780,7 +781,7 @@ impl Feature {
                 ),
                 line: 0,
                 name: String::new(),
-                tags: Vec::new(),
+                tags: vec![],
                 steps: vec![Step {
                     keyword: String::new(),
                     line: 0,
@@ -791,7 +792,7 @@ impl Feature {
                         duration: 0,
                         error_message: Some(err.to_string()),
                     },
-                    embeddings: Vec::new(),
+                    embeddings: vec![],
                 }],
             }],
         }
@@ -814,8 +815,8 @@ impl PartialEq<gherkin::Feature> for Feature {
     }
 }
 
-/// Helper to  use `#[serde(serialize_with = serialize_display)]` with any type
-/// that implements [`fmt::Display`].
+/// Helper to use `#[serde(serialize_with = "serialize_display")]` with any type
+/// implementing [`fmt::Display`].
 fn serialize_display<T, S>(display: &T, ser: S) -> Result<S::Ok, S::Error>
 where
     T: fmt::Display,

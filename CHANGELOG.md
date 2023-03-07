@@ -18,7 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Added
 
-- [`tracing`] crate integration behind the `tracing` feature flag. ([#213], [#258])
+- [`tracing`] crate integration behind the `tracing` feature flag. ([#213], [#258], [#261])
 
 [#213]: /../../issues/213
 [#258]: /../../pull/258
