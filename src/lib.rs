@@ -79,6 +79,7 @@
     clippy::rc_mutex,
     clippy::rest_pat_in_fully_bound_structs,
     clippy::same_name_method,
+    clippy::semicolon_inside_block,
     clippy::shadow_unrelated,
     clippy::significant_drop_in_scrutinee,
     clippy::str_to_string,
