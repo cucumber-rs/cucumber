@@ -15,6 +15,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Added `Log` variant to `event::Scenario`. ([#258])
 - Added `embeddings` field to `writer::json::Step` and `writer::json::HookResult`. ([#261])
+- Added `report_time` field to `writer::libter::Cli`. ([#265], [#264])
 
 ### Added
 
@@ -23,6 +24,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#213]: /../../issues/213
 [#258]: /../../pull/258
 [#261]: /../../pull/261
+[#264]: /../../issues/264
+[#265]: /../../pull/264
 
 
 
