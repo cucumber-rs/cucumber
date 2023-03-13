@@ -22,7 +22,7 @@
     - [Cucumber JSON format](output/json.md)
     - [Multiple outputs](output/multiple.md)
     - [`tracing` integration](output/tracing.md)
-    - [IntelliJ Rust (libtest) integration](output/intellij.md)
+    - [IntelliJ Rust (`libtest`) integration](output/intellij.md)
 - [Architecture](architecture/index.md)
     - [Custom `Parser`](architecture/parser.md) 
     - [Custom `Runner`](architecture/runner.md) 

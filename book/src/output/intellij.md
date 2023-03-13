@@ -1,5 +1,5 @@
-IntelliJ Rust (libtest) integration
-=========================
+IntelliJ Rust (`libtest`) integration
+=====================================
 
 [`writer::Libtest`] (enabled by `libtest` feature in `Cargo.toml`) allows [IntelliJ Rust] plugin to interpret output of [`cucumber`] tests similar to unit tests. To use it, just add [Cargo configuration][1] (current example uses `cargo test --test wait --features libtest` command) or run it via [Cargo command][2]. This automatically adds `--format=json` CLI option, which makes the [`cucumber`]'s output IDE-compatible.
 
@@ -37,10 +37,12 @@ World::cucumber()
 > CARGO_WORKSPACE_DIR = { value = "", relative = true }
 > ```
 
+
+
+
 ## `libtest` support
 
 Only a small subset of [`libtest`] harness is supported to integrate with other tools:
-
 - Only [`--format=json`][5] output ([`JUnit` support is done separately](junit.md));
 - [`--report-time`][6] option;
 - [`--show-output`][7] option.

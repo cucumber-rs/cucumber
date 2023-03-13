@@ -754,7 +754,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         .join("::")
     }
 
-    /// Saves [`Step`] start [`SystemTime`].
+    /// Saves [`Step`] starting [`SystemTime`].
     ///
     /// [`Step`]: gherkin::Step
     fn step_started_at(&mut self, meta: event::Metadata, cli: &Cli) {
