@@ -51,6 +51,10 @@ pub struct Cli {
     #[arg(long)]
     pub show_output: bool,
 
+    /// Show execution time of each test.
+    #[arg(long, value_name = "plain|colored", default_missing_value = "plain")]
+    pub report_time: Option<ReportTime>,
+
     /// Enable nightly-only flags.
     #[arg(short = 'Z')]
     pub nightly: Option<String>,
@@ -78,6 +82,30 @@ impl FromStr for Format {
             }
             s => Err(format!(
                 "Unknown option `{s}`, expected `pretty` or `json`",
+            )),
+        }
+    }
+}
+
+/// Format of reporting time.
+#[derive(Clone, Copy, Debug)]
+pub enum ReportTime {
+    /// Plain time reporting.
+    Plain,
+
+    /// Colored time reporting.
+    Colored,
+}
+
+impl FromStr for ReportTime {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "plain" => Ok(Self::Plain),
+            "colored" => Ok(Self::Colored),
+            s => Err(format!(
+                "Unknown option `{s}`, expected `plain` or `colored`",
             )),
         }
     }
@@ -165,6 +193,13 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     ///
     /// [`Started`]: event::Cucumber::Started
     started_at: Option<SystemTime>,
+
+    /// [`SystemTime`] when the [`Step::Started`]/[`Hook::Started`] event was
+    /// received.
+    ///
+    /// [`Hook::Started`]: event::Hook::Started
+    /// [`Step::Started`]: event::Step::Started
+    step_started_at: Option<SystemTime>,
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -183,6 +218,7 @@ impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
             hook_errors: self.hook_errors,
             features_without_path: self.features_without_path,
             started_at: self.started_at,
+            step_started_at: self.step_started_at,
         }
     }
 }
@@ -291,8 +327,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             parsing_errors: 0,
             hook_errors: 0,
             ignored: 0,
-            started_at: None,
             features_without_path: 0,
+            started_at: None,
+            step_started_at: None,
         }
     }
 
@@ -372,12 +409,10 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 }
                 .into()]
             }
-            Ok((Cucumber::Finished, _)) => {
+            Ok((Cucumber::Finished, meta)) => {
                 let exec_time = self
                     .started_at
-                    .and_then(|started| {
-                        SystemTime::now().duration_since(started).ok()
-                    })
+                    .and_then(|started| meta.at.duration_since(started).ok())
                     .as_ref()
                     .map(Duration::as_secs_f64);
 
@@ -400,8 +435,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
                 vec![ev]
             }
-            Ok((Cucumber::Feature(feature, ev), _)) => {
-                self.expand_feature_event(&feature, ev, cli)
+            Ok((Cucumber::Feature(feature, ev), meta)) => {
+                self.expand_feature_event(&feature, ev, meta, cli)
             }
             Err(e) => {
                 self.parsing_errors += 1;
@@ -423,7 +458,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
                 vec![
                     TestEvent::started(name.clone()).into(),
-                    TestEvent::failed(name).with_stdout(e.to_string()).into(),
+                    TestEvent::failed(name, None)
+                        .with_stdout(e.to_string())
+                        .into(),
                 ]
             }
         }
@@ -434,6 +471,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         &mut self,
         feature: &gherkin::Feature,
         ev: event::Feature<W>,
+        meta: event::Metadata,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::{Feature, Rule};
@@ -448,11 +486,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     Some(&rule),
                     &scenario,
                     ev,
+                    meta,
                     cli,
                 ),
-            Feature::Scenario(scenario, ev) => {
-                self.expand_scenario_event(feature, None, &scenario, ev, cli)
-            }
+            Feature::Scenario(scenario, ev) => self
+                .expand_scenario_event(feature, None, &scenario, ev, meta, cli),
         }
     }
 
@@ -463,6 +501,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         rule: Option<&gherkin::Rule>,
         scenario: &gherkin::Scenario,
         ev: event::RetryableScenario<W>,
+        meta: event::Metadata,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Scenario;
@@ -470,14 +509,14 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         let retries = ev.retries;
         match ev.event {
             Scenario::Started | Scenario::Finished => Vec::new(),
-            Scenario::Hook(ty, ev) => {
-                self.expand_hook_event(feature, rule, scenario, ty, ev, retries)
-            }
+            Scenario::Hook(ty, ev) => self.expand_hook_event(
+                feature, rule, scenario, ty, ev, retries, meta, cli,
+            ),
             Scenario::Background(step, ev) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, retries, true, cli,
+                feature, rule, scenario, &step, ev, retries, true, meta, cli,
             ),
             Scenario::Step(step, ev) => self.expand_step_event(
-                feature, rule, scenario, &step, ev, retries, false, cli,
+                feature, rule, scenario, &step, ev, retries, false, meta, cli,
             ),
             // We do use `print!()` intentionally here to support `libtest`
             // output capturing properly, which can only capture output from
@@ -493,6 +532,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s.
+    #[allow(clippy::too_many_arguments)]
     fn expand_hook_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -501,9 +541,15 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         hook: event::HookType,
         ev: event::Hook<W>,
         retries: Option<Retries>,
+        meta: event::Metadata,
+        cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         match ev {
-            event::Hook::Started | event::Hook::Passed => Vec::new(),
+            event::Hook::Started => {
+                self.step_started_at(meta, cli);
+                Vec::new()
+            }
+            event::Hook::Passed => Vec::new(),
             event::Hook::Failed(world, info) => {
                 self.hook_errors += 1;
 
@@ -517,7 +563,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
                 vec![
                     TestEvent::started(name.clone()).into(),
-                    TestEvent::failed(name)
+                    TestEvent::failed(name, self.step_exec_time(meta, cli))
                         .with_stdout(format!(
                             "{}{}",
                             coerce_error(&info),
@@ -542,6 +588,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         ev: event::Step<W>,
         retries: Option<Retries>,
         is_background: bool,
+        meta: event::Metadata,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
         use event::Step;
@@ -555,11 +602,14 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         );
 
         let ev = match ev {
-            Step::Started => TestEvent::started(name),
+            Step::Started => {
+                self.step_started_at(meta, cli);
+                TestEvent::started(name)
+            }
             Step::Passed(_, loc) => {
                 self.passed += 1;
 
-                let event = TestEvent::ok(name);
+                let event = TestEvent::ok(name, self.step_exec_time(meta, cli));
                 if cli.show_output {
                     event.with_stdout(format!(
                         "{}:{}:{} (defined){}",
@@ -583,7 +633,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Step::Skipped => {
                 self.ignored += 1;
 
-                let event = TestEvent::ignored(name);
+                let event =
+                    TestEvent::ignored(name, self.step_exec_time(meta, cli));
                 if cli.show_output {
                     event.with_stdout(format!(
                         "{}:{}:{} (defined)",
@@ -611,22 +662,23 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     self.failed += 1;
                 }
 
-                TestEvent::failed(name).with_stdout(format!(
-                    "{}:{}:{} (defined){}\n{err}{}",
-                    feature
-                        .path
-                        .as_ref()
-                        .and_then(|p| p.to_str().map(trim_path))
-                        .unwrap_or(&feature.name),
-                    step.position.line,
-                    step.position.col,
-                    loc.map(|l| format!(
-                        "\n{}:{}:{} (matched)",
-                        l.path, l.line, l.column,
+                TestEvent::failed(name, self.step_exec_time(meta, cli))
+                    .with_stdout(format!(
+                        "{}:{}:{} (defined){}\n{err}{}",
+                        feature
+                            .path
+                            .as_ref()
+                            .and_then(|p| p.to_str().map(trim_path))
+                            .unwrap_or(&feature.name),
+                        step.position.line,
+                        step.position.col,
+                        loc.map(|l| format!(
+                            "\n{}:{}:{} (matched)",
+                            l.path, l.line, l.column,
+                        ))
+                        .unwrap_or_default(),
+                        world.map(|w| format!("\n{w:#?}")).unwrap_or_default(),
                     ))
-                    .unwrap_or_default(),
-                    world.map(|w| format!("\n{w:#?}")).unwrap_or_default(),
-                ))
             }
         };
 
@@ -700,6 +752,29 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         .into_iter()
         .flatten()
         .join("::")
+    }
+
+    /// Saves [`Step`] starting [`SystemTime`].
+    ///
+    /// [`Step`]: gherkin::Step
+    fn step_started_at(&mut self, meta: event::Metadata, cli: &Cli) {
+        self.step_started_at =
+            Some(meta.at).filter(|_| cli.report_time.is_some());
+    }
+
+    /// Retrieves [`Duration`] since the last [`Libtest::step_started_at()`]
+    /// call.
+    fn step_exec_time(
+        &mut self,
+        meta: event::Metadata,
+        cli: &Cli,
+    ) -> Option<Duration> {
+        self.step_started_at.take().and_then(|started| {
+            meta.at
+                .duration_since(started)
+                .ok()
+                .filter(|_| cli.report_time.is_some())
+        })
     }
 }
 
@@ -862,24 +937,24 @@ impl TestEvent {
     }
 
     /// Creates a new [`TestEvent::Ok`].
-    const fn ok(name: String) -> Self {
-        Self::Ok(TestEventInner::new(name))
+    fn ok(name: String, exec_time: Option<Duration>) -> Self {
+        Self::Ok(TestEventInner::new(name).with_exec_time(exec_time))
     }
 
     /// Creates a new [`TestEvent::Failed`].
-    const fn failed(name: String) -> Self {
-        Self::Failed(TestEventInner::new(name))
+    fn failed(name: String, exec_time: Option<Duration>) -> Self {
+        Self::Failed(TestEventInner::new(name).with_exec_time(exec_time))
     }
 
     /// Creates a new [`TestEvent::Ignored`].
-    const fn ignored(name: String) -> Self {
-        Self::Ignored(TestEventInner::new(name))
+    fn ignored(name: String, exec_time: Option<Duration>) -> Self {
+        Self::Ignored(TestEventInner::new(name).with_exec_time(exec_time))
     }
 
     /// Creates a new [`TestEvent::Timeout`].
     #[allow(dead_code)]
-    const fn timeout(name: String) -> Self {
-        Self::Timeout(TestEventInner::new(name))
+    fn timeout(name: String, exec_time: Option<Duration>) -> Self {
+        Self::Timeout(TestEventInner::new(name).with_exec_time(exec_time))
     }
 
     /// Adds a [`TestEventInner::stdout`].
@@ -918,6 +993,10 @@ struct TestEventInner {
     /// [`Stderr`]: io::Stderr
     #[serde(skip_serializing_if = "Option::is_none")]
     stderr: Option<String>,
+
+    /// Test case execution time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exec_time: Option<f64>,
 }
 
 impl TestEventInner {
@@ -927,7 +1006,14 @@ impl TestEventInner {
             name,
             stdout: None,
             stderr: None,
+            exec_time: None,
         }
+    }
+
+    /// Adds a [`TestEventInner::exec_time`].
+    fn with_exec_time(mut self, exec_time: Option<Duration>) -> Self {
+        self.exec_time = exec_time.as_ref().map(Duration::as_secs_f64);
+        self
     }
 
     /// Adds a [`TestEventInner::stdout`].

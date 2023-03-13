@@ -15,14 +15,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Added `Log` variant to `event::Scenario`. ([#258])
 - Added `embeddings` field to `writer::json::Step` and `writer::json::HookResult`. ([#261])
+- Added `report_time` field to `writer::libtest::Cli`. ([#264], [#265])
 
 ### Added
 
 - [`tracing`] crate integration behind the `tracing` feature flag. ([#213], [#258], [#261])
+- Support of `--report-time` CLI option for `writer::Libtest`. ([#264], [#265])
 
 [#213]: /../../issues/213
 [#258]: /../../pull/258
 [#261]: /../../pull/261
+[#264]: /../../issues/264
+[#265]: /../../pull/265
 
 
 

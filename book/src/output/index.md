@@ -8,4 +8,4 @@ This chapter describes possible way and tweaks of outputting test suite results.
 3. [Cucumber JSON format](json.md)
 4. [Multiple outputs](multiple.md)
 5. [`tracing` integration](tracing.md)
-6. [IntelliJ Rust integration](intellij.md)
+6. [IntelliJ Rust (`libtest`) integration](intellij.md)
