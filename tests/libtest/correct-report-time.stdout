@@ -1,0 +1,100 @@
+{"type":"suite","event":"started","test_count":49}
+{"type":"test","event":"started","name":"Feature: Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature"}
+{"type":"test","event":"failed","name":"Feature: Parsing /Users/work/Work/cucumber/tests/features/wait/invalid.feature","stdout":"Failed to parse feature: Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature\n"}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec","exec_time":0.000594}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec","exec_time":0.000069}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::8:  When 1 sec","exec_time":0.000453}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::9:  Then unknown"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/rule.feature:9:5 (defined)\nStep doesn't match any function\n","exec_time":0.000308}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec","exec_time":0.000414}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs","exec_time":0.000291}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::23:  When 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::23:  When 2 secs","exec_time":0.000502}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::24:  Then 2 secs"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/rule.feature::19: Rule: rule::21: Scenario: 2 secs::24:  Then 2 secs","stdout":"tests/features/wait/rule.feature:24:7 (defined)\ntests/libtest.rs:9:1 (matched)\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n","exec_time":0.000221}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::3: Background Given 1 sec","exec_time":0.000425}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::14:  Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::14:  Given 1 sec","exec_time":0.000292}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::15:  When 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::15:  When 1 sec","exec_time":0.00051}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::16:  Then unknown"}
+{"type":"test","event":"ignored","name":"Feature: Basic tests/features/wait/rule.feature::13: Scenario: 1 sec::16:  Then unknown","exec_time":0.000225}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::3: Background Given 1 sec","exec_time":0.000239}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::7:  Given 1 sec","exec_time":0.000068}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::8:  When 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::8:  When 1 sec","exec_time":0.000067}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::9:  Then unknown"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/nested/rule.feature::6: Scenario: 1 sec::9:  Then unknown","stdout":"tests/features/wait/nested/rule.feature:9:5 (defined)\nStep doesn't match any function\n","exec_time":0.000056}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::3: Background Given 1 sec","exec_time":0.000417}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::22:  Given 2 secs","exec_time":0.000285}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::23:  When 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::23:  When 2 secs","exec_time":0.000546}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::24:  Then 2 secs"}
+{"type":"test","event":"failed","name":"Feature: Basic tests/features/wait/nested/rule.feature::19: Rule: rule::21: Scenario: 2 secs::24:  Then 2 secs","stdout":"tests/features/wait/nested/rule.feature:24:7 (defined)\ntests/libtest.rs:9:1 (matched)\nStep panicked. Captured output: Too much!\nWorld(\n    4,\n)\n","exec_time":0.000157}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::3: Background Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::3: Background Given 1 sec","exec_time":0.000415}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::14:  Given 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::14:  Given 1 sec","exec_time":0.000288}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::15:  When 1 sec"}
+{"type":"test","event":"ok","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::15:  When 1 sec","exec_time":0.00055}
+{"type":"test","event":"started","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::16:  Then unknown"}
+{"type":"test","event":"ignored","name":"Feature: Basic tests/features/wait/nested/rule.feature::13: Scenario: 1 sec::16:  Then unknown","exec_time":0.000161}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::5:  Given 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::5:  Given 2 secs","exec_time":0.000414}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::6:  When 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::6:  When 2 secs","exec_time":0.000288}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::7:  Then 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::14: Scenario Outline: wait::7:  Then 2 secs","exec_time":0.000558}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::5:  Given 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::5:  Given 1 secs","exec_time":0.000407}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::6:  When 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::6:  When 1 secs","exec_time":0.000517}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::7:  Then 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::15: Scenario Outline: wait::7:  Then 1 secs","exec_time":0.000297}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::5:  Given 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::5:  Given 1 secs","exec_time":0.000405}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::6:  When 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::6:  When 1 secs","exec_time":0.000518}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::7:  Then 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::16: Scenario Outline: wait::7:  Then 1 secs","exec_time":0.000284}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::5:  Given 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::5:  Given 5 secs","exec_time":0.000403}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::6:  When 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::6:  When 5 secs","exec_time":0.000519}
+{"type":"test","event":"started","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::7:  Then 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Outline tests/features/wait/outline.feature::21: Scenario Outline: wait::7:  Then 5 secs","exec_time":0.000273}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::5:  Given 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::5:  Given 2 secs","exec_time":0.000403}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::6:  When 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::6:  When 2 secs","exec_time":0.000515}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::7:  Then 2 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::11: Scenario Outline: wait::7:  Then 2 secs","exec_time":0.000263}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::5:  Given 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::5:  Given 1 secs","exec_time":0.0004}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::6:  When 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::6:  When 1 secs","exec_time":0.000514}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::7:  Then 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::12: Scenario Outline: wait::7:  Then 1 secs","exec_time":0.000252}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::5:  Given 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::5:  Given 1 secs","exec_time":0.000396}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::6:  When 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::6:  When 1 secs","exec_time":0.000514}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::7:  Then 1 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::13: Scenario Outline: wait::7:  Then 1 secs","exec_time":0.000245}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::5:  Given 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::5:  Given 5 secs","exec_time":0.000394}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::6:  When 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::6:  When 5 secs","exec_time":0.000518}
+{"type":"test","event":"started","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::7:  Then 5 secs"}
+{"type":"test","event":"ok","name":"Feature: Rule Outline tests/features/wait/rule_outline.feature::3: Rule: To them all::14: Scenario Outline: wait::7:  Then 5 secs","exec_time":0.000231}
+{"type":"suite","event":"failed","passed":42,"failed":5,"ignored":2,"measured":0,"filtered_out":0,"exec_time":0.00549}
