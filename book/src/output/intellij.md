@@ -61,5 +61,5 @@ Only a small subset of [`libtest`] harness is supported to integrate with other 
 [3]: https://github.com/intellij-rust/intellij-rust/issues/9041
 [4]: https://github.com/rust-lang/cargo/issues/3946#issuecomment-973132993
 [5]: https://doc.rust-lang.org/rustc/tests/index.html#--format-format
-[6]: https://doc.rust-lang.org/beta/unstable-book/compiler-flags/report-time.html
+[6]: https://doc.rust-lang.org/rustc/tests/index.html#--report-time
 [7]: https://doc.rust-lang.org/rustc/tests/index.html#--show-output
