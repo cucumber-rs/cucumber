@@ -82,7 +82,7 @@ impl Definition {
     /// Assertion to ensure, that [`Self::STEPS`] has exactly 3 step types.
     #[allow(clippy::manual_assert)] // `assert_eq!` isn't const yet
     const EXACTLY_3_STEPS: () = if Self::STEPS.len() != 3 {
-        panic!("Expected exactly 3 step names");
+        panic!("expected exactly 3 step names");
     };
 
     /// Generates code of implementing a `WorldInventory` trait.

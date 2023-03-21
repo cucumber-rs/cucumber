@@ -6,6 +6,20 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.20.0] · 2023-??-?? (unreleased)
+[0.20.0]: /../../tree/v0.20.0/codegen
+
+[Milestone](/../../milestone/24)
+
+### Changed
+
+- Switched to 2.0 version of [`syn`]. ([#266])
+
+[#266]: /../../pull/266
+
+
+
+
 ## [0.19.1] · 2022-12-29
 [0.19.1]: /../../tree/v0.19.1/codegen
 
@@ -326,6 +340,7 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 
+[`syn`]: https://docs.rs/syn
 [Cargo feature]: https://doc.rust-lang.org/cargo/reference/features.html
 [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
 [MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field

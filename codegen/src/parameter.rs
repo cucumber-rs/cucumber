@@ -65,7 +65,7 @@ impl TryFrom<syn::DeriveInput> for Definition {
         let attrs: Attrs = Attrs::parse_attrs("param", &input)?;
 
         let regex = Regex::new(&attrs.regex.value()).map_err(|e| {
-            syn::Error::new(attrs.regex.span(), format!("Invalid regex: {e}"))
+            syn::Error::new(attrs.regex.span(), format!("invalid regex: {e}"))
         })?;
 
         let name = attrs.name.as_ref().map_or_else(
@@ -240,7 +240,7 @@ mod spec {
         assert_eq!(
             err.to_string(),
             "\
-Invalid regex: regex parse error:
+invalid regex: regex parse error:
     (cat|dog
     ^
 error: unclosed group",
