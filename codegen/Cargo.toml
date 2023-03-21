@@ -28,7 +28,7 @@ proc-macro2 = "1.0.28"
 quote = "1.0.9"
 regex = "1.5.5"
 syn = { version = "1.0.74", features = ["derive", "extra-traits", "full"] }
-synthez = "0.2"
+synthez = "0.3"
 
 [dev-dependencies]
 async-trait = "0.1"
