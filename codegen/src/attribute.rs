@@ -78,7 +78,7 @@ impl Step {
                 }
                 _ => Err(syn::Error::new(
                     arg_marked_as_step[1].span(),
-                    "Only 1 step argument is allowed",
+                    "only 1 step argument is allowed",
                 )),
             }
         }?
@@ -313,7 +313,7 @@ impl Step {
             }
         } else {
             let syn::Type::Path(ty) = ty else {
-                return Err(syn::Error::new(ty.span(), "Type path expected"));
+                return Err(syn::Error::new(ty.span(), "type path expected"));
             };
 
             let not_found_err = format!("{ident} not found");
@@ -323,7 +323,7 @@ impl Step {
                     .segments
                     .last()
                     .ok_or_else(|| {
-                        syn::Error::new(ty.path.span(), "Type path expected")
+                        syn::Error::new(ty.path.span(), "type path expected")
                     })?
                     .ident,
             );
@@ -421,7 +421,7 @@ impl Step {
             }
             AttributeArgument::Regex(re) => {
                 drop(Regex::new(re.value().as_str()).map_err(|e| {
-                    syn::Error::new(re.span(), format!("Invalid regex: {e}"))
+                    syn::Error::new(re.span(), format!("invalid regex: {e}"))
                 })?);
 
                 Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
@@ -505,7 +505,7 @@ impl<'p> Parameters<'p> {
         let expr = Expression::parse(expr).map_err(|e| {
             syn::Error::new(
                 expr.span(),
-                format!("Incorrect cucumber expression: {e}"),
+                format!("invalid Cucumber Expression: {e}"),
             )
         })?;
 
@@ -547,7 +547,7 @@ impl<'p> Parameters<'p> {
                     Some(Err(syn::Error::new(
                         func.sig.inputs.span(),
                         format!(
-                            "Function argument corresponding to the `{{{p}}}` \
+                            "function argument corresponding to the `{{{p}}}` \
                              parameter isn't found. Consider adding \
                              argument implementing a `Parameter` trait with \
                              `Parameter::NAME == {p}`.",
@@ -707,28 +707,32 @@ enum AttributeArgument {
 
 impl Parse for AttributeArgument {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let arg = input.parse::<syn::NestedMeta>()?;
+        if input.fork().parse::<syn::Lit>().is_ok() {
+            // We do parse the `input` second time intentionally here, to
+            // advance the inner cursor of the `ParseStream` properly.
+            return Ok(Self::Literal(to_string_literal(
+                input.parse::<syn::Lit>()?,
+            )?));
+        }
+
+        let arg = input.parse::<syn::Meta>()?;
         match arg {
-            syn::NestedMeta::Meta(syn::Meta::NameValue(arg)) => {
-                match arg.path.get_ident() {
-                    Some(i) if i == "regex" => {
-                        Ok(Self::Regex(to_string_literal(arg.lit)?))
-                    }
-                    Some(i) if i == "expr" => {
-                        Ok(Self::Expression(to_string_literal(arg.lit)?))
-                    }
-                    _ => Err(syn::Error::new(
-                        arg.span(),
-                        "Expected `regex` or `expr` argument",
-                    )),
+            syn::Meta::NameValue(arg) => match arg.path.get_ident() {
+                Some(i) if i == "regex" => {
+                    Ok(Self::Regex(to_string_literal(to_literal(arg.value)?)?))
                 }
-            }
+                Some(i) if i == "expr" => Ok(Self::Expression(
+                    to_string_literal(to_literal(arg.value)?)?,
+                )),
+                _ => Err(syn::Error::new(
+                    arg.span(),
+                    "expected `regex` or `expr` argument",
+                )),
+            },
 
-            syn::NestedMeta::Lit(l) => Ok(Self::Literal(to_string_literal(l)?)),
-
-            syn::NestedMeta::Meta(_) => Err(syn::Error::new(
+            syn::Meta::List(_) | syn::Meta::Path(_) => Err(syn::Error::new(
                 arg.span(),
-                "Expected string literal, `regex` or `expr` argument",
+                "expected string literal, `regex` or `expr` argument",
             )),
         }
     }
@@ -742,7 +746,8 @@ fn remove_all_attrs_if_needed<'a>(
     func: &'a mut syn::ItemFn,
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
     let has_other_step_arguments = func.attrs.iter().any(|attr| {
-        attr.path
+        attr.meta
+            .path()
             .segments
             .last()
             .map(|segment| {
@@ -774,7 +779,8 @@ fn find_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
             .attrs
             .iter()
             .find(|attr| {
-                attr.path
+                attr.meta
+                    .path()
                     .get_ident()
                     .map(|ident| ident == attr_arg)
                     .unwrap_or_default()
@@ -794,7 +800,7 @@ fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
 
         let (mut other, mut removed): (Vec<_>, Vec<_>) =
             attrs.into_iter().partition_map(|attr| {
-                if let Some(ident) = attr.path.get_ident() {
+                if let Some(ident) = attr.meta.path().get_ident() {
                     if ident == attr_arg {
                         return Either::Right(attr);
                     }
@@ -821,13 +827,13 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
         syn::FnArg::Receiver(_) => {
             return Err(syn::Error::new(
                 arg.span(),
-                "Expected regular argument, found `self`",
+                "expected regular argument, found `self`",
             ))
         }
     };
 
     let syn::Pat::Ident(syn::PatIdent{ ident, .. }) = arg.pat.as_ref() else {
-        return Err(syn::Error::new(arg.span(), "Expected ident"));
+        return Err(syn::Error::new(arg.span(), "expected ident"));
     };
 
     Ok((ident, arg.ty.as_ref()))
@@ -894,12 +900,12 @@ fn parse_world_from_args(sig: &syn::Signature) -> syn::Result<&syn::TypePath> {
         .map_err(|span| {
             syn::Error::new(
                 span,
-                "First function argument expected to be `&mut World`",
+                "first function argument expected to be `&mut World`",
             )
         })
 }
 
-/// Converts [`syn::Lit`] to [`syn::LitStr`] if possible.
+/// Converts [`syn::Lit`] to [`syn::LitStr`], if possible.
 ///
 /// [`syn::Lit`]: enum@syn::Lit
 /// [`syn::LitStr`]: struct@syn::LitStr
@@ -907,6 +913,16 @@ fn to_string_literal(l: syn::Lit) -> syn::Result<syn::LitStr> {
     if let syn::Lit::Str(str) = l {
         Ok(str)
     } else {
-        Err(syn::Error::new(l.span(), "Expected string literal"))
+        Err(syn::Error::new(l.span(), "expected string literal"))
+    }
+}
+/// Converts [`syn::Expr`] to [`syn::Lit`], if possible.
+///
+/// [`syn::Lit`]: enum@syn::Lit
+fn to_literal(expr: syn::Expr) -> syn::Result<syn::Lit> {
+    if let syn::Expr::Lit(l) = expr {
+        Ok(l.lit)
+    } else {
+        Err(syn::Error::new(expr.span(), "expected literal"))
     }
 }
