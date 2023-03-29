@@ -2,9 +2,9 @@ Feature: Outline
 
   @tag @fail_after
   Scenario Outline: wait
-    Given <wait> secs
-    When <wait> secs
-    Then <wait> secs
+    Given "<wait>" secs
+    When "<wait>" secs
+    Then "<wait>" secs
       """
       Doc String
       """

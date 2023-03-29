@@ -1,4 +1,5 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
+use std::str::FromStr;
 
 use cucumber::{cli, given, then, when, writer, Parameter, World as _};
 use derive_more::{Deref, FromStr};
@@ -43,11 +44,12 @@ async fn main() {
     assert_eq!(err, "4 steps failed, 1 parsing error");
 }
 
-#[given(regex = r"(\d+) secs?")]
-#[when(regex = r"(\d+) secs?")]
-#[then(expr = "{u64} sec(s)")]
-async fn step(world: &mut World, secs: CustomU64) {
-    time::sleep(Duration::from_secs(*secs)).await;
+#[given(expr = "{string} sec(s)")]
+#[when(expr = "{string} sec(s)")]
+#[then(expr = "{string} sec(s)")]
+async fn step(world: &mut World, secs_string: String) {
+    let secs = u64::from_str(secs_string.as_str()).unwrap();
+    time::sleep(Duration::from_secs(secs)).await;
 
     world.0 += 1;
     assert!(world.0 < 4, "Too much!");
