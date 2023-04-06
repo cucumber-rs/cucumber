@@ -22,11 +22,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - [`tracing`] crate integration behind the `tracing` feature flag. ([#213], [#258], [#261])
 - Support of `--report-time` CLI option for `writer::Libtest`. ([#264], [#265])
 
+### Fixed
+
+- Clearing lines that are wrapped because of terminal width. ([#272], [#273])
+
 [#213]: /../../issues/213
 [#258]: /../../pull/258
 [#261]: /../../pull/261
 [#264]: /../../issues/264
 [#265]: /../../pull/265
+[#272]: /../../discussions/272
+[#273]: /../../pull/273
 
 
 

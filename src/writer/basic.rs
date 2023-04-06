@@ -280,12 +280,9 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         feature: &gherkin::Feature,
     ) -> io::Result<()> {
-        self.lines_to_clear = 1;
-        self.output.write_line(
-            &self
-                .styles
-                .ok(format!("{}: {}", feature.keyword, feature.name)),
-        )
+        let out = format!("{}: {}", feature.keyword, feature.name);
+        self.lines_to_clear += self.styles.lines_count(&out);
+        self.output.write_line(&self.styles.ok(out))
     }
 
     /// Outputs the [`Rule`]'s [started]/[scenario]/[finished] event.
@@ -324,14 +321,15 @@ impl<Out: io::Write> Basic<Out> {
         &mut self,
         rule: &gherkin::Rule,
     ) -> io::Result<()> {
-        self.lines_to_clear = 1;
-        self.indent += 2;
-        self.output.write_line(&self.styles.ok(format!(
+        let out = format!(
             "{indent}{}: {}",
             rule.keyword,
             rule.name,
             indent = " ".repeat(self.indent)
-        )))
+        );
+        self.lines_to_clear += self.styles.lines_count(&out);
+        self.indent += 2;
+        self.output.write_line(&self.styles.ok(out))
     }
 
     /// Outputs the [`Scenario`]'s [started]/[background]/[step] event.
@@ -386,7 +384,7 @@ impl<Out: io::Write> Basic<Out> {
 
     /// Outputs the [`event::Scenario::Log`].
     pub(crate) fn emit_log(&mut self, msg: impl AsRef<str>) -> io::Result<()> {
-        self.lines_to_clear += msg.as_ref().lines().count();
+        self.lines_to_clear += self.styles.lines_count(msg.as_ref());
         self.re_output_after_clear.push_str(msg.as_ref());
         self.output.write_str(msg)
     }
@@ -446,25 +444,28 @@ impl<Out: io::Write> Basic<Out> {
         scenario: &gherkin::Scenario,
         retries: Option<Retries>,
     ) -> io::Result<()> {
-        self.lines_to_clear = 1;
         self.indent += 2;
 
         if let Some(retries) = retries.filter(|r| r.current > 0) {
-            self.output.write_line(&self.styles.retry(format!(
+            let out = format!(
                 "{}{}: {} | Retry attempt: {}/{}",
                 " ".repeat(self.indent),
                 scenario.keyword,
                 scenario.name,
                 retries.current,
                 retries.left + retries.current,
-            )))
+            );
+            self.lines_to_clear += self.styles.lines_count(&out);
+            self.output.write_line(&self.styles.retry(out))
         } else {
-            self.output.write_line(&self.styles.ok(format!(
+            let out = format!(
                 "{}{}: {}",
                 " ".repeat(self.indent),
                 scenario.keyword,
                 scenario.name,
-            )))
+            );
+            self.lines_to_clear += self.styles.lines_count(&out);
+            self.output.write_line(&self.styles.ok(out))
         }
     }
 
@@ -529,7 +530,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.indent += 4;
         if self.styles.is_present {
-            let output = format!(
+            let out = format!(
                 "{indent}{}{}{}{}",
                 step.keyword,
                 step.value,
@@ -550,8 +551,8 @@ impl<Out: io::Write> Basic<Out> {
                     .unwrap_or_default(),
                 indent = " ".repeat(self.indent),
             );
-            self.lines_to_clear += output.lines().count();
-            self.write_line(&output)?;
+            self.lines_to_clear += self.styles.lines_count(&out);
+            self.write_line(&out)?;
         }
         Ok(())
     }
@@ -804,7 +805,7 @@ impl<Out: io::Write> Basic<Out> {
     ) -> io::Result<()> {
         self.indent += 4;
         if self.styles.is_present {
-            let output = format!(
+            let out = format!(
                 "{indent}> {}{}{}{}",
                 step.keyword,
                 step.value,
@@ -825,8 +826,8 @@ impl<Out: io::Write> Basic<Out> {
                     .unwrap_or_default(),
                 indent = " ".repeat(self.indent.saturating_sub(2)),
             );
-            self.lines_to_clear += output.lines().count();
-            self.write_line(&output)?;
+            self.lines_to_clear += self.styles.lines_count(&out);
+            self.write_line(&out)?;
         }
         Ok(())
     }
