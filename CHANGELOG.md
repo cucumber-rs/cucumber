@@ -24,14 +24,14 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Clearing lines that are wrapped because of terminal width. ([#273], [#272])
+- Clearing lines that are wrapped because of terminal width. ([#272], [#273])
 
 [#213]: /../../issues/213
 [#258]: /../../pull/258
 [#261]: /../../pull/261
 [#264]: /../../issues/264
 [#265]: /../../pull/265
-[#272]: /../../issues/272
+[#272]: /../../discussions/272
 [#273]: /../../pull/273
 
 

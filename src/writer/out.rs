@@ -171,11 +171,13 @@ impl Styles {
         }
     }
 
-    /// Returns number of lines, including wrapping because of [`Term`] width.
+    /// Returns number of lines for the provided `s`tring, considering wrapping
+    /// because of the [`Term`] width.
     ///
     /// [`Term`]: console::Term
+    #[must_use]
     pub fn lines_count(&self, s: impl AsRef<str>) -> usize {
-        // TODO: remove, once `int_roundings` feature is stabilized
+        // TODO: Remove, once `int_roundings` feature is stabilized:
         //       https://github.com/rust-lang/rust/issues/88581
         let div_ceil = |l, r| {
             let d = l / r;
