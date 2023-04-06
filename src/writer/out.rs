@@ -41,6 +41,11 @@ pub struct Styles {
     /// [`Style`] for rendering __bold__.
     pub bold: Style,
 
+    /// [`Term`] width.
+    ///
+    /// [`Term`]: console::Term
+    pub term_width: Option<u16>,
+
     /// Indicates whether the terminal was detected.
     pub is_present: bool,
 }
@@ -54,6 +59,7 @@ impl Default for Styles {
             retry: Style::new().magenta(),
             header: Style::new().blue(),
             bold: Style::new().bold(),
+            term_width: console::Term::stdout().size_checked().map(|(w, _h)| w),
             is_present: io::stdout().is_terminal() && console::colors_enabled(),
         }
     }
@@ -94,6 +100,7 @@ impl Styles {
             retry: self.retry.clone().bright(),
             header: self.header.clone().bright(),
             bold: self.bold.clone().bright(),
+            term_width: self.term_width,
             is_present: self.is_present,
         }
     }
@@ -162,6 +169,30 @@ impl Styles {
         } else {
             input.into()
         }
+    }
+
+    /// Returns number of lines, including wrapping because of [`Term`] width.
+    ///
+    /// [`Term`]: console::Term
+    pub fn lines_count(&self, s: impl AsRef<str>) -> usize {
+        // TODO: remove, once `int_roundings` feature is stabilized
+        //       https://github.com/rust-lang/rust/issues/88581
+        let div_ceil = |l, r| {
+            let d = l / r;
+            let rem = l % r;
+            if rem > 0 && r > 0 {
+                d + 1
+            } else {
+                d
+            }
+        };
+        s.as_ref()
+            .lines()
+            .map(|l| {
+                self.term_width
+                    .map_or(1, |w| div_ceil(l.len(), usize::from(w)))
+            })
+            .sum()
     }
 }
 
