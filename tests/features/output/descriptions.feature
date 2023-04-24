@@ -38,7 +38,7 @@ Feature: Descriptions everywhere
     Given foo is 0
 
   Scenario: description with escaped docstring separator
-  This description has an \"\"\" (escaped docstring sparator)
+  This description has an \"\"\" (escaped docstring separator)
     Given foo is 0
   Scenario Outline: scenario outline with a description
   This is a scenario outline description

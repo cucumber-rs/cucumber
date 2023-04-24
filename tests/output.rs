@@ -198,7 +198,7 @@ mod spec {
                 .run(format!("tests/features/output/{file}"))
                 .await;
 
-            assert_eq!(normalized.0, out, "file: {file}");
+            assert_eq!(normalized.0, out, "\nfile: {file}");
         }
     }
 }
