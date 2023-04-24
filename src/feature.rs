@@ -16,6 +16,7 @@ use std::{
 };
 
 use derive_more::{Display, Error};
+use lazy_regex::regex;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sealed::sealed;
@@ -143,9 +144,7 @@ fn expand_scenario(
     /// [`Regex`] matching placeholders [`Examples`] should expand into.
     ///
     /// [`Examples`]: gherkin::Examples
-    #[allow(clippy::expect_used)]
-    static TEMPLATE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"<([^>\s]+)>").expect("incorrect Regex"));
+    static TEMPLATE_REGEX: &Lazy<Regex> = regex!(r"<([^>\s]+)>");
 
     if scenario.examples.is_empty() {
         return vec![Ok(scenario)];

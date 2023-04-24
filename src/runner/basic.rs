@@ -983,7 +983,7 @@ async fn execute<W, Before, After>(
                     thread::sleep(dur);
                     sender.send(())
                 }));
-                let _ = receiver.await.ok();
+                _ = receiver.await.ok();
             }
 
             continue;
@@ -1998,7 +1998,7 @@ impl FinishedRulesAndFeatures {
             .unwrap_or_else(|| panic!("No Rule {}", rule.name));
         *finished_scenarios += 1;
         (rule.scenarios.len() == *finished_scenarios).then(|| {
-            let _ = self
+            _ = self
                 .rule_scenarios_count
                 .remove(&(Arc::clone(&feature), Arc::clone(&rule)));
             event::Cucumber::rule_finished(feature, rule)
@@ -2027,7 +2027,7 @@ impl FinishedRulesAndFeatures {
         *finished_scenarios += 1;
         let scenarios = feature.count_scenarios();
         (scenarios == *finished_scenarios).then(|| {
-            let _ = self.features_scenarios_count.remove(&feature);
+            _ = self.features_scenarios_count.remove(&feature);
             event::Cucumber::feature_finished(feature)
         })
     }
@@ -2076,7 +2076,7 @@ impl FinishedRulesAndFeatures {
 
         let mut started_features = Vec::new();
         for feature in runnable.iter().map(|(_, f, ..)| Arc::clone(f)).dedup() {
-            let _ = self
+            _ = self
                 .features_scenarios_count
                 .entry(Arc::clone(&feature))
                 .or_insert_with(|| {
@@ -2093,7 +2093,7 @@ impl FinishedRulesAndFeatures {
             })
             .dedup()
         {
-            let _ = self
+            _ = self
                 .rule_scenarios_count
                 .entry((Arc::clone(&feat), Arc::clone(&rule)))
                 .or_insert_with(|| {

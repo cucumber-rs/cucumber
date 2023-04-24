@@ -131,7 +131,7 @@ impl<World> Collection<World> {
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        let _ = self.given.insert((regex.into(), loc), step);
+        _ = self.given.insert((regex.into(), loc), step);
         self
     }
 
@@ -145,7 +145,7 @@ impl<World> Collection<World> {
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        let _ = self.when.insert((regex.into(), loc), step);
+        _ = self.when.insert((regex.into(), loc), step);
         self
     }
 
@@ -159,7 +159,7 @@ impl<World> Collection<World> {
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        let _ = self.then.insert((regex.into(), loc), step);
+        _ = self.then.insert((regex.into(), loc), step);
         self
     }
 

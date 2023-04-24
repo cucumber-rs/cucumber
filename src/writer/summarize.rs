@@ -360,7 +360,7 @@ impl<Writer> Summarize<Writer> {
             Step::Passed(..) => {
                 self.steps.passed += 1;
                 if scenario.steps.last().filter(|s| *s == step).is_some() {
-                    let _ = self
+                    _ = self
                         .handled_scenarios
                         .remove(&(feature, rule, scenario));
                 }
@@ -368,7 +368,7 @@ impl<Writer> Summarize<Writer> {
             Step::Skipped => {
                 self.steps.skipped += 1;
                 self.scenarios.skipped += 1;
-                let _ = self
+                _ = self
                     .handled_scenarios
                     .insert((feature, rule, scenario), Skipped);
             }
@@ -392,7 +392,7 @@ impl<Writer> Summarize<Writer> {
                     self.steps.failed += 1;
                     self.scenarios.failed += 1;
 
-                    let _ = self
+                    _ = self
                         .handled_scenarios
                         .insert((feature, rule, scenario), Failed);
                 }
@@ -434,7 +434,7 @@ impl<Writer> Summarize<Writer> {
                     }
                     None => {
                         self.scenarios.failed += 1;
-                        let _ = self
+                        _ = self
                             .handled_scenarios
                             .insert(path, Indicator::Failed);
                     }

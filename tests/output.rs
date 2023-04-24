@@ -3,6 +3,7 @@ use std::{borrow::Cow, cmp::Ordering, fmt::Debug};
 use async_trait::async_trait;
 use cucumber::{cli, event, given, parser, step, then, when, Event, Writer};
 use itertools::Itertools as _;
+use lazy_regex::regex;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -151,14 +152,11 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
 
 /// [`Regex`] to unify spans and file paths on Windows, Linux and macOS for
 /// tests.
-static SPAN_OR_PATH_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
-         |, col: (\\d+)\
-         | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
-    )
-    .unwrap()
-});
+static SPAN_OR_PATH_RE: &Lazy<Regex> = regex!(
+    "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+     |, col: (\\d+)\
+     | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)"
+);
 
 #[cfg(test)]
 mod spec {
@@ -200,7 +198,7 @@ mod spec {
                 .run(format!("tests/features/output/{file}"))
                 .await;
 
-            assert_eq!(normalized.0, out, "file: {file}");
+            assert_eq!(normalized.0, out, "\nfile: {file}");
         }
     }
 }
