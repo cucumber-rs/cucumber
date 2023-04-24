@@ -308,7 +308,7 @@ impl<Out: io::Write> Json<Out> {
         let result = match event {
             event::Step::Started => {
                 self.started = Some(meta.at);
-                let _ = self.mut_or_insert_element(feature, rule, scenario, ty);
+                _ = self.mut_or_insert_element(feature, rule, scenario, ty);
                 return;
             }
             event::Step::Passed(..) => RunResult {

@@ -304,7 +304,7 @@ impl Collector {
                     .take()
                     .unwrap_or_else(|| unreachable!("`callbacks.is_some()`"))
                 {
-                    let _ = callback.send(()).ok();
+                    _ = callback.send(()).ok();
                 }
                 false
             } else {
@@ -376,11 +376,11 @@ impl SpanCloseWaiter {
     /// Waits for the [`Span`] being closed.
     pub(crate) async fn wait_for_span_close(&self, id: span::Id) {
         let (sender, receiver) = oneshot::channel();
-        let _ = self
+        _ = self
             .wait_span_event_sender
             .unbounded_send((id, sender))
             .ok();
-        let _ = receiver.await.ok();
+        _ = receiver.await.ok();
     }
 }
 
@@ -416,7 +416,7 @@ where
 
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();
-                let _ = ext.replace(scenario_id);
+                _ = ext.replace(scenario_id);
             }
         }
     }
@@ -433,13 +433,13 @@ where
 
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();
-                let _ = ext.replace(scenario_id);
+                _ = ext.replace(scenario_id);
             }
         }
     }
 
     fn on_close(&self, id: span::Id, _ctx: layer::Context<'_, S>) {
-        let _ = self.span_close_sender.unbounded_send(id).ok();
+        _ = self.span_close_sender.unbounded_send(id).ok();
     }
 }
 
@@ -594,15 +594,14 @@ impl io::Write for CollectorWriter {
                         "wrong separator",
                     ));
                 }
-                let _ =
-                    self.sender.unbounded_send((None, before.to_owned())).ok();
+                _ = self.sender.unbounded_send((None, before.to_owned())).ok();
             } else if let Some((before, after)) =
                 msg.rsplit_once(suffix::BEFORE_SCENARIO_ID)
             {
                 let scenario_id = after.parse().map_err(|e| {
                     io::Error::new(io::ErrorKind::InvalidData, e)
                 })?;
-                let _ = self
+                _ = self
                     .sender
                     .unbounded_send((Some(scenario_id), before.to_owned()))
                     .ok();

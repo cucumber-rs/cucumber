@@ -74,7 +74,6 @@ where
     /// CLI options this [`Cucumber`] has been run with.
     ///
     /// If empty, then will be parsed from a command line.
-    #[allow(clippy::type_complexity)] // not really
     cli: Option<cli::Opts<P::Cli, R::Cli, Wr::Cli, Cli>>,
 
     /// Type of the [`World`] this [`Cucumber`] run on.

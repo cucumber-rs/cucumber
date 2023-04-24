@@ -25,3 +25,5 @@ standard-macro-braces = [
     { name = "write", brace = "(" },
     { name = "writeln", brace = "(" },
 ]
+
+type-complexity-threshold = 300
