@@ -27,6 +27,10 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
+// TODO: Remove once handled in `clap` expansions:
+//       https://github.com/clap-rs/clap/issues/4951
+#![allow(unused_qualifications)]
+
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 

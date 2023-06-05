@@ -392,7 +392,10 @@ pub struct Basic<
 #[cfg(feature = "tracing")]
 /// Assertion that [`Basic::logs_collector`] [`AtomicCell::is_lock_free`].
 const _: () = {
-    assert!(AtomicCell::<Box<Option<TracingCollector>>>::is_lock_free());
+    assert!(
+        AtomicCell::<Box<Option<TracingCollector>>>::is_lock_free(),
+        "`AtomicCell::<Box<Option<TracingCollector>>>` is not lock-free",
+    );
 };
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -1794,7 +1797,12 @@ where
         err: Option<Info>,
         retries: Option<Retries>,
     ) {
-        debug_assert_eq!(self.after_hook.is_some(), meta.is_some());
+        debug_assert_eq!(
+            self.after_hook.is_some(),
+            meta.is_some(),
+            "`AfterHookEventsMeta` is not passed, despite `self.after_hook` \
+             being set",
+        );
 
         if let Some(meta) = meta {
             self.send_event_with_meta(
