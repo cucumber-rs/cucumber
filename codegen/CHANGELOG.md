@@ -14,6 +14,7 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 ### Changed
 
 - Switched to 2.0 version of [`syn`]. ([#266])
+- Bumped up [MSRV] to 1.70 for using the `IsTerminal` trait from std. ([#288])
 
 [#266]: /../../pull/266
 
