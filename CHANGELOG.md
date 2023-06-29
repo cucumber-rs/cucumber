@@ -12,10 +12,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [Diff](/../../compare/v0.19.1...v0.20.0) | [Milestone](/../../milestone/24)
 
 ### BC Breaks
+
 - Added `Log` variant to `event::Scenario`. ([#258])
 - Added `embeddings` field to `writer::json::Step` and `writer::json::HookResult`. ([#261])
 - Added `report_time` field to `writer::libtest::Cli`. ([#264], [#265])
-- Bumped up [MSRV] to 1.70 for using the `IsTerminal` trait from std. ([#288])
+- Bumped up [MSRV] to 1.70 for using the `IsTerminal` trait from `std`. ([#288])
 
 ### Added
 
@@ -33,6 +34,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [#265]: /../../pull/265
 [#272]: /../../discussions/272
 [#273]: /../../pull/273
+[#288]: /../../pull/288
 
 
 
