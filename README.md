@@ -2,7 +2,7 @@ Cucumber testing framework for Rust
 ===================================
 
 [![crates.io](https://img.shields.io/crates/v/cucumber.svg?maxAge=2592000 "crates.io")](https://crates.io/crates/cucumber)
-[![Rust 1.65+](https://img.shields.io/badge/rustc-1.65+-lightgray.svg "Rust 1.65+")](https://blog.rust-lang.org/2022/11/03/Rust-1.65.0.html)
+[![Rust 1.70+](https://img.shields.io/badge/rustc-1.70+-lightgray.svg "Rust 1.70+")](https://blog.rust-lang.org/2023/06/01/Rust-1.70.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden")](https://github.com/rust-secure-code/safety-dance)  
 [![CI](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg?branch=main "CI")](https://github.com/cucumber-rs/cucumber/actions?query=workflow%3ACI+branch%3Amain)
 [![Rust docs](https://docs.rs/cucumber/badge.svg "Rust docs")](https://docs.rs/cucumber)

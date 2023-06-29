@@ -2,7 +2,7 @@
 name = "cucumber"
 version = "0.19.1"
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.70"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\
@@ -51,7 +51,6 @@ futures = "0.3.17"
 gherkin = "0.13"
 globwalk = "0.8.1"
 humantime = "2.1"
-is-terminal = "0.4.4"
 itertools = "0.11"
 lazy-regex = "2.5"
 linked-hash-map = "0.5.3"

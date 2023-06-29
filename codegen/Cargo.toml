@@ -2,7 +2,7 @@
 name = "cucumber-codegen"
 version = "0.19.1" # should be the same as main crate version
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.70"
 description = "Code generation for `cucumber` crate."
 license = "MIT OR Apache-2.0"
 authors = [

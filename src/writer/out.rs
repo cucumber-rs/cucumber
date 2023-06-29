@@ -10,11 +10,14 @@
 
 //! Tools for writing output.
 
-use std::{borrow::Cow, io, mem, str};
+use std::{
+    borrow::Cow,
+    io::{self, IsTerminal},
+    mem, str,
+};
 
 use console::Style;
 use derive_more::{Deref, DerefMut, Display, From, Into};
-use is_terminal::IsTerminal;
 
 use super::Coloring;
 
