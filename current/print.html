@@ -33,6 +33,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "";
@@ -70,10 +71,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -81,16 +84,38 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="writing/retries.html"><strong aria-hidden="true">3.11.</strong> Retrying failed scenarios</a></li><li class="chapter-item expanded "><a href="writing/modules.html"><strong aria-hidden="true">3.12.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li><li class="chapter-item expanded "><a href="output/intellij.html"><strong aria-hidden="true">5.5.</strong> IntelliJ Rust integration</a></li></ol></li><li class="chapter-item expanded "><a href="architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="architecture/runner.html"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="writing/retries.html"><strong aria-hidden="true">3.11.</strong> Retrying failed scenarios</a></li><li class="chapter-item expanded "><a href="writing/modules.html"><strong aria-hidden="true">3.12.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li><li class="chapter-item expanded "><a href="output/tracing.html"><strong aria-hidden="true">5.5.</strong> tracing integration</a></li><li class="chapter-item expanded "><a href="output/intellij.html"><strong aria-hidden="true">5.6.</strong> IntelliJ Rust (libtest) integration</a></li></ol></li><li class="chapter-item expanded "><a href="architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="architecture/runner.html"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
                                 <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
@@ -202,7 +227,7 @@ async fn is_full(w: &amp;mut World) {
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.19&quot;
+cucumber = &quot;0.20&quot;
 futures = &quot;0.3&quot;
 
 [[test]]
@@ -543,7 +568,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.19&quot;
+cucumber = &quot;0.20&quot;
 tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
 
 [[test]]
@@ -2236,7 +2261,8 @@ cargo smoke --tags=@hungry
 <li><a href="output/junit.html">JUnit XML report</a></li>
 <li><a href="output/json.html">Cucumber JSON format</a></li>
 <li><a href="output/multiple.html">Multiple outputs</a></li>
-<li><a href="output/intellij.html">IntelliJ Rust integration</a></li>
+<li><a href="output/tracing.html"><code>tracing</code> integration</a></li>
+<li><a href="output/intellij.html">IntelliJ Rust (<code>libtest</code>) integration</a></li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="terminal-output"><a class="header" href="#terminal-output">Terminal output</a></h1>
 <p>By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate outputs tests result to <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">STDOUT</a>. It provides some <a href="https://docs.rs/cucumber/*/cucumber/writer/basic/struct.Cli.html">CLI options</a> for configuring the output.</p>
@@ -2422,8 +2448,8 @@ async fn main() {
 <blockquote>
 <p><strong>NOTE</strong>: By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate automatically disables coloring for non-interactive terminals, so there is no need to specify <code>--color</code> CLI option explicitly on <a href="https://en.wikipedia.org/wiki/Continuous_integration">CI</a>.</p>
 </blockquote>
-<h2 id="manual-printing"><a class="header" href="#manual-printing">Manual printing</a></h2>
-<p>Though <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate doesn't capture any manual printing produced in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function (such as <a href="https://doc.rust-lang.org/stable/std/macro.dbg.html"><code>dbg!</code></a> or <a href="https://doc.rust-lang.org/stable/std/macro.println.html"><code>println!</code></a> macros), it may be <a href="https://github.com/cucumber-rs/cucumber/issues/177">quite misleading</a> to produce and use it for debugging purposes. The reason is simply because <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s concurrently and <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Normalize.html">normalizes</a> their results before outputting, while any manual print is produced instantly at the moment of its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution.</p>
+<h2 id="debug-printing-andor-logging"><a class="header" href="#debug-printing-andor-logging">Debug printing and/or logging</a></h2>
+<p>Though <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate doesn't capture any manual debug printing produced in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function (such as <a href="https://doc.rust-lang.org/stable/std/macro.dbg.html"><code>dbg!</code></a> or <a href="https://doc.rust-lang.org/stable/std/macro.println.html"><code>println!</code></a> macros), it may be <a href="https://github.com/cucumber-rs/cucumber/issues/177">quite misleading</a> to produce and use it for debugging purposes. The reason is simply because <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s concurrently and <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Normalize.html">normalizes</a> their results before outputting, while any manual print is produced instantly at the moment of its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution.</p>
 <blockquote>
 <p><strong>WARNING:</strong> Moreover, manual printing will very likely interfere with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a> interactive pretty-printing.</p>
 </blockquote>
@@ -2552,8 +2578,45 @@ async fn main() {
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_custom.gif" alt="record" /></p>
 <blockquote>
-<p><strong>NOTE</strong>: The custom print is still output before its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, because is printed during the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution. </p>
+<p><strong>NOTE</strong>: The custom print is still output before its <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, because is printed during the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> execution.</p>
 </blockquote>
+<p>Much better option for debugging would be using <a href="output/tracing.html"><code>tracing</code> crate integration</a> instead of <a href="https://doc.rust-lang.org/stable/std/macro.dbg.html"><code>dbg!</code></a>/<a href="https://doc.rust-lang.org/stable/std/macro.println.html"><code>println!</code></a> for doing logs.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">extern crate tracing;
+</span><span class="boring">
+</span>use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
+
+use cucumber::{given, then, when, World as _};
+use tokio::time;
+
+#[derive(cucumber::World, Debug, Default)]
+struct World;
+
+#[given(regex = r&quot;(\d+) secs?&quot;)]
+#[when(regex = r&quot;(\d+) secs?&quot;)]
+#[then(regex = r&quot;(\d+) secs?&quot;)]
+async fn sleep(_: &amp;mut World, secs: u64) {
+    static ID: AtomicUsize = AtomicUsize::new(0);
+
+    let id = ID.fetch_add(1, Ordering::Relaxed);
+
+    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    time::sleep(Duration::from_secs(secs)).await;
+    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+}
+
+#[tokio::main]
+async fn main() {
+    World::cucumber()
+        .init_tracing()
+        .run(&quot;tests/features/wait&quot;)
+        .await;
+}</code></pre></pre>
+<p><img src="output/../rec/tracing_basic_writer.gif" alt="record" /></p>
 <h2 id="repeating-failed-andor-skipped-steps"><a class="header" href="#repeating-failed-andor-skipped-steps">Repeating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s</a></h2>
 <p>As a number of <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s grows, it may become quite difficult to find failed/skipped ones in a large output. This issue may be mitigated by duplicating failed and/or skipped <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s at the and of output via <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed"><code>Cucumber::repeat_failed()</code></a> and <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped"><code>Cucumber::repeat_skipped()</code></a> methods respectively.</p>
 <pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
@@ -2673,7 +2736,7 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.19&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-junit&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2697,7 +2760,7 @@ World::cucumber()
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.19&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-json&quot;] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2827,10 +2890,100 @@ World::cucumber()
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="intellij-rust-integration"><a class="header" href="#intellij-rust-integration">IntelliJ Rust integration</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="tracing-integration"><a class="header" href="#tracing-integration"><code>tracing</code> integration</a></h1>
+<p><a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.init_tracing"><code>Cucumber::init_tracing()</code></a> (enabled by <code>tracing</code> feature in <code>Cargo.toml</code>) initializes global <a href="https://docs.rs/tracing/*/tracing/trait.Subscriber.html"><code>tracing::Subscriber</code></a> that intercepts all the <a href="https://docs.rs/tracing/*/tracing/index.html#events"><code>tracing</code> events</a> and transforms them into <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Scenario.html#variant.Log"><code>event::Scenario::Log</code></a>s. Each <a href="https://docs.rs/cucumber/*/cucumber/writer/trait.Writer.html"><code>Writer</code></a> can handle those <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Scenario.html#variant.Log"><code>event::Scenario::Log</code></a>s in its own way. <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a>, for example, emits all the <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Scenario.html#variant.Log"><code>event::Scenario::Log</code></a>s only whenever <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> itself is outputted.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">extern crate tracing;
+</span><span class="boring">
+</span>use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
+
+use cucumber::{given, then, when, World as _};
+use tokio::time;
+
+#[derive(cucumber::World, Debug, Default)]
+struct World;
+
+#[given(regex = r&quot;(\d+) secs?&quot;)]
+#[when(regex = r&quot;(\d+) secs?&quot;)]
+#[then(regex = r&quot;(\d+) secs?&quot;)]
+async fn sleep(_: &amp;mut World, secs: u64) {
+    static ID: AtomicUsize = AtomicUsize::new(0);
+
+    let id = ID.fetch_add(1, Ordering::Relaxed);
+
+    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    time::sleep(Duration::from_secs(secs)).await;
+    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+}
+
+#[tokio::main]
+async fn main() {
+    World::cucumber()
+        .init_tracing()
+        .run(&quot;tests/features/wait&quot;)
+        .await;
+}</code></pre></pre>
+<p><img src="output/../rec/tracing_basic_writer.gif" alt="record" /></p>
+<h2 id="loosing-tracingspan"><a class="header" href="#loosing-tracingspan">Loosing <a href="https://docs.rs/tracing/*/tracing/struct.Span.html"><code>tracing::Span</code></a></a></h2>
+<p><a href="https://docs.rs/tracing/*/tracing/struct.Span.html"><code>tracing::Span</code></a> is used to wire emitted <a href="https://docs.rs/tracing/*/tracing/index.html#events"><code>tracing</code> events</a> (logs) to concrete <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s: each <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> is executed in its own <a href="https://docs.rs/tracing/*/tracing/struct.Span.html"><code>tracing::Span</code></a>. In case a <a href="https://docs.rs/tracing/*/tracing/index.html#events"><code>tracing</code> event</a> is emitted outside the <a href="https://docs.rs/tracing/*/tracing/struct.Span.html"><code>tracing::Span</code></a> of a <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>, it will be propagated to every running <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> at the moment.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+</span><span class="boring">extern crate tokio;
+</span><span class="boring">extern crate tracing;
+</span><span class="boring">
+</span><span class="boring">use std::{
+</span><span class="boring">    sync::atomic::{AtomicUsize, Ordering},
+</span><span class="boring">    time::Duration,
+</span><span class="boring">};
+</span><span class="boring">
+</span><span class="boring">use cucumber::{given, then, when, World as _};
+</span><span class="boring">use tokio::time;
+</span><span class="boring">
+</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">struct World;
+</span><span class="boring">
+</span><span class="boring">#[given(regex = r&quot;(\d+) secs?&quot;)]
+</span><span class="boring">#[when(regex = r&quot;(\d+) secs?&quot;)]
+</span><span class="boring">#[then(regex = r&quot;(\d+) secs?&quot;)]
+</span><span class="boring">async fn sleep(_: &amp;mut World, secs: u64) {
+</span><span class="boring">    static ID: AtomicUsize = AtomicUsize::new(0);
+</span><span class="boring">
+</span><span class="boring">    let id = ID.fetch_add(1, Ordering::Relaxed);
+</span><span class="boring">
+</span><span class="boring">    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+</span><span class="boring">    time::sleep(Duration::from_secs(secs)).await;
+</span><span class="boring">    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+</span><span class="boring">}
+</span><span class="boring">
+</span>#[tokio::main]
+async fn main() {
+    // Background task outside of any scenario.
+    tokio::spawn(async {
+        let mut id = 0;
+        loop {
+            time::sleep(Duration::from_secs(3)).await;
+            tracing::info!(&quot;Background: {id}&quot;);
+            id += 1;
+        }
+    });
+
+    World::cucumber()
+        .init_tracing()
+        .run(&quot;tests/features/wait&quot;)
+        .await;
+}</code></pre></pre>
+<p><img src="output/../rec/tracing_outside_span.gif" alt="record" /></p>
+<p>As we see, <code>Background: 2</code>/<code>3</code>/<code>4</code> is shown in multiple <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s, while being emitted only once each.</p>
+<blockquote>
+<p><strong>TIP</strong>: If you're <a href="https://docs.rs/tokio/*/tokio/fn.spawn.html"><code>spawn</code></a>ing a <a href="https://doc.rust-lang.org/stable/std/future/trait.Future.html"><code>Future</code></a> inside your <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, consider to <a href="https://docs.rs/tracing/*/tracing/struct.Span.html#method.enter">propagate</a> its <a href="https://docs.rs/tracing/*/tracing/struct.Span.html"><code>tracing::Span</code></a> into the <a href="https://docs.rs/tokio/*/tokio/fn.spawn.html"><code>spawn</code></a>ed <a href="https://doc.rust-lang.org/stable/std/future/trait.Future.html"><code>Future</code></a> for outputting its logs properly.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="intellij-rust-libtest-integration"><a class="header" href="#intellij-rust-libtest-integration">IntelliJ Rust (<code>libtest</code>) integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.19&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -2861,6 +3014,13 @@ World::cucumber()
 CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 </code></pre>
 </blockquote>
+<h2 id="libtest-support"><a class="header" href="#libtest-support"><code>libtest</code> support</a></h2>
+<p>Only a small subset of <a href="https://doc.rust-lang.org/rustc/tests/index.html"><code>libtest</code></a> harness is supported to integrate with other tools:</p>
+<ul>
+<li>Only <a href="https://doc.rust-lang.org/rustc/tests/index.html#--format-format"><code>--format=json</code></a> output (<a href="output/junit.html"><code>JUnit</code> support is done separately</a>);</li>
+<li><a href="https://doc.rust-lang.org/rustc/tests/index.html#--report-time"><code>--report-time</code></a> option;</li>
+<li><a href="https://doc.rust-lang.org/rustc/tests/index.html#--show-output"><code>--show-output</code></a> option.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p>On high level, the whole <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html"><code>Cucumber</code></a> is composed of three components:</p>
 <ul>
@@ -3768,5 +3928,6 @@ async fn main() {
         });
         </script>
 
+    </div>
     </body>
 </html>

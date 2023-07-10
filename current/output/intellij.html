@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>IntelliJ Rust integration - Cucumber Rust Book</title>
+        <title>IntelliJ Rust (libtest) integration - Cucumber Rust Book</title>
 
 
         <!-- Custom HTML head -->
@@ -32,6 +32,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "../";
@@ -69,10 +70,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -80,16 +83,38 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="../writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="../writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="../writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="../writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="../writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="../writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="../writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="../writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="../writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="../writing/retries.html"><strong aria-hidden="true">3.11.</strong> Retrying failed scenarios</a></li><li class="chapter-item expanded "><a href="../writing/modules.html"><strong aria-hidden="true">3.12.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="../cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="../output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="../output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="../output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="../output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li><li class="chapter-item expanded "><a href="../output/intellij.html" class="active"><strong aria-hidden="true">5.5.</strong> IntelliJ Rust integration</a></li></ol></li><li class="chapter-item expanded "><a href="../architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="../architecture/runner.html"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="../architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../writing/index.html"><strong aria-hidden="true">3.</strong> Writing tests</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../writing/capturing.html"><strong aria-hidden="true">3.1.</strong> Capturing and variation</a></li><li class="chapter-item expanded "><a href="../writing/asserting.html"><strong aria-hidden="true">3.2.</strong> Asserting</a></li><li class="chapter-item expanded "><a href="../writing/data_tables.html"><strong aria-hidden="true">3.3.</strong> Data tables</a></li><li class="chapter-item expanded "><a href="../writing/doc_strings.html"><strong aria-hidden="true">3.4.</strong> Doc strings</a></li><li class="chapter-item expanded "><a href="../writing/rule.html"><strong aria-hidden="true">3.5.</strong> Rule keyword</a></li><li class="chapter-item expanded "><a href="../writing/background.html"><strong aria-hidden="true">3.6.</strong> Background keyword</a></li><li class="chapter-item expanded "><a href="../writing/scenario_outline.html"><strong aria-hidden="true">3.7.</strong> Scenario Outline keyword</a></li><li class="chapter-item expanded "><a href="../writing/hooks.html"><strong aria-hidden="true">3.8.</strong> Scenario hooks</a></li><li class="chapter-item expanded "><a href="../writing/languages.html"><strong aria-hidden="true">3.9.</strong> Spoken languages</a></li><li class="chapter-item expanded "><a href="../writing/tags.html"><strong aria-hidden="true">3.10.</strong> Tags</a></li><li class="chapter-item expanded "><a href="../writing/retries.html"><strong aria-hidden="true">3.11.</strong> Retrying failed scenarios</a></li><li class="chapter-item expanded "><a href="../writing/modules.html"><strong aria-hidden="true">3.12.</strong> Modules organization</a></li></ol></li><li class="chapter-item expanded "><a href="../cli.html"><strong aria-hidden="true">4.</strong> CLI (command-line interface)</a></li><li class="chapter-item expanded "><a href="../output/index.html"><strong aria-hidden="true">5.</strong> Output</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../output/terminal.html"><strong aria-hidden="true">5.1.</strong> Terminal</a></li><li class="chapter-item expanded "><a href="../output/junit.html"><strong aria-hidden="true">5.2.</strong> JUnit XML report</a></li><li class="chapter-item expanded "><a href="../output/json.html"><strong aria-hidden="true">5.3.</strong> Cucumber JSON format</a></li><li class="chapter-item expanded "><a href="../output/multiple.html"><strong aria-hidden="true">5.4.</strong> Multiple outputs</a></li><li class="chapter-item expanded "><a href="../output/tracing.html"><strong aria-hidden="true">5.5.</strong> tracing integration</a></li><li class="chapter-item expanded "><a href="../output/intellij.html" class="active"><strong aria-hidden="true">5.6.</strong> IntelliJ Rust (libtest) integration</a></li></ol></li><li class="chapter-item expanded "><a href="../architecture/index.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../architecture/parser.html"><strong aria-hidden="true">6.1.</strong> Custom Parser</a></li><li class="chapter-item expanded "><a href="../architecture/runner.html"><strong aria-hidden="true">6.2.</strong> Custom Runner</a></li><li class="chapter-item expanded "><a href="../architecture/writer.html"><strong aria-hidden="true">6.3.</strong> Custom Writer</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
                                 <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
@@ -141,10 +166,10 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="intellij-rust-integration"><a class="header" href="#intellij-rust-integration">IntelliJ Rust integration</a></h1>
+                        <h1 id="intellij-rust-libtest-integration"><a class="header" href="#intellij-rust-libtest-integration">IntelliJ Rust (<code>libtest</code>) integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.19&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;libtest&quot;] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -175,12 +200,19 @@
 CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 </code></pre>
 </blockquote>
+<h2 id="libtest-support"><a class="header" href="#libtest-support"><code>libtest</code> support</a></h2>
+<p>Only a small subset of <a href="https://doc.rust-lang.org/rustc/tests/index.html"><code>libtest</code></a> harness is supported to integrate with other tools:</p>
+<ul>
+<li>Only <a href="https://doc.rust-lang.org/rustc/tests/index.html#--format-format"><code>--format=json</code></a> output (<a href="junit.html"><code>JUnit</code> support is done separately</a>);</li>
+<li><a href="https://doc.rust-lang.org/rustc/tests/index.html#--report-time"><code>--report-time</code></a> option;</li>
+<li><a href="https://doc.rust-lang.org/rustc/tests/index.html#--show-output"><code>--show-output</code></a> option.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../output/multiple.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../output/tracing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -194,7 +226,7 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../output/multiple.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../output/tracing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
@@ -224,5 +256,6 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
         <!-- Custom JS scripts -->
 
 
+    </div>
     </body>
 </html>
