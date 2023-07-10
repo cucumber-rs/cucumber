@@ -832,7 +832,7 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
         }
     };
 
-    let syn::Pat::Ident(syn::PatIdent{ ident, .. }) = arg.pat.as_ref() else {
+    let syn::Pat::Ident(syn::PatIdent { ident, .. }) = arg.pat.as_ref() else {
         return Err(syn::Error::new(arg.span(), "expected ident"));
     };
 
