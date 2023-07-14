@@ -81,6 +81,8 @@
     clippy::print_stdout,
     clippy::rc_buffer,
     clippy::rc_mutex,
+    clippy::redundant_clone,
+    clippy::ref_patterns,
     clippy::rest_pat_in_fully_bound_structs,
     clippy::same_name_method,
     clippy::semicolon_inside_block,
