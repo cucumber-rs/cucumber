@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.21.0] · 2023-??-?? (unreleased)
+[0.21.0]: /../../tree/v0.21.0
+
+[Diff](/../../compare/v0.20.0...v0.21.0) | [Milestone](/../../milestone/25)
+
+### Fixed
+
+- Incorrect terminal width detection when its height is low. ([#298])
+
+[#298]: /../../pull/298
+
+
+
+
 ## [0.20.0] · 2023-07-10
 [0.20.0]: /../../tree/v0.20.0
 
