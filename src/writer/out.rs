@@ -62,7 +62,7 @@ impl Default for Styles {
             retry: Style::new().magenta(),
             header: Style::new().blue(),
             bold: Style::new().bold(),
-            term_width: console::Term::stdout().size_checked().map(|(w, _h)| w),
+            term_width: console::Term::stdout().size_checked().map(|(_h, w)| w),
             is_present: io::stdout().is_terminal() && console::colors_enabled(),
         }
     }
