@@ -133,7 +133,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 .collect()
         };
 
-        stream::iter(features().into_iter())
+        stream::iter(features())
     }
 }
 
