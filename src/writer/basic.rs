@@ -326,6 +326,7 @@ impl<Out: io::Write> Basic<Out> {
             rule.name,
             indent = " ".repeat(self.indent)
         );
+        self.indent += 2;
         self.output.write_line(&self.styles.ok(out))
     }
 
