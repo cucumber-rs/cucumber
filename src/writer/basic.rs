@@ -281,7 +281,6 @@ impl<Out: io::Write> Basic<Out> {
         feature: &gherkin::Feature,
     ) -> io::Result<()> {
         let out = format!("{}: {}", feature.keyword, feature.name);
-        self.lines_to_clear += self.styles.lines_count(&out);
         self.output.write_line(&self.styles.ok(out))
     }
 
@@ -327,8 +326,6 @@ impl<Out: io::Write> Basic<Out> {
             rule.name,
             indent = " ".repeat(self.indent)
         );
-        self.lines_to_clear += self.styles.lines_count(&out);
-        self.indent += 2;
         self.output.write_line(&self.styles.ok(out))
     }
 
@@ -455,7 +452,6 @@ impl<Out: io::Write> Basic<Out> {
                 retries.current,
                 retries.left + retries.current,
             );
-            self.lines_to_clear += self.styles.lines_count(&out);
             self.output.write_line(&self.styles.retry(out))
         } else {
             let out = format!(
@@ -464,7 +460,6 @@ impl<Out: io::Write> Basic<Out> {
                 scenario.keyword,
                 scenario.name,
             );
-            self.lines_to_clear += self.styles.lines_count(&out);
             self.output.write_line(&self.styles.ok(out))
         }
     }
@@ -552,7 +547,7 @@ impl<Out: io::Write> Basic<Out> {
                 indent = " ".repeat(self.indent),
             );
             self.lines_to_clear += self.styles.lines_count(&out);
-            self.write_line(&out)?;
+            self.output.write_line(&out)?;
         }
         Ok(())
     }
@@ -738,7 +733,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         ));
 
-        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+        self.output.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -827,7 +822,7 @@ impl<Out: io::Write> Basic<Out> {
                 indent = " ".repeat(self.indent.saturating_sub(2)),
             );
             self.lines_to_clear += self.styles.lines_count(&out);
-            self.write_line(&out)?;
+            self.output.write_line(&out)?;
         }
         Ok(())
     }
@@ -1015,7 +1010,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         ));
 
-        self.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+        self.output.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 }
 
