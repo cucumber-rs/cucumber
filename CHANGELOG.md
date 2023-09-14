@@ -14,8 +14,11 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Fixed
 
 - Incorrect terminal width detection when its height is low. ([#298])
+- Incorrect terminal lines clearing in interactive mode. ([#300], [#299])
 
 [#298]: /../../pull/298
+[#299]: /../../issues/299
+[#300]: /../../pull/300
 
 
 
