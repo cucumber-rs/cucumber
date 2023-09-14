@@ -250,8 +250,8 @@ pub trait WriteStrExt: io::Write {
 
     /// Writes a special sequence into this writer clearing the last `n` lines.
     ///
-    /// __Note:__ This method does not clear the current line, only the `n`
-    ///           lines above it.
+    /// __NOTE:__ This method doesn't clear the current line, only the `n` lines
+    ///           above it.
     ///
     /// # Errors
     ///
