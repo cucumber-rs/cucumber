@@ -1,0 +1,13 @@
+Feature: Outline
+  Scenario Outline: foo
+   ✔  Given foo is 0
+   ✔  When foo is 1
+   ✔  Then foo is 2
+  Scenario Outline: foo
+   ✘  Given foo is 3
+      Step failed:
+      Defined: tests/features/output/scenario_outline_with_multiple_examples.feature:5:5
+      Matched: tests/output.rs:13:1
+      Step panicked. Captured output: assertion failed: `(left == right)`
+        left: `0`,
+       right: `3`

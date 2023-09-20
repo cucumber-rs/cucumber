@@ -1,0 +1,17 @@
+[32mFeature: Outline[0m
+[32m  Scenario Outline: foo[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+      When foo is 1
+[1A[2K[32m   [32m✔  When [0m[32mfoo is [0m[32m[1m1[0m[0m[32m[0m[32m[0m[32m[0m[0m
+      Then foo is 2
+[1A[2K[32m   [32m✔  Then [0m[32mfoo is [0m[32m[1m2[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario Outline: foo[0m
+      Given foo is 3
+[1A[2K[31m   ✘  Given [0m[31mfoo is [0m[31m[1m3[0m[0m[31m[0m[31m
+      Step failed:
+      Defined: tests/features/output/scenario_outline_with_multiple_examples.feature:5:5
+      Matched: tests/output.rs:13:1
+      Step panicked. Captured output: assertion failed: `(left == right)`
+        left: `0`,
+       right: `3`[0m

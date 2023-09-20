@@ -1,0 +1,9 @@
+[32mFeature: ambiguous[0m
+[32m  Scenario: ambiguous[0m
+      Given foo is 0 ambiguous
+[1A[2K[31m   ✘  Given [0m[31mfoo is 0 ambiguous[0m[31m
+      Step failed:
+      Defined: tests/features/output/ambiguous_step.feature:3:5
+      Step match is ambiguous: Possible matches:
+      foo is (\d+) --> tests/output.rs:13:1
+      foo is (\d+) ambiguous --> tests/output.rs:21:1[0m

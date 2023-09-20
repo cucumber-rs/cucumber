@@ -1,0 +1,8 @@
+[32mEgenskap: output[0m
+[32m  Eksempel: output[0m
+      Gitt foo is 0
+[1A[2K[32m   [32m✔  Gitt [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+      Når foo is 1
+[1A[2K[32m   [32m✔  Når [0m[32mfoo is [0m[32m[1m1[0m[0m[32m[0m[32m[0m[32m[0m[0m
+      Så foo is 2
+[1A[2K[32m   [32m✔  Så [0m[32mfoo is [0m[32m[1m2[0m[0m[32m[0m[32m[0m[32m[0m[0m

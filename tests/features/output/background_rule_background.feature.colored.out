@@ -1,0 +1,13 @@
+[32mFeature: output[0m
+[32mRule: output[0m
+[32m    Scenario: output[0m
+      > Given foo is 0
+[1A[2K[32m[32m     ✔> Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+      > Given foo is 1
+[1A[2K[32m[32m     ✔> Given [0m[32mfoo is [0m[32m[1m1[0m[0m[32m[0m[32m[0m[32m[0m[0m
+        Given foo is 2
+[1A[2K[32m     [32m✔  Given [0m[32mfoo is [0m[32m[1m2[0m[0m[32m[0m[32m[0m[32m[0m[0m
+        When foo is 3
+[1A[2K[32m     [32m✔  When [0m[32mfoo is [0m[32m[1m3[0m[0m[32m[0m[32m[0m[32m[0m[0m
+        Then foo is 4
+[1A[2K[32m     [32m✔  Then [0m[32mfoo is [0m[32m[1m4[0m[0m[32m[0m[32m[0m[32m[0m[0m
