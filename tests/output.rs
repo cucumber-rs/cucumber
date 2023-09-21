@@ -1,8 +1,7 @@
-use std::{borrow::Cow, cmp::Ordering, fmt::Debug, mem};
+use std::{borrow::Cow, fmt::Debug, mem};
 
 use async_trait::async_trait;
-use cucumber::{cli, event, given, parser, step, then, when, Event, Writer};
-use itertools::Itertools as _;
+use cucumber::{cli, event, given, parser, then, when, Event, Writer};
 use lazy_regex::regex;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -36,114 +35,8 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         ev: parser::Result<Event<event::Cucumber<World>>>,
         _: &Self::Cli,
     ) {
-        use event::{
-            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
-            StepError,
-        };
-
-        // This function is used to provide a deterministic ordering of
-        // `possible_matches`.
-        let sort_matches = |mut e: step::AmbiguousMatchError| {
-            e.possible_matches = e
-                .possible_matches
-                .into_iter()
-                .sorted_by(|(re_l, loc_l), (re_r, loc_r)| {
-                    let re_ord = Ord::cmp(re_l, re_r);
-                    if re_ord != Ordering::Equal {
-                        return re_ord;
-                    }
-                    loc_l
-                        .as_ref()
-                        .and_then(|l| loc_r.as_ref().map(|r| Ord::cmp(l, r)))
-                        .unwrap_or(Ordering::Equal)
-                })
-                .collect();
-            e
-        };
-
         let ev: Cow<_> = match ev.map(Event::into_inner) {
             Err(_) => "ParsingError".into(),
-            Ok(Cucumber::Feature(
-                feat,
-                Feature::Rule(
-                    rule,
-                    Rule::Scenario(
-                        sc,
-                        RetryableScenario {
-                            event:
-                                Scenario::Step(
-                                    st,
-                                    Step::Failed(
-                                        cap,
-                                        loc,
-                                        w,
-                                        StepError::AmbiguousMatch(e),
-                                    ),
-                                ),
-                            retries,
-                        },
-                    ),
-                ),
-            )) => {
-                let ev = Cucumber::scenario(
-                    feat,
-                    Some(rule),
-                    sc,
-                    RetryableScenario {
-                        event: Scenario::Step(
-                            st,
-                            Step::Failed(
-                                cap,
-                                loc,
-                                w,
-                                StepError::AmbiguousMatch(sort_matches(e)),
-                            ),
-                        ),
-                        retries,
-                    },
-                );
-
-                format!("{ev:?}").into()
-            }
-            Ok(Cucumber::Feature(
-                feat,
-                Feature::Scenario(
-                    sc,
-                    RetryableScenario {
-                        event:
-                            Scenario::Step(
-                                st,
-                                Step::Failed(
-                                    cap,
-                                    loc,
-                                    w,
-                                    StepError::AmbiguousMatch(e),
-                                ),
-                            ),
-                        retries,
-                    },
-                ),
-            )) => {
-                let ev = Cucumber::scenario(
-                    feat,
-                    None,
-                    sc,
-                    RetryableScenario {
-                        event: Scenario::Step(
-                            st,
-                            Step::Failed(
-                                cap,
-                                loc,
-                                w,
-                                StepError::AmbiguousMatch(sort_matches(e)),
-                            ),
-                        ),
-                        retries,
-                    },
-                );
-
-                format!("{ev:?}").into()
-            }
             Ok(ev) => format!("{ev:?}").into(),
         };
 
@@ -166,7 +59,7 @@ static SPAN_OR_PATH_RE: &Lazy<Regex> = regex!(
 
 #[cfg(test)]
 mod spec {
-    use std::{fs, io};
+    use std::fs;
 
     use cucumber::{
         writer::{self, Coloring},
@@ -192,11 +85,11 @@ mod spec {
             .map(|entry| entry.file_name().to_str().unwrap().to_owned())
             .collect::<Vec<String>>();
 
-        // assert_eq!(
-        //     files.len(),
-        //     fs::read_dir("tests/features/output").unwrap().count() / 4,
-        //     "Not all `.feature` files were collected",
-        // );
+        assert_eq!(
+            files.len(),
+            fs::read_dir("tests/features/output").unwrap().count() / 4,
+            "Not all `.feature` files were collected",
+        );
 
         for file in files {
             let expected =
@@ -206,7 +99,11 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            assert_eq!(debug.output.clone().into_bytes(), expected, "\n[debug] file: {file}");
+            assert_eq!(
+                debug.output.clone().into_bytes(),
+                expected,
+                "\n[debug] file: {file}"
+            );
 
             let expected =
                 load_file(format!("tests/features/output/{file}.basic.out",));
@@ -234,11 +131,7 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            fs::write(
-                format!("tests/features/output/{file}.colored.out"),
-                actual,
-            ).unwrap();
-            // assert_eq!(actual, expected, "\n[colored] file: {file}");
+            assert_eq!(actual, expected, "\n[colored] file: {file}");
         }
     }
 }

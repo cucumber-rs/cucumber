@@ -734,7 +734,8 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         ));
 
-        self.output.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+        self.output
+            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -1011,7 +1012,8 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         ));
 
-        self.output.write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+        self.output
+            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
     }
 }
 
