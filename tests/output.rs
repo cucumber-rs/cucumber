@@ -109,7 +109,7 @@ mod spec {
             let expected =
                 load_file(format!("tests/features/output/{file}.basic.out"));
             let mut actual = Vec::new();
-            let _ = World::cucumber()
+            _ = World::cucumber()
                 .with_writer(
                     writer::Basic::raw(&mut actual, Coloring::Never, 0)
                         .discard_stats_writes()
@@ -123,7 +123,7 @@ mod spec {
             let expected =
                 load_file(format!("tests/features/output/{file}.colored.out"));
             let mut actual = Vec::new();
-            let _ = World::cucumber()
+            _ = World::cucumber()
                 .with_writer(
                     writer::Basic::raw(&mut actual, Coloring::Always, 0)
                         .discard_stats_writes()
