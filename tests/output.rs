@@ -70,7 +70,8 @@ mod spec {
     use super::{DebugWriter, World};
 
     fn load_file(path: impl AsRef<str>) -> Vec<u8> {
-        fs::read(path.as_ref()).unwrap_or_default()
+        let path = path.as_ref();
+        fs::read(path).unwrap_or_else(|| panic!("Failed to load `{path}` file"))
     }
 
     #[tokio::test]
@@ -93,7 +94,7 @@ mod spec {
 
         for file in files {
             let expected =
-                load_file(format!("tests/features/output/{file}.debug.out",));
+                load_file(format!("tests/features/output/{file}.debug.out"));
             let debug = World::cucumber()
                 .with_writer(DebugWriter::default().normalized())
                 .with_default_cli()
@@ -106,7 +107,7 @@ mod spec {
             );
 
             let expected =
-                load_file(format!("tests/features/output/{file}.basic.out",));
+                load_file(format!("tests/features/output/{file}.basic.out"));
             let mut actual = Vec::new();
             let _ = World::cucumber()
                 .with_writer(
@@ -120,7 +121,7 @@ mod spec {
             assert_eq!(actual, expected, "\n[basic] file: {file}");
 
             let expected =
-                load_file(format!("tests/features/output/{file}.colored.out",));
+                load_file(format!("tests/features/output/{file}.colored.out"));
             let mut actual = Vec::new();
             let _ = World::cucumber()
                 .with_writer(
