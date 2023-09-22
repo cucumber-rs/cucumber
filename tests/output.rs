@@ -122,8 +122,7 @@ mod spec {
     impl fmt::Display for Output {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let o = String::from_utf8(self.0.clone())
-                .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"))
-                .replace("\r\n", "\n");
+                .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"));
             let o = CAREFUL_ASSERTION.replace_all(&o, unify_asserts);
             let o = FULL_PATH.replace_all(&o, RELATIVE_PATH);
             write!(f, "{o}")
@@ -135,6 +134,8 @@ mod spec {
         let path = path.as_ref();
         fs::read_to_string(path)
             .unwrap_or_else(|e| panic!("Failed to load `{path}` file: {e}"))
+            .lines()
+            .collect::<String>()
     }
 
     #[tokio::test]
