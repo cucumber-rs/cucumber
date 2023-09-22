@@ -68,26 +68,9 @@ mod spec {
     use globwalk::GlobWalkerBuilder;
     use lazy_regex::regex;
     use once_cell::sync::Lazy;
-    use regex::Regex;
+    use regex::{Captures, Match, Regex};
 
     use super::{DebugWriter, World};
-
-    /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
-    /// output.
-    static CAREFUL_ASSERTION: &Lazy<Regex> = regex!(
-        "assertion `left == right` failed:\
-         \n(.*)\
-         \n\tleft: (.*)\
-         \n\tright: (.*)"
-    );
-
-    /// Format to replace [`CAREFUL_ASSERTION`] with.
-    const STD_ASSERTION: &str = "\
-        assertion failed: `(left == right)`:\
-        \n$1\
-        \n\tleft: `$2`,\
-        \n\tright: `$3`\
-    ";
 
     /// [`Regex`] to transform full paths to relative paths.
     static FULL_PATH: &Lazy<Regex> =
@@ -95,6 +78,31 @@ mod spec {
 
     /// Format to replace [`FULL_PATH`] with.
     const RELATIVE_PATH: &str = "tests/features/output/$2.feature";
+
+    /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
+    /// output.
+    static CAREFUL_ASSERTION: &Lazy<Regex> = regex!(
+        "assertion `left == right` failed(:)?\
+         (.*)\
+         \n(\\s+)left: (.+)\
+         \n(\\s+)right: (\\w+)"
+    );
+
+    /// Replaces [`CAREFUL_ASSERTION`] with `cargo test` output.
+    fn unify_asserts(cap: &Captures<'_>) -> String {
+        format!(
+            "assertion failed: `(left == right)`{}\
+             {}\
+             \n{}left: `{}`,\
+             \n{}right: `{}`",
+            cap.get(1).as_ref().map_or("", Match::as_str),
+            &cap[2],
+            &cap[3],
+            &cap[4],
+            &cap[5],
+            &cap[6],
+        )
+    }
 
     /// Deterministic output of [`writer::Basic`].
     #[derive(Clone, Debug, Default)]
@@ -114,8 +122,9 @@ mod spec {
     impl fmt::Display for Output {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let o = String::from_utf8(self.0.clone())
-                .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"));
-            let o = CAREFUL_ASSERTION.replace_all(&o, STD_ASSERTION);
+                .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"))
+                .replace("\r\n", "\n");
+            let o = CAREFUL_ASSERTION.replace_all(&o, unify_asserts);
             let o = FULL_PATH.replace_all(&o, RELATIVE_PATH);
             write!(f, "{o}")
         }
