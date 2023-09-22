@@ -134,8 +134,7 @@ mod spec {
         let path = path.as_ref();
         fs::read_to_string(path)
             .unwrap_or_else(|e| panic!("Failed to load `{path}` file: {e}"))
-            .lines()
-            .collect::<String>()
+            .replace("\r\n", "\n")
     }
 
     #[tokio::test]
