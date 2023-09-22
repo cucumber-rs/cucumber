@@ -72,12 +72,15 @@ mod spec {
 
     use super::{DebugWriter, World};
 
-    /// [`Regex`] to transform full paths to relative paths.
-    static FULL_PATH: &Lazy<Regex> =
-        regex!("/(.*)/tests/features/output/(\\S+).feature");
+    /// [`Regex`] to transform full paths (both unix-like and windows) to a
+    /// relative paths.
+    static FULL_PATH: &Lazy<Regex> = regex!(
+        "(?:\\?\\\\\\\\|\\/).*(?:\\\\\\\\|\\/)tests(?:\\\\\\\\|\\/)\
+         features(?:\\\\\\\\|\\/)output(?:\\\\\\\\|\\/)(\\S+)\\.feature"
+    );
 
     /// Format to replace [`FULL_PATH`] with.
-    const RELATIVE_PATH: &str = "tests/features/output/$2.feature";
+    const RELATIVE_PATH: &str = "tests/features/output/$1.feature";
 
     /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
     /// output.
