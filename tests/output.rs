@@ -71,7 +71,8 @@ mod spec {
 
     fn load_file(path: impl AsRef<str>) -> Vec<u8> {
         let path = path.as_ref();
-        fs::read(path).unwrap_or_else(|| panic!("Failed to load `{path}` file"))
+        fs::read(path)
+            .unwrap_or_else(|_| panic!("Failed to load `{path}` file"))
     }
 
     #[tokio::test]
