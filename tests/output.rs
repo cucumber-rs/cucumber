@@ -75,8 +75,8 @@ mod spec {
     /// [`Regex`] to transform full paths (both unix-like and windows) to a
     /// relative paths.
     static FULL_PATH: &Lazy<Regex> = regex!(
-        "(?:\\?\\\\\\\\|\\/).*(?:\\\\\\\\|\\/)tests(?:\\\\\\\\|\\/)\
-         features(?:\\\\\\\\|\\/)output(?:\\\\\\\\|\\/)(\\S+)\\.feature"
+        "(?:\\?\\\\|\\/).*(?:\\\\|\\/)tests(?:\\\\|\\/)\
+         features(?:\\\\|\\/)output(?:\\\\|\\/)(\\S+)\\.feature"
     );
 
     /// Format to replace [`FULL_PATH`] with.
