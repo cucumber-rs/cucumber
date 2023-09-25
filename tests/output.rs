@@ -75,12 +75,13 @@ mod spec {
     /// [`Regex`] to transform full paths (both unix-like and windows) to a
     /// relative paths.
     static FULL_PATH: &Lazy<Regex> = regex!(
-        "(?:\\?\\\\|\\/).*(?:\\\\|\\/)tests(?:\\\\|\\/)features(?:\\\\|\\/)\
-         output(?:\\\\|\\/)(\\S+)\\.feature"
+        "(?:(?:\\?\\\\|\\/).*(?:\\\\|\\/))?tests((?:\\\\|\\/)(?:\\w*))*"
     );
 
-    /// Format to replace [`FULL_PATH`] with.
-    const RELATIVE_PATH: &str = "tests/features/output/$1.feature";
+    /// Replaces [`FULL_PATH`] with a relative path.
+    fn relative_path(cap: &Captures<'_>) -> String {
+        format!("tests{}", &cap[1].replace("\\", "/"))
+    }
 
     /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
     /// output.
@@ -127,7 +128,7 @@ mod spec {
             let o = String::from_utf8(self.0.clone())
                 .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"));
             let o = CAREFUL_ASSERTION.replace_all(&o, unify_asserts);
-            let o = FULL_PATH.replace_all(&o, RELATIVE_PATH);
+            let o = FULL_PATH.replace_all(&o, relative_path);
             write!(f, "{o}")
         }
     }
