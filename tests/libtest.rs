@@ -68,7 +68,6 @@ async fn output_report_time() {
 
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
-    // let non_deterministic = Regex::new(
     let non_deterministic = Regex::new(
         "\":\\d+\\.\\d+\
          |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
