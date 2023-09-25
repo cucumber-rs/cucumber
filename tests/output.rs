@@ -74,13 +74,17 @@ mod spec {
 
     /// [`Regex`] to transform full paths (both unix-like and windows) to a
     /// relative paths.
-    static FULL_PATH: &Lazy<Regex> = regex!(
-        "(?:(?:\\?\\\\|\\/).*(?:\\\\|\\/))?tests((?:\\\\|\\/)(?:\\w*))*"
-    );
+    static FULL_PATH: &Lazy<Regex> =
+        regex!("(?:(?:\\?\\\\|\\/).*(?:\\\\|\\/))?tests((?:\\\\|\\/)\\w*)?");
 
     /// Replaces [`FULL_PATH`] with a relative path.
     fn relative_path(cap: &Captures<'_>) -> String {
-        format!("tests{}", &cap[1].replace("\\", "/"))
+        format!(
+            "tests{}",
+            cap.get(1).map_or_else(String::new, |m| {
+                m.as_str().replace('\\', "/")
+            })
+        )
     }
 
     /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
