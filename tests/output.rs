@@ -82,7 +82,8 @@ mod spec {
     fn relative_path(cap: &Captures<'_>) -> String {
         format!(
             "tests{}",
-            cap[0].split("tests")
+            cap[0]
+                .split("tests")
                 .skip(1)
                 .join("tests")
                 .replace('\\', "/")
