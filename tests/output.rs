@@ -66,6 +66,7 @@ mod spec {
         World as _, WriterExt as _,
     };
     use globwalk::GlobWalkerBuilder;
+    use itertools::Itertools;
     use lazy_regex::regex;
     use once_cell::sync::Lazy;
     use regex::{Captures, Match, Regex};
@@ -75,15 +76,16 @@ mod spec {
     /// [`Regex`] to transform full paths (both unix-like and windows) to a
     /// relative paths.
     static FULL_PATH: &Lazy<Regex> =
-        regex!("(?:(?:\\?\\\\|\\/).*(?:\\\\|\\/))?tests((?:\\\\|\\/)\\w*)?");
+        regex!("((\\?\\\\|\\/).*(\\\\|\\/))?tests((\\\\|\\/)\\w*)*");
 
     /// Replaces [`FULL_PATH`] with a relative path.
     fn relative_path(cap: &Captures<'_>) -> String {
         format!(
             "tests{}",
-            cap.get(1).map_or_else(String::new, |m| {
-                m.as_str().replace('\\', "/")
-            })
+            cap[0].split("tests")
+                .skip(1)
+                .join("tests")
+                .replace('\\', "/")
         )
     }
 
