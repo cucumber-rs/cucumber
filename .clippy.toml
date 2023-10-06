@@ -2,6 +2,15 @@
 # See full lints list at:
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
+absolute-paths-allowed-crates = [
+    "base64",
+    "clap",
+    "gherkin",
+    "syn",
+    "tracing",
+    "tracing_subscriber",
+]
+
 doc-valid-idents = ["JUnit"]
 
 standard-macro-braces = [

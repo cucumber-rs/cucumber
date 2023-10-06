@@ -11,6 +11,7 @@
 //! Default [`Runner`] implementation.
 
 use std::{
+    any::Any,
     cmp,
     collections::HashMap,
     fmt, iter, mem,
@@ -2392,7 +2393,7 @@ impl Features {
 }
 
 /// Coerces the given `value` into a type-erased [`Info`].
-fn coerce_into_info<T: std::any::Any + Send + 'static>(val: T) -> Info {
+fn coerce_into_info<T: Any + Send + 'static>(val: T) -> Info {
     Arc::new(val)
 }
 

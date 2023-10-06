@@ -309,7 +309,7 @@ impl Eq for HashableRegex {}
 
 impl PartialOrd for HashableRegex {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.0.as_str().partial_cmp(other.0.as_str())
+        Some(self.cmp(other))
     }
 }
 

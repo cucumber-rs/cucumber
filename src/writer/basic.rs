@@ -1042,6 +1042,8 @@ fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
 /// prettify the output.
 fn format_table(table: &gherkin::Table, indent: usize) -> String {
+    use std::fmt::Write as _;
+
     let max_row_len = table
         .rows
         .iter()
@@ -1063,10 +1065,13 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .map(|row| {
-            row.iter()
-                .zip(&max_row_len)
-                .map(|(cell, len)| format!("| {cell:len$} "))
-                .collect::<String>()
+            row.iter().zip(&max_row_len).fold(
+                String::new(),
+                |mut out, (cell, len)| {
+                    _ = write!(out, "| {cell:len$} ");
+                    out
+                },
+            )
         })
         .map(|row| format!("{}{row}", " ".repeat(indent + 1)))
         .join("|\n");
