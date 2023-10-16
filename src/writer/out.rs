@@ -220,7 +220,7 @@ pub trait WriteStrExt: io::Write {
     /// If this writer fails to write the given `string`.
     fn write_line(&mut self, string: impl AsRef<str>) -> io::Result<()> {
         self.write_str(string.as_ref())
-            .and_then(|_| self.write_str("\n"))
+            .and_then(|()| self.write_str("\n"))
             .map(drop)
     }
 

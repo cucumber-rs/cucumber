@@ -13,7 +13,7 @@
 use async_trait::async_trait;
 use derive_more::{Deref, DerefMut};
 
-use crate::{event::Cucumber, writer, Event, World, Writer};
+use crate::{event::Cucumber, parser, writer, Event, World, Writer};
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
 ///
@@ -31,7 +31,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: crate::parser::Result<Event<Cucumber<W>>>,
+        ev: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         self.0.handle_event(ev, cli).await;
@@ -122,7 +122,7 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: crate::parser::Result<Event<Cucumber<W>>>,
+        ev: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         self.0.handle_event(ev, cli).await;

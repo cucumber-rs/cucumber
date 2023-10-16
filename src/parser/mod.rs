@@ -53,6 +53,7 @@ pub trait Parser<I> {
 /// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
+#[allow(clippy::absolute_paths)]
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// [`Parser`] error.

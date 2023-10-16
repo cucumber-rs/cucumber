@@ -14,7 +14,7 @@
 
 use std::{
     borrow::Cow,
-    fmt::{Debug, Formatter},
+    fmt::{self, Debug},
     marker::PhantomData,
     mem,
     path::Path,
@@ -201,7 +201,7 @@ where
     /// </script>
     ///
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
+    /// [`Skipped`]: event::Step::Skipped
     #[must_use]
     pub fn repeat_skipped(
         self,
@@ -266,7 +266,7 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     #[must_use]
     pub fn repeat_failed(
         self,
@@ -365,7 +365,7 @@ where
     ///     async data-autoplay="true" data-rows="24">
     /// </script>
     ///
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     #[must_use]
     pub fn repeat_if<F>(
         self,
@@ -438,9 +438,9 @@ where
     /// ```
     ///
     /// [`Background`]: gherkin::Background
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
+    /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn fail_on_skipped(
@@ -520,9 +520,9 @@ where
     /// ```
     ///
     /// [`Background`]: gherkin::Background
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Skipped`]: crate::event::Step::Skipped
+    /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn fail_on_skipped_with<Filter>(
@@ -829,7 +829,7 @@ where
     <Wr as Writer<W>>::Cli: Debug,
     Cli: clap::Args + Debug,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Cucumber")
             .field("parser", &self.parser)
             .field("runner", &self.runner)
@@ -1193,7 +1193,7 @@ where
     /// If encountered errors while parsing [`Feature`]s or at least one
     /// [`Step`] [`Failed`].
     ///
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Step`]: gherkin::Step
     pub async fn run_and_exit(self, input: I) {
@@ -1249,10 +1249,9 @@ where
     ///     async data-autoplay="true" data-rows="14">
     /// </script>
     ///
-    /// [`Failed`]: crate::event::Step::Failed
+    /// [`Failed`]: event::Step::Failed
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: crate::Step
     pub async fn filter_run_and_exit<Filter>(self, input: I, filter: Filter)
     where
         Filter: Fn(

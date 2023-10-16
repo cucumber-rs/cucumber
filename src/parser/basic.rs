@@ -118,7 +118,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                         .case_insensitive(true)
                         .build()
                         .unwrap_or_else(|e| {
-                            unreachable!("GlobWalkerBuilder panicked: {e}")
+                            unreachable!("`GlobWalkerBuilder` panicked: {e}")
                         });
                     walk(w)
                 }

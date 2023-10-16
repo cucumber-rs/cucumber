@@ -24,6 +24,7 @@
 )]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
+    clippy::absolute_paths,
     clippy::as_conversions,
     clippy::as_ptr_cast_mut,
     clippy::assertions_on_result_states,
@@ -72,6 +73,7 @@
     clippy::mutex_atomic,
     clippy::mutex_integer,
     clippy::needless_collect,
+    clippy::needless_pass_by_ref_mut,
     clippy::needless_raw_strings,
     clippy::nonstandard_macro_braces,
     clippy::option_if_let_else,
@@ -84,6 +86,7 @@
     clippy::pub_without_shorthand,
     clippy::rc_buffer,
     clippy::rc_mutex,
+    clippy::readonly_write_lock,
     clippy::redundant_clone,
     clippy::redundant_type_annotations,
     clippy::ref_patterns,
@@ -96,6 +99,7 @@
     clippy::str_to_string,
     clippy::string_add,
     clippy::string_lit_as_bytes,
+    clippy::string_lit_chars_any,
     clippy::string_slice,
     clippy::string_to_string,
     clippy::suboptimal_flops,
@@ -107,7 +111,6 @@
     clippy::transmute_undefined_repr,
     clippy::trivial_regex,
     clippy::try_err,
-    clippy::tuple_array_conversions,
     clippy::undocumented_unsafe_blocks,
     clippy::unimplemented,
     clippy::unnecessary_safety_comment,
@@ -124,13 +127,11 @@
     clippy::verbose_file_reads,
     clippy::wildcard_enum_match_arm,
     future_incompatible,
-    invalid_reference_casting,
     let_underscore_drop,
     meta_variable_misuse,
     missing_copy_implementations,
     missing_debug_implementations,
     missing_docs,
-    noop_method_call,
     semicolon_in_expressions_from_macros,
     unreachable_pub,
     unused_crate_dependencies,
@@ -145,6 +146,9 @@
 )]
 // TODO: Remove on next `derive_more` major version.
 #![allow(clippy::uninlined_format_args)]
+// TODO: Massive false positives on `.await` points. Try remove on next Rust
+//       version.
+#![allow(clippy::multiple_unsafe_ops_per_block)]
 
 pub mod cli;
 mod cucumber;
