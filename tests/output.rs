@@ -90,7 +90,7 @@ mod spec {
         )
     }
 
-    /// [`Regex`] to make `cargo careful` assertion output match `cargo test`
+    /// [`Regex`] to make `cargo careful` assertion output to match `cargo test`
     /// output.
     static CAREFUL_ASSERTION: &Lazy<Regex> = regex!(
         "assertion `left == right` failed(:)?\
@@ -205,7 +205,7 @@ mod spec {
             assert_eq!(
                 expected,
                 output.to_string(),
-                "\n[colored] file: {file}"
+                "\n[colored] file: {file}",
             );
         }
     }
