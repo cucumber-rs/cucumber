@@ -1,0 +1,19 @@
+Feature: Outline
+  Scenario Outline: foo
+   ✔  Given foo is 0
+       | key | value |
+       | 1   | 0     |
+       | 2   | 1     |
+   ✔  When foo is 1
+   ✔  Then foo is 2
+  Scenario Outline: foo
+   ✘  Given foo is 3
+       | key | value |
+       | 1   | 3     |
+       | 2   | 4     |
+      Step failed:
+      Defined: tests/features/output/scenario_outline_table.feature:4:5
+      Matched: tests/output.rs:12:1
+      Step panicked. Captured output: assertion failed: `(left == right)`
+        left: `0`,
+       right: `3`

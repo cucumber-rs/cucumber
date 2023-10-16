@@ -1,0 +1,6 @@
+Feature: Outline
+Rule: them all
+    Scenario Outline: foo
+     ✔  Given foo is 0
+     ✔  When foo is 1
+     ✔  Then foo is 2

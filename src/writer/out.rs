@@ -250,16 +250,18 @@ pub trait WriteStrExt: io::Write {
 
     /// Writes a special sequence into this writer clearing the last `n` lines.
     ///
+    /// __NOTE:__ This method doesn't clear the current line, only the `n` lines
+    ///           above it.
+    ///
     /// # Errors
     ///
     /// If this writer fails to write a special sequence.
     fn clear_last_lines(&mut self, n: usize) -> io::Result<()> {
-        self.move_cursor_up(n)?;
         for _ in 0..n {
+            self.move_cursor_up(1)?;
             self.clear_line()?;
-            self.move_cursor_down(1)?;
         }
-        self.move_cursor_up(n)
+        Ok(())
     }
 
     /// Writes a special sequence into this writer clearing the last line.

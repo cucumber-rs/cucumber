@@ -24,6 +24,7 @@ use std::{
 use derive_more::{Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
+use itertools::Itertools as _;
 use regex::Regex;
 
 /// Alias for a [`gherkin::Step`] function that returns a [`LocalBoxFuture`].
@@ -199,6 +200,7 @@ impl<World> Collection<World> {
                         possible_matches: captures
                             .into_iter()
                             .map(|(re, loc, ..)| (re.clone(), *loc))
+                            .sorted()
                             .collect(),
                     })
                 }

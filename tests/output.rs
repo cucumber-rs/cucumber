@@ -1,8 +1,7 @@
-use std::{borrow::Cow, cmp::Ordering, fmt::Debug};
+use std::{borrow::Cow, fmt::Debug, mem};
 
 use async_trait::async_trait;
-use cucumber::{cli, event, given, parser, step, then, when, Event, Writer};
-use itertools::Itertools as _;
+use cucumber::{cli, event, given, parser, then, when, Event, Writer};
 use lazy_regex::regex;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -22,7 +21,10 @@ fn step(w: &mut World, num: usize) {
 fn ambiguous(_w: &mut World) {}
 
 #[derive(Default)]
-struct DebugWriter(String);
+struct DebugWriter {
+    output: String,
+    first_line_printed: bool,
+}
 
 #[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
@@ -33,120 +35,17 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
         ev: parser::Result<Event<event::Cucumber<World>>>,
         _: &Self::Cli,
     ) {
-        use event::{
-            Cucumber, Feature, RetryableScenario, Rule, Scenario, Step,
-            StepError,
-        };
-
-        // This function is used to provide a deterministic ordering of
-        // `possible_matches`.
-        let sort_matches = |mut e: step::AmbiguousMatchError| {
-            e.possible_matches = e
-                .possible_matches
-                .into_iter()
-                .sorted_by(|(re_l, loc_l), (re_r, loc_r)| {
-                    let re_ord = Ord::cmp(re_l, re_r);
-                    if re_ord != Ordering::Equal {
-                        return re_ord;
-                    }
-                    loc_l
-                        .as_ref()
-                        .and_then(|l| loc_r.as_ref().map(|r| Ord::cmp(l, r)))
-                        .unwrap_or(Ordering::Equal)
-                })
-                .collect();
-            e
-        };
-
         let ev: Cow<_> = match ev.map(Event::into_inner) {
             Err(_) => "ParsingError".into(),
-            Ok(Cucumber::Feature(
-                feat,
-                Feature::Rule(
-                    rule,
-                    Rule::Scenario(
-                        sc,
-                        RetryableScenario {
-                            event:
-                                Scenario::Step(
-                                    st,
-                                    Step::Failed(
-                                        cap,
-                                        loc,
-                                        w,
-                                        StepError::AmbiguousMatch(e),
-                                    ),
-                                ),
-                            retries,
-                        },
-                    ),
-                ),
-            )) => {
-                let ev = Cucumber::scenario(
-                    feat,
-                    Some(rule),
-                    sc,
-                    RetryableScenario {
-                        event: Scenario::Step(
-                            st,
-                            Step::Failed(
-                                cap,
-                                loc,
-                                w,
-                                StepError::AmbiguousMatch(sort_matches(e)),
-                            ),
-                        ),
-                        retries,
-                    },
-                );
-
-                format!("{ev:?}").into()
-            }
-            Ok(Cucumber::Feature(
-                feat,
-                Feature::Scenario(
-                    sc,
-                    RetryableScenario {
-                        event:
-                            Scenario::Step(
-                                st,
-                                Step::Failed(
-                                    cap,
-                                    loc,
-                                    w,
-                                    StepError::AmbiguousMatch(e),
-                                ),
-                            ),
-                        retries,
-                    },
-                ),
-            )) => {
-                let ev = Cucumber::scenario(
-                    feat,
-                    None,
-                    sc,
-                    RetryableScenario {
-                        event: Scenario::Step(
-                            st,
-                            Step::Failed(
-                                cap,
-                                loc,
-                                w,
-                                StepError::AmbiguousMatch(sort_matches(e)),
-                            ),
-                        ),
-                        retries,
-                    },
-                );
-
-                format!("{ev:?}").into()
-            }
             Ok(ev) => format!("{ev:?}").into(),
         };
 
         let without_span = SPAN_OR_PATH_RE.replace_all(ev.as_ref(), "");
 
-        self.0.push_str(without_span.as_ref());
+        if mem::replace(&mut self.first_line_printed, true) {
+            self.output.push('\n');
+        }
+        self.output.push_str(without_span.as_ref());
     }
 }
 
@@ -160,12 +59,94 @@ static SPAN_OR_PATH_RE: &Lazy<Regex> = regex!(
 
 #[cfg(test)]
 mod spec {
-    use std::fs;
+    use std::{fmt, fs, io};
 
-    use cucumber::{World as _, WriterExt as _};
+    use cucumber::{
+        writer::{self, Coloring},
+        World as _, WriterExt as _,
+    };
     use globwalk::GlobWalkerBuilder;
+    use itertools::Itertools;
+    use lazy_regex::regex;
+    use once_cell::sync::Lazy;
+    use regex::{Captures, Match, Regex};
 
     use super::{DebugWriter, World};
+
+    /// [`Regex`] to transform full paths (both unix-like and windows) to a
+    /// relative paths.
+    static FULL_PATH: &Lazy<Regex> =
+        regex!("((\\?|\\\\|\\/).*(\\\\|\\/))?tests((\\\\|\\/)\\w*)*");
+
+    /// Replaces [`FULL_PATH`] with a relative path.
+    fn relative_path(cap: &Captures<'_>) -> String {
+        format!(
+            "tests{}",
+            cap[0]
+                .split("tests")
+                .skip(1)
+                .join("tests")
+                .replace('\\', "/")
+        )
+    }
+
+    /// [`Regex`] to make `cargo careful` assertion output to match `cargo test`
+    /// output.
+    static CAREFUL_ASSERTION: &Lazy<Regex> = regex!(
+        "assertion `left == right` failed(:)?\
+         (.*)\
+         \n(\\s+)left: (.+)\
+         \n(\\s+)right: (\\w+)"
+    );
+
+    /// Replaces [`CAREFUL_ASSERTION`] with `cargo test` output.
+    fn unify_asserts(cap: &Captures<'_>) -> String {
+        format!(
+            "assertion failed: `(left == right)`{}\
+             {}\
+             \n{}left: `{}`,\
+             \n{}right: `{}`",
+            cap.get(1).as_ref().map_or("", Match::as_str),
+            &cap[2],
+            &cap[3],
+            &cap[4],
+            &cap[5],
+            &cap[6],
+        )
+    }
+
+    /// Deterministic output of [`writer::Basic`].
+    #[derive(Clone, Debug, Default)]
+    struct Output(Vec<u8>);
+
+    impl io::Write for Output {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.0.extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl fmt::Display for Output {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let o = String::from_utf8(self.0.clone())
+                .unwrap_or_else(|e| panic!("`Output` is not a string: {e}"));
+            let o = CAREFUL_ASSERTION.replace_all(&o, unify_asserts);
+            let o = FULL_PATH.replace_all(&o, relative_path);
+            write!(f, "{o}")
+        }
+    }
+
+    /// Loads a file from the file system as a string.
+    fn load_file(path: impl AsRef<str>) -> String {
+        let path = path.as_ref();
+        fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("Failed to load `{path}` file: {e}"))
+            .replace("\r\n", "\n")
+    }
 
     #[tokio::test]
     async fn test() {
@@ -181,24 +162,51 @@ mod spec {
 
         assert_eq!(
             files.len(),
-            fs::read_dir("tests/features/output").unwrap().count() / 2,
+            fs::read_dir("tests/features/output").unwrap().count() / 4,
             "Not all `.feature` files were collected",
         );
 
         for file in files {
-            let out = fs::read_to_string(format!(
-                "tests/features/output/{file}.out",
-            ))
-            .unwrap_or_default()
-            .lines()
-            .collect::<String>();
-            let normalized = World::cucumber()
+            let expected =
+                load_file(format!("tests/features/output/{file}.debug.out"));
+            let debug = World::cucumber()
                 .with_writer(DebugWriter::default().normalized())
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
+            assert_eq!(expected, debug.output, "\n[debug] file: {file}");
 
-            assert_eq!(normalized.0, out, "\nfile: {file}");
+            let expected =
+                load_file(format!("tests/features/output/{file}.basic.out"));
+            let mut output = Output::default();
+            _ = World::cucumber()
+                .with_writer(
+                    writer::Basic::raw(&mut output, Coloring::Never, 0)
+                        .discard_stats_writes()
+                        .normalized(),
+                )
+                .with_default_cli()
+                .run(format!("tests/features/output/{file}"))
+                .await;
+            assert_eq!(expected, output.to_string(), "\n[basic] file: {file}");
+
+            let expected =
+                load_file(format!("tests/features/output/{file}.colored.out"));
+            let mut output = Output::default();
+            _ = World::cucumber()
+                .with_writer(
+                    writer::Basic::raw(&mut output, Coloring::Always, 0)
+                        .discard_stats_writes()
+                        .normalized(),
+                )
+                .with_default_cli()
+                .run(format!("tests/features/output/{file}"))
+                .await;
+            assert_eq!(
+                expected,
+                output.to_string(),
+                "\n[colored] file: {file}",
+            );
         }
     }
 }

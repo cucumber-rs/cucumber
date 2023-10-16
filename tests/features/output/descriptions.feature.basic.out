@@ -1,0 +1,17 @@
+Feature: Descriptions everywhere
+  Scenario: two lines
+   ✔  Given foo is 0
+  Scenario: without indentation
+   ✔  Given foo is 0
+  Scenario: empty lines in the middle
+   ✔  Given foo is 0
+  Scenario: empty lines around
+   ✔  Given foo is 0
+  Scenario: comment after description
+   ✔  Given foo is 0
+  Scenario: comment right after description
+   ✔  Given foo is 0
+  Scenario: description with escaped docstring separator
+   ✔  Given foo is 0
+  Scenario Outline: scenario outline with a description
+   ✔  Given foo is 0

@@ -1,0 +1,25 @@
+[32mFeature: Descriptions everywhere[0m
+[32m  Scenario: two lines[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: without indentation[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: empty lines in the middle[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: empty lines around[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: comment after description[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: comment right after description[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario: description with escaped docstring separator[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
+[32m  Scenario Outline: scenario outline with a description[0m
+      Given foo is 0
+[1A[2K[32m   [32m✔  Given [0m[32mfoo is [0m[32m[1m0[0m[0m[32m[0m[32m[0m[32m[0m[0m
