@@ -19,7 +19,17 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/tracing.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = [
+    "/src/",
+    "/tests/json.rs",
+    "/tests/junit.rs",
+    "/tests/libtest.rs",
+    "/tests/tracing.rs",
+    "/tests/wait.rs",
+    "/LICENSE-*",
+    "/README.md",
+    "/CHANGELOG.md",
+]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -30,9 +40,21 @@ default = ["macros"]
 # Enables compatibility with Rust libtest (like outputting in its JSON format).
 libtest = ["dep:serde", "dep:serde_json", "timestamps"]
 # Enables step attributes and auto-wiring.
-macros = ["dep:anyhow", "dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
+macros = [
+    "dep:anyhow",
+    "dep:cucumber-codegen",
+    "dep:cucumber-expressions",
+    "dep:inventory",
+]
 # Enables support for outputting in Cucumber JSON format.
-output-json = ["dep:base64", "dep:Inflector", "dep:mime", "dep:serde", "dep:serde_json", "timestamps"]
+output-json = [
+    "dep:base64",
+    "dep:Inflector",
+    "dep:mime",
+    "dep:serde",
+    "dep:serde_json",
+    "timestamps",
+]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
@@ -44,7 +66,16 @@ tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 async-trait = "0.1.43"
 clap = { version = "4.3.2", features = ["derive", "wrap_help"] }
 console = "0.15"
-derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"], default_features = false }
+derive_more = { version = "0.99.17", features = [
+    "as_ref",
+    "deref",
+    "deref_mut",
+    "display",
+    "error",
+    "from",
+    "from_str",
+    "into",
+], default_features = false }
 drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"
@@ -63,7 +94,9 @@ smart-default = "0.7.1"
 # "macros" feature dependencies.
 anyhow = { version = "1.0.58", optional = true }
 cucumber-codegen = { version = "0.20.1", path = "./codegen", optional = true }
-cucumber-expressions = { version = "0.3", features = ["into-regex"], optional = true }
+cucumber-expressions = { version = "0.3", features = [
+    "into-regex",
+], optional = true }
 inventory = { version = "0.3", optional = true }
 
 # "output-json" and/or "libtest" features dependencies.
@@ -85,7 +118,12 @@ tracing-subscriber = { version = "0.3.16", optional = true }
 derive_more = "0.99.17"
 rand = "0.8"
 tempfile = "3.2"
-tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1.12", features = [
+    "macros",
+    "rt-multi-thread",
+    "sync",
+    "time",
+] }
 
 [[test]]
 name = "json"
