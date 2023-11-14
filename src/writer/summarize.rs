@@ -541,7 +541,7 @@ impl<Writer> Summarize<Writer> {
 ///         // `Writer`s pipeline is constructed in a reversed order.
 ///         writer::Basic::stdout() // And, finally, print them.
 ///             .summarized()       // Only then, count summary for them.
-///             .fail_on_skipped()  // First, transform skipped steps to failed.
+///             .fail_on_skipped(), // First, transform skipped steps to failed.
 ///     )
 ///     .run_and_exit("tests/features/readme")
 ///     .await;
