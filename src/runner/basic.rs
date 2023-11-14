@@ -1074,7 +1074,7 @@ async fn execute<W, Before, After>(
                 }
             }
             #[cfg(not(feature = "tracing"))]
-            let _ = id;
+            let _: ScenarioId = id;
 
             if fail_fast && scenario_failed && !retried {
                 started_scenarios = ControlFlow::Break(());
@@ -1485,7 +1485,7 @@ where
                 (fut, span_id)
             };
             #[cfg(not(feature = "tracing"))]
-            let _ = scenario_id;
+            let _: ScenarioId = scenario_id;
 
             let result = fut.then_yield().await;
 
@@ -1606,7 +1606,7 @@ where
             waiter.wait_for_span_close(id).then_yield().await;
         }
         #[cfg(not(feature = "tracing"))]
-        let _ = scenario_id;
+        let _: ScenarioId = scenario_id;
 
         match result {
             Ok((Some(captures), loc, Some(world))) => {
@@ -1762,7 +1762,7 @@ where
                 (fut, span_id)
             };
             #[cfg(not(feature = "tracing"))]
-            let _ = scenario_id;
+            let _: ScenarioId = scenario_id;
 
             let res = fut.then_yield().await;
 
