@@ -26,9 +26,9 @@ include = [
     "/tests/libtest.rs",
     "/tests/tracing.rs",
     "/tests/wait.rs",
+    "/CHANGELOG.md",
     "/LICENSE-*",
     "/README.md",
-    "/CHANGELOG.md",
 ]
 
 [package.metadata.docs.rs]

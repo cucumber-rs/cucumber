@@ -54,7 +54,7 @@ pub struct Event<T: ?Sized> {
 impl<T> Event<T> {
     /// Creates a new [`Event`] out of the given `value`.
     #[must_use]
-    pub const fn new(value: T) -> Self {
+    pub fn new(value: T) -> Self {
         Self {
             #[cfg(feature = "timestamps")]
             at: SystemTime::now(),
