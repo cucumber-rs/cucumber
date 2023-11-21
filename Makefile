@@ -73,6 +73,7 @@ cargo.fmt:
 #	make cargo.lint
 
 cargo.lint:
+	cargo clippy --workspace -- -D warnings
 	cargo clippy --workspace --all-features -- -D warnings
 
 

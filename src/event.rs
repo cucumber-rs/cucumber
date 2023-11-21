@@ -53,6 +53,10 @@ pub struct Event<T: ?Sized> {
 
 impl<T> Event<T> {
     /// Creates a new [`Event`] out of the given `value`.
+    #[cfg_attr(
+        not(feature = "timestamps"),
+        allow(clippy::missing_const_for_fn)
+    )]
     #[must_use]
     pub fn new(value: T) -> Self {
         Self {

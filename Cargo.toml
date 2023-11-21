@@ -19,7 +19,17 @@ repository = "https://github.com/cucumber-rs/cucumber"
 readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
-include = ["/src/", "/tests/json.rs", "/tests/junit.rs", "/tests/libtest.rs", "/tests/tracing.rs", "/tests/wait.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+include = [
+    "/src/",
+    "/tests/json.rs",
+    "/tests/junit.rs",
+    "/tests/libtest.rs",
+    "/tests/tracing.rs",
+    "/tests/wait.rs",
+    "/CHANGELOG.md",
+    "/LICENSE-*",
+    "/README.md",
+]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -30,9 +40,21 @@ default = ["macros"]
 # Enables compatibility with Rust libtest (like outputting in its JSON format).
 libtest = ["dep:serde", "dep:serde_json", "timestamps"]
 # Enables step attributes and auto-wiring.
-macros = ["dep:anyhow", "dep:cucumber-codegen", "dep:cucumber-expressions", "dep:inventory"]
+macros = [
+    "dep:anyhow",
+    "dep:cucumber-codegen",
+    "dep:cucumber-expressions",
+    "dep:inventory",
+]
 # Enables support for outputting in Cucumber JSON format.
-output-json = ["dep:base64", "dep:Inflector", "dep:mime", "dep:serde", "dep:serde_json", "timestamps"]
+output-json = [
+    "dep:base64",
+    "dep:Inflector",
+    "dep:mime",
+    "dep:serde",
+    "dep:serde_json",
+    "timestamps",
+]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
