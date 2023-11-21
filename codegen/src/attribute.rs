@@ -53,7 +53,7 @@ struct Step {
     /// reference.
     ///
     /// [`gherkin::Step`]: https://bit.ly/3j42hcd
-    arg_name: Option<syn::Ident>,
+    step_arg_name: Option<syn::Ident>,
 }
 
 impl Step {
@@ -97,7 +97,7 @@ impl Step {
             attr_name,
             attr_arg,
             func,
-            arg_name: step_arg_name,
+            step_arg_name,
         })
     }
 
@@ -274,7 +274,7 @@ impl Step {
 
                 Ok((func_args, addon_parsing))
             }
-        } else if self.arg_name.is_some() {
+        } else if self.step_arg_name.is_some() {
             Ok((
                 quote! { ::std::borrow::Borrow::borrow(&__cucumber_ctx.step), },
                 None,
@@ -304,7 +304,7 @@ impl Step {
         let (ident, ty) = parse_fn_arg(arg)?;
 
         let is_ctx_arg =
-            self.arg_name.as_ref().map(|i| *i == *ident) == Some(true);
+            self.step_arg_name.as_ref().map(|i| *i == *ident) == Some(true);
 
         let decl = if is_ctx_arg {
             quote! {
@@ -385,7 +385,7 @@ impl Step {
         &self,
         arg: &syn::FnArg,
     ) -> syn::Result<TokenStream> {
-        if let Some(name) = &self.arg_name {
+        if let Some(name) = &self.step_arg_name {
             let (ident, _) = parse_fn_arg(arg)?;
             if name == ident {
                 return Ok(quote! {
@@ -444,7 +444,7 @@ impl Step {
     ) -> syn::Result<TokenStream> {
         let expr = expr.value();
         let params =
-            Parameters::new(&expr, &self.func, self.arg_name.as_ref())?;
+            Parameters::new(&expr, &self.func, self.step_arg_name.as_ref())?;
 
         let provider_impl =
             params.gen_provider_impl(&parse_quote! { Provider });
