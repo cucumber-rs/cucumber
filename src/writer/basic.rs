@@ -428,6 +428,7 @@ impl<Out: io::Write> Basic<Out> {
                     format!("{w:#?}"),
                     self.indent.saturating_sub(3) + 3,
                 ))
+                .filter(|_| self.verbosity.shows_world())
                 .unwrap_or_default(),
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -1009,6 +1010,7 @@ impl<Out: io::Write> Basic<Out> {
                     format!("{w:#?}"),
                     self.indent.saturating_sub(3) + 3,
                 ))
+                .filter(|_| self.verbosity.shows_world())
                 .unwrap_or_default(),
         ));
 
