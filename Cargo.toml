@@ -1,6 +1,6 @@
 [package]
 name = "cucumber"
-version = "0.20.1"
+version = "0.20.2"
 edition = "2021"
 rust-version = "1.70"
 description = """\
@@ -84,7 +84,7 @@ smart-default = "0.7.1"
 
 # "macros" feature dependencies.
 anyhow = { version = "1.0.58", optional = true }
-cucumber-codegen = { version = "0.20.1", path = "./codegen", optional = true }
+cucumber-codegen = { version = "=0.20.2", path = "./codegen", optional = true }
 cucumber-expressions = { version = "0.3", features = ["into-regex"], optional = true }
 inventory = { version = "0.3", optional = true }
 

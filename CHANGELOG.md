@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.20.2] · 2023-12-04
+[0.20.2]: /../../tree/v0.20.2
+
+[Diff](/../../compare/v0.20.1...v0.20.2) | [Milestone](/../../milestone/27)
+
+### Fixed
+
+- Ignored verbosity when printing `World` on hook/background step failure. ([#313])
+
+[#313]: /../../pull/313
+
+
+
+
 ## [0.20.1] · 2023-10-16
 [0.20.1]: /../../tree/v0.20.1
 
