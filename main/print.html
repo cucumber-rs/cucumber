@@ -288,7 +288,9 @@ fn main() {
     // You may choose any executor you like (`tokio`, `async-std`, etc.).
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
-    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book&quot;));
+    futures::executor::block_on(AnimalWorld::run(
+        &quot;tests/features/book/quickstart/simple.feature&quot;,
+    ));
 }</code></pre></pre>
 <blockquote>
 <p><strong>TIP</strong>: Using <code>Default::default()</code> for constructing a <code>World</code> object may be not enough. In such case a custom constructor may be specified via <code>#[world(init = my_constructor)]</code> attribute.</p>
@@ -366,7 +368,9 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 }
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
+</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
+</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
 <img src="rec/quickstart_simple_2.gif" alt="record" /></p>
@@ -410,7 +414,9 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 }
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
+</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
+</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests, now we see all steps being accounted for and the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passing:<br />
 <img src="rec/quickstart_simple_3.gif" alt="record" /></p>
@@ -453,8 +459,11 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
-<span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
+<span class="boring">
+</span><span class="boring">fn main() {
+</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
+</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>And see the test failing:<br />
 <img src="rec/quickstart_simple_fail.gif" alt="record" /></p>
@@ -516,7 +525,9 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;));
+</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
+</span><span class="boring">        &quot;tests/features/book/quickstart/concurrent.feature&quot;,
+</span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: We surround the regex with <code>^..$</code> to ensure an <strong>exact</strong> match. This is much more useful when adding more and more <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, so they won't accidentally interfere with each other.</p>
@@ -568,7 +579,9 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(&quot;tests/features/book/quickstart/simple.feature&quot;));
+</span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
+</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>A contrived example, but it demonstrates that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> was <code>The cat is no longer hungry</code>, it would imply something about the expected initial state, when that is not the purpose of a <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, but rather of the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
 <h2 id="asyncness"><a class="header" href="#asyncness">Asyncness</a></h2>
@@ -634,7 +647,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run(&quot;tests/features/book/quickstart&quot;).await;
+    AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;).await;
 }</code></pre></pre>
 <p><img src="rec/quickstart_concurrent_async.gif" alt="record" /></p>
 <p>Hm, it looks like the runtime waited only for the first <code>Feature</code>, while the second was printed instantly. What's going on? 🤔</p>
@@ -1566,7 +1579,8 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/scenario_outline.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/scenario_outline.feature&quot;)
+</span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/gherkin/reference#scenario-outline"><code>Scenario Outline</code></a> runs the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> for each table row separately, unlike <a href="writing/data_tables.html">data tables</a>, which run the whole table inside a single <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
@@ -3045,14 +3059,12 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-parser"><a class="header" href="#custom-parser">Custom <code>Parser</code></a></h1>
 <p>Let's start by implementing a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> which statically emits a single <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> for execution.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> represents anything that emits a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
-</span><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World};
 </span><span class="boring">use futures::{future, stream};
 </span><span class="boring">use tokio::time::sleep;
@@ -3118,7 +3130,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
                 description: None,
                 steps: vec![
                     gherkin::Step {
-                        keyword: &quot;Given&quot;.into(),
+                        keyword: &quot;Given &quot;.into(),
                         ty: gherkin::StepType::Given,
                         value: &quot;a hungry cat&quot;.into(),
                         docstring: None,
@@ -3127,7 +3139,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
                         position: gherkin::LineCol { line: 3, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;When&quot;.into(),
+                        keyword: &quot;When &quot;.into(),
                         ty: gherkin::StepType::When,
                         value: &quot;I feed the cat&quot;.into(),
                         docstring: None,
@@ -3136,7 +3148,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
                         position: gherkin::LineCol { line: 4, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;Then&quot;.into(),
+                        keyword: &quot;Then &quot;.into(),
                         ty: gherkin::StepType::Then,
                         value: &quot;the cat is not hungry&quot;.into(),
                         docstring: None,
@@ -3170,8 +3182,7 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-runner"><a class="header" href="#custom-runner">Custom <code>Runner</code></a></h1>
 <p>Now, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> which simply executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s in <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s sequentially, without considering <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s, <a href="https://cucumber.io/docs/gherkin/reference#rule">rule</a>s, <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a>s or other extras, and specifically suitable for our <code>AnimalWorld</code> (for implementation simplicity).</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> represents anything that transforms a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s into a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
-</span><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
 </span><span class="boring">extern crate once_cell;
 </span><span class="boring">extern crate tokio;
@@ -3183,7 +3194,6 @@ async fn main() {
 </span><span class="boring">    time::Duration,
 </span><span class="boring">};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{
 </span><span class="boring">    cli, event, gherkin, given, parser, step, then, when, Event, World,
 </span><span class="boring">};
@@ -3255,7 +3265,7 @@ async fn main() {
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        keyword: &quot;Given &quot;.into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
 </span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
 </span><span class="boring">                        docstring: None,
@@ -3264,7 +3274,7 @@ async fn main() {
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        keyword: &quot;When &quot;.into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
 </span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
 </span><span class="boring">                        docstring: None,
@@ -3273,7 +3283,7 @@ async fn main() {
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        keyword: &quot;Then &quot;.into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
 </span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
 </span><span class="boring">                        docstring: None,
