@@ -6,14 +6,12 @@ Let's start by implementing a custom [`Parser`] which statically emits a single 
 [`Parser`] represents anything that emits a [`Stream`] of [feature]s.
 
 ```rust
-# extern crate async_trait;
 # extern crate cucumber;
 # extern crate futures;
 # extern crate tokio;
 #
 # use std::{path::PathBuf, time::Duration};
 #
-# use async_trait::async_trait;
 # use cucumber::{cli, gherkin, given, parser, then, when, World};
 # use futures::{future, stream};
 # use tokio::time::sleep;
@@ -79,7 +77,7 @@ impl<I> cucumber::Parser<I> for CustomParser {
                 description: None,
                 steps: vec![
                     gherkin::Step {
-                        keyword: "Given".into(),
+                        keyword: "Given ".into(),
                         ty: gherkin::StepType::Given,
                         value: "a hungry cat".into(),
                         docstring: None,
@@ -88,7 +86,7 @@ impl<I> cucumber::Parser<I> for CustomParser {
                         position: gherkin::LineCol { line: 3, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: "When".into(),
+                        keyword: "When ".into(),
                         ty: gherkin::StepType::When,
                         value: "I feed the cat".into(),
                         docstring: None,
@@ -97,7 +95,7 @@ impl<I> cucumber::Parser<I> for CustomParser {
                         position: gherkin::LineCol { line: 4, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: "Then".into(),
+                        keyword: "Then ".into(),
                         ty: gherkin::StepType::Then,
                         value: "the cat is not hungry".into(),
                         docstring: None,
