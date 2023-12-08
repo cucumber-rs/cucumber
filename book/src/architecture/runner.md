@@ -6,7 +6,6 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 [`Runner`] represents anything that transforms a [`Stream`] of [feature]s into a [`Stream`] of [cucumber events][`event::Cucumber`].
 
 ```rust
-# extern crate async_trait;
 # extern crate cucumber;
 # extern crate futures;
 # extern crate once_cell;
@@ -19,7 +18,6 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #     time::Duration,
 # };
 #
-# use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
 # };
@@ -91,7 +89,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #                 description: None,
 #                 steps: vec![
 #                     gherkin::Step {
-#                         keyword: "Given".into(),
+#                         keyword: "Given ".into(),
 #                         ty: gherkin::StepType::Given,
 #                         value: "a hungry cat".into(),
 #                         docstring: None,
@@ -100,7 +98,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #                         position: gherkin::LineCol { line: 3, col: 5 },
 #                     },
 #                     gherkin::Step {
-#                         keyword: "When".into(),
+#                         keyword: "When ".into(),
 #                         ty: gherkin::StepType::When,
 #                         value: "I feed the cat".into(),
 #                         docstring: None,
@@ -109,7 +107,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 #                         position: gherkin::LineCol { line: 4, col: 5 },
 #                     },
 #                     gherkin::Step {
-#                         keyword: "Then".into(),
+#                         keyword: "Then ".into(),
 #                         ty: gherkin::StepType::Then,
 #                         value: "the cat is not hungry".into(),
 #                         docstring: None,
