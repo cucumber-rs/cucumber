@@ -181,9 +181,9 @@ book.tests: test.book
 
 # Record GIF image of terminal with asciinema.
 #
-# Requires asciinema and Docker being installed:
+# Requires `asciinema` and `agg` tools being installed:
 #	https://asciinema.org/docs/installation
-#	https://docs.docker.com/get-docker
+#	https://github.com/asciinema/agg#building
 #
 # Usage:
 #	make record.gif [name=(<current-datetime>|<file-name>)]
@@ -196,8 +196,7 @@ record.gif:
 	asciinema rec --overwrite rec.cast.json
 	@mkdir -p $(record-gif-dir)/
 	@rm -f $(record-gif-file)
-	docker run --rm -v "$(PWD)":/data -w /data \
-		asciinema/asciicast2gif -s 2 rec.cast.json $(record-gif-file)
+	agg --speed 2 rec.cast.json $(record-gif-file)
 	git add $(record-gif-file)
 	@rm -f rec.cast.json
 ifeq ($(record-gif-name),readme)
