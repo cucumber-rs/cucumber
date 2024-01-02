@@ -347,7 +347,7 @@ impl<Writer> Normalized for AssertNormalized<Writer> {}
 #[derive(Clone, Debug)]
 struct Queue<K: Eq + Hash, V> {
     /// Underlying FIFO queue of values.
-    queue: LinkedHashMap<K, V>,
+    fifo: LinkedHashMap<K, V>,
 
     /// Initial [`Metadata`] of this [`Queue`] creation.
     ///
@@ -363,7 +363,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
     /// Creates a new normalization [`Queue`] with an initial metadata.
     fn new(initial: Metadata) -> Self {
         Self {
-            queue: LinkedHashMap::new(),
+            fifo: LinkedHashMap::new(),
             initial: Some(initial),
             state: FinishedState::NotFinished,
         }
@@ -385,7 +385,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
 
     /// Removes the given `key` from this [`Queue`].
     fn remove(&mut self, key: &K) {
-        drop(self.queue.remove(key));
+        drop(self.fifo.remove(key));
     }
 }
 
@@ -489,7 +489,7 @@ impl<World> CucumberQueue<World> {
     /// [`Feature`]: gherkin::Feature
     fn new_feature(&mut self, feat: Event<Arc<gherkin::Feature>>) {
         let (feat, meta) = feat.split();
-        drop(self.queue.insert(feat, FeatureQueue::new(meta)));
+        drop(self.fifo.insert(feat, FeatureQueue::new(meta)));
     }
 
     /// Marks a [`Feature`] as finished on [`event::Feature::Finished`].
@@ -500,7 +500,7 @@ impl<World> CucumberQueue<World> {
     /// [`Feature`]: gherkin::Feature
     fn feature_finished(&mut self, feat: Event<&gherkin::Feature>) {
         let (feat, meta) = feat.split();
-        self.queue
+        self.fifo
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
             .finished(meta);
@@ -514,7 +514,7 @@ impl<World> CucumberQueue<World> {
         feat: &gherkin::Feature,
         rule: Event<Arc<gherkin::Rule>>,
     ) {
-        self.queue
+        self.fifo
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
             .new_rule(rule);
@@ -531,7 +531,7 @@ impl<World> CucumberQueue<World> {
         feat: &gherkin::Feature,
         rule: Event<Arc<gherkin::Rule>>,
     ) {
-        self.queue
+        self.fifo
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
             .rule_finished(rule);
@@ -545,7 +545,7 @@ impl<World> CucumberQueue<World> {
         scenario: Arc<gherkin::Scenario>,
         event: Event<event::RetryableScenario<World>>,
     ) {
-        self.queue
+        self.fifo
             .get_mut(feat)
             .unwrap_or_else(|| panic!("No Feature {}", feat.name))
             .insert_scenario_event(rule, scenario, event.retries, event);
@@ -559,7 +559,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
     type EmittedPath = ();
 
     fn current_item(self) -> Option<Self::Current> {
-        self.queue
+        self.fifo
             .iter_mut()
             .next()
             .map(|(f, ev)| (Arc::clone(f), ev))
@@ -641,7 +641,7 @@ impl<World> FeatureQueue<World> {
     fn new_rule(&mut self, rule: Event<Arc<gherkin::Rule>>) {
         let (rule, meta) = rule.split();
         drop(
-            self.queue.insert(
+            self.fifo.insert(
                 Either::Left(rule),
                 Either::Left(RulesQueue::new(meta)),
             ),
@@ -653,7 +653,7 @@ impl<World> FeatureQueue<World> {
     /// [`Rule`]: gherkin::Rule
     fn rule_finished(&mut self, rule: Event<Arc<gherkin::Rule>>) {
         let (rule, meta) = rule.split();
-        match self.queue.get_mut(&Either::Left(rule)) {
+        match self.fifo.get_mut(&Either::Left(rule)) {
             Some(Either::Left(ev)) => {
                 ev.finished(meta);
             }
@@ -673,12 +673,12 @@ impl<World> FeatureQueue<World> {
     ) {
         if let Some(r) = rule {
             match self
-                .queue
+                .fifo
                 .get_mut(&Either::Left(Arc::clone(&r)))
                 .unwrap_or_else(|| panic!("No Rule {}", r.name))
             {
                 Either::Left(rules) => rules
-                    .queue
+                    .fifo
                     .entry((scenario, retries))
                     .or_insert_with(ScenariosQueue::new)
                     .0
@@ -687,7 +687,7 @@ impl<World> FeatureQueue<World> {
             }
         } else {
             match self
-                .queue
+                .fifo
                 .entry(Either::Right((scenario, retries)))
                 .or_insert_with(|| Either::Right(ScenariosQueue::new()))
             {
@@ -705,7 +705,7 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
     type EmittedPath = Arc<gherkin::Feature>;
 
     fn current_item(self) -> Option<Self::Current> {
-        Some(match self.queue.iter_mut().next()? {
+        Some(match self.fifo.iter_mut().next()? {
             (Either::Left(rule), Either::Left(events)) => {
                 Either::Left((Arc::clone(rule), events))
             }
@@ -748,7 +748,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
     type EmittedPath = (Arc<gherkin::Feature>, Arc<gherkin::Rule>);
 
     fn current_item(self) -> Option<Self::Current> {
-        self.queue
+        self.fifo
             .iter_mut()
             .next()
             .map(|((sc, _), ev)| (Arc::clone(sc), ev))
