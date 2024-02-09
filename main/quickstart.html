@@ -178,11 +178,11 @@
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.20&quot;
-futures = &quot;0.3&quot;
+cucumber = "0.20"
+futures = "0.3"
 
 [[test]]
-name = &quot;example&quot; # this should be the same as the filename of your test target
+name = "example" # this should be the same as the filename of your test target
 harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>At this point, while it won't do anything, it should successfully run <code>cargo test --test example</code> without errors, as long as the <code>example.rs</code> file has at least a <code>main()</code> function defined.</p>
@@ -222,7 +222,7 @@ pub struct AnimalWorld {
 }
 
 // Steps are defined with `given`, `when` and `then` attributes.
-#[given(&quot;a hungry cat&quot;)]
+#[given("a hungry cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld) {
     world.cat.hungry = true;
 }
@@ -233,7 +233,7 @@ fn main() {
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(
-        &quot;tests/features/book/quickstart/simple.feature&quot;,
+        "tests/features/book/quickstart/simple.feature",
     ));
 }</code></pre></pre>
 <blockquote>
@@ -299,21 +299,21 @@ impl AnimalWorld {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
 </span>// Don't forget to additionally `use cucumber::when;`.
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 fn feed_cat(world: &amp;mut AnimalWorld) {
     world.cat.feed();
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
@@ -340,26 +340,26 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
 </span>// Don't forget to additionally `use cucumber::then;`.
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests, now we see all steps being accounted for and the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passing:<br />
@@ -389,24 +389,24 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[then(&quot;the cat is not hungry&quot;)]
+</span>#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>And see the test failing:<br />
@@ -449,28 +449,28 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+        "hungry" =&gt;  world.cat.hungry = true,
+        "satiated" =&gt;  world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/concurrent.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/concurrent.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
@@ -503,28 +503,28 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(expr = &quot;a {word} cat&quot;)]
+</span>#[given(expr = "a {word} cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
-        s =&gt; panic!(&quot;expected 'hungry' or 'satiated', found: {s}&quot;),
+        "hungry" =&gt;  world.cat.hungry = true,
+        "satiated" =&gt;  world.cat.hungry = false,
+        s =&gt; panic!("expected 'hungry' or 'satiated', found: {s}"),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>A contrived example, but it demonstrates that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> was <code>The cat is no longer hungry</code>, it would imply something about the expected initial state, when that is not the purpose of a <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, but rather of the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
@@ -532,11 +532,11 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.20&quot;
-tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
+cucumber = "0.20"
+tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
-name = &quot;example&quot; # this should be the same as the filename of your test target
+name = "example" # this should be the same as the filename of your test target
 harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>And, simply <code>sleep</code> on each <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to test the <code>async</code> support (in the real world, of course, there will be web/database requests, etc.):</p>
@@ -564,25 +564,25 @@ harness = false  # allows Cucumber to print output instead of libtest
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.cat.feed();
 }
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
@@ -591,7 +591,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;).await;
+    AnimalWorld::run("tests/features/book/quickstart/concurrent.feature").await;
 }</code></pre></pre>
 <p><img src="rec/quickstart_concurrent_async.gif" alt="record" /></p>
 <p>Hm, it looks like the runtime waited only for the first <code>Feature</code>, while the second was printed instantly. What's going on? 🤔</p>

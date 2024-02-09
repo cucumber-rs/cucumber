@@ -217,25 +217,25 @@
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -249,40 +249,40 @@
 </span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 </span><span class="boring">
 </span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-</span><span class="boring">        let keyword = &quot;Feature&quot;;
-</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        let keyword = "Feature";
+</span><span class="boring">        let name = "Animal feature";
 </span><span class="boring">        stream::once(future::ok(gherkin::Feature {
 </span><span class="boring">            keyword: keyword.into(),
 </span><span class="boring">            name: name.into(),
 </span><span class="boring">            description: None,
 </span><span class="boring">            background: None,
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
-</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
-</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                keyword: "Scenario".into(),
+</span><span class="boring">                name: "If we feed a hungry cat it won't be hungry".into(),
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        keyword: "Given".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
-</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        value: "a hungry cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        keyword: "When".into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
-</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        value: "I feed the cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        keyword: "Then".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
-</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        value: "the cat is not hungry".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
@@ -317,7 +317,7 @@
 </span><span class="boring">        step: gherkin::Step,
 </span><span class="boring">    ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
 </span><span class="boring">        let ev = if let Some((step_fn, captures, loc, ctx)) =
-</span><span class="boring">            Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
+</span><span class="boring">            Self::steps_fns().find(&amp;step).expect("Ambiguous match")
 </span><span class="boring">        {
 </span><span class="boring">            match AssertUnwindSafe(step_fn(&amp;mut world, ctx))
 </span><span class="boring">                .catch_unwind()
@@ -427,20 +427,20 @@ impl&lt;W: 'static&gt; cucumber::Writer&lt;W&gt; for CustomWriter {
             Ok(Event { value, .. }) =&gt; match value {
                 event::Cucumber::Feature(feature, ev) =&gt; match ev {
                     event::Feature::Started =&gt; {
-                        println!(&quot;{}: {}&quot;, feature.keyword, feature.name)
+                        println!("{}: {}", feature.keyword, feature.name)
                     }
                     event::Feature::Scenario(scenario, ev) =&gt; match ev.event {
                         event::Scenario::Started =&gt; {
-                            println!(&quot;{}: {}&quot;, scenario.keyword, scenario.name)
+                            println!("{}: {}", scenario.keyword, scenario.name)
                         }
                         event::Scenario::Step(step, ev) =&gt; match ev {
                             event::Step::Started =&gt; {
-                                print!(&quot;{} {}...&quot;, step.keyword, step.value)
+                                print!("{} {}...", step.keyword, step.value)
                             }
-                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
-                            event::Step::Skipped =&gt; println!(&quot;skip&quot;),
+                            event::Step::Passed(..) =&gt; println!("ok"),
+                            event::Step::Skipped =&gt; println!("skip"),
                             event::Step::Failed(_, _, _, err) =&gt; {
-                                println!(&quot;failed: {err}&quot;)
+                                println!("failed: {err}")
                             }
                         },
                         _ =&gt; {}
@@ -449,7 +449,7 @@ impl&lt;W: 'static&gt; cucumber::Writer&lt;W&gt; for CustomWriter {
                 },
                 _ =&gt; {}
             },
-            Err(e) =&gt; println!(&quot;Error: {e}&quot;),
+            Err(e) =&gt; println!("Error: {e}"),
         }
     }
 }
@@ -460,7 +460,7 @@ async fn main() {
         .with_parser(CustomParser)
         .with_runner(CustomRunner)
         .with_writer(CustomWriter.assert_normalized()) // OK because of `CustomRunner`
-        .run(&quot;tests/features/book&quot;)
+        .run("tests/features/book")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/architecture_writer_raw.gif" alt="record" /></p>
@@ -498,25 +498,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -530,40 +530,40 @@ async fn main() {
 </span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 </span><span class="boring">
 </span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-</span><span class="boring">        let keyword = &quot;Feature&quot;;
-</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        let keyword = "Feature";
+</span><span class="boring">        let name = "Animal feature";
 </span><span class="boring">        stream::once(future::ok(gherkin::Feature {
 </span><span class="boring">            keyword: keyword.into(),
 </span><span class="boring">            name: name.into(),
 </span><span class="boring">            description: None,
 </span><span class="boring">            background: None,
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
-</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
-</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                keyword: "Scenario".into(),
+</span><span class="boring">                name: "If we feed a hungry cat it won't be hungry".into(),
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        keyword: "Given".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
-</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        value: "a hungry cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        keyword: "When".into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
-</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        value: "I feed the cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        keyword: "Then".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
-</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        value: "the cat is not hungry".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
@@ -599,20 +599,20 @@ async fn main() {
 </span><span class="boring">            Ok(Event { value, .. }) =&gt; match value {
 </span><span class="boring">                event::Cucumber::Feature(feature, ev) =&gt; match ev {
 </span><span class="boring">                    event::Feature::Started =&gt; {
-</span><span class="boring">                        println!(&quot;{}: {}&quot;, feature.keyword, feature.name)
+</span><span class="boring">                        println!("{}: {}", feature.keyword, feature.name)
 </span><span class="boring">                    }
 </span><span class="boring">                    event::Feature::Scenario(scenario, ev) =&gt; match ev.event {
 </span><span class="boring">                        event::Scenario::Started =&gt; {
-</span><span class="boring">                            println!(&quot;{}: {}&quot;, scenario.keyword, scenario.name)
+</span><span class="boring">                            println!("{}: {}", scenario.keyword, scenario.name)
 </span><span class="boring">                        }
 </span><span class="boring">                        event::Scenario::Step(step, ev) =&gt; match ev {
 </span><span class="boring">                            event::Step::Started =&gt; {
-</span><span class="boring">                                print!(&quot;{} {}...&quot;, step.keyword, step.value)
+</span><span class="boring">                                print!("{} {}...", step.keyword, step.value)
 </span><span class="boring">                            }
-</span><span class="boring">                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
-</span><span class="boring">                            event::Step::Skipped =&gt; println!(&quot;skip&quot;),
+</span><span class="boring">                            event::Step::Passed(..) =&gt; println!("ok"),
+</span><span class="boring">                            event::Step::Skipped =&gt; println!("skip"),
 </span><span class="boring">                            event::Step::Failed(_, _, _, err) =&gt; {
-</span><span class="boring">                                println!(&quot;failed: {err}&quot;, )
+</span><span class="boring">                                println!("failed: {err}", )
 </span><span class="boring">                            }
 </span><span class="boring">                        },
 </span><span class="boring">                        _ =&gt; {}
@@ -621,7 +621,7 @@ async fn main() {
 </span><span class="boring">                },
 </span><span class="boring">                _ =&gt; {}
 </span><span class="boring">            },
-</span><span class="boring">            Err(e) =&gt; println!(&quot;Error: {e}&quot;),
+</span><span class="boring">            Err(e) =&gt; println!("Error: {e}"),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -631,12 +631,12 @@ async fn main() {
     AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference for `CustomParser`
         .with_parser(CustomParser)
         .with_writer(CustomWriter.normalized()) // wrapping into `writer::Normalize`,
-        .run(&quot;tests/features/book&quot;)             // so it works OK with the default
+        .run("tests/features/book")             // so it works OK with the default
         .await;                                 // concurrent `Runner`
 }</code></pre></pre>
 <p><img src="../rec/architecture_writer_normalized.gif" alt="record" /></p>
 <blockquote>
-<p><strong>NOTE</strong>: <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a>s are easily pipelined. See <a href="https://docs.rs/cucumber/*/cucumber/trait.WriterExt.html"><code>WriterExt</code></a> trait and <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>writer</code></a> module for more <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> machinery &quot;included batteries&quot;.</p>
+<p><strong>NOTE</strong>: <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a>s are easily pipelined. See <a href="https://docs.rs/cucumber/*/cucumber/trait.WriterExt.html"><code>WriterExt</code></a> trait and <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>writer</code></a> module for more <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> machinery "included batteries".</p>
 </blockquote>
 
                     </main>

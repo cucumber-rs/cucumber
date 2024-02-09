@@ -175,7 +175,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a> (behavior-driven development) style workflow. </p>
+<p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a> (behavior-driven development) style workflow.</p>
 <p>It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a>. A typical feature could look something like this:</p>
 <pre><code class="language-gherkin">Feature: Eating too much cucumbers may not be good for you
     
@@ -200,32 +200,32 @@
 </span><span class="boring">    capacity: usize,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(expr = &quot;{word} is hungry&quot;)] // Cucumber Expression
+</span>#[given(expr = "{word} is hungry")] // Cucumber Expression
 async fn someone_is_hungry(w: &amp;mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
     
     w.user = Some(user);
 }
 
-#[when(regex = r&quot;^(?:he|she|they) eats? (\d+) cucumbers?$&quot;)]
+#[when(regex = r"^(?:he|she|they) eats? (\d+) cucumbers?$")]
 async fn eat_cucumbers(w: &amp;mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
     
-    assert!(w.capacity &lt; 4, &quot;{} exploded!&quot;, w.user.as_ref().unwrap());
+    assert!(w.capacity &lt; 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
-#[then(&quot;she is full&quot;)]
+#[then("she is full")]
 async fn is_full(w: &amp;mut World) {
     sleep(Duration::from_secs(2)).await;
 
-    assert_eq!(w.capacity, 3, &quot;{} isn't full!&quot;, w.user.as_ref().unwrap());
+    assert_eq!(w.capacity, 3, "{} isn't full!", w.user.as_ref().unwrap());
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    World::run(&quot;tests/features/readme&quot;).await;
+</span><span class="boring">    World::run("tests/features/readme").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="rec/readme.gif" alt="record" /></p>
 <p>Since the goal is the testing of externally identifiable behavior of some feature, it would be a misnomer to use <a href="https://cucumber.io">Cucumber</a> to test specific private aspects or isolated modules. <a href="https://cucumber.io">Cucumber</a> tests are more likely to take the form of integration, functional or E2E testing.</p>
@@ -234,11 +234,11 @@ async fn is_full(w: &amp;mut World) {
 <p>To start, let's create a directory called <code>tests/</code> in the root of the project and add a file to represent the test target (in this walkthrough it's <code>example.rs</code>).</p>
 <p>Add this to <code>Cargo.toml</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.20&quot;
-futures = &quot;0.3&quot;
+cucumber = "0.20"
+futures = "0.3"
 
 [[test]]
-name = &quot;example&quot; # this should be the same as the filename of your test target
+name = "example" # this should be the same as the filename of your test target
 harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>At this point, while it won't do anything, it should successfully run <code>cargo test --test example</code> without errors, as long as the <code>example.rs</code> file has at least a <code>main()</code> function defined.</p>
@@ -278,7 +278,7 @@ pub struct AnimalWorld {
 }
 
 // Steps are defined with `given`, `when` and `then` attributes.
-#[given(&quot;a hungry cat&quot;)]
+#[given("a hungry cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld) {
     world.cat.hungry = true;
 }
@@ -289,7 +289,7 @@ fn main() {
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(
-        &quot;tests/features/book/quickstart/simple.feature&quot;,
+        "tests/features/book/quickstart/simple.feature",
     ));
 }</code></pre></pre>
 <blockquote>
@@ -355,21 +355,21 @@ impl AnimalWorld {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
 </span>// Don't forget to additionally `use cucumber::when;`.
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 fn feed_cat(world: &amp;mut AnimalWorld) {
     world.cat.feed();
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:<br />
@@ -396,26 +396,26 @@ fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
 </span>// Don't forget to additionally `use cucumber::then;`.
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>Once we run the tests, now we see all steps being accounted for and the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passing:<br />
@@ -445,24 +445,24 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(&quot;a hungry cat&quot;)]
+</span><span class="boring">#[given("a hungry cat")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.hungry = true;
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[then(&quot;the cat is not hungry&quot;)]
+</span>#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>And see the test failing:<br />
@@ -505,28 +505,28 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+        "hungry" =&gt;  world.cat.hungry = true,
+        "satiated" =&gt;  world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/concurrent.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/concurrent.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
@@ -559,28 +559,28 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(expr = &quot;a {word} cat&quot;)]
+</span>#[given(expr = "a {word} cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
-        s =&gt; panic!(&quot;expected 'hungry' or 'satiated', found: {s}&quot;),
+        "hungry" =&gt;  world.cat.hungry = true,
+        "satiated" =&gt;  world.cat.hungry = false,
+        s =&gt; panic!("expected 'hungry' or 'satiated', found: {s}"),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
 </span><span class="boring">    futures::executor::block_on(AnimalWorld::run(
-</span><span class="boring">        &quot;tests/features/book/quickstart/simple.feature&quot;,
+</span><span class="boring">        "tests/features/book/quickstart/simple.feature",
 </span><span class="boring">    ));
 </span><span class="boring">}</span></code></pre></pre>
 <p>A contrived example, but it demonstrates that <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s can be reused as long as they are sufficiently precise in both their description and implementation. If, for example, the wording for our <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> was <code>The cat is no longer hungry</code>, it would imply something about the expected initial state, when that is not the purpose of a <code>Then</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>, but rather of the <code>Given</code> <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>.</p>
@@ -588,11 +588,11 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 <p><code>async</code> execution is supported naturally.</p>
 <p>Let's switch our runtime to <code>tokio</code>:</p>
 <pre><code class="language-toml">[dev-dependencies]
-cucumber = &quot;0.20&quot;
-tokio = { version = &quot;1.10&quot;, features = [&quot;macros&quot;, &quot;rt-multi-thread&quot;, &quot;time&quot;] }
+cucumber = "0.20"
+tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
-name = &quot;example&quot; # this should be the same as the filename of your test target
+name = "example" # this should be the same as the filename of your test target
 harness = false  # allows Cucumber to print output instead of libtest
 </code></pre>
 <p>And, simply <code>sleep</code> on each <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to test the <code>async</code> support (in the real world, of course, there will be web/database requests, etc.):</p>
@@ -620,25 +620,25 @@ harness = false  # allows Cucumber to print output instead of libtest
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.cat.feed();
 }
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
@@ -647,7 +647,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run(&quot;tests/features/book/quickstart/concurrent.feature&quot;).await;
+    AnimalWorld::run("tests/features/book/quickstart/concurrent.feature").await;
 }</code></pre></pre>
 <p><img src="rec/quickstart_concurrent_async.gif" alt="record" /></p>
 <p>Hm, it looks like the runtime waited only for the first <code>Feature</code>, while the second was printed instantly. What's going on? 🤔</p>
@@ -720,28 +720,28 @@ async fn main() {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+        "hungry" =&gt;  world.cat.hungry = true,
+        "satiated" =&gt;  world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(regex = r&quot;^I feed the cat \d+ times?$&quot;)]
+#[when(regex = r"^I feed the cat \d+ times?$")]
 fn feed_cat(world: &amp;mut AnimalWorld) {
     world.cat.feed();
 }
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: We surround the <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> with <code>^..$</code> to ensure an <strong>exact</strong> match. This is much more useful when adding more and more <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s, so they won't accidentally interfere with each other.</p>
@@ -782,9 +782,9 @@ impl FromStr for State {
 
     fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt; {
         Ok(match s {
-            &quot;hungry&quot; =&gt; Self::Hungry,
-            &quot;satiated&quot; =&gt; Self::Satiated,
-            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
+            "hungry" =&gt; Self::Hungry,
+            "satiated" =&gt; Self::Satiated,
+            invalid =&gt; return Err(format!("Invalid `State`: {invalid}")),
         })
     }
 }
@@ -794,26 +794,26 @@ impl FromStr for State {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span>
-#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+#[given(regex = r"^a (hungry|satiated) cat$")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
     world.cat.hungry = state;
 }
 
-#[when(regex = r&quot;^I feed the cat (\d+) times?$&quot;)]
+#[when(regex = r"^I feed the cat (\d+) times?$")]
 fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
     for _ in 0..times {
         world.cat.feed();
     }
 }
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(matches!(world.cat.hungry, State::Satiated));
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
 <h2 id="cucumber-expressions"><a class="header" href="#cucumber-expressions">Cucumber Expressions</a></h2>
@@ -848,9 +848,9 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">
 </span><span class="boring">    fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt; {
 </span><span class="boring">        Ok(match s {
-</span><span class="boring">            &quot;hungry&quot; =&gt; Self::Hungry,
-</span><span class="boring">            &quot;satiated&quot; =&gt; Self::Satiated,
-</span><span class="boring">            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
+</span><span class="boring">            "hungry" =&gt; Self::Hungry,
+</span><span class="boring">            "satiated" =&gt; Self::Satiated,
+</span><span class="boring">            invalid =&gt; return Err(format!("Invalid `State`: {invalid}")),
 </span><span class="boring">        })
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -860,26 +860,26 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(expr = &quot;a {word} cat&quot;)]
+</span>#[given(expr = "a {word} cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
     world.cat.hungry = state;
 }
 
-#[when(expr = &quot;I feed the cat {int} time(s)&quot;)]
+#[when(expr = "I feed the cat {int} time(s)")]
 fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
     for _ in 0..times {
         world.cat.feed();
     }
 }
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(matches!(world.cat.hungry, State::Satiated));
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><a href="https://cucumber.github.io/cucumber-expressions">Cucumber Expressions</a> are less powerful in terms of parsing and capturing values, but are much more readable than <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, so it's worth to prefer using them for simple matching.</p>
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
@@ -909,7 +909,7 @@ fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">
 </span>#[derive(Debug, Default, Parameter)]
 // NOTE: `name` is optional, by default the lowercased type name is implied.
-#[param(name = &quot;hungriness&quot;, regex = &quot;hungry|satiated&quot;)]
+#[param(name = "hungriness", regex = "hungry|satiated")]
 enum State {
     Hungry,
     #[default]
@@ -922,9 +922,9 @@ impl FromStr for State {
 
     fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt; {
         Ok(match s {
-            &quot;hungry&quot; =&gt; Self::Hungry,
-            &quot;satiated&quot; =&gt; Self::Satiated,
-            invalid =&gt; return Err(format!(&quot;Invalid `State`: {invalid}&quot;)),
+            "hungry" =&gt; Self::Hungry,
+            "satiated" =&gt; Self::Satiated,
+            invalid =&gt; return Err(format!("Invalid `State`: {invalid}")),
         })
     }
 }
@@ -934,33 +934,33 @@ impl FromStr for State {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span>
-#[given(expr = &quot;a {hungriness} cat&quot;)]
+#[given(expr = "a {hungriness} cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
     world.cat.hungry = state;
 }
 <span class="boring">
-</span><span class="boring">#[when(expr = &quot;I feed the cat {int} time(s)&quot;)]
+</span><span class="boring">#[when(expr = "I feed the cat {int} time(s)")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">    for _ in 0..times {
 </span><span class="boring">        world.cat.feed();
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(matches!(world.cat.hungry, State::Satiated));
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/capturing.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: Using <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameters</a> allows declaring and reusing complicated and precise matches without a need to repeat them in different <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching functions.</p>
 </blockquote>
 <p><img src="writing/../rec/writing_capturing_both.gif" alt="record" /></p>
 <blockquote>
-<p><strong>TIP</strong>: In case <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> of a <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameter</a> consists of several capturing groups, only the first non-empty match will be returned. </p>
+<p><strong>TIP</strong>: In case <a href="https://en.wikipedia.org/wiki/Regular_expression">regex</a> of a <a href="https://github.com/cucumber/cucumber-expressions#custom-parameter-types">custom parameter</a> consists of several capturing groups, only the first non-empty match will be returned.</p>
 </blockquote>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -982,7 +982,7 @@ fn hungry_cat(world: &amp;mut AnimalWorld, state: State) {
 </span><span class="boring">}
 </span><span class="boring">
 </span>#[derive(Debug, Default, Eq, Parameter, PartialEq)]
-#[param(regex = &quot;(hungry)|(satiated)|'([^']*)'&quot;)]
+#[param(regex = "(hungry)|(satiated)|'([^']*)'")]
 // We want to capture without quotes  ^^^^^^^
 enum Hungriness {
     Hungry,
@@ -997,8 +997,8 @@ impl FromStr for Hungriness {
 
     fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt; {
         Ok(match s {
-            &quot;hungry&quot; =&gt; Self::Hungry,
-            &quot;satiated&quot; =&gt; Self::Satiated,
+            "hungry" =&gt; Self::Hungry,
+            "satiated" =&gt; Self::Satiated,
             other =&gt; Self::Other(other.to_owned()),
         })
     }
@@ -1009,35 +1009,35 @@ impl FromStr for Hungriness {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span>
-#[given(expr = &quot;a {hungriness} cat&quot;)]
+#[given(expr = "a {hungriness} cat")]
 fn hungry_cat(world: &amp;mut AnimalWorld, hungry: Hungriness) {
     world.cat.hungry = hungry;
 }
 
-#[then(expr = &quot;the cat is {string}&quot;)]
+#[then(expr = "the cat is {string}")]
 fn cat_is(world: &amp;mut AnimalWorld, other: String) {
     assert_eq!(world.cat.hungry, Hungriness::Other(other));
 }
 <span class="boring">
-</span><span class="boring">#[when(expr = &quot;I feed the cat {int} time(s)&quot;)]
+</span><span class="boring">#[when(expr = "I feed the cat {int} time(s)")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld, times: u8) {
 </span><span class="boring">    for _ in 0..times {
 </span><span class="boring">        world.cat.feed();
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert_eq!(world.cat.hungry, Hungriness::Satiated);
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/capturing_multiple_groups.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/capturing_multiple_groups.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_capturing_multiple_groups.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="asserting"><a class="header" href="#asserting">Asserting</a></h1>
-<p>There are two ways of doing <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a>s in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function: </p>
+<p>There are two ways of doing <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a>s in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function:</p>
 <ul>
 <li><a href="writing/asserting.html#panic">throwing a panic</a>;</li>
 <li><a href="writing/asserting.html#result-and-">returning an error</a>.</li>
@@ -1065,29 +1065,29 @@ fn cat_is(world: &amp;mut AnimalWorld, other: String) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt;  world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt;  world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[then(&quot;the cat is not hungry&quot;)]
+</span>#[then("the cat is not hungry")]
 fn cat_is_fed(_: &amp;mut AnimalWorld) {
-    panic!(&quot;Cats are always hungry!&quot;)
+    panic!("Cats are always hungry!")
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/asserting.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_asserting_panic.gif" alt="record" /></p>
@@ -1117,27 +1117,27 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt;  world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt;  world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 fn feed_cat(_: &amp;mut AnimalWorld) {}
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&gt; {
-    (!world.cat.hungry).then_some(()).ok_or(&quot;Cat is still hungry!&quot;)
+    (!world.cat.hungry).then_some(()).ok_or("Cat is still hungry!")
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/asserting.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_asserting_result.gif" alt="record" /></p>
@@ -1166,11 +1166,11 @@ fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&
 </span><span class="boring">
 </span>use cucumber::{gherkin::Step, given, then, when, World};
 
-#[given(regex = r&quot;^a (hungry|satiated) animal$&quot;)]
+#[given(regex = r"^a (hungry|satiated) animal$")]
 async fn hungry_animal(world: &amp;mut AnimalWorld, step: &amp;Step, state: String) {
     let state = match state.as_str() {
-        &quot;hungry&quot; =&gt; true,
-        &quot;satiated&quot; =&gt; false,
+        "hungry" =&gt; true,
+        "satiated" =&gt; false,
         _ =&gt; unreachable!(),
     };
 
@@ -1187,7 +1187,7 @@ async fn hungry_animal(world: &amp;mut AnimalWorld, step: &amp;Step, state: Stri
     }
 }
 
-#[when(&quot;I feed the animal multiple times&quot;)]
+#[when("I feed the animal multiple times")]
 async fn feed_animal(world: &amp;mut AnimalWorld, step: &amp;Step) {
     if let Some(table) = step.table.as_ref() {
         for row in table.rows.iter().skip(1) { // NOTE: skip header
@@ -1201,7 +1201,7 @@ async fn feed_animal(world: &amp;mut AnimalWorld, step: &amp;Step) {
     }
 }
 
-#[then(&quot;the animal is not hungry&quot;)]
+#[then("the animal is not hungry")]
 async fn animal_is_fed(world: &amp;mut AnimalWorld) {
     for animal in world.animals.values() {
         assert!(!animal.hungry);
@@ -1226,7 +1226,7 @@ pub struct AnimalWorld {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/data_tables.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/data_tables.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: The whole table data is processed during a single <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> run.</p>
@@ -1234,26 +1234,26 @@ pub struct AnimalWorld {
 <p><img src="writing/../rec/writing_data_tables.gif" alt="record" /></p>
 <h2 id="escaping"><a class="header" href="#escaping">Escaping</a></h2>
 <ul>
-<li>To use a newline character in a table cell, write it as <code>\n</code>. </li>
-<li>To use a <code>|</code> as a part in a table cell, escape it as <code>\|</code>. </li>
+<li>To use a newline character in a table cell, write it as <code>\n</code>.</li>
+<li>To use a <code>|</code> as a part in a table cell, escape it as <code>\|</code>.</li>
 <li>And finally, to use a <code>\</code>, escape it as <code>\\</code>.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="doc-strings"><a class="header" href="#doc-strings">Doc strings</a></h1>
 <p><a href="https://cucumber.io/docs/gherkin/reference#doc-strings">Doc strings</a> provide an ability to pass a large piece of text to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> definition (and so, to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function).</p>
-<p>The text should be offset by delimiters consisting of three double-quote marks <code>&quot;&quot;&quot;</code> on lines of their own:</p>
+<p>The text should be offset by delimiters consisting of three double-quote marks <code>"""</code> on lines of their own:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
     
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;
+      """
       A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
 <blockquote>
-<p><strong>NOTE</strong>: Indentation of the opening <code>&quot;&quot;&quot;</code> is unimportant, although the common practice is to indent them. The indentation inside the triple quotes, however, is significant. Each line of the <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc string</a> will be dedented according to the opening <code>&quot;&quot;&quot;</code>. Indentation beyond the column of the opening <code>&quot;&quot;&quot;</code> will therefore be preserved.</p>
+<p><strong>NOTE</strong>: Indentation of the opening <code>"""</code> is unimportant, although the common practice is to indent them. The indentation inside the triple quotes, however, is significant. Each line of the <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc string</a> will be dedented according to the opening <code>"""</code>. Indentation beyond the column of the opening <code>"""</code> will therefore be preserved.</p>
 </blockquote>
 <p><a href="https://cucumber.io/docs/gherkin/reference#doc-strings">Doc strings</a> also support using three backticks <code>```</code> as the delimiter, which might be familiar for those used to writing with <a href="https://en.wikipedia.org/wiki/Markdown">Markdown</a>:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
@@ -1272,12 +1272,12 @@ pub struct AnimalWorld {
     
   Scenario: If we feed a hungry Simba it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;markdown
+      """markdown
       About Simba
       ===========
       A hungry cat called Simba is rescued from a Whiskas tin in a calamitous
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
@@ -1306,30 +1306,30 @@ pub struct AnimalWorld {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String) {
     // Feed only Leo and Felix.
     if !step
         .docstring
         .as_ref()
-        .map_or(false, |text| text.contains(&quot;Felix&quot;) || text.contains(&quot;Leo&quot;))
+        .map_or(false, |text| text.contains("Felix") || text.contains("Leo"))
     {
-        panic!(&quot;Only Felix and Leo can be fed&quot;);
+        panic!("Only Felix and Leo can be fed");
     }
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
@@ -1337,7 +1337,7 @@ async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String)
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/doc_strings.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/doc_strings.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_doc_strings.gif" alt="record" /></p>
@@ -1384,25 +1384,25 @@ async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String)
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.cat.feed();
 }
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
@@ -1411,7 +1411,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/rule.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/rule.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_rule.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="background-keyword"><a class="header" href="#background-keyword"><code>Background</code> keyword</a></h1>
@@ -1462,25 +1462,25 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.cat.feed();
 }
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
@@ -1489,7 +1489,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/background.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/background.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_background.gif" alt="record" /></p>
 <blockquote>
@@ -1549,19 +1549,19 @@ pub struct AnimalWorld {
     animals: HashMap&lt;String, Animal&gt;,
 }
 
-#[given(regex = r&quot;^a (hungry|satiated) (\S+)$&quot;)]
+#[given(regex = r"^a (hungry|satiated) (\S+)$")]
 async fn hungry_animal(world: &amp;mut AnimalWorld, state: String, which: String) {
     sleep(Duration::from_secs(2)).await;
 
     world.animals.entry(which).or_insert(Animal::default()).hungry =
         match state.as_str() {
-            &quot;hungry&quot; =&gt; true,
-            &quot;satiated&quot; =&gt; false,
+            "hungry" =&gt; true,
+            "satiated" =&gt; false,
             _ =&gt; unreachable!(),
         };
 }
 
-#[when(expr = &quot;I feed the {word} {int} time(s)&quot;)]
+#[when(expr = "I feed the {word} {int} time(s)")]
 async fn feed_animal(world: &amp;mut AnimalWorld, which: String, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
@@ -1570,7 +1570,7 @@ async fn feed_animal(world: &amp;mut AnimalWorld, which: String, times: usize) {
     }
 }
 
-#[then(expr = &quot;the {word} is not hungry&quot;)]
+#[then(expr = "the {word} is not hungry")]
 async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
     sleep(Duration::from_secs(2)).await;
 
@@ -1579,7 +1579,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/scenario_outline.feature&quot;)
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/scenario_outline.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
@@ -1608,7 +1608,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
     .before(|_feature, _rule, _scenario, _world| {
         time::sleep(Duration::from_millis(300)).boxed_local()
     })
-    .run_and_exit(&quot;tests/features/book&quot;);
+    .run_and_exit("tests/features/book");
 <span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> is enabled globally for all the executed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. No exception is possible.</p>
@@ -1637,13 +1637,13 @@ Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><co
     .after(|_feature, _rule, _scenario, _ev, _world| {
         time::sleep(Duration::from_millis(300)).boxed_local()
     })
-    .run_and_exit(&quot;tests/features/book&quot;);
+    .run_and_exit("tests/features/book");
 <span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> is enabled globally for all the executed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. No exception is possible.</p>
 </blockquote>
 <blockquote>
-<p><strong>TIP</strong>: <a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> receives an <a href="https://docs.rs/cucumber/*/cucumber/event/struct.ScenarioFinished.html"><code>event::ScenarioFinished</code></a> as one of its arguments, which indicates why the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> has finished (passed, failed or skipped). This information, for example, may be used to decide whether some external resources (like files) should be cleaned up if the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passes, or leaved &quot;as is&quot; if it fails, so helping to &quot;freeze&quot; the failure conditions for better investigation. </p>
+<p><strong>TIP</strong>: <a href="https://cucumber.io/docs/cucumber/api#after"><code>After</code> hook</a> receives an <a href="https://docs.rs/cucumber/*/cucumber/event/struct.ScenarioFinished.html"><code>event::ScenarioFinished</code></a> as one of its arguments, which indicates why the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> has finished (passed, failed or skipped). This information, for example, may be used to decide whether some external resources (like files) should be cleaned up if the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> passes, or leaved "as is" if it fails, so helping to "freeze" the failure conditions for better investigation.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="spoken-languages"><a class="header" href="#spoken-languages">Spoken languages</a></h1>
 <p>The language chosen for <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> should be the same language users and domain experts use when they talk about the domain. Translating between two languages should be avoided.</p>
@@ -1679,28 +1679,28 @@ Egenskap: Dyr egenskap
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^en (sulten|mett) katt$&quot;)]
+</span>#[given(regex = r"^en (sulten|mett) katt$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;sulten&quot; =&gt; world.cat.hungry = true,
-        &quot;mett&quot; =&gt; world.cat.hungry = false,
+        "sulten" =&gt; world.cat.hungry = true,
+        "mett" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;jeg mater katten&quot;)]
+#[when("jeg mater katten")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     world.cat.feed();
 }
 
-#[then(&quot;katten er ikke sulten&quot;)]
+#[then("katten er ikke sulten")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/languages.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/languages.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_languages.gif" alt="record" /></p>
 <blockquote>
@@ -1837,25 +1837,25 @@ Feature: Animal feature
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -1866,7 +1866,7 @@ Feature: Animal feature
 async fn main() {
     AnimalWorld::cucumber()
         .fail_on_skipped()
-        .run_and_exit(&quot;tests/features/book/writing/tags_skip_failed.feature&quot;)
+        .run_and_exit("tests/features/book/writing/tags_skip_failed.feature")
         .await;
 }</code></pre></pre>
 <blockquote>
@@ -1891,7 +1891,7 @@ async fn main() {
 </blockquote>
 <p><img src="writing/../rec/writing_tags_skip_filter.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="retrying-failed-scenarios"><a class="header" href="#retrying-failed-scenarios">Retrying failed scenarios</a></h1>
-<p>Often, it's nearly impossible to create fully-deterministic test case, especially when you are relying on environments like external services, browsers, file system, networking etc. That's why there is an ability to retry failed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. </p>
+<p>Often, it's nearly impossible to create fully-deterministic test case, especially when you are relying on environments like external services, browsers, file system, networking etc. That's why there is an ability to retry failed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s.</p>
 <blockquote>
 <p><strong>WARNING</strong>: Although this feature is supported, we highly recommend to use it as the <em>last resort only</em>. First, consider implementing in-<a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> retries with your own needs (like <a href="https://en.wikipedia.org/wiki/Exponential_backoff">exponential backoff</a>). Other ways of dealing with flaky tests include, but not limited to: reducing number of concurrently executed scenarios (maybe even using <code>@serial</code> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>), mocking external environment, <a href="https://docs.rs/tokio/1.0/tokio/time/fn.pause.html">controlling time in tests</a> or even <a href="https://github.com/madsys-dev/madsim">simulation testing</a>. It's always better to move towards tests determinism, rather than trying to tame their flakiness.</p>
 </blockquote>
@@ -1942,46 +1942,46 @@ async fn main() {
 </span><span class="boring">    flipped: &amp;'static str,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(&quot;a coin&quot;)]
+</span>#[given("a coin")]
 async fn coin(_: &amp;mut FlipWorld) {
     sleep(Duration::from_secs(2)).await;
 }
 
-#[when(&quot;I flip the coin&quot;)]
+#[when("I flip the coin")]
 async fn flip(world: &amp;mut FlipWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.flipped = match rand::thread_rng().gen_range(0.0..1.0) {
-        p if p &lt; 0.2 =&gt; &quot;edge&quot;,
-        p if p &lt; 0.5 =&gt; &quot;heads&quot;,
-        _ =&gt; &quot;tails&quot;,
+        p if p &lt; 0.2 =&gt; "edge",
+        p if p &lt; 0.5 =&gt; "heads",
+        _ =&gt; "tails",
     }
 }
 
-#[then(regex = r#&quot;^I see (heads|tails|edge)$&quot;#)]
+#[then(regex = r#"^I see (heads|tails|edge)$"#)]
 async fn see(world: &amp;mut FlipWorld, what: String) {
     sleep(Duration::from_secs(2)).await;
 
     assert_eq!(what, world.flipped);
 }
 
-#[then(&quot;the coin never lands&quot;)]
+#[then("the coin never lands")]
 async fn never_lands(_: &amp;mut FlipWorld) {
     sleep(Duration::from_secs(2)).await;
 
-    unreachable!(&quot;coin always lands&quot;)
+    unreachable!("coin always lands")
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    FlipWorld::cucumber()
 </span><span class="boring">        .fail_on_skipped()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/retries.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/retries.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="writing/../rec/writing_retries.gif" alt="record" /></p>
 <blockquote>
-<p><strong>NOTE</strong>: On failure, the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> is re-executed with a new fresh <a href="https://docs.rs/cucumber/latest/cucumber/trait.World.html"><code>World</code></a> instance. </p>
+<p><strong>NOTE</strong>: On failure, the whole <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> is re-executed with a new fresh <a href="https://docs.rs/cucumber/latest/cucumber/trait.World.html"><code>World</code></a> instance.</p>
 </blockquote>
 <h2 id="cli"><a class="header" href="#cli">CLI</a></h2>
 <p>The following <a href="writing/../cli.html">CLI option</a>s are related to the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a> retries:</p>
@@ -2027,7 +2027,7 @@ async fn never_lands(_: &amp;mut FlipWorld) {
 <h2 id="avoiding-duplication"><a class="header" href="#avoiding-duplication">Avoiding duplication</a></h2>
 <p>It's better to avoid writing similar <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching functions, as they can lead to clutter. While documenting <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s helps, making use of <a href="writing/capturing.html">regular and Cucumber expressions</a> can do wonders.</p>
 <h2 id="managing-growth"><a class="header" href="#managing-growth">Managing growth</a></h2>
-<p>As the test suit grows, it may become harder to notice how minimal changes to regular expressions can lead to mismatched <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s. </p>
+<p>As the test suit grows, it may become harder to notice how minimal changes to regular expressions can lead to mismatched <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s.</p>
 <blockquote>
 <p><strong>TIP</strong>: We recommend using <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.fail_on_skipped"><code>Cucumber::fail_on_skipped()</code></a> method in combination with <code>@allow.skipped</code> <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>. The latter allows marking the <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s which <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s are explicitly allowed to be skipped.</p>
 </blockquote>
@@ -2128,21 +2128,21 @@ Options:
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
@@ -2165,7 +2165,7 @@ async fn main() {
     AnimalWorld::cucumber()
         .before(move |_, _, _, _| sleep(pre_pause).boxed_local())
         .with_cli(opts)
-        .run_and_exit(&quot;tests/features/book/cli.feature&quot;)
+        .run_and_exit("tests/features/book/cli.feature")
         .await;
 }</code></pre></pre>
 <p><img src="rec/cli_custom.gif" alt="record" /></p>
@@ -2205,21 +2205,21 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
@@ -2261,12 +2261,12 @@ async fn main() {
     AnimalWorld::cucumber()
         .before(move |_, _, _, _| sleep(pre_pause).boxed_local())
         .with_cli(opts)
-        .run_and_exit(&quot;tests/features/book/cli.feature&quot;)
+        .run_and_exit("tests/features/book/cli.feature")
         .await;
 }</code></pre></pre>
 <p>The alias should be specified in <code>.cargo/config.toml</code> file of the project:</p>
 <pre><code class="language-yaml">[alias]
-smoke = &quot;test -p cucumber --test cli -- smoke --pre-pause=5s -vv --fail-fast&quot;
+smoke = "test -p cucumber --test cli -- smoke --pre-pause=5s -vv --fail-fast"
 </code></pre>
 <p>Now it can be used as:</p>
 <pre><code class="language-bash">cargo smoke
@@ -2310,21 +2310,21 @@ cargo smoke --tags=@hungry
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 async fn feed_cat(_: &amp;mut AnimalWorld) {}
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2334,21 +2334,21 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/output/terminal_verbose.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_terminal_verbose_1.gif" alt="record" /></p>
-<p>This is intended to help debugging failed tests. </p>
+<p>This is intended to help debugging failed tests.</p>
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
 <p>By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, outputting <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> of <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s is omitted. To include them into the output use <code>-vvv</code> CLI option:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
     
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;
+      """
       A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
@@ -2376,25 +2376,25 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2404,7 +2404,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_verbose.feature")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_verbose_2.gif" alt="record" /></p>
@@ -2434,25 +2434,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2462,7 +2462,7 @@ async fn main() {
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal.feature")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_color.gif" alt="record" /></p>
@@ -2498,25 +2498,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
 <span class="boring">    sleep(Duration::from_secs(2)).await;
-</span>    dbg!(&quot;here!&quot;);
+</span>    dbg!("here!");
     world.cat.feed();
 }
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2526,7 +2526,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/output/terminal.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_terminal_custom_bad.gif" alt="record" /></p>
@@ -2560,25 +2560,25 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
-</span><span class="boring">    dbg!(&quot;here!&quot;);    
+</span><span class="boring">    dbg!("here!");    
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2594,7 +2594,7 @@ async fn main() {
                 .summarized()
                 .assert_normalized(),
         )
-        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal.feature")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_custom.gif" alt="record" /></p>
@@ -2617,24 +2617,24 @@ use tokio::time;
 #[derive(cucumber::World, Debug, Default)]
 struct World;
 
-#[given(regex = r&quot;(\d+) secs?&quot;)]
-#[when(regex = r&quot;(\d+) secs?&quot;)]
-#[then(regex = r&quot;(\d+) secs?&quot;)]
+#[given(regex = r"(\d+) secs?")]
+#[when(regex = r"(\d+) secs?")]
+#[then(regex = r"(\d+) secs?")]
 async fn sleep(_: &amp;mut World, secs: u64) {
     static ID: AtomicUsize = AtomicUsize::new(0);
 
     let id = ID.fetch_add(1, Ordering::Relaxed);
 
-    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    tracing::info!("before {secs}s sleep: {id}");
     time::sleep(Duration::from_secs(secs)).await;
-    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+    tracing::info!("after {secs}s sleep: {id}");
 }
 
 #[tokio::main]
 async fn main() {
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/tracing_basic_writer.gif" alt="record" /></p>
@@ -2664,25 +2664,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2693,7 +2693,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_failed()
-        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_failed.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_repeat_failed.feature")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
@@ -2721,25 +2721,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -2750,14 +2750,14 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_skipped()
-        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_skipped.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_repeat_skipped.feature")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/output_terminal_repeat_skipped.gif" alt="record" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["output-junit"] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2771,17 +2771,17 @@ async fn main() {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!(&quot;{}/junit.xml&quot;, env!(&quot;OUT_DIR&quot;))))?;
+</span>let file = fs::File::create(dbg!(format!("{}/junit.xml", env!("OUT_DIR"))))?;
 World::cucumber()
     .with_writer(writer::JUnit::new(file, 0))
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["output-json"] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -2795,10 +2795,10 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!(&quot;{}/report.json&quot;, env!(&quot;OUT_DIR&quot;))))?;
+</span>let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -2815,7 +2815,7 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(format!(&quot;{}/report.xml&quot;, env!(&quot;OUT_DIR&quot;)))?;
+</span>let file = fs::File::create(format!("{}/report.xml", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         // NOTE: `Writer`s pipeline is constructed in a reversed order.
@@ -2824,7 +2824,7 @@ World::cucumber()
             .tee::&lt;World, _&gt;(writer::JUnit::for_tee(file, 0)) // Then, output to XML file.
             .normalized()       // First, normalize events order.
     )
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -2841,7 +2841,7 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+</span>let file = fs::File::create(format!("{}/report.txt", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         writer::Basic::raw(
@@ -2857,7 +2857,7 @@ World::cucumber()
             .summarized()
             .normalized(),
     )
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -2890,7 +2890,7 @@ let cli = cli::Opts {
     custom: cli.custom,
 };
 
-let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+let file = fs::File::create(format!("{}/report.txt", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         writer::Basic::raw(
@@ -2907,7 +2907,7 @@ World::cucumber()
             .normalized(),
     )
     .with_cli(cli) // Supply the parsed `cli::Opts`.
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -2928,24 +2928,24 @@ use tokio::time;
 #[derive(cucumber::World, Debug, Default)]
 struct World;
 
-#[given(regex = r&quot;(\d+) secs?&quot;)]
-#[when(regex = r&quot;(\d+) secs?&quot;)]
-#[then(regex = r&quot;(\d+) secs?&quot;)]
+#[given(regex = r"(\d+) secs?")]
+#[when(regex = r"(\d+) secs?")]
+#[then(regex = r"(\d+) secs?")]
 async fn sleep(_: &amp;mut World, secs: u64) {
     static ID: AtomicUsize = AtomicUsize::new(0);
 
     let id = ID.fetch_add(1, Ordering::Relaxed);
 
-    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    tracing::info!("before {secs}s sleep: {id}");
     time::sleep(Duration::from_secs(secs)).await;
-    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+    tracing::info!("after {secs}s sleep: {id}");
 }
 
 #[tokio::main]
 async fn main() {
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/tracing_basic_writer.gif" alt="record" /></p>
@@ -2966,17 +2966,17 @@ async fn main() {
 </span><span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;(\d+) secs?&quot;)]
-</span><span class="boring">#[when(regex = r&quot;(\d+) secs?&quot;)]
-</span><span class="boring">#[then(regex = r&quot;(\d+) secs?&quot;)]
+</span><span class="boring">#[given(regex = r"(\d+) secs?")]
+</span><span class="boring">#[when(regex = r"(\d+) secs?")]
+</span><span class="boring">#[then(regex = r"(\d+) secs?")]
 </span><span class="boring">async fn sleep(_: &amp;mut World, secs: u64) {
 </span><span class="boring">    static ID: AtomicUsize = AtomicUsize::new(0);
 </span><span class="boring">
 </span><span class="boring">    let id = ID.fetch_add(1, Ordering::Relaxed);
 </span><span class="boring">
-</span><span class="boring">    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+</span><span class="boring">    tracing::info!("before {secs}s sleep: {id}");
 </span><span class="boring">    time::sleep(Duration::from_secs(secs)).await;
-</span><span class="boring">    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+</span><span class="boring">    tracing::info!("after {secs}s sleep: {id}");
 </span><span class="boring">}
 </span><span class="boring">
 </span>#[tokio::main]
@@ -2986,14 +2986,14 @@ async fn main() {
         let mut id = 0;
         loop {
             time::sleep(Duration::from_secs(3)).await;
-            tracing::info!(&quot;Background: {id}&quot;);
+            tracing::info!("Background: {id}");
             id += 1;
         }
     });
 
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="output/../rec/tracing_outside_span.gif" alt="record" /></p>
@@ -3004,7 +3004,7 @@ async fn main() {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="intellij-rust-libtest-integration"><a class="header" href="#intellij-rust-libtest-integration">IntelliJ Rust (<code>libtest</code>) integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["libtest"] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -3018,7 +3018,7 @@ async fn main() {
 </span><span class="boring">async fn main() {
 </span>World::cucumber()
     .with_writer(writer::Libtest::or_basic())
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">}</span></code></pre></pre>
 <p><img src="output/../rec/output_intellij.gif" alt="record" /></p>
@@ -3032,7 +3032,7 @@ async fn main() {
 <blockquote>
 <p><strong>TIP</strong>: In the multi-crate <a href="https://doc.rust-lang.org/cargo/reference/workspaces.html">Cargo workspace</a>, to support jump-to-definition in the reported paths (<a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> or its matcher definition) correctly, consider to define <a href="https://github.com/rust-lang/cargo/issues/3946#issuecomment-973132993"><code>CARGO_WORKSPACE_DIR</code> environment variable in the <code>.cargo/config.toml</code> file</a>:</p>
 <pre><code class="language-toml">[env]
-CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
+CARGO_WORKSPACE_DIR = { value = "", relative = true }
 </code></pre>
 </blockquote>
 <h2 id="libtest-support"><a class="header" href="#libtest-support"><code>libtest</code> support</a></h2>
@@ -3050,7 +3050,7 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 <li><a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html"><code>Writer</code></a>, outputting <a href="https://docs.rs/cucumber/*/cucumber/event/index.html"><code>event</code></a>s (<a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default one</a> outputs to STDOUT).</li>
 </ul>
 <p>Any of these components is replaceable. This makes <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html"><code>Cucumber</code></a> fully extensible, without a need to rewrite the whole library if it doesn't meet some exotic requirements. One could always write its own component, satisfying the needs, and use it. Imagine the situation, where <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s are sourced from distributed queue (like <a href="https://kafka.apache.org">Kafka</a>), then executed by a cluster of external workers (like <a href="https://kubernetes.io/docs/concepts/workloads/controllers/job">Kubernetes <code>Job</code>s</a>), and, finally, results are emitted to different reporting systems by network. All this possible by introducing custom components, capable of doing that, without a need to change the framework.</p>
-<p>To feel a little bit of its taste, we will write some trivial implementations of each component in subchapters below. </p>
+<p>To feel a little bit of its taste, we will write some trivial implementations of each component in subchapters below.</p>
 <ol>
 <li><a href="architecture/parser.html">Custom <code>Parser</code></a></li>
 <li><a href="architecture/runner.html">Custom <code>Runner</code></a></li>
@@ -3085,25 +3085,25 @@ CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -3117,40 +3117,40 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
     type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 
     fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-        let keyword = &quot;Feature&quot;;
-        let name = &quot;Animal feature&quot;;
+        let keyword = "Feature";
+        let name = "Animal feature";
         stream::once(future::ok(gherkin::Feature {
             keyword: keyword.into(),
             name: name.into(),
             description: None,
             background: None,
             scenarios: vec![gherkin::Scenario {
-                keyword: &quot;Scenario&quot;.into(),
-                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+                keyword: "Scenario".into(),
+                name: "If we feed a hungry cat it won't be hungry".into(),
                 description: None,
                 steps: vec![
                     gherkin::Step {
-                        keyword: &quot;Given &quot;.into(),
+                        keyword: "Given ".into(),
                         ty: gherkin::StepType::Given,
-                        value: &quot;a hungry cat&quot;.into(),
+                        value: "a hungry cat".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 18 },
                         position: gherkin::LineCol { line: 3, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;When &quot;.into(),
+                        keyword: "When ".into(),
                         ty: gherkin::StepType::When,
-                        value: &quot;I feed the cat&quot;.into(),
+                        value: "I feed the cat".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 19 },
                         position: gherkin::LineCol { line: 4, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;Then &quot;.into(),
+                        keyword: "Then ".into(),
                         ty: gherkin::StepType::Then,
-                        value: &quot;the cat is not hungry&quot;.into(),
+                        value: "the cat is not hungry".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 26 },
@@ -3175,7 +3175,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
 async fn main() {
     AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference
         .with_parser(CustomParser)
-        .run_and_exit(&quot;tests/features/book&quot;) // path doesn't actually matter 
+        .run_and_exit("tests/features/book") // path doesn't actually matter 
         .await;                              // here due to our implementation
 }</code></pre></pre>
 <p><img src="architecture/../rec/architecture_parser.gif" alt="record" /></p>
@@ -3220,25 +3220,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -3252,40 +3252,40 @@ async fn main() {
 </span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 </span><span class="boring">
 </span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-</span><span class="boring">        let keyword = &quot;Feature&quot;;
-</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        let keyword = "Feature";
+</span><span class="boring">        let name = "Animal feature";
 </span><span class="boring">        stream::once(future::ok(gherkin::Feature {
 </span><span class="boring">            keyword: keyword.into(),
 </span><span class="boring">            name: name.into(),
 </span><span class="boring">            description: None,
 </span><span class="boring">            background: None,
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
-</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
-</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                keyword: "Scenario".into(),
+</span><span class="boring">                name: "If we feed a hungry cat it won't be hungry".into(),
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given &quot;.into(),
+</span><span class="boring">                        keyword: "Given ".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
-</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        value: "a hungry cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When &quot;.into(),
+</span><span class="boring">                        keyword: "When ".into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
-</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        value: "I feed the cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then &quot;.into(),
+</span><span class="boring">                        keyword: "Then ".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
-</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        value: "the cat is not hungry".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
@@ -3321,7 +3321,7 @@ impl CustomRunner {
         step: gherkin::Step,
     ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
         let ev = if let Some((step_fn, captures, loc, ctx)) =
-            Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
+            Self::steps_fns().find(&amp;step).expect("Ambiguous match")
         {
             // Panic represents a failed assertion in a step matching
             // function.
@@ -3347,7 +3347,7 @@ impl CustomRunner {
         scenario: gherkin::Scenario,
     ) -&gt; impl Stream&lt;Item = event::Feature&lt;AnimalWorld&gt;&gt; {
         // Those panic hook shenanigans are done to avoid console messages like
-        // &quot;thread 'main' panicked at ...&quot;
+        // "thread 'main' panicked at ..."
         //
         // 1. We obtain the current panic hook and replace it with an empty one.
         // 2. We run tests, which can panic. In that case we pass all panic info
@@ -3431,7 +3431,7 @@ async fn main() {
     AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference for `CustomParser`
         .with_parser(CustomParser)
         .with_runner(CustomRunner)
-        .run_and_exit(&quot;tests/features/book&quot;)
+        .run_and_exit("tests/features/book")
         .await;
 }</code></pre></pre>
 <p><img src="architecture/../rec/architecture_runner.gif" alt="record" /></p>
@@ -3482,25 +3482,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -3514,40 +3514,40 @@ async fn main() {
 </span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 </span><span class="boring">
 </span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-</span><span class="boring">        let keyword = &quot;Feature&quot;;
-</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        let keyword = "Feature";
+</span><span class="boring">        let name = "Animal feature";
 </span><span class="boring">        stream::once(future::ok(gherkin::Feature {
 </span><span class="boring">            keyword: keyword.into(),
 </span><span class="boring">            name: name.into(),
 </span><span class="boring">            description: None,
 </span><span class="boring">            background: None,
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
-</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
-</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                keyword: "Scenario".into(),
+</span><span class="boring">                name: "If we feed a hungry cat it won't be hungry".into(),
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        keyword: "Given".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
-</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        value: "a hungry cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        keyword: "When".into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
-</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        value: "I feed the cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        keyword: "Then".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
-</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        value: "the cat is not hungry".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
@@ -3582,7 +3582,7 @@ async fn main() {
 </span><span class="boring">        step: gherkin::Step,
 </span><span class="boring">    ) -&gt; (AnimalWorld, event::Step&lt;AnimalWorld&gt;) {
 </span><span class="boring">        let ev = if let Some((step_fn, captures, loc, ctx)) =
-</span><span class="boring">            Self::steps_fns().find(&amp;step).expect(&quot;Ambiguous match&quot;)
+</span><span class="boring">            Self::steps_fns().find(&amp;step).expect("Ambiguous match")
 </span><span class="boring">        {
 </span><span class="boring">            match AssertUnwindSafe(step_fn(&amp;mut world, ctx))
 </span><span class="boring">                .catch_unwind()
@@ -3692,20 +3692,20 @@ impl&lt;W: 'static&gt; cucumber::Writer&lt;W&gt; for CustomWriter {
             Ok(Event { value, .. }) =&gt; match value {
                 event::Cucumber::Feature(feature, ev) =&gt; match ev {
                     event::Feature::Started =&gt; {
-                        println!(&quot;{}: {}&quot;, feature.keyword, feature.name)
+                        println!("{}: {}", feature.keyword, feature.name)
                     }
                     event::Feature::Scenario(scenario, ev) =&gt; match ev.event {
                         event::Scenario::Started =&gt; {
-                            println!(&quot;{}: {}&quot;, scenario.keyword, scenario.name)
+                            println!("{}: {}", scenario.keyword, scenario.name)
                         }
                         event::Scenario::Step(step, ev) =&gt; match ev {
                             event::Step::Started =&gt; {
-                                print!(&quot;{} {}...&quot;, step.keyword, step.value)
+                                print!("{} {}...", step.keyword, step.value)
                             }
-                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
-                            event::Step::Skipped =&gt; println!(&quot;skip&quot;),
+                            event::Step::Passed(..) =&gt; println!("ok"),
+                            event::Step::Skipped =&gt; println!("skip"),
                             event::Step::Failed(_, _, _, err) =&gt; {
-                                println!(&quot;failed: {err}&quot;)
+                                println!("failed: {err}")
                             }
                         },
                         _ =&gt; {}
@@ -3714,7 +3714,7 @@ impl&lt;W: 'static&gt; cucumber::Writer&lt;W&gt; for CustomWriter {
                 },
                 _ =&gt; {}
             },
-            Err(e) =&gt; println!(&quot;Error: {e}&quot;),
+            Err(e) =&gt; println!("Error: {e}"),
         }
     }
 }
@@ -3725,7 +3725,7 @@ async fn main() {
         .with_parser(CustomParser)
         .with_runner(CustomRunner)
         .with_writer(CustomWriter.assert_normalized()) // OK because of `CustomRunner`
-        .run(&quot;tests/features/book&quot;)
+        .run("tests/features/book")
         .await;
 }</code></pre></pre>
 <p><img src="architecture/../rec/architecture_writer_raw.gif" alt="record" /></p>
@@ -3763,25 +3763,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -3795,40 +3795,40 @@ async fn main() {
 </span><span class="boring">    type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 </span><span class="boring">
 </span><span class="boring">    fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-</span><span class="boring">        let keyword = &quot;Feature&quot;;
-</span><span class="boring">        let name = &quot;Animal feature&quot;;
+</span><span class="boring">        let keyword = "Feature";
+</span><span class="boring">        let name = "Animal feature";
 </span><span class="boring">        stream::once(future::ok(gherkin::Feature {
 </span><span class="boring">            keyword: keyword.into(),
 </span><span class="boring">            name: name.into(),
 </span><span class="boring">            description: None,
 </span><span class="boring">            background: None,
 </span><span class="boring">            scenarios: vec![gherkin::Scenario {
-</span><span class="boring">                keyword: &quot;Scenario&quot;.into(),
-</span><span class="boring">                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+</span><span class="boring">                keyword: "Scenario".into(),
+</span><span class="boring">                name: "If we feed a hungry cat it won't be hungry".into(),
 </span><span class="boring">                description: None,
 </span><span class="boring">                steps: vec![
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Given&quot;.into(),
+</span><span class="boring">                        keyword: "Given".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Given,
-</span><span class="boring">                        value: &quot;a hungry cat&quot;.into(),
+</span><span class="boring">                        value: "a hungry cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 18 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 3, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;When&quot;.into(),
+</span><span class="boring">                        keyword: "When".into(),
 </span><span class="boring">                        ty: gherkin::StepType::When,
-</span><span class="boring">                        value: &quot;I feed the cat&quot;.into(),
+</span><span class="boring">                        value: "I feed the cat".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 19 },
 </span><span class="boring">                        position: gherkin::LineCol { line: 4, col: 5 },
 </span><span class="boring">                    },
 </span><span class="boring">                    gherkin::Step {
-</span><span class="boring">                        keyword: &quot;Then&quot;.into(),
+</span><span class="boring">                        keyword: "Then".into(),
 </span><span class="boring">                        ty: gherkin::StepType::Then,
-</span><span class="boring">                        value: &quot;the cat is not hungry&quot;.into(),
+</span><span class="boring">                        value: "the cat is not hungry".into(),
 </span><span class="boring">                        docstring: None,
 </span><span class="boring">                        table: None,
 </span><span class="boring">                        span: gherkin::Span { start: 5, end: 26 },
@@ -3864,20 +3864,20 @@ async fn main() {
 </span><span class="boring">            Ok(Event { value, .. }) =&gt; match value {
 </span><span class="boring">                event::Cucumber::Feature(feature, ev) =&gt; match ev {
 </span><span class="boring">                    event::Feature::Started =&gt; {
-</span><span class="boring">                        println!(&quot;{}: {}&quot;, feature.keyword, feature.name)
+</span><span class="boring">                        println!("{}: {}", feature.keyword, feature.name)
 </span><span class="boring">                    }
 </span><span class="boring">                    event::Feature::Scenario(scenario, ev) =&gt; match ev.event {
 </span><span class="boring">                        event::Scenario::Started =&gt; {
-</span><span class="boring">                            println!(&quot;{}: {}&quot;, scenario.keyword, scenario.name)
+</span><span class="boring">                            println!("{}: {}", scenario.keyword, scenario.name)
 </span><span class="boring">                        }
 </span><span class="boring">                        event::Scenario::Step(step, ev) =&gt; match ev {
 </span><span class="boring">                            event::Step::Started =&gt; {
-</span><span class="boring">                                print!(&quot;{} {}...&quot;, step.keyword, step.value)
+</span><span class="boring">                                print!("{} {}...", step.keyword, step.value)
 </span><span class="boring">                            }
-</span><span class="boring">                            event::Step::Passed(..) =&gt; println!(&quot;ok&quot;),
-</span><span class="boring">                            event::Step::Skipped =&gt; println!(&quot;skip&quot;),
+</span><span class="boring">                            event::Step::Passed(..) =&gt; println!("ok"),
+</span><span class="boring">                            event::Step::Skipped =&gt; println!("skip"),
 </span><span class="boring">                            event::Step::Failed(_, _, _, err) =&gt; {
-</span><span class="boring">                                println!(&quot;failed: {err}&quot;, )
+</span><span class="boring">                                println!("failed: {err}", )
 </span><span class="boring">                            }
 </span><span class="boring">                        },
 </span><span class="boring">                        _ =&gt; {}
@@ -3886,7 +3886,7 @@ async fn main() {
 </span><span class="boring">                },
 </span><span class="boring">                _ =&gt; {}
 </span><span class="boring">            },
-</span><span class="boring">            Err(e) =&gt; println!(&quot;Error: {e}&quot;),
+</span><span class="boring">            Err(e) =&gt; println!("Error: {e}"),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -3896,12 +3896,12 @@ async fn main() {
     AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference for `CustomParser`
         .with_parser(CustomParser)
         .with_writer(CustomWriter.normalized()) // wrapping into `writer::Normalize`,
-        .run(&quot;tests/features/book&quot;)             // so it works OK with the default
+        .run("tests/features/book")             // so it works OK with the default
         .await;                                 // concurrent `Runner`
 }</code></pre></pre>
 <p><img src="architecture/../rec/architecture_writer_normalized.gif" alt="record" /></p>
 <blockquote>
-<p><strong>NOTE</strong>: <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a>s are easily pipelined. See <a href="https://docs.rs/cucumber/*/cucumber/trait.WriterExt.html"><code>WriterExt</code></a> trait and <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>writer</code></a> module for more <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> machinery &quot;included batteries&quot;.</p>
+<p><strong>NOTE</strong>: <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a>s are easily pipelined. See <a href="https://docs.rs/cucumber/*/cucumber/trait.WriterExt.html"><code>WriterExt</code></a> trait and <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>writer</code></a> module for more <a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> machinery "included batteries".</p>
 </blockquote>
 
                     </main>

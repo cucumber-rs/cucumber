@@ -198,21 +198,21 @@
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 async fn feed_cat(_: &amp;mut AnimalWorld) {}
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -222,21 +222,21 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/output/terminal_verbose.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/output_terminal_verbose_1.gif" alt="record" /></p>
-<p>This is intended to help debugging failed tests. </p>
+<p>This is intended to help debugging failed tests.</p>
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
 <p>By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, outputting <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> of <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s is omitted. To include them into the output use <code>-vvv</code> CLI option:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
     
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;
+      """
       A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
@@ -264,25 +264,25 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -292,7 +292,7 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;tests/features/book/output/terminal_verbose.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_verbose.feature")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/output_terminal_verbose_2.gif" alt="record" /></p>
@@ -322,25 +322,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -350,7 +350,7 @@ async fn main() {
 </span>#[tokio::main]
 async fn main() {
     AnimalWorld::cucumber()
-        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal.feature")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/output_terminal_color.gif" alt="record" /></p>
@@ -386,25 +386,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
 <span class="boring">    sleep(Duration::from_secs(2)).await;
-</span>    dbg!(&quot;here!&quot;);
+</span>    dbg!("here!");
     world.cat.feed();
 }
 <span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -414,7 +414,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/output/terminal.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/output_terminal_custom_bad.gif" alt="record" /></p>
@@ -448,25 +448,25 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
-</span><span class="boring">    dbg!(&quot;here!&quot;);    
+</span><span class="boring">    dbg!("here!");    
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -482,7 +482,7 @@ async fn main() {
                 .summarized()
                 .assert_normalized(),
         )
-        .run_and_exit(&quot;tests/features/book/output/terminal.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal.feature")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/output_terminal_custom.gif" alt="record" /></p>
@@ -505,24 +505,24 @@ use tokio::time;
 #[derive(cucumber::World, Debug, Default)]
 struct World;
 
-#[given(regex = r&quot;(\d+) secs?&quot;)]
-#[when(regex = r&quot;(\d+) secs?&quot;)]
-#[then(regex = r&quot;(\d+) secs?&quot;)]
+#[given(regex = r"(\d+) secs?")]
+#[when(regex = r"(\d+) secs?")]
+#[then(regex = r"(\d+) secs?")]
 async fn sleep(_: &amp;mut World, secs: u64) {
     static ID: AtomicUsize = AtomicUsize::new(0);
 
     let id = ID.fetch_add(1, Ordering::Relaxed);
 
-    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    tracing::info!("before {secs}s sleep: {id}");
     time::sleep(Duration::from_secs(secs)).await;
-    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+    tracing::info!("after {secs}s sleep: {id}");
 }
 
 #[tokio::main]
 async fn main() {
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/tracing_basic_writer.gif" alt="record" /></p>
@@ -552,25 +552,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -581,7 +581,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_failed()
-        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_failed.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_repeat_failed.feature")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/output_terminal_repeat_failed.gif" alt="record" /></p>
@@ -609,25 +609,25 @@ async fn main() {
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -638,7 +638,7 @@ async fn main() {
 async fn main() {
     AnimalWorld::cucumber()
         .repeat_skipped()
-        .run_and_exit(&quot;tests/features/book/output/terminal_repeat_skipped.feature&quot;)
+        .run_and_exit("tests/features/book/output/terminal_repeat_skipped.feature")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/output_terminal_repeat_skipped.gif" alt="record" /></p>

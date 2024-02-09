@@ -190,24 +190,24 @@ use tokio::time;
 #[derive(cucumber::World, Debug, Default)]
 struct World;
 
-#[given(regex = r&quot;(\d+) secs?&quot;)]
-#[when(regex = r&quot;(\d+) secs?&quot;)]
-#[then(regex = r&quot;(\d+) secs?&quot;)]
+#[given(regex = r"(\d+) secs?")]
+#[when(regex = r"(\d+) secs?")]
+#[then(regex = r"(\d+) secs?")]
 async fn sleep(_: &amp;mut World, secs: u64) {
     static ID: AtomicUsize = AtomicUsize::new(0);
 
     let id = ID.fetch_add(1, Ordering::Relaxed);
 
-    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+    tracing::info!("before {secs}s sleep: {id}");
     time::sleep(Duration::from_secs(secs)).await;
-    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+    tracing::info!("after {secs}s sleep: {id}");
 }
 
 #[tokio::main]
 async fn main() {
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/tracing_basic_writer.gif" alt="record" /></p>
@@ -228,17 +228,17 @@ async fn main() {
 </span><span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;(\d+) secs?&quot;)]
-</span><span class="boring">#[when(regex = r&quot;(\d+) secs?&quot;)]
-</span><span class="boring">#[then(regex = r&quot;(\d+) secs?&quot;)]
+</span><span class="boring">#[given(regex = r"(\d+) secs?")]
+</span><span class="boring">#[when(regex = r"(\d+) secs?")]
+</span><span class="boring">#[then(regex = r"(\d+) secs?")]
 </span><span class="boring">async fn sleep(_: &amp;mut World, secs: u64) {
 </span><span class="boring">    static ID: AtomicUsize = AtomicUsize::new(0);
 </span><span class="boring">
 </span><span class="boring">    let id = ID.fetch_add(1, Ordering::Relaxed);
 </span><span class="boring">
-</span><span class="boring">    tracing::info!(&quot;before {secs}s sleep: {id}&quot;);
+</span><span class="boring">    tracing::info!("before {secs}s sleep: {id}");
 </span><span class="boring">    time::sleep(Duration::from_secs(secs)).await;
-</span><span class="boring">    tracing::info!(&quot;after {secs}s sleep: {id}&quot;);
+</span><span class="boring">    tracing::info!("after {secs}s sleep: {id}");
 </span><span class="boring">}
 </span><span class="boring">
 </span>#[tokio::main]
@@ -248,14 +248,14 @@ async fn main() {
         let mut id = 0;
         loop {
             time::sleep(Duration::from_secs(3)).await;
-            tracing::info!(&quot;Background: {id}&quot;);
+            tracing::info!("Background: {id}");
             id += 1;
         }
     });
 
     World::cucumber()
         .init_tracing()
-        .run(&quot;tests/features/wait&quot;)
+        .run("tests/features/wait")
         .await;
 }</code></pre></pre>
 <p><img src="../rec/tracing_outside_span.gif" alt="record" /></p>

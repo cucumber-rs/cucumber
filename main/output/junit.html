@@ -176,7 +176,7 @@
                         <h1 id="junit-xml-report"><a class="header" href="#junit-xml-report">JUnit XML report</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result as a <a href="https://llg.cubic.org/docs/junit">JUnit XML report</a>.</p>
 <p>This requires <code>output-junit</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-junit&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["output-junit"] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.JUnit.html"><code>writer::JUnit</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -190,10 +190,10 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!(&quot;{}/junit.xml&quot;, env!(&quot;OUT_DIR&quot;))))?;
+</span>let file = fs::File::create(dbg!(format!("{}/junit.xml", env!("OUT_DIR"))))?;
 World::cucumber()
     .with_writer(writer::JUnit::new(file, 0))
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>

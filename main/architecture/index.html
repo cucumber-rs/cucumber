@@ -181,7 +181,7 @@
 <li><a href="https://docs.rs/cucumber/*/cucumber/trait.Writer.html"><code>Writer</code></a>, outputting <a href="https://docs.rs/cucumber/*/cucumber/event/index.html"><code>event</code></a>s (<a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default one</a> outputs to STDOUT).</li>
 </ul>
 <p>Any of these components is replaceable. This makes <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html"><code>Cucumber</code></a> fully extensible, without a need to rewrite the whole library if it doesn't meet some exotic requirements. One could always write its own component, satisfying the needs, and use it. Imagine the situation, where <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s are sourced from distributed queue (like <a href="https://kafka.apache.org">Kafka</a>), then executed by a cluster of external workers (like <a href="https://kubernetes.io/docs/concepts/workloads/controllers/job">Kubernetes <code>Job</code>s</a>), and, finally, results are emitted to different reporting systems by network. All this possible by introducing custom components, capable of doing that, without a need to change the framework.</p>
-<p>To feel a little bit of its taste, we will write some trivial implementations of each component in subchapters below. </p>
+<p>To feel a little bit of its taste, we will write some trivial implementations of each component in subchapters below.</p>
 <ol>
 <li><a href="parser.html">Custom <code>Parser</code></a></li>
 <li><a href="runner.html">Custom <code>Runner</code></a></li>

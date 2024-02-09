@@ -216,19 +216,19 @@ pub struct AnimalWorld {
     animals: HashMap&lt;String, Animal&gt;,
 }
 
-#[given(regex = r&quot;^a (hungry|satiated) (\S+)$&quot;)]
+#[given(regex = r"^a (hungry|satiated) (\S+)$")]
 async fn hungry_animal(world: &amp;mut AnimalWorld, state: String, which: String) {
     sleep(Duration::from_secs(2)).await;
 
     world.animals.entry(which).or_insert(Animal::default()).hungry =
         match state.as_str() {
-            &quot;hungry&quot; =&gt; true,
-            &quot;satiated&quot; =&gt; false,
+            "hungry" =&gt; true,
+            "satiated" =&gt; false,
             _ =&gt; unreachable!(),
         };
 }
 
-#[when(expr = &quot;I feed the {word} {int} time(s)&quot;)]
+#[when(expr = "I feed the {word} {int} time(s)")]
 async fn feed_animal(world: &amp;mut AnimalWorld, which: String, times: usize) {
     sleep(Duration::from_secs(2)).await;
 
@@ -237,7 +237,7 @@ async fn feed_animal(world: &amp;mut AnimalWorld, which: String, times: usize) {
     }
 }
 
-#[then(expr = &quot;the {word} is not hungry&quot;)]
+#[then(expr = "the {word} is not hungry")]
 async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
     sleep(Duration::from_secs(2)).await;
 
@@ -246,7 +246,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/scenario_outline.feature&quot;)
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/scenario_outline.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
