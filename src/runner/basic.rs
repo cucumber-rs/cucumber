@@ -1003,6 +1003,8 @@ async fn execute<W, Before, After>(
                     coll.start_scenarios(&runnable);
                 }
                 async {
+                    // Cannot annotate `async` block with `-> !`.
+                    #[allow(clippy::infinite_loop)]
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -2240,6 +2242,7 @@ impl Features {
 
         let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
+        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
         for (which, values) in scenarios {
             for (id, f, r, s, ret) in values {
                 match ret {
@@ -2269,6 +2272,7 @@ impl Features {
 
         let mut storage = self.scenarios.lock().await;
 
+        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
         for (which, values) in with_retries {
             let ty_storage = storage.entry(which).or_default();
             for (id, f, r, s, ret) in values {
@@ -2277,8 +2281,9 @@ impl Features {
         }
 
         if without_retries.get(&ScenarioType::Serial).is_none() {
-            // If there are no Serial Scenarios we just extending already
-            // existing Concurrent Scenarios.
+            // If there are no Serial Scenarios, we just extend already existing
+            // Concurrent Scenarios.
+            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
             for (which, values) in without_retries {
                 storage.entry(which).or_default().extend(values);
             }
@@ -2287,6 +2292,7 @@ impl Features {
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
+            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
             for (which, mut values) in without_retries {
                 let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
