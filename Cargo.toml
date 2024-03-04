@@ -89,7 +89,7 @@ cucumber-expressions = { version = "0.3", features = ["into-regex"], optional = 
 inventory = { version = "0.3", optional = true }
 
 # "output-json" and/or "libtest" features dependencies.
-base64 = { version = "0.21", optional = true }
+base64 = { version = "0.22", optional = true }
 Inflector = { version = "0.11", default-features = false, optional = true }
 mime = { version = "0.3.16", optional = true }
 serde = { version = "1.0.103", features = ["derive"], optional = true }
