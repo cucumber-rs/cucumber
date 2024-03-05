@@ -148,8 +148,6 @@
     unused_results,
     variant_size_differences
 )]
-// TODO: Remove once upgraded to 1.78 Rust (merged into `dead_code`).
-#![cfg_attr(not(docsrs), warn(unused_tuple_struct_fields))]
 
 mod attribute;
 mod parameter;
