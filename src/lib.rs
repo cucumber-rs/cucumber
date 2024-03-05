@@ -147,9 +147,10 @@
     unused_lifetimes,
     unused_qualifications,
     unused_results,
-    unused_tuple_struct_fields,
     variant_size_differences
 )]
+// TODO: Remove once upgraded to 1.78 Rust (merged into `dead_code`).
+#![cfg_attr(not(docsrs), warn(unused_tuple_struct_fields))]
 // TODO: Remove on next `derive_more` major version.
 #![allow(clippy::uninlined_format_args)]
 

@@ -16,7 +16,7 @@ use cucumber_expressions::{Expression, Parameter, SingleExpression, Spanned};
 use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use regex::{self, Regex};
+use regex::Regex;
 use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
