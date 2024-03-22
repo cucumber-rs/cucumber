@@ -218,7 +218,6 @@ mod spec {
             }
 
             #[automatically_derived]
-            #[::cucumber::codegen::async_trait(?Send)]
             impl ::cucumber::World for World {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
@@ -348,7 +347,6 @@ mod spec {
             }
 
             #[automatically_derived]
-            #[::cucumber::codegen::async_trait(?Send)]
             impl<T> ::cucumber::World for World<T> {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
@@ -479,7 +477,6 @@ mod spec {
             }
 
             #[automatically_derived]
-            #[::cucumber::codegen::async_trait(?Send)]
             impl<T> ::cucumber::World for World<T> {
                 type Error = ::cucumber::codegen::anyhow::Error;
 
