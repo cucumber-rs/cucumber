@@ -119,7 +119,6 @@ impl Definition {
 
         quote! {
             #[automatically_derived]
-            #[::cucumber::codegen::async_trait(?Send)]
             impl #impl_gens ::cucumber::World for #world #ty_gens
                  #where_clause
             {

@@ -112,12 +112,9 @@ pub const fn str_eq(l: &str, r: &str) -> bool {
 /// argument, by automatically wrapping sync functions in a [`future::Ready`].
 ///
 /// ```rust
-/// # use async_trait::async_trait;
-/// #
 /// # #[derive(Default)]
 /// # struct World;
 /// #
-/// #[async_trait(?Send)]
 /// impl cucumber::World for World {
 ///     type Error = anyhow::Error;
 ///
@@ -180,12 +177,9 @@ where
 /// functions in a [`Result`]`<`[`World`]`, `[`Infallible`]`>`.
 ///
 /// ```rust
-/// # use async_trait::async_trait;
-/// #
 /// # #[derive(Default)]
 /// # struct World;
 /// #
-/// #[async_trait(?Send)]
 /// impl cucumber::World for World {
 ///     type Error = anyhow::Error;
 ///
