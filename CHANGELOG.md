@@ -6,6 +6,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.21.0] · 2024-??-?? (unreleased)
+[0.21.0]: /../../tree/v0.21.0
+
+[Diff](/../../compare/v0.20.2...v0.21.0) | [Milestone](/../../milestone/26)
+
+### BC Breaks
+
+- Removed `#[async_trait]` attribute from `World` traits. ([#324])
+- Bumped up [MSRV] to 1.75 for using `async fn` in traits. ([#324])
+
+[#324]: /../../pull/324
+
+
+
+
 ## [0.20.2] · 2023-12-04
 [0.20.2]: /../../tree/v0.20.2
 
