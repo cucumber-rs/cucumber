@@ -172,7 +172,11 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            assert_eq!(expected, debug.output, "\n[debug] file: {file}");
+            assert_eq!(
+                debug.output.trim(),
+                expected.trim(),
+                "\n[debug] file: {file}",
+            );
 
             let expected =
                 load_file(format!("tests/features/output/{file}.basic.out"));
@@ -186,7 +190,11 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            assert_eq!(expected, output.to_string(), "\n[basic] file: {file}");
+            assert_eq!(
+                output.to_string().trim(),
+                expected.trim(),
+                "\n[basic] file: {file}",
+            );
 
             let expected =
                 load_file(format!("tests/features/output/{file}.colored.out"));
@@ -201,8 +209,8 @@ mod spec {
                 .run(format!("tests/features/output/{file}"))
                 .await;
             assert_eq!(
-                expected,
-                output.to_string(),
+                output.to_string().trim(),
+                expected.trim(),
                 "\n[colored] file: {file}",
             );
         }

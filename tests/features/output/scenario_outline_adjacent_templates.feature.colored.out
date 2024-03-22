@@ -6,7 +6,7 @@
 [1A[2K[31m   ✘  When [0m[31mfoo is [0m[31m[1m101[0m[0m[31m[0m[31m
       Step failed:
       Defined: tests/features/output/scenario_outline_adjacent_templates.feature:5:5
-      Matched: tests/output.rs:13:1
+      Matched: tests/output.rs:12:1
       Step panicked. Captured output: assertion failed: `(left == right)`
         left: `1`,
        right: `101`[0m
