@@ -10,9 +10,8 @@
 
 //! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
-use std::{hash::Hash, mem, sync::Arc};
+use std::{future::Future, hash::Hash, mem, sync::Arc};
 
-use async_trait::async_trait;
 use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
@@ -418,7 +417,6 @@ impl FinishedState {
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[async_trait(?Send)]
 trait Emitter<World> {
     /// Currently outputted key and value from this [`Queue`].
     type Current;
@@ -460,12 +458,12 @@ trait Emitter<World> {
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    async fn emit<W: Writer<World>>(
+    fn emit<W: Writer<World>>(
         self,
         path: Self::EmittedPath,
         writer: &mut W,
         cli: &W::Cli,
-    ) -> Option<Self::Emitted>;
+    ) -> impl Future<Output = Option<Self::Emitted>>;
 }
 
 /// [`Queue`] of all incoming events.
@@ -540,7 +538,6 @@ impl<World> CucumberQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
     type Current = (Arc<gherkin::Feature>, &'me mut FeatureQueue<World>);
     type Emitted = Arc<gherkin::Feature>;
@@ -555,7 +552,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 
     async fn emit<W: Writer<World>>(
         self,
-        _: (),
+        (): (),
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
@@ -686,7 +683,6 @@ impl<World> FeatureQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
     type Current = NextRuleOrScenario<'me, World>;
     type Emitted = RuleOrScenario;
@@ -729,7 +725,6 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 type RulesQueue<World> =
     Queue<(Arc<gherkin::Scenario>, Option<Retries>), ScenariosQueue<World>>;
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
     type Current = (Arc<gherkin::Scenario>, &'me mut ScenariosQueue<World>);
     type Emitted = Arc<gherkin::Rule>;
@@ -813,7 +808,6 @@ impl<World> ScenariosQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
     type Current = Event<event::RetryableScenario<World>>;
     type Emitted = (Arc<gherkin::Scenario>, Option<Retries>);
