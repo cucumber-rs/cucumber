@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Removed `#[async_trait]` attribute from `World` traits. ([#324])
+- Removed `#[async_trait]` attribute from `World`, `Writer` and `writer::Arbitrary` traits. ([#324])
 - Bumped up [MSRV] to 1.75 for using `async fn` in traits. ([#324])
 
 [#324]: /../../pull/324

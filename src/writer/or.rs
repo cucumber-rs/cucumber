@@ -10,8 +10,6 @@
 
 //! Passing events to one of two [`Writer`]s based on a predicate.
 
-use async_trait::async_trait;
-
 use crate::{cli, event, parser, writer, Event, World, Writer};
 
 /// Wrapper for passing events to one of two [`Writer`]s based on a predicate.
@@ -57,7 +55,6 @@ impl<L, R, F> Or<L, R, F> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
 impl<W, L, R, F> Writer<W> for Or<L, R, F>
 where
     W: World,

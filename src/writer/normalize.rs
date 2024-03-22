@@ -79,7 +79,6 @@ impl<W, Writer> Normalize<W, Writer> {
     }
 }
 
-#[async_trait(?Send)]
 impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
     type Cli = Wr::Cli;
 
@@ -153,16 +152,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Normalize<W, Wr>
+impl<W, Wr, Val> writer::Arbitrary<W, Val> for Normalize<W, Wr>
 where
-    Wr: writer::Arbitrary<'val, W, Val>,
-    Val: 'val,
+    Wr: writer::Arbitrary<W, Val>,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.writer.write(val).await;
     }
 }
@@ -261,7 +255,6 @@ impl<Writer> AssertNormalized<Writer> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
     type Cli = Wr::Cli;
 
@@ -275,17 +268,12 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for AssertNormalized<Wr>
+impl<W, Wr, Val> writer::Arbitrary<W, Val> for AssertNormalized<Wr>
 where
     W: World,
-    Val: 'val,
-    Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
+    Wr: writer::Arbitrary<W, Val> + ?Sized,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.0.write(val).await;
     }
 }

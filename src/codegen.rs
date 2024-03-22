@@ -17,7 +17,6 @@ use futures::future;
 use crate::{step, Step, World};
 
 pub use anyhow;
-pub use async_trait::async_trait;
 pub use cucumber_expressions::{
     expand::parameters::Provider as ParametersProvider, Expression, Spanned,
 };

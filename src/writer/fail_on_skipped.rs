@@ -16,7 +16,6 @@
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{event, parser, writer, Event, World, Writer};
@@ -48,7 +47,6 @@ pub struct FailOnSkipped<W, F = SkipFn> {
 pub type SkipFn =
     fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario) -> bool;
 
-#[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for FailOnSkipped<Wr, F>
 where
     W: World,
@@ -152,19 +150,13 @@ where
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val>
-    for FailOnSkipped<Wr, F>
+impl<W, Wr, Val, F> writer::Arbitrary<W, Val> for FailOnSkipped<Wr, F>
 where
     W: World,
     Self: Writer<W>,
-    Wr: writer::Arbitrary<'val, W, Val>,
-    Val: 'val,
+    Wr: writer::Arbitrary<W, Val>,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.writer.write(val).await;
     }
 }

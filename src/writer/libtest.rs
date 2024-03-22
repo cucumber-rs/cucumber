@@ -19,7 +19,6 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use async_trait::async_trait;
 use derive_more::From;
 use either::Either;
 use itertools::Itertools as _;
@@ -223,7 +222,6 @@ impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
     }
 }
 
-#[async_trait(?Send)]
 impl<W: World + Debug, Out: io::Write> Writer<W> for Libtest<W, Out> {
     type Cli = Cli;
 
@@ -813,20 +811,16 @@ where
     }
 }
 
-#[async_trait(?Send)]
-impl<'val, W, Val, Out> Arbitrary<'val, W, Val> for Libtest<W, Out>
+impl<W, Val, Out> Arbitrary<W, Val> for Libtest<W, Out>
 where
     W: World + Debug,
-    Val: AsRef<str> + 'val,
+    Val: AsRef<str>,
     Out: io::Write,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.output
             .write_line(val.as_ref())
-            .unwrap_or_else(|e| panic!("Failed to write: {e}"));
+            .unwrap_or_else(|e| panic!("failed to write: {e}"));
     }
 }
 

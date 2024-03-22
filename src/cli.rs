@@ -182,7 +182,6 @@ impl Colored for Empty {}
 /// This struct is especially useful, when implementing custom [`Writer`]
 /// wrapping another one:
 /// ```rust
-/// # use async_trait::async_trait;
 /// # use cucumber::{cli, event, parser, writer, Event, World, Writer};
 /// #
 /// struct CustomWriter<Wr>(Wr);
@@ -193,7 +192,6 @@ impl Colored for Empty {}
 ///     custom_option: Option<String>,
 /// }
 ///
-/// #[async_trait(?Send)]
 /// impl<W, Wr> Writer<W> for CustomWriter<Wr>
 /// where
 ///     W: World,
@@ -216,17 +214,12 @@ impl Colored for Empty {}
 ///
 /// impl cli::Colored for Cli {}
 ///
-/// #[async_trait(?Send)]
-/// impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for CustomWriter<Wr>
+/// impl<W, Wr, Val> writer::Arbitrary<W, Val> for CustomWriter<Wr>
 /// where
-///     Wr: writer::Arbitrary<'val, W, Val>,
-///     Val: 'val,
+///     Wr: writer::Arbitrary<W, Val>,
 ///     Self: Writer<W>,
 /// {
-///     async fn write(&mut self, val: Val)
-///     where
-///         'val: 'async_trait,
-///     {
+///     async fn write(&mut self, val: Val) {
 ///         self.0.write(val).await;
 ///     }
 /// }

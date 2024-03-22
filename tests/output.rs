@@ -1,6 +1,5 @@
 use std::{borrow::Cow, fmt::Debug, mem};
 
-use async_trait::async_trait;
 use cucumber::{cli, event, given, parser, then, when, Event, Writer};
 use lazy_regex::regex;
 use once_cell::sync::Lazy;
@@ -26,7 +25,6 @@ struct DebugWriter {
     first_line_printed: bool,
 }
 
-#[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     type Cli = cli::Empty;
 

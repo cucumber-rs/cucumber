@@ -6,7 +6,6 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 [`Writer`] represents anything that consumes a [`Stream`] of [cucumber events][`event::Cucumber`].
 
 ```rust
-# extern crate async_trait;
 # extern crate cucumber;
 # extern crate futures;
 # extern crate once_cell;
@@ -19,7 +18,6 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #     time::Duration,
 # };
 #
-# use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, step, then, when, Event, World,
 #     WriterExt as _,
@@ -244,7 +242,6 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #
 struct CustomWriter;
 
-#[async_trait(?Send)]
 impl<W: 'static> cucumber::Writer<W> for CustomWriter {
     type Cli = cli::Empty; // we provide no CLI options
 
@@ -299,14 +296,12 @@ async fn main() {
 > __TIP__: `CustomWriter` will print trash if we feed unordered [`event::Cucumber`]s into it. Though, we shouldn't care about order normalization in our implementations. Instead, we may just wrap `CustomWriter` into [`writer::Normalize`], which will do that for us.
 
 ```rust
-# extern crate async_trait;
 # extern crate cucumber;
 # extern crate futures;
 # extern crate tokio;
 #
 # use std::{path::PathBuf, time::Duration};
 #
-# use async_trait::async_trait;
 # use cucumber::{
 #     cli, event, gherkin, given, parser, then, when, Event, World, 
 #     WriterExt as _,
@@ -418,7 +413,6 @@ async fn main() {
 #
 # struct CustomWriter;
 #
-# #[async_trait(?Send)]
 # impl<W: 'static> cucumber::Writer<W> for CustomWriter {
 #     type Cli = cli::Empty; // we provide no CLI options
 #
