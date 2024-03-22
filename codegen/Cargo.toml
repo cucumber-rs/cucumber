@@ -31,7 +31,6 @@ syn = { version = "2.0", features = ["derive", "extra-traits", "full"] }
 synthez = "0.3"
 
 [dev-dependencies]
-async-trait = "0.1"
 cucumber = { path = "..", features = ["libtest", "macros"] }
 derive_more = "0.99.17"
 futures = "0.3.17"
