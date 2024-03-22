@@ -452,8 +452,7 @@ impl<Writer> Summarize<Writer> {
                 let is_retried = self
                     .handled_scenarios
                     .get(&path)
-                    .map(|indicator| matches!(indicator, Indicator::Retried))
-                    .unwrap_or_default();
+                    .is_some_and(|ind| matches!(ind, Indicator::Retried));
 
                 if !is_retried && self.handled_scenarios.remove(&path).is_none()
                 {

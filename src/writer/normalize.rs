@@ -852,7 +852,7 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
 
             let ev = meta.wrap(event::Cucumber::scenario(
                 Arc::clone(&feature),
-                rule.as_ref().map(Arc::clone),
+                rule.clone(),
                 Arc::clone(&scenario),
                 ev,
             ));

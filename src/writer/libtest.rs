@@ -651,12 +651,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 }
             }
             Step::Failed(_, loc, world, err) => {
-                if retries
-                    .map(|r| {
-                        r.left > 0 && !matches!(err, event::StepError::NotFound)
-                    })
-                    .unwrap_or_default()
-                {
+                if retries.is_some_and(|r| {
+                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                }) {
                     self.retried += 1;
                 } else {
                     self.failed += 1;
@@ -1017,7 +1014,6 @@ impl TestEventInner {
     }
 
     /// Adds a [`TestEventInner::stdout`].
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     fn with_stdout(mut self, stdout: String) -> Self {
         self.stdout = Some(stdout);
         self

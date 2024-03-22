@@ -532,7 +532,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
     where
@@ -576,7 +575,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn retry_options<R>(mut self, func: R) -> Self
     where
@@ -598,7 +596,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
     where
@@ -650,7 +647,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
     where
@@ -695,7 +691,6 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Sets the given [`Collection`] of [`Step`]s to this [`Runner`].
     ///
     /// [`Collection`]: step::Collection
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn steps(mut self, steps: step::Collection<World>) -> Self {
         self.steps = steps;
@@ -1457,7 +1452,7 @@ where
         if let Some(hook) = self.before_hook.as_ref() {
             self.send_event(event::Cucumber::scenario(
                 Arc::clone(feature),
-                rule.map(Arc::clone),
+                rule.cloned(),
                 Arc::clone(scenario),
                 event::Scenario::hook_started(HookType::Before)
                     .with_retries(retries),
@@ -1500,7 +1495,7 @@ where
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
                         Arc::clone(feature),
-                        rule.map(Arc::clone),
+                        rule.cloned(),
                         Arc::clone(scenario),
                         event::Scenario::hook_passed(HookType::Before)
                             .with_retries(retries),

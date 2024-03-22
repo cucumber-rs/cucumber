@@ -523,7 +523,7 @@ impl<'p> Parameters<'p> {
                     Ok(res) => res,
                     Err(err) => return Some(Err(err)),
                 };
-                let is_step = step.map(|s| s == ident).unwrap_or_default();
+                let is_step = step.is_some_and(|s| s == ident);
                 (!is_step).then_some(Ok(ty))
             })
             .collect::<syn::Result<Vec<_>>>()?;
@@ -750,16 +750,11 @@ fn remove_all_attrs_if_needed<'a>(
     func: &'a mut syn::ItemFn,
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
     let has_other_step_arguments = func.attrs.iter().any(|attr| {
-        attr.meta
-            .path()
-            .segments
-            .last()
-            .map(|segment| {
-                ["given", "when", "then"]
-                    .iter()
-                    .any(|step| segment.ident == step)
-            })
-            .unwrap_or_default()
+        attr.meta.path().segments.last().is_some_and(|segment| {
+            ["given", "when", "then"]
+                .iter()
+                .any(|step| segment.ident == step)
+        })
     });
 
     func.sig
@@ -786,8 +781,7 @@ fn find_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
                 attr.meta
                     .path()
                     .get_ident()
-                    .map(|ident| ident == attr_arg)
-                    .unwrap_or_default()
+                    .is_some_and(|ident| ident == attr_arg)
             })
             .cloned()
     } else {

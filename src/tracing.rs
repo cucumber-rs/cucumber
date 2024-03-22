@@ -226,15 +226,12 @@ impl Collector {
         >,
     ) {
         for (id, f, r, s, _, ret) in runnable.as_ref() {
-            drop(self.scenarios.insert(
-                *id,
-                (
-                    Arc::clone(f),
-                    r.as_ref().map(Arc::clone),
-                    Arc::clone(s),
-                    *ret,
+            drop(
+                self.scenarios.insert(
+                    *id,
+                    (Arc::clone(f), r.clone(), Arc::clone(s), *ret),
                 ),
-            ));
+            );
         }
     }
 
@@ -271,7 +268,7 @@ impl Collector {
                     .map(|(f, r, s, opt)| {
                         event::Cucumber::scenario(
                             Arc::clone(f),
-                            r.as_ref().map(Arc::clone),
+                            r.clone(),
                             Arc::clone(s),
                             event::RetryableScenario {
                                 event: event::Scenario::Log(msg.clone()),

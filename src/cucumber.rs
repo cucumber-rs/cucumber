@@ -106,7 +106,6 @@ where
     }
 
     /// Replaces [`Parser`].
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_parser<NewP, NewI>(
         self,
@@ -127,7 +126,6 @@ where
     }
 
     /// Replaces [`Runner`].
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_runner<NewR>(
         self,
@@ -148,7 +146,6 @@ where
     }
 
     /// Replaces [`Writer`].
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_writer<NewWr>(
         self,
@@ -629,7 +626,6 @@ where
     /// Also, specifying `--help` flag will describe `--before-time` now.
     ///
     /// [`Feature`]: gherkin::Feature
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn with_cli<CustomCli>(
         self,
@@ -973,7 +969,6 @@ where
     ///           they exhaust all retry attempts and still do fail.
     ///
     /// [`Scenario`]: gherkin::Scenario
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop in const
     #[must_use]
     pub fn fail_fast(mut self) -> Self {
         self.runner = self.runner.fail_fast();
