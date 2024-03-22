@@ -12,7 +12,6 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use async_trait::async_trait;
 use derive_more::Deref;
 use itertools::Itertools as _;
 
@@ -193,11 +192,10 @@ type HandledScenarios = HashMap<
     Indicator,
 >;
 
-#[async_trait(?Send)]
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
-    Wr: for<'val> writer::Arbitrary<'val, W, String> + Summarizable,
+    Wr: writer::Arbitrary<W, String> + Summarizable,
     Wr::Cli: Colored,
 {
     type Cli = Wr::Cli;
@@ -259,18 +257,13 @@ where
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Summarize<Wr>
+impl<W, Wr, Val> writer::Arbitrary<W, Val> for Summarize<Wr>
 where
     W: World,
     Self: Writer<W>,
-    Wr: writer::Arbitrary<'val, W, Val>,
-    Val: 'val,
+    Wr: writer::Arbitrary<W, Val>,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.writer.write(val).await;
     }
 }

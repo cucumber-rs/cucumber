@@ -161,17 +161,6 @@ mod world;
 
 use proc_macro::TokenStream;
 
-// TODO: Remove once tests run without complains about it.
-#[cfg(test)]
-mod actually_used_crates_in_tests {
-    use async_trait as _;
-    use cucumber as _;
-    use derive_more as _;
-    use futures as _;
-    use tempfile as _;
-    use tokio as _;
-}
-
 /// Helper macro for generating public shims for [`macro@given`], [`macro@when`]
 /// and [`macro@then`] attributes.
 macro_rules! step_attribute {

@@ -28,7 +28,8 @@ pub mod repeat;
 pub mod summarize;
 pub mod tee;
 
-use async_trait::async_trait;
+use std::future::Future;
+
 use sealed::sealed;
 
 use crate::{event, parser, Event};
@@ -68,7 +69,6 @@ pub use self::{
 /// [`Runner`]: crate::Runner
 /// [1]: crate::Runner#order-guarantees
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before
-#[async_trait(?Send)]
 pub trait Writer<World> {
     /// CLI options of this [`Writer`]. In case no options should be introduced,
     /// just use [`cli::Empty`].
@@ -84,23 +84,20 @@ pub trait Writer<World> {
     /// Handles the given [`Cucumber`] event.
     ///
     /// [`Cucumber`]: crate::event::Cucumber
-    async fn handle_event(
+    fn handle_event(
         &mut self,
         ev: parser::Result<Event<event::Cucumber<World>>>,
         cli: &Self::Cli,
-    );
+    ) -> impl Future<Output = ()>;
 }
 
 /// [`Writer`] that also can output an arbitrary `Value` in addition to
 /// regular [`Cucumber`] events.
 ///
-/// [`Cucumber`]: crate::event::Cucumber
-#[async_trait(?Send)]
-pub trait Arbitrary<'val, World, Value: 'val>: Writer<World> {
+/// [`Cucumber`]: event::Cucumber
+pub trait Arbitrary<World, Value>: Writer<World> {
     /// Writes `val` to the [`Writer`]'s output.
-    async fn write(&mut self, val: Value)
-    where
-        'val: 'async_trait;
+    fn write(&mut self, val: Value) -> impl Future<Output = ()>;
 }
 
 /// [`Writer`] tracking a number of [`Passed`], [`Skipped`], [`Failed`]

@@ -12,7 +12,6 @@
 
 use std::mem;
 
-use async_trait::async_trait;
 use derive_more::Deref;
 
 use crate::{event, parser, writer, Event, World, Writer};
@@ -58,7 +57,6 @@ impl<World, Wr: Clone, F: Clone> Clone for Repeat<World, Wr, F> {
     }
 }
 
-#[async_trait(?Send)]
 impl<W, Wr, F> Writer<W> for Repeat<W, Wr, F>
 where
     W: World,
@@ -90,18 +88,13 @@ where
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val, F> writer::Arbitrary<'val, W, Val> for Repeat<W, Wr, F>
+impl<W, Wr, Val, F> writer::Arbitrary<W, Val> for Repeat<W, Wr, F>
 where
     W: World,
-    Wr: writer::Arbitrary<'val, W, Val> + writer::NonTransforming,
-    Val: 'val,
+    Wr: writer::Arbitrary<W, Val> + writer::NonTransforming,
     F: Fn(&parser::Result<Event<event::Cucumber<W>>>) -> bool,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.writer.write(val).await;
     }
 }

@@ -5,5 +5,5 @@
       Step failed:
       Defined: tests/features/output/ambiguous_step.feature:3:5
       Step match is ambiguous: Possible matches:
-      foo is (\d+) --> tests/output.rs:12:1
-      foo is (\d+) ambiguous --> tests/output.rs:20:1[0m
+      foo is (\d+) --> tests/output.rs:11:1
+      foo is (\d+) ambiguous --> tests/output.rs:19:1[0m

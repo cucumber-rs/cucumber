@@ -14,7 +14,6 @@
 
 use std::{fmt::Debug, io, mem, time::SystemTime};
 
-use async_trait::async_trait;
 use junit_report::{
     Duration, Report, TestCase, TestCaseBuilder, TestSuite, TestSuiteBuilder,
 };
@@ -104,7 +103,6 @@ impl<World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
     }
 }
 
-#[async_trait(?Send)]
 impl<W, Out> Writer<W> for JUnit<W, Out>
 where
     W: World + Debug,

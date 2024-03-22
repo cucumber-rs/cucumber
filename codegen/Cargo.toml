@@ -2,7 +2,7 @@
 name = "cucumber-codegen"
 version = "0.20.2" # should be the same as main crate version
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.75"
 description = "Code generation for `cucumber` crate."
 license = "MIT OR Apache-2.0"
 authors = [
@@ -31,7 +31,6 @@ syn = { version = "2.0", features = ["derive", "extra-traits", "full"] }
 synthez = "0.3"
 
 [dev-dependencies]
-async-trait = "0.1"
 cucumber = { path = "..", features = ["libtest", "macros"] }
 derive_more = "0.99.17"
 futures = "0.3.17"

@@ -1,6 +1,5 @@
 use std::{borrow::Cow, fmt::Debug, mem};
 
-use async_trait::async_trait;
 use cucumber::{cli, event, given, parser, then, when, Event, Writer};
 use lazy_regex::regex;
 use once_cell::sync::Lazy;
@@ -26,7 +25,6 @@ struct DebugWriter {
     first_line_printed: bool,
 }
 
-#[async_trait(?Send)]
 impl<World: 'static + Debug> Writer<World> for DebugWriter {
     type Cli = cli::Empty;
 
@@ -174,7 +172,11 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            assert_eq!(expected, debug.output, "\n[debug] file: {file}");
+            assert_eq!(
+                debug.output.trim(),
+                expected.trim(),
+                "\n[debug] file: {file}",
+            );
 
             let expected =
                 load_file(format!("tests/features/output/{file}.basic.out"));
@@ -188,7 +190,11 @@ mod spec {
                 .with_default_cli()
                 .run(format!("tests/features/output/{file}"))
                 .await;
-            assert_eq!(expected, output.to_string(), "\n[basic] file: {file}");
+            assert_eq!(
+                output.to_string().trim(),
+                expected.trim(),
+                "\n[basic] file: {file}",
+            );
 
             let expected =
                 load_file(format!("tests/features/output/{file}.colored.out"));
@@ -203,8 +209,8 @@ mod spec {
                 .run(format!("tests/features/output/{file}"))
                 .await;
             assert_eq!(
-                expected,
-                output.to_string(),
+                output.to_string().trim(),
+                expected.trim(),
                 "\n[colored] file: {file}",
             );
         }

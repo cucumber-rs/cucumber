@@ -12,7 +12,6 @@
 
 use std::cmp;
 
-use async_trait::async_trait;
 use futures::future;
 
 use crate::{cli, event, parser, writer, Event, World, Writer};
@@ -51,7 +50,6 @@ impl<L, R> Tee<L, R> {
     }
 }
 
-#[async_trait(?Send)]
 impl<W, L, R> Writer<W> for Tee<L, R>
 where
     W: World,
@@ -74,18 +72,14 @@ where
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, L, R, Val> writer::Arbitrary<'val, W, Val> for Tee<L, R>
+impl<W, L, R, Val> writer::Arbitrary<W, Val> for Tee<L, R>
 where
     W: World,
-    L: writer::Arbitrary<'val, W, Val>,
-    R: writer::Arbitrary<'val, W, Val>,
-    Val: Clone + 'val,
+    L: writer::Arbitrary<W, Val>,
+    R: writer::Arbitrary<W, Val>,
+    Val: Clone,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         future::join(self.left.write(val.clone()), self.right.write(val)).await;
     }
 }

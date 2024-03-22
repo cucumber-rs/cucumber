@@ -10,7 +10,6 @@
 
 //! Wrappers providing no-op implementations.
 
-use async_trait::async_trait;
 use derive_more::{Deref, DerefMut};
 
 use crate::{event::Cucumber, parser, writer, Event, World, Writer};
@@ -25,7 +24,6 @@ use crate::{event::Cucumber, parser, writer, Event, World, Writer};
 pub struct Arbitrary<Wr: ?Sized>(Wr);
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
     type Cli = Wr::Cli;
 
@@ -39,18 +37,17 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Arbitrary<Wr>
+impl<W, Val, Wr> writer::Arbitrary<W, Val> for Arbitrary<Wr>
 where
-    Val: 'val,
     Wr: ?Sized,
     Self: Writer<W>,
 {
     /// Does nothing.
-    async fn write(&mut self, _: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(
+        &mut self,
+        #[allow(clippy::let_underscore_untyped)] // false positive
+        _: Val,
+    ) {
         // Intentionally no-op.
     }
 }
@@ -116,7 +113,6 @@ impl<Wr> Arbitrary<Wr> {
 pub struct Stats<Wr: ?Sized>(Wr);
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
     type Cli = Wr::Cli;
 
@@ -130,17 +126,12 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Val, Wr> writer::Arbitrary<'val, W, Val> for Stats<Wr>
+impl<W, Val, Wr> writer::Arbitrary<W, Val> for Stats<Wr>
 where
-    Val: 'val,
-    Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
+    Wr: writer::Arbitrary<W, Val> + ?Sized,
     Self: Writer<W>,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.0.write(val).await;
     }
 }

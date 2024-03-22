@@ -18,7 +18,6 @@ use std::{
     time::SystemTime,
 };
 
-use async_trait::async_trait;
 use base64::Engine as _;
 use derive_more::Display;
 use inflector::Inflector as _;
@@ -72,13 +71,13 @@ pub struct Json<Out: io::Write> {
     logs: Vec<String>,
 }
 
-#[async_trait(?Send)]
 impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     type Cli = cli::Empty;
 
     async fn handle_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
+        #[allow(clippy::let_underscore_untyped)] // false positive
         _: &Self::Cli,
     ) {
         use event::{Cucumber, Rule};

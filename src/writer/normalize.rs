@@ -10,9 +10,8 @@
 
 //! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
-use std::{hash::Hash, mem, sync::Arc};
+use std::{future::Future, hash::Hash, mem, sync::Arc};
 
-use async_trait::async_trait;
 use derive_more::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
@@ -79,7 +78,6 @@ impl<W, Writer> Normalize<W, Writer> {
     }
 }
 
-#[async_trait(?Send)]
 impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
     type Cli = Wr::Cli;
 
@@ -153,16 +151,11 @@ impl<World, Wr: Writer<World>> Writer<World> for Normalize<World, Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for Normalize<W, Wr>
+impl<W, Wr, Val> writer::Arbitrary<W, Val> for Normalize<W, Wr>
 where
-    Wr: writer::Arbitrary<'val, W, Val>,
-    Val: 'val,
+    Wr: writer::Arbitrary<W, Val>,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.writer.write(val).await;
     }
 }
@@ -261,7 +254,6 @@ impl<Writer> AssertNormalized<Writer> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
 impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
     type Cli = Wr::Cli;
 
@@ -275,17 +267,12 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for AssertNormalized<Wr> {
 }
 
 #[warn(clippy::missing_trait_methods)]
-#[async_trait(?Send)]
-impl<'val, W, Wr, Val> writer::Arbitrary<'val, W, Val> for AssertNormalized<Wr>
+impl<W, Wr, Val> writer::Arbitrary<W, Val> for AssertNormalized<Wr>
 where
     W: World,
-    Val: 'val,
-    Wr: writer::Arbitrary<'val, W, Val> + ?Sized,
+    Wr: writer::Arbitrary<W, Val> + ?Sized,
 {
-    async fn write(&mut self, val: Val)
-    where
-        'val: 'async_trait,
-    {
+    async fn write(&mut self, val: Val) {
         self.0.write(val).await;
     }
 }
@@ -430,7 +417,6 @@ impl FinishedState {
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[async_trait(?Send)]
 trait Emitter<World> {
     /// Currently outputted key and value from this [`Queue`].
     type Current;
@@ -472,12 +458,12 @@ trait Emitter<World> {
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    async fn emit<W: Writer<World>>(
+    fn emit<W: Writer<World>>(
         self,
         path: Self::EmittedPath,
         writer: &mut W,
         cli: &W::Cli,
-    ) -> Option<Self::Emitted>;
+    ) -> impl Future<Output = Option<Self::Emitted>>;
 }
 
 /// [`Queue`] of all incoming events.
@@ -552,7 +538,6 @@ impl<World> CucumberQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
     type Current = (Arc<gherkin::Feature>, &'me mut FeatureQueue<World>);
     type Emitted = Arc<gherkin::Feature>;
@@ -567,7 +552,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 
     async fn emit<W: Writer<World>>(
         self,
-        _: (),
+        (): (),
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
@@ -698,7 +683,6 @@ impl<World> FeatureQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
     type Current = NextRuleOrScenario<'me, World>;
     type Emitted = RuleOrScenario;
@@ -741,7 +725,6 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 type RulesQueue<World> =
     Queue<(Arc<gherkin::Scenario>, Option<Retries>), ScenariosQueue<World>>;
 
-#[async_trait(?Send)]
 impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
     type Current = (Arc<gherkin::Scenario>, &'me mut ScenariosQueue<World>);
     type Emitted = Arc<gherkin::Rule>;
@@ -825,7 +808,6 @@ impl<World> ScenariosQueue<World> {
     }
 }
 
-#[async_trait(?Send)]
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
     type Current = Event<event::RetryableScenario<World>>;
     type Emitted = (Arc<gherkin::Scenario>, Option<Retries>);

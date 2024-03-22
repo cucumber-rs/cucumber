@@ -182,11 +182,9 @@ mod actually_used_crates_in_tests_and_book {
     use tokio as _;
 }
 
-use std::fmt::Display;
 #[cfg(feature = "macros")]
 use std::{fmt::Debug, path::Path};
-
-use async_trait::async_trait;
+use std::{fmt::Display, future::Future};
 
 #[cfg(feature = "macros")]
 use self::{
@@ -229,13 +227,12 @@ pub use self::{
 /// [1]: https://docs.rs/once_cell
 /// [2]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
 /// [Cucumber]: https://cucumber.io
-#[async_trait(?Send)]
 pub trait World: Sized + 'static {
     /// Error of creating a new [`World`] instance.
     type Error: Display;
 
     /// Creates a new [`World`] instance.
-    async fn new() -> Result<Self, Self::Error>;
+    fn new() -> impl Future<Output = Result<Self, Self::Error>>;
 
     #[cfg(feature = "macros")]
     /// Returns runner for tests with auto-wired steps marked by [`given`],
@@ -287,11 +284,11 @@ pub trait World: Sized + 'static {
     /// [`Step`] panicked.
     ///
     /// [`Feature`]: gherkin::Feature
-    async fn run<I: AsRef<Path>>(input: I)
+    fn run<I: AsRef<Path>>(input: I) -> impl Future<Output = ()>
     where
         Self: Debug + WorldInventory,
     {
-        Self::cucumber().run_and_exit(input).await;
+        Self::cucumber().run_and_exit(input)
     }
 
     #[cfg(feature = "macros")]
@@ -308,7 +305,7 @@ pub trait World: Sized + 'static {
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
-    async fn filter_run<I, F>(input: I, filter: F)
+    fn filter_run<I, F>(input: I, filter: F) -> impl Future<Output = ()>
     where
         Self: Debug + WorldInventory,
         I: AsRef<Path>,
@@ -319,6 +316,6 @@ pub trait World: Sized + 'static {
             ) -> bool
             + 'static,
     {
-        Self::cucumber().filter_run_and_exit(input, filter).await;
+        Self::cucumber().filter_run_and_exit(input, filter)
     }
 }
