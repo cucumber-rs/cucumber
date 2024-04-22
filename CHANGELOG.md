@@ -16,7 +16,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Removed `#[async_trait]` attribute from `World`, `Writer` and `writer::Arbitrary` traits. ([#324])
 - Bumped up [MSRV] to 1.75 for using `async fn` in traits. ([#324])
 
+### Fixed
+
+- Possible truncation of long output messages. ([#333], [#332])
+
 [#324]: /../../pull/324
+[#332]: /../../issues/332
+[#333]: /../../pull/333
 
 
 
@@ -327,7 +333,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - `FeatureExt::count_steps()` method. ([#220])
 - Location of the `fn` matching a failed `Step` in output. ([#221])
 - Ability to retry failed `Scenario`s. ([#223], [#212])
-- `--retry`, `--retry-after` and `--retry-tag-filter` CLI options. ([#223], [#212]) 
+- `--retry`, `--retry-after` and `--retry-tag-filter` CLI options. ([#223], [#212])
 
 ### Changed
 
@@ -461,7 +467,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 ### Changed
 
 - Optimized `runner::Basic` to not wait the whole batch to complete before executing next `Scenario`s. ([#195])
- 
+
 [#195]: /../../pull/195
 [#196]: /../../pull/196
 
@@ -484,9 +490,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Switched CLI to [`clap`] from `structopt`. ([#188], [#155])
 - Reworked `verbose` CLI option of `writer::Basic`: ([#193], [#192])
     - Removed long form.
-    - Made `-v` default behavior (no additional output). 
-    - Made `-vv` additionally output `World` on failed steps. 
-    - Made `-vvv` additionally output docstrings (old behavior). 
+    - Made `-v` default behavior (no additional output).
+    - Made `-vv` additionally output `World` on failed steps.
+    - Made `-vvv` additionally output docstrings (old behavior).
 
 ### Added
 
