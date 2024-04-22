@@ -18,7 +18,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Fixed
 
-- Fix possible output message truncation. ([#332], [#333])
+- Possible truncation of long output messages. ([#333], [#332])
 
 [#324]: /../../pull/324
 [#332]: /../../issues/332
