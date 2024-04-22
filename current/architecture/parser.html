@@ -176,14 +176,12 @@
                         <h1 id="custom-parser"><a class="header" href="#custom-parser">Custom <code>Parser</code></a></h1>
 <p>Let's start by implementing a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> which statically emits a single <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a> for execution.</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Parser.html"><code>Parser</code></a> represents anything that emits a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate async_trait;
-</span><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::{path::PathBuf, time::Duration};
 </span><span class="boring">
-</span><span class="boring">use async_trait::async_trait;
 </span><span class="boring">use cucumber::{cli, gherkin, given, parser, then, when, World};
 </span><span class="boring">use futures::{future, stream};
 </span><span class="boring">use tokio::time::sleep;
@@ -204,25 +202,25 @@
 </span><span class="boring">    cat: Animal,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt; world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt; world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
 </span><span class="boring">
@@ -236,40 +234,40 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
     type Output = stream::Once&lt;future::Ready&lt;parser::Result&lt;gherkin::Feature&gt;&gt;&gt;;
 
     fn parse(self, _: I, _: Self::Cli) -&gt; Self::Output {
-        let keyword = &quot;Feature&quot;;
-        let name = &quot;Animal feature&quot;;
+        let keyword = "Feature";
+        let name = "Animal feature";
         stream::once(future::ok(gherkin::Feature {
             keyword: keyword.into(),
             name: name.into(),
             description: None,
             background: None,
             scenarios: vec![gherkin::Scenario {
-                keyword: &quot;Scenario&quot;.into(),
-                name: &quot;If we feed a hungry cat it won't be hungry&quot;.into(),
+                keyword: "Scenario".into(),
+                name: "If we feed a hungry cat it won't be hungry".into(),
                 description: None,
                 steps: vec![
                     gherkin::Step {
-                        keyword: &quot;Given&quot;.into(),
+                        keyword: "Given ".into(),
                         ty: gherkin::StepType::Given,
-                        value: &quot;a hungry cat&quot;.into(),
+                        value: "a hungry cat".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 18 },
                         position: gherkin::LineCol { line: 3, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;When&quot;.into(),
+                        keyword: "When ".into(),
                         ty: gherkin::StepType::When,
-                        value: &quot;I feed the cat&quot;.into(),
+                        value: "I feed the cat".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 19 },
                         position: gherkin::LineCol { line: 4, col: 5 },
                     },
                     gherkin::Step {
-                        keyword: &quot;Then&quot;.into(),
+                        keyword: "Then ".into(),
                         ty: gherkin::StepType::Then,
-                        value: &quot;the cat is not hungry&quot;.into(),
+                        value: "the cat is not hungry".into(),
                         docstring: None,
                         table: None,
                         span: gherkin::Span { start: 5, end: 26 },
@@ -294,7 +292,7 @@ impl&lt;I&gt; cucumber::Parser&lt;I&gt; for CustomParser {
 async fn main() {
     AnimalWorld::cucumber::&lt;&amp;str&gt;() // aiding type inference
         .with_parser(CustomParser)
-        .run_and_exit(&quot;tests/features/book&quot;) // path doesn't actually matter 
+        .run_and_exit("tests/features/book") // path doesn't actually matter 
         .await;                              // here due to our implementation
 }</code></pre></pre>
 <p><img src="../rec/architecture_parser.gif" alt="record" /></p>

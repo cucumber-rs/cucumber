@@ -207,28 +207,28 @@ Egenskap: Dyr egenskap
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^en (sulten|mett) katt$&quot;)]
+</span>#[given(regex = r"^en (sulten|mett) katt$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     match state.as_str() {
-        &quot;sulten&quot; =&gt; world.cat.hungry = true,
-        &quot;mett&quot; =&gt; world.cat.hungry = false,
+        "sulten" =&gt; world.cat.hungry = true,
+        "mett" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;jeg mater katten&quot;)]
+#[when("jeg mater katten")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     world.cat.feed();
 }
 
-#[then(&quot;katten er ikke sulten&quot;)]
+#[then("katten er ikke sulten")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     assert!(!world.cat.hungry);
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/languages.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/languages.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/writing_languages.gif" alt="record" /></p>
 <blockquote>

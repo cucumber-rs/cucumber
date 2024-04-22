@@ -175,20 +175,20 @@
                     <main>
                         <h1 id="doc-strings"><a class="header" href="#doc-strings">Doc strings</a></h1>
 <p><a href="https://cucumber.io/docs/gherkin/reference#doc-strings">Doc strings</a> provide an ability to pass a large piece of text to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> definition (and so, to a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function).</p>
-<p>The text should be offset by delimiters consisting of three double-quote marks <code>&quot;&quot;&quot;</code> on lines of their own:</p>
+<p>The text should be offset by delimiters consisting of three double-quote marks <code>"""</code> on lines of their own:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
     
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;
+      """
       A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
 <blockquote>
-<p><strong>NOTE</strong>: Indentation of the opening <code>&quot;&quot;&quot;</code> is unimportant, although the common practice is to indent them. The indentation inside the triple quotes, however, is significant. Each line of the <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc string</a> will be dedented according to the opening <code>&quot;&quot;&quot;</code>. Indentation beyond the column of the opening <code>&quot;&quot;&quot;</code> will therefore be preserved.</p>
+<p><strong>NOTE</strong>: Indentation of the opening <code>"""</code> is unimportant, although the common practice is to indent them. The indentation inside the triple quotes, however, is significant. Each line of the <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc string</a> will be dedented according to the opening <code>"""</code>. Indentation beyond the column of the opening <code>"""</code> will therefore be preserved.</p>
 </blockquote>
 <p><a href="https://cucumber.io/docs/gherkin/reference#doc-strings">Doc strings</a> also support using three backticks <code>```</code> as the delimiter, which might be familiar for those used to writing with <a href="https://en.wikipedia.org/wiki/Markdown">Markdown</a>:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
@@ -207,12 +207,12 @@
     
   Scenario: If we feed a hungry Simba it will no longer be hungry
     Given a hungry cat
-      &quot;&quot;&quot;markdown
+      """markdown
       About Simba
       ===========
       A hungry cat called Simba is rescued from a Whiskas tin in a calamitous
       mash-up of cat food brands.
-      &quot;&quot;&quot;
+      """
     When I feed the cat
     Then the cat is not hungry
 </code></pre>
@@ -241,30 +241,30 @@
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String) {
     // Feed only Leo and Felix.
     if !step
         .docstring
         .as_ref()
-        .map_or(false, |text| text.contains(&quot;Felix&quot;) || text.contains(&quot;Leo&quot;))
+        .map_or(false, |text| text.contains("Felix") || text.contains("Leo"))
     {
-        panic!(&quot;Only Felix and Leo can be fed&quot;);
+        panic!("Only Felix and Leo can be fed");
     }
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 <span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[then(&quot;the cat is not hungry&quot;)]
+</span><span class="boring">#[then("the cat is not hungry")]
 </span><span class="boring">async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    assert!(!world.cat.hungry);
 </span><span class="boring">}
@@ -272,7 +272,7 @@ async fn hungry_cat(world: &amp;mut AnimalWorld, step: &amp;Step, state: String)
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/doc_strings.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/doc_strings.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/writing_doc_strings.gif" alt="record" /></p>

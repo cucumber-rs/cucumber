@@ -186,7 +186,7 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(format!(&quot;{}/report.xml&quot;, env!(&quot;OUT_DIR&quot;)))?;
+</span>let file = fs::File::create(format!("{}/report.xml", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         // NOTE: `Writer`s pipeline is constructed in a reversed order.
@@ -195,7 +195,7 @@ World::cucumber()
             .tee::&lt;World, _&gt;(writer::JUnit::for_tee(file, 0)) // Then, output to XML file.
             .normalized()       // First, normalize events order.
     )
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -212,7 +212,7 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+</span>let file = fs::File::create(format!("{}/report.txt", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         writer::Basic::raw(
@@ -228,7 +228,7 @@ World::cucumber()
             .summarized()
             .normalized(),
     )
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>
@@ -261,7 +261,7 @@ let cli = cli::Opts {
     custom: cli.custom,
 };
 
-let file = fs::File::create(format!(&quot;{}/report.txt&quot;, env!(&quot;OUT_DIR&quot;)))?;
+let file = fs::File::create(format!("{}/report.txt", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(
         writer::Basic::raw(
@@ -278,7 +278,7 @@ World::cucumber()
             .normalized(),
     )
     .with_cli(cli) // Supply the parsed `cli::Opts`.
-    .run_and_exit(&quot;tests/features/book&quot;)
+    .run_and_exit("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>

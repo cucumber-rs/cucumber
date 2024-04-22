@@ -198,11 +198,11 @@
 </span><span class="boring">
 </span>use cucumber::{gherkin::Step, given, then, when, World};
 
-#[given(regex = r&quot;^a (hungry|satiated) animal$&quot;)]
+#[given(regex = r"^a (hungry|satiated) animal$")]
 async fn hungry_animal(world: &amp;mut AnimalWorld, step: &amp;Step, state: String) {
     let state = match state.as_str() {
-        &quot;hungry&quot; =&gt; true,
-        &quot;satiated&quot; =&gt; false,
+        "hungry" =&gt; true,
+        "satiated" =&gt; false,
         _ =&gt; unreachable!(),
     };
 
@@ -219,7 +219,7 @@ async fn hungry_animal(world: &amp;mut AnimalWorld, step: &amp;Step, state: Stri
     }
 }
 
-#[when(&quot;I feed the animal multiple times&quot;)]
+#[when("I feed the animal multiple times")]
 async fn feed_animal(world: &amp;mut AnimalWorld, step: &amp;Step) {
     if let Some(table) = step.table.as_ref() {
         for row in table.rows.iter().skip(1) { // NOTE: skip header
@@ -233,7 +233,7 @@ async fn feed_animal(world: &amp;mut AnimalWorld, step: &amp;Step) {
     }
 }
 
-#[then(&quot;the animal is not hungry&quot;)]
+#[then("the animal is not hungry")]
 async fn animal_is_fed(world: &amp;mut AnimalWorld) {
     for animal in world.animals.values() {
         assert!(!animal.hungry);
@@ -258,7 +258,7 @@ pub struct AnimalWorld {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/data_tables.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/data_tables.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <blockquote>
 <p><strong>NOTE</strong>: The whole table data is processed during a single <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> run.</p>
@@ -266,8 +266,8 @@ pub struct AnimalWorld {
 <p><img src="../rec/writing_data_tables.gif" alt="record" /></p>
 <h2 id="escaping"><a class="header" href="#escaping">Escaping</a></h2>
 <ul>
-<li>To use a newline character in a table cell, write it as <code>\n</code>. </li>
-<li>To use a <code>|</code> as a part in a table cell, escape it as <code>\|</code>. </li>
+<li>To use a newline character in a table cell, write it as <code>\n</code>.</li>
+<li>To use a <code>|</code> as a part in a table cell, escape it as <code>\|</code>.</li>
 <li>And finally, to use a <code>\</code>, escape it as <code>\\</code>.</li>
 </ul>
 

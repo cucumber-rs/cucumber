@@ -176,7 +176,7 @@
                         <h1 id="intellij-rust-libtest-integration"><a class="header" href="#intellij-rust-libtest-integration">IntelliJ Rust (<code>libtest</code>) integration</a></h1>
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> (enabled by <code>libtest</code> feature in <code>Cargo.toml</code>) allows <a href="https://www.jetbrains.com/rust">IntelliJ Rust</a> plugin to interpret output of <a href="https://docs.rs/cucumber"><code>cucumber</code></a> tests similar to unit tests. To use it, just add <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/rust-testing.html">Cargo configuration</a> (current example uses <code>cargo test --test wait --features libtest</code> command) or run it via <a href="https://plugins.jetbrains.com/plugin/8182-rust/docs/cargo-command-configuration.html">Cargo command</a>. This automatically adds <code>--format=json</code> CLI option, which makes the <a href="https://docs.rs/cucumber"><code>cucumber</code></a>'s output IDE-compatible.</p>
 <p>Example below is set up to output with the default <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html"><code>writer::Basic</code></a> if there is no <code>--format=json</code> option, or with <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Libtest.html"><code>writer::Libtest</code></a> otherwise.</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;libtest&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["libtest"] }
 </code></pre>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
@@ -190,7 +190,7 @@
 </span><span class="boring">async fn main() {
 </span>World::cucumber()
     .with_writer(writer::Libtest::or_basic())
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/output_intellij.gif" alt="record" /></p>
@@ -204,7 +204,7 @@
 <blockquote>
 <p><strong>TIP</strong>: In the multi-crate <a href="https://doc.rust-lang.org/cargo/reference/workspaces.html">Cargo workspace</a>, to support jump-to-definition in the reported paths (<a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> or its matcher definition) correctly, consider to define <a href="https://github.com/rust-lang/cargo/issues/3946#issuecomment-973132993"><code>CARGO_WORKSPACE_DIR</code> environment variable in the <code>.cargo/config.toml</code> file</a>:</p>
 <pre><code class="language-toml">[env]
-CARGO_WORKSPACE_DIR = { value = &quot;&quot;, relative = true }
+CARGO_WORKSPACE_DIR = { value = "", relative = true }
 </code></pre>
 </blockquote>
 <h2 id="libtest-support"><a class="header" href="#libtest-support"><code>libtest</code> support</a></h2>

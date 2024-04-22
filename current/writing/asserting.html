@@ -174,7 +174,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="asserting"><a class="header" href="#asserting">Asserting</a></h1>
-<p>There are two ways of doing <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a>s in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function: </p>
+<p>There are two ways of doing <a href="https://en.wikipedia.org/wiki/Assertion_(software_development)">assertion</a>s in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function:</p>
 <ul>
 <li><a href="#panic">throwing a panic</a>;</li>
 <li><a href="#result-and-">returning an error</a>.</li>
@@ -202,29 +202,29 @@
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt;  world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt;  world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[when(&quot;I feed the cat&quot;)]
+</span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[then(&quot;the cat is not hungry&quot;)]
+</span>#[then("the cat is not hungry")]
 fn cat_is_fed(_: &amp;mut AnimalWorld) {
-    panic!(&quot;Cats are always hungry!&quot;)
+    panic!("Cats are always hungry!")
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/asserting.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/writing_asserting_panic.gif" alt="record" /></p>
@@ -254,27 +254,27 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span><span class="boring">#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span><span class="boring">#[given(regex = r"^a (hungry|satiated) cat$")]
 </span><span class="boring">fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
 </span><span class="boring">    match state.as_str() {
-</span><span class="boring">        &quot;hungry&quot; =&gt;  world.cat.hungry = true,
-</span><span class="boring">        &quot;satiated&quot; =&gt;  world.cat.hungry = false,
+</span><span class="boring">        "hungry" =&gt;  world.cat.hungry = true,
+</span><span class="boring">        "satiated" =&gt;  world.cat.hungry = false,
 </span><span class="boring">        _ =&gt; unreachable!(),
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[when(&quot;I feed the cat&quot;)]
+</span>#[when("I feed the cat")]
 fn feed_cat(_: &amp;mut AnimalWorld) {}
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 fn cat_is_fed(world: &amp;mut AnimalWorld) -&gt; Result&lt;(), &amp;'static str&gt; {
-    (!world.cat.hungry).then_some(()).ok_or(&quot;Cat is still hungry!&quot;)
+    (!world.cat.hungry).then_some(()).ok_or("Cat is still hungry!")
 }
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
 </span><span class="boring">    AnimalWorld::cucumber()
-</span><span class="boring">        .run_and_exit(&quot;tests/features/book/writing/asserting.feature&quot;)
+</span><span class="boring">        .run_and_exit("tests/features/book/writing/asserting.feature")
 </span><span class="boring">        .await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/writing_asserting_result.gif" alt="record" /></p>

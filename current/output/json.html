@@ -176,7 +176,7 @@
                         <h1 id="cucumber-json-format"><a class="header" href="#cucumber-json-format">Cucumber JSON format</a></h1>
 <p><a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate provides an ability to output tests result in a <a href="https://github.com/cucumber/cucumber-json-schema">Cucumber JSON format</a>.</p>
 <p>This requires <code>output-json</code> feature to be enabled in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">cucumber = { version = &quot;0.20&quot;, features = [&quot;output-json&quot;] }
+<pre><code class="language-toml">cucumber = { version = "0.20", features = ["output-json"] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
@@ -190,10 +190,10 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!(&quot;{}/report.json&quot;, env!(&quot;OUT_DIR&quot;))))?;
+</span>let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
-    .run(&quot;tests/features/book&quot;)
+    .run("tests/features/book")
     .await;
 <span class="boring">Ok(())
 </span><span class="boring">}</span></code></pre></pre>

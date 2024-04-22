@@ -216,25 +216,25 @@
 </span><span class="boring">    cat: Cat,
 </span><span class="boring">}
 </span><span class="boring">
-</span>#[given(regex = r&quot;^a (hungry|satiated) cat$&quot;)]
+</span>#[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &amp;mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
 
     match state.as_str() {
-        &quot;hungry&quot; =&gt; world.cat.hungry = true,
-        &quot;satiated&quot; =&gt; world.cat.hungry = false,
+        "hungry" =&gt; world.cat.hungry = true,
+        "satiated" =&gt; world.cat.hungry = false,
         _ =&gt; unreachable!(),
     }
 }
 
-#[when(&quot;I feed the cat&quot;)]
+#[when("I feed the cat")]
 async fn feed_cat(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
     world.cat.feed();
 }
 
-#[then(&quot;the cat is not hungry&quot;)]
+#[then("the cat is not hungry")]
 async fn cat_is_fed(world: &amp;mut AnimalWorld) {
     sleep(Duration::from_secs(2)).await;
 
@@ -243,7 +243,7 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() {
-</span><span class="boring">    AnimalWorld::run(&quot;tests/features/book/writing/rule.feature&quot;).await;
+</span><span class="boring">    AnimalWorld::run("tests/features/book/writing/rule.feature").await;
 </span><span class="boring">}</span></code></pre></pre>
 <p><img src="../rec/writing_rule.gif" alt="record" /></p>
 
