@@ -82,7 +82,7 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     ) {
         use event::{Cucumber, Rule};
 
-        match event.map(event::Event::split) {
+        match event.map(Event::split) {
             Err(parser::Error::Parsing(e)) => {
                 let feature = Feature::parsing_err(&e);
                 self.features.push(feature);

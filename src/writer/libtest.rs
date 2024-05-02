@@ -266,8 +266,8 @@ impl<W: Debug + World> Libtest<W, io::Stdout> {
     pub fn or<AnotherWriter: Writer<W>>(
         writer: AnotherWriter,
     ) -> Or<W, AnotherWriter> {
-        writer::Or::new(writer, Self::stdout(), |_, cli| {
-            !matches!(cli.right.format, Some(writer::libtest::Format::Json))
+        Or::new(writer, Self::stdout(), |_, cli| {
+            !matches!(cli.right.format, Some(Format::Json))
         })
     }
 

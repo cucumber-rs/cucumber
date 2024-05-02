@@ -2275,14 +2275,7 @@ impl Features {
             }
         }
 
-        if without_retries.get(&ScenarioType::Serial).is_none() {
-            // If there are no Serial Scenarios, we just extend already existing
-            // Concurrent Scenarios.
-            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
-            for (which, values) in without_retries {
-                storage.entry(which).or_default().extend(values);
-            }
-        } else {
+        if without_retries.contains_key(&ScenarioType::Serial) {
             // If there are Serial Scenarios we insert all Serial and Concurrent
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
@@ -2291,6 +2284,13 @@ impl Features {
             for (which, mut values) in without_retries {
                 let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
+                storage.entry(which).or_default().extend(values);
+            }
+        } else {
+            // If there are no Serial Scenarios, we just extend already existing
+            // Concurrent Scenarios.
+            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+            for (which, values) in without_retries {
                 storage.entry(which).or_default().extend(values);
             }
         }
