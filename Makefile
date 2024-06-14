@@ -105,7 +105,7 @@ endif
 # Run Rust tests of Book.
 #
 # Usage:
-#	make test.book [clean=(no|yes)]
+#	make test.book [chapter=<name>] [clean=(no|yes)]
 
 test.book:
 ifeq ($(clean),yes)
@@ -113,7 +113,9 @@ ifeq ($(clean),yes)
 endif
 	$(eval target := $(strip $(shell cargo -vV | sed -n 's/host: //p')))
 	cargo build --all-features --tests
-	OUT_DIR=target mdbook test book -L target/debug/deps $(strip \
+	OUT_DIR='$(realpath .)/target' \
+	mdbook test book $(if $(call eq,$(chapter),),,-c '$(chapter)') \
+		-L target/debug/deps $(strip \
 		$(if $(call eq,$(findstring windows,$(target)),),,\
 			$(shell cargo metadata -q \
 			        | jq -r '.packages[] | select(.name == "windows_$(word 1,$(subst -, ,$(target)))_$(word 4,$(subst -, ,$(target)))") | .manifest_path' \
