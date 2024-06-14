@@ -43,11 +43,7 @@ where
     Self: Writer<W>,
 {
     /// Does nothing.
-    async fn write(
-        &mut self,
-        #[allow(clippy::let_underscore_untyped)] // false positive
-        _: Val,
-    ) {
+    async fn write(&mut self, _: Val) {
         // Intentionally no-op.
     }
 }

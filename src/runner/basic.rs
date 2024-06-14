@@ -146,7 +146,7 @@ impl RetryOptions {
         scenario: &gherkin::Scenario,
         cli: &Cli,
     ) -> Option<Self> {
-        #[allow(clippy::shadow_unrelated)]
+        #[allow(clippy::shadow_unrelated)] // intentional
         let parse_tags = |tags: &[String]| {
             tags.iter().find_map(|tag| {
                 tag.strip_prefix("retry").map(|retries| {
@@ -894,6 +894,7 @@ async fn insert_features<W, S, F>(
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
+// TODO: Needs refactoring.
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn execute<W, Before, After>(
     features: Features,
@@ -999,7 +1000,7 @@ async fn execute<W, Before, After>(
                 }
                 async {
                     // Cannot annotate `async` block with `-> !`.
-                    #[allow(clippy::infinite_loop)]
+                    #[allow(clippy::infinite_loop)] // intentional
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1177,6 +1178,7 @@ where
     /// [`Feature`]: gherkin::Feature
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
+    // TODO: Needs refactoring.
     #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     async fn run_scenario(
         &self,
@@ -1722,7 +1724,7 @@ where
     ///
     /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
     /// details.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
@@ -1784,7 +1786,7 @@ where
     ///
     /// See [`Self::emit_failed_events()`] for the explanation why we don't do
     /// that inside [`Self::run_after_hook()`].
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
     fn emit_after_hook_events(
         &self,
         feature: Arc<gherkin::Feature>,

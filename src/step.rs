@@ -208,7 +208,7 @@ impl<World> Collection<World> {
 
         // PANIC: Slicing is OK here, as all indices are obtained from the
         //        source string.
-        #[allow(clippy::string_slice)]
+        #[allow(clippy::string_slice)] // intentional
         let matches = names
             .map(|opt| opt.map(str::to_owned))
             .zip(iter::once(whole_match.as_str().to_owned()).chain(

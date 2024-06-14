@@ -551,7 +551,7 @@ pub trait Summarizable {}
 impl<T: writer::NonTransforming> Summarizable for T {}
 
 // We better keep this here, as it's related to summarization only.
-#[allow(clippy::multiple_inherent_impl)]
+#[allow(clippy::multiple_inherent_impl)] // intentional
 impl Styles {
     /// Generates a formatted summary [`String`].
     #[must_use]

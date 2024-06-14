@@ -312,7 +312,7 @@ impl Collector {
 }
 
 // We better keep this here, as it's related to `tracing` capabilities only.
-#[allow(clippy::multiple_inherent_impl)]
+#[allow(clippy::multiple_inherent_impl)] // intentional
 impl ScenarioId {
     /// Name of the [`ScenarioId`] [`Span`] field.
     const SPAN_FIELD_NAME: &'static str = "__cucumber_scenario_id";
