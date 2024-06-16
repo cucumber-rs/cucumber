@@ -109,13 +109,13 @@ World::cucumber()
             writer::Coloring::Auto,
             writer::Verbosity::Default,
         )
-            .tee::<World, _>(writer::Basic::raw(
-                file,
-                writer::Coloring::Never,
-                2,
-            ))
-            .summarized()
-            .normalized(),
+        .tee::<World, _>(writer::Basic::raw(
+            file,
+            writer::Coloring::Never,
+            2,
+        ))
+        .summarized()
+        .normalized(),
     )
     .with_cli(cli) // Supply the parsed `cli::Opts`.
     .run_and_exit("tests/features/book")

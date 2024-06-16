@@ -441,7 +441,7 @@ pub enum HookType {
     After,
 }
 
-#[allow(clippy::use_debug)] // `Debug` usage is intentional here
+#[allow(clippy::use_debug)] // intentional
 impl fmt::Display for HookType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")

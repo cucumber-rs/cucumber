@@ -521,7 +521,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             // the standard library’s `print!()` macro.
             // This is the same as `tracing_subscriber::fmt::TestWriter` does
             // (check its documentation for details).
-            #[allow(clippy::print_stdout)]
+            #[allow(clippy::print_stdout)] // intentional
             Scenario::Log(msg) => {
                 print!("{msg}");
                 vec![]
@@ -530,7 +530,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
     fn expand_hook_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -576,7 +576,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
     fn expand_step_event(
         &mut self,
         feature: &gherkin::Feature,

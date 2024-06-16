@@ -77,7 +77,6 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
     async fn handle_event(
         &mut self,
         event: parser::Result<Event<event::Cucumber<W>>>,
-        #[allow(clippy::let_underscore_untyped)] // false positive
         _: &Self::Cli,
     ) {
         use event::{Cucumber, Rule};
@@ -277,7 +276,7 @@ impl<Out: io::Write> Json<Out> {
     }
 
     /// Handles the given [`event::Step`].
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
     fn handle_step_event<W>(
         &mut self,
         feature: &gherkin::Feature,

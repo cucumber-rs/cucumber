@@ -21,7 +21,7 @@ use cucumber::{writer, World as _};
 #
 # #[tokio::main]
 # async fn main() -> io::Result<()> {
-let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
+let file = fs::File::create(format!("{}/report.json", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
     .run("tests/features/book")

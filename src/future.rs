@@ -123,11 +123,11 @@ where
 {
     type Output = Either<(A::Output, B), (B::Output, A)>;
 
-    #[allow(clippy::expect_used)]
     fn poll(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> task::Poll<Self::Output> {
+        #[allow(clippy::expect_used)] // intentional
         let (mut a, mut b) = self
             .inner
             .take()
