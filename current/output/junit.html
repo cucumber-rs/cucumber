@@ -190,7 +190,7 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!("{}/junit.xml", env!("OUT_DIR"))))?;
+</span>let file = fs::File::create(format!("{}/junit.xml", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(writer::JUnit::new(file, 0))
     .run("tests/features/book")

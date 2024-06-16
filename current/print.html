@@ -2771,7 +2771,7 @@ async fn main() {
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!("{}/junit.xml", env!("OUT_DIR"))))?;
+</span>let file = fs::File::create(format!("{}/junit.xml", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(writer::JUnit::new(file, 0))
     .run("tests/features/book")
@@ -2795,7 +2795,7 @@ World::cucumber()
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
+</span>let file = fs::File::create(format!("{}/report.json", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
     .run("tests/features/book")
@@ -2898,13 +2898,13 @@ World::cucumber()
             writer::Coloring::Auto,
             writer::Verbosity::Default,
         )
-            .tee::&lt;World, _&gt;(writer::Basic::raw(
-                file,
-                writer::Coloring::Never,
-                2,
-            ))
-            .summarized()
-            .normalized(),
+        .tee::&lt;World, _&gt;(writer::Basic::raw(
+            file,
+            writer::Coloring::Never,
+            2,
+        ))
+        .summarized()
+        .normalized(),
     )
     .with_cli(cli) // Supply the parsed `cli::Opts`.
     .run_and_exit("tests/features/book")

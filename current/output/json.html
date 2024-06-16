@@ -190,7 +190,7 @@
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
 </span><span class="boring">async fn main() -&gt; io::Result&lt;()&gt; {
-</span>let file = fs::File::create(dbg!(format!("{}/report.json", env!("OUT_DIR"))))?;
+</span>let file = fs::File::create(format!("{}/report.json", env!("OUT_DIR")))?;
 World::cucumber()
     .with_writer(writer::Json::new(file))
     .run("tests/features/book")
