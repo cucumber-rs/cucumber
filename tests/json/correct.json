@@ -18,7 +18,7 @@
             "line": 0,
             "name": "scenario",
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 0,
               "error_message": "Could not parse feature file: /Users/work/Work/cucumber/tests/features/wait/invalid.feature"
             }
@@ -37,7 +37,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 186000
             },
             "embeddings": [
@@ -51,7 +51,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 385000
             },
             "embeddings": [
@@ -79,7 +79,7 @@
             "line": 7,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 293000
             },
             "embeddings": [
@@ -98,7 +98,7 @@
             "line": 8,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 601000
             },
             "embeddings": [
@@ -117,7 +117,7 @@
             "line": 9,
             "name": "unknown",
             "result": {
-              "status": "Undefined",
+              "status": "undefined",
               "duration": 317000,
               "error_message": "Step doesn't match any function"
             }
@@ -142,7 +142,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 757000
             },
             "embeddings": [
@@ -162,7 +162,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 565000
             }
           }
@@ -170,7 +170,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1660000
             },
             "embeddings": [
@@ -198,7 +198,7 @@
             "line": 22,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1405000
             },
             "embeddings": [
@@ -217,7 +217,7 @@
             "line": 23,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1567000
             },
             "embeddings": [
@@ -236,7 +236,7 @@
             "line": 24,
             "name": "2 secs",
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 1240000,
               "error_message": "Matched: tests/json.rs:16:1\nStep panicked. Captured output: Too much!"
             },
@@ -275,7 +275,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2000000
             },
             "embeddings": [
@@ -295,7 +295,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 885000
             },
             "embeddings": [
@@ -309,7 +309,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1791000
             },
             "embeddings": [
@@ -337,7 +337,7 @@
             "line": 14,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1957000
             },
             "embeddings": [
@@ -356,7 +356,7 @@
             "line": 15,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1981000
             },
             "embeddings": [
@@ -375,7 +375,7 @@
             "line": 16,
             "name": "unknown",
             "result": {
-              "status": "Skipped",
+              "status": "skipped",
               "duration": 879000
             }
           }
@@ -399,7 +399,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1423000
             },
             "embeddings": [
@@ -427,7 +427,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 156000
             },
             "embeddings": [
@@ -441,7 +441,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 280000
             },
             "embeddings": [
@@ -469,7 +469,7 @@
             "line": 7,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 250000
             },
             "embeddings": [
@@ -488,7 +488,7 @@
             "line": 8,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 246000
             },
             "embeddings": [
@@ -507,7 +507,7 @@
             "line": 9,
             "name": "unknown",
             "result": {
-              "status": "Undefined",
+              "status": "undefined",
               "duration": 139000,
               "error_message": "Step doesn't match any function"
             }
@@ -532,7 +532,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 250000
             },
             "embeddings": [
@@ -552,7 +552,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 453000
             }
           }
@@ -560,7 +560,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1128000
             },
             "embeddings": [
@@ -588,7 +588,7 @@
             "line": 22,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1865000
             },
             "embeddings": [
@@ -607,7 +607,7 @@
             "line": 23,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1176000
             },
             "embeddings": [
@@ -626,7 +626,7 @@
             "line": 24,
             "name": "2 secs",
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 1099000,
               "error_message": "Matched: tests/json.rs:16:1\nStep panicked. Captured output: Too much!"
             },
@@ -665,7 +665,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2654000
             },
             "embeddings": [
@@ -685,7 +685,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1003000
             },
             "embeddings": [
@@ -699,7 +699,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1907000
             },
             "embeddings": [
@@ -727,7 +727,7 @@
             "line": 14,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 922000
             },
             "embeddings": [
@@ -746,7 +746,7 @@
             "line": 15,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2237000
             },
             "embeddings": [
@@ -765,7 +765,7 @@
             "line": 16,
             "name": "unknown",
             "result": {
-              "status": "Skipped",
+              "status": "skipped",
               "duration": 1337000
             }
           }
@@ -789,7 +789,7 @@
             "line": 3,
             "name": "1 sec",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1641000
             },
             "embeddings": [
@@ -817,7 +817,7 @@
         "after": [
           {
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 1145000,
               "error_message": "Tag!"
             },
@@ -832,7 +832,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1214000
             },
             "embeddings": [
@@ -864,7 +864,7 @@
             "line": 5,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1815000
             },
             "embeddings": [
@@ -883,7 +883,7 @@
             "line": 6,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2124000
             },
             "embeddings": [
@@ -902,7 +902,7 @@
             "line": 7,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1584000
             },
             "embeddings": [
@@ -922,7 +922,7 @@
         "after": [
           {
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 937000,
               "error_message": "Tag!"
             },
@@ -937,7 +937,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1953000
             },
             "embeddings": [
@@ -969,7 +969,7 @@
             "line": 5,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1452000
             },
             "embeddings": [
@@ -988,7 +988,7 @@
             "line": 6,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2115000
             },
             "embeddings": [
@@ -1007,7 +1007,7 @@
             "line": 7,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1400000
             },
             "embeddings": [
@@ -1027,7 +1027,7 @@
         "after": [
           {
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 1044000,
               "error_message": "Tag!"
             },
@@ -1042,7 +1042,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1303000
             },
             "embeddings": [
@@ -1074,7 +1074,7 @@
             "line": 5,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2005000
             },
             "embeddings": [
@@ -1093,7 +1093,7 @@
             "line": 6,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1569000
             },
             "embeddings": [
@@ -1112,7 +1112,7 @@
             "line": 7,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2080000
             },
             "embeddings": [
@@ -1132,7 +1132,7 @@
         "after": [
           {
             "result": {
-              "status": "Failed",
+              "status": "failed",
               "duration": 1571000,
               "error_message": "Tag!"
             },
@@ -1147,7 +1147,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2001000
             },
             "embeddings": [
@@ -1183,7 +1183,7 @@
             "line": 5,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1211000
             },
             "embeddings": [
@@ -1202,7 +1202,7 @@
             "line": 6,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1961000
             },
             "embeddings": [
@@ -1221,7 +1221,7 @@
             "line": 7,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1182000
             },
             "embeddings": [
@@ -1249,7 +1249,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1171000
             },
             "embeddings": [
@@ -1263,7 +1263,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2119000
             },
             "embeddings": [
@@ -1286,7 +1286,7 @@
             "line": 5,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1469000
             },
             "embeddings": [
@@ -1305,7 +1305,7 @@
             "line": 6,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 839000
             },
             "embeddings": [
@@ -1324,7 +1324,7 @@
             "line": 7,
             "name": "2 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2183000
             },
             "embeddings": [
@@ -1344,7 +1344,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1532000
             },
             "embeddings": [
@@ -1358,7 +1358,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1328000
             },
             "embeddings": [
@@ -1381,7 +1381,7 @@
             "line": 5,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1405000
             },
             "embeddings": [
@@ -1400,7 +1400,7 @@
             "line": 6,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2630000
             },
             "embeddings": [
@@ -1419,7 +1419,7 @@
             "line": 7,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1057000
             },
             "embeddings": [
@@ -1439,7 +1439,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1629000
             },
             "embeddings": [
@@ -1453,7 +1453,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2175000
             },
             "embeddings": [
@@ -1476,7 +1476,7 @@
             "line": 5,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 901000
             },
             "embeddings": [
@@ -1495,7 +1495,7 @@
             "line": 6,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2116000
             },
             "embeddings": [
@@ -1514,7 +1514,7 @@
             "line": 7,
             "name": "1 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1055000
             },
             "embeddings": [
@@ -1534,7 +1534,7 @@
         "after": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 994000
             },
             "embeddings": [
@@ -1548,7 +1548,7 @@
         "before": [
           {
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1370000
             },
             "embeddings": [
@@ -1571,7 +1571,7 @@
             "line": 5,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1443000
             },
             "embeddings": [
@@ -1590,7 +1590,7 @@
             "line": 6,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 2435000
             },
             "embeddings": [
@@ -1609,7 +1609,7 @@
             "line": 7,
             "name": "5 secs",
             "result": {
-              "status": "Passed",
+              "status": "passed",
               "duration": 1510000
             },
             "embeddings": [
