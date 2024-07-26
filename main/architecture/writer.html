@@ -178,13 +178,12 @@
 <p><a href="https://docs.rs/cucumber/*/cucumber/writer/index.html"><code>Writer</code></a> represents anything that consumes a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
-</span><span class="boring">extern crate once_cell;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::{
 </span><span class="boring">    panic::{self, AssertUnwindSafe},
 </span><span class="boring">    path::PathBuf,
-</span><span class="boring">    sync::Arc,
+</span><span class="boring">    sync::{Arc, LazyLock},
 </span><span class="boring">    time::Duration,
 </span><span class="boring">};
 </span><span class="boring">
@@ -196,7 +195,6 @@
 </span><span class="boring">    future::{self, FutureExt as _},
 </span><span class="boring">    stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
 </span><span class="boring">};
-</span><span class="boring">use once_cell::sync::Lazy;
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Clone, Copy, Debug, Default)]
@@ -305,8 +303,8 @@
 </span><span class="boring">
 </span><span class="boring">impl CustomRunner {
 </span><span class="boring">    fn steps_fns() -&gt; &amp;'static step::Collection&lt;AnimalWorld&gt; {
-</span><span class="boring">        static STEPS: Lazy&lt;step::Collection&lt;AnimalWorld&gt;&gt; =
-</span><span class="boring">            Lazy::new(AnimalWorld::collection);
+</span><span class="boring">        static STEPS: LazyLock&lt;step::Collection&lt;AnimalWorld&gt;&gt; =
+</span><span class="boring">            LazyLock::new(AnimalWorld::collection);
 </span><span class="boring">        &amp;STEPS
 </span><span class="boring">    }
 </span><span class="boring">

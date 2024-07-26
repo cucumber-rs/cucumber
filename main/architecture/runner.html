@@ -178,13 +178,12 @@
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> represents anything that transforms a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s into a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
-</span><span class="boring">extern crate once_cell;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::{
 </span><span class="boring">    panic::{self, AssertUnwindSafe},
 </span><span class="boring">    path::PathBuf,
-</span><span class="boring">    sync::Arc,
+</span><span class="boring">    sync::{Arc, LazyLock},
 </span><span class="boring">    time::Duration,
 </span><span class="boring">};
 </span><span class="boring">
@@ -195,7 +194,6 @@
 </span><span class="boring">    future::{self, FutureExt as _},
 </span><span class="boring">    stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
 </span><span class="boring">};
-</span><span class="boring">use once_cell::sync::Lazy;
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Clone, Copy, Debug, Default)]
@@ -305,8 +303,8 @@
 impl CustomRunner {
     fn steps_fns() -&gt; &amp;'static step::Collection&lt;AnimalWorld&gt; {
         // Wire the static collection of step matching functions.
-        static STEPS: Lazy&lt;step::Collection&lt;AnimalWorld&gt;&gt; =
-            Lazy::new(AnimalWorld::collection);
+        static STEPS: LazyLock&lt;step::Collection&lt;AnimalWorld&gt;&gt; =
+            LazyLock::new(AnimalWorld::collection);
         &amp;STEPS
     }
 
