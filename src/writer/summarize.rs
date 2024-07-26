@@ -202,7 +202,7 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
@@ -212,7 +212,7 @@ where
         // This is done to avoid miscalculations if this `Writer` happens to be
         // wrapped by a `writer::Repeat` or similar.
         if matches!(self.state, State::InProgress) {
-            match ev.as_deref() {
+            match event.as_deref() {
                 Err(_) => self.parsing_errors += 1,
                 Ok(Cucumber::Feature(feat, ev)) => match ev {
                     Feature::Started => self.features += 1,
@@ -244,7 +244,7 @@ where
             };
         }
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(event, cli).await;
 
         if matches!(self.state, State::FinishedButNotOutput) {
             self.state = State::FinishedAndOutput;

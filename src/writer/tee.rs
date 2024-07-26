@@ -60,12 +60,12 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         future::join(
-            self.left.handle_event(ev.clone(), &cli.left),
-            self.right.handle_event(ev, &cli.right),
+            self.left.handle_event(event.clone(), &cli.left),
+            self.right.handle_event(event, &cli.right),
         )
         .await;
     }

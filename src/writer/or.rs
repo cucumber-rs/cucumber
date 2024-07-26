@@ -69,13 +69,13 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        if (self.predicate)(&ev, cli) {
-            self.left.handle_event(ev, &cli.left).await;
+        if (self.predicate)(&event, cli) {
+            self.left.handle_event(event, &cli.left).await;
         } else {
-            self.right.handle_event(ev, &cli.right).await;
+            self.right.handle_event(event, &cli.right).await;
         }
     }
 }

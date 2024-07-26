@@ -140,14 +140,14 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
-        opts: &Self::Cli,
+        event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};
 
-        self.apply_cli(*opts);
+        self.apply_cli(*cli);
 
-        match ev.map(Event::into_inner) {
+        match event.map(Event::into_inner) {
             Err(err) => self.parsing_failed(&err),
             Ok(
                 Cucumber::Started
@@ -263,7 +263,7 @@ impl<Out: io::Write> Basic<Out> {
         error: impl Display,
     ) -> io::Result<()> {
         self.output
-            .write_line(&self.styles.err(format!("Failed to parse: {error}")))
+            .write_line(self.styles.err(format!("Failed to parse: {error}")))
     }
 
     /// Outputs the [started] [`Feature`].
@@ -275,7 +275,7 @@ impl<Out: io::Write> Basic<Out> {
         feature: &gherkin::Feature,
     ) -> io::Result<()> {
         let out = format!("{}: {}", feature.keyword, feature.name);
-        self.output.write_line(&self.styles.ok(out))
+        self.output.write_line(self.styles.ok(out))
     }
 
     /// Outputs the [`Rule`]'s [started]/[scenario]/[finished] event.
@@ -321,7 +321,7 @@ impl<Out: io::Write> Basic<Out> {
             indent = " ".repeat(self.indent)
         );
         self.indent += 2;
-        self.output.write_line(&self.styles.ok(out))
+        self.output.write_line(self.styles.ok(out))
     }
 
     /// Outputs the [`Scenario`]'s [started]/[background]/[step] event.
@@ -404,7 +404,7 @@ impl<Out: io::Write> Basic<Out> {
             }
         };
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{indent}✘  Scenario's {which} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             feat.path
@@ -448,7 +448,7 @@ impl<Out: io::Write> Basic<Out> {
                 retries.current,
                 retries.left + retries.current,
             );
-            self.output.write_line(&self.styles.retry(out))
+            self.output.write_line(self.styles.retry(out))
         } else {
             let out = format!(
                 "{}{}: {}",
@@ -456,7 +456,7 @@ impl<Out: io::Write> Basic<Out> {
                 scenario.keyword,
                 scenario.name,
             );
-            self.output.write_line(&self.styles.ok(out))
+            self.output.write_line(self.styles.ok(out))
         }
     }
 
@@ -598,7 +598,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         );
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -614,7 +614,7 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
-        self.output.write_line(&self.styles.skipped(format!(
+        self.output.write_line(self.styles.skipped(format!(
             "{indent}?  {}{}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
@@ -877,7 +877,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         );
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{step_keyword}{step_value}{doc_str}{step_table}",
         )))
     }
@@ -893,7 +893,7 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
-        self.output.write_line(&self.styles.skipped(format!(
+        self.output.write_line(self.styles.skipped(format!(
             "{indent}?> {}{}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,

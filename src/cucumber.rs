@@ -572,8 +572,8 @@ where
     /// [`cli::Opts`].
     ///
     /// > ⚠️ __WARNING__: Any CLI options of [`Parser`], [`Runner`], [`Writer`]
-    ///                   or custom ones should not overlap, otherwise
-    ///                   [`cli::Opts`] will fail to parse on startup.
+    /// >                 or custom ones should not overlap, otherwise
+    /// >                 [`cli::Opts`] will fail to parse on startup.
     ///
     /// # Example
     ///

@@ -403,13 +403,13 @@ where
 {
     fn on_new_span(
         &self,
-        attr: &span::Attributes<'_>,
+        attrs: &span::Attributes<'_>,
         id: &span::Id,
         ctx: layer::Context<'_, S>,
     ) {
         if let Some(span) = ctx.span(id) {
             let mut visitor = GetScenarioId(None);
-            attr.values().record(&mut visitor);
+            attrs.values().record(&mut visitor);
 
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();

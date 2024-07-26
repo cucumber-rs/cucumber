@@ -112,14 +112,14 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
-        opts: &Self::Cli,
+        event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 
-        self.apply_cli(*opts);
+        self.apply_cli(*cli);
 
-        match ev.map(Event::split) {
+        match event.map(Event::split) {
             Err(err) => self.handle_error(&err),
             Ok((Cucumber::Started | Cucumber::ParsingFinished { .. }, _)) => {}
             Ok((Cucumber::Feature(feat, ev), meta)) => match ev {

@@ -702,17 +702,17 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 
     async fn emit<W: Writer<World>>(
         self,
-        feature: Self::EmittedPath,
+        path: Self::EmittedPath,
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         match self.current_item()? {
             Either::Left((rule, events)) => events
-                .emit((feature, rule), writer, cli)
+                .emit((path, rule), writer, cli)
                 .await
                 .map(Either::Left),
             Either::Right((scenario, events)) => events
-                .emit((feature, None, scenario), writer, cli)
+                .emit((path, None, scenario), writer, cli)
                 .await
                 .map(Either::Right),
         }

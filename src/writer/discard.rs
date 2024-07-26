@@ -29,10 +29,10 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<Cucumber<W>>>,
+        event: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        self.0.handle_event(ev, cli).await;
+        self.0.handle_event(event, cli).await;
     }
 }
 
@@ -114,10 +114,10 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<Cucumber<W>>>,
+        event: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        self.0.handle_event(ev, cli).await;
+        self.0.handle_event(event, cli).await;
     }
 }
 

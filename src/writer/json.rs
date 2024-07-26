@@ -799,18 +799,18 @@ impl Feature {
 }
 
 impl PartialEq<gherkin::Feature> for Feature {
-    fn eq(&self, feature: &gherkin::Feature) -> bool {
+    fn eq(&self, other: &gherkin::Feature) -> bool {
         self.uri
             .as_ref()
             .and_then(|uri| {
-                feature
+                other
                     .path
                     .as_ref()
                     .and_then(|p| p.to_str().map(trim_path))
                     .map(|path| uri == path)
             })
             .unwrap_or_default()
-            && self.name == feature.name
+            && self.name == other.name
     }
 }
 

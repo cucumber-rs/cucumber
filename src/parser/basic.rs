@@ -61,7 +61,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I, cli: Self::Cli) -> Self::Output {
+    fn parse(self, input: I, cli: Self::Cli) -> Self::Output {
         let walk = |walker: GlobWalker| {
             walker
                 .filter_map(Result::ok)
@@ -78,7 +78,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         };
 
         let get_features_path = || {
-            let path = path.as_ref();
+            let path = input.as_ref();
             path.canonicalize()
                 .or_else(|_| {
                     let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
