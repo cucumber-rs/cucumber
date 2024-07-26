@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## [0.22.0] · 2024-??-?? (unreleased)
+[0.22.0]: /../../tree/v0.22.0
+
+[Diff](/../../compare/v0.21.1...v0.22.0) | [Milestone](/../../milestone/28)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.80 to get rid of `once_cell` crate. ([todo])
+
+[todo]: /../../commit/todo-full
+
+
+
+
 ## [0.21.1] · 2024-06-16
 [0.21.1]: /../../tree/v0.21.1
 

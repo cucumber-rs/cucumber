@@ -6,6 +6,20 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
+## [0.22.0] · 2024-??-?? (unreleased)
+[0.22.0]: /../../tree/v0.22.0/codegen
+
+[Milestone](/../../milestone/28)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.80 to get rid of `once_cell` crate. ([todo])
+
+[todo]: /../../commit/todo-full
+
+
+
+
 ## [0.21.1] · 2024-06-16
 [0.21.1]: /../../tree/v0.21.1/codegen
 

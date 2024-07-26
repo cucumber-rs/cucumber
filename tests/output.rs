@@ -1,8 +1,6 @@
-use std::{borrow::Cow, fmt::Debug, mem};
+use std::{borrow::Cow, fmt::Debug, mem, sync::LazyLock};
 
 use cucumber::{cli, event, given, parser, then, when, Event, Writer};
-use lazy_regex::regex;
-use once_cell::sync::Lazy;
 use regex::Regex;
 
 #[derive(cucumber::World, Debug, Default)]
@@ -49,15 +47,20 @@ impl<World: 'static + Debug> Writer<World> for DebugWriter {
 
 /// [`Regex`] to unify spans and file paths on Windows, Linux and macOS for
 /// tests.
-static SPAN_OR_PATH_RE: &Lazy<Regex> = regex!(
-    "( span: Span \\{ start: (\\d+), end: (\\d+) },\
-     |, col: (\\d+)\
-     | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)"
-);
+// TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
+//       https://github.com/Canop/lazy-regex/issues/10
+static SPAN_OR_PATH_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        "( span: Span \\{ start: (\\d+), end: (\\d+) },\
+         |, col: (\\d+)\
+         | path: (None|(Some\\()?\"[^\"]*\")\\)?,?)",
+    )
+    .unwrap()
+});
 
 #[cfg(test)]
 mod spec {
-    use std::{fmt, fs, io};
+    use std::{fmt, fs, io, sync::LazyLock};
 
     use cucumber::{
         writer::{self, Coloring},
@@ -65,16 +68,17 @@ mod spec {
     };
     use globwalk::GlobWalkerBuilder;
     use itertools::Itertools;
-    use lazy_regex::regex;
-    use once_cell::sync::Lazy;
     use regex::{Captures, Match, Regex};
 
     use super::{DebugWriter, World};
 
     /// [`Regex`] to transform full paths (both unix-like and windows) to a
     /// relative paths.
-    static FULL_PATH: &Lazy<Regex> =
-        regex!("((\\?|\\\\|\\/).*(\\\\|\\/))?tests((\\\\|\\/)\\w*)*");
+    // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
+    //       https://github.com/Canop/lazy-regex/issues/10
+    static FULL_PATH: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"((\?|\\|\/).*(\\|\/))?tests((\\|\/)\w*)*").unwrap()
+    });
 
     /// Replaces [`FULL_PATH`] with a relative path.
     fn relative_path(cap: &Captures<'_>) -> String {
@@ -90,12 +94,17 @@ mod spec {
 
     /// [`Regex`] to make `cargo careful` assertion output to match `cargo test`
     /// output.
-    static CAREFUL_ASSERTION: &Lazy<Regex> = regex!(
-        "assertion `left == right` failed(:)?\
-         (.*)\
-         \n(\\s+)left: (.+)\
-         \n(\\s+)right: (\\w+)"
-    );
+    // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
+    //       https://github.com/Canop/lazy-regex/issues/10
+    static CAREFUL_ASSERTION: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            "assertion `left == right` failed(:)?\
+             (.*)\
+             \n(\\s+)left: (.+)\
+             \n(\\s+)right: (\\w+)",
+        )
+        .unwrap()
+    });
 
     /// Replaces [`CAREFUL_ASSERTION`] with `cargo test` output.
     fn unify_asserts(cap: &Captures<'_>) -> String {

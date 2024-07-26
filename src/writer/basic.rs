@@ -16,11 +16,11 @@ use std::{
     fmt::{Debug, Display},
     io,
     str::FromStr,
+    sync::LazyLock,
 };
 
 use derive_more::{Deref, DerefMut};
 use itertools::Itertools as _;
-use once_cell::sync::Lazy;
 use regex::CaptureLocations;
 use smart_default::SmartDefault;
 
@@ -1123,7 +1123,7 @@ where
 /// Trims start of the path if it matches the current project directory.
 pub(crate) fn trim_path(path: &str) -> &str {
     /// Path of the current project directory.
-    static CURRENT_DIR: Lazy<String> = Lazy::new(|| {
+    static CURRENT_DIR: LazyLock<String> = LazyLock::new(|| {
         env::var("CARGO_WORKSPACE_DIR")
             .or_else(|_| env::var("CARGO_MANIFEST_DIR"))
             .unwrap_or_else(|_| {

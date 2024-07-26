@@ -22,7 +22,6 @@ pub use cucumber_expressions::{
 };
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
-pub use once_cell::sync::Lazy;
 pub use regex::Regex;
 
 /// [`World`] extension allowing to register steps in [`inventory`].
@@ -43,7 +42,7 @@ pub trait WorldInventory: World {
     type Then: inventory::Collect + StepConstructor<Self>;
 }
 
-/// Alias for a [`fn`] returning a [`Lazy`] [`Regex`].
+/// Alias for a [`fn`] returning a [`Regex`].
 pub type LazyRegex = fn() -> Regex;
 
 /// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]

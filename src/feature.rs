@@ -13,11 +13,10 @@
 use std::{
     iter, mem,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
 use derive_more::{Display, Error};
-use lazy_regex::regex;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use sealed::sealed;
 
@@ -144,7 +143,11 @@ fn expand_scenario(
     /// [`Regex`] matching placeholders [`Examples`] should expand into.
     ///
     /// [`Examples`]: gherkin::Examples
-    static TEMPLATE_REGEX: &Lazy<Regex> = regex!(r"<([^>\s]+)>");
+    // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
+    //       https://github.com/Canop/lazy-regex/issues/10
+    #[allow(clippy::unwrap_used)] // never panics
+    static TEMPLATE_REGEX: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"<([^>\s]+)>").unwrap());
 
     if scenario.examples.is_empty() {
         return vec![Ok(scenario)];

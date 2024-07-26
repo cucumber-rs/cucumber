@@ -135,9 +135,9 @@ impl Step {
                         column: ::std::column!(),
                     },
                     regex: || {
-                        static LAZY: ::cucumber::codegen::Lazy<
+                        static LAZY: ::std::sync::LazyLock<
                             ::cucumber::codegen::Regex
-                        > = ::cucumber::codegen::Lazy::new(|| { #regex });
+                        > = ::std::sync::LazyLock::new(|| { #regex });
                         LAZY.clone()
                     },
                     func: |__cucumber_world, __cucumber_ctx| {

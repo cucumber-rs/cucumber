@@ -225,11 +225,10 @@ pub use self::{
 /// across [scenarios][0], because we want some friction there to avoid tests
 /// being dependent on each other. If your workflow needs a way to share state
 /// between [scenarios][0] (ex. database connection pool), we recommend using
-/// [`once_cell`][1] crate or organize it other way via [shared state][2].
+/// a [`std::sync::LazyLock`] or organize it other way via [shared state][1].
 ///
 /// [0]: https://cucumber.io/docs/gherkin/reference#descriptions
-/// [1]: https://docs.rs/once_cell
-/// [2]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
+/// [1]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
 /// [Cucumber]: https://cucumber.io
 pub trait World: Sized + 'static {
     /// Error of creating a new [`World`] instance.

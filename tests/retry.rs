@@ -1,12 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
 use cucumber::{gherkin::Step, given, writer::summarize::Stats, World as _};
 use gherkin::tagexpr::TagOperation;
-use once_cell::sync::Lazy;
 use tokio::sync::Mutex;
 
-static SCENARIO_RUNS: Lazy<Mutex<HashMap<Step, usize>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static SCENARIO_RUNS: LazyLock<Mutex<HashMap<Step, usize>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[given(expr = "fail {int} time(s)")]
 async fn fail(_: &mut World, num: usize, step: &Step) {

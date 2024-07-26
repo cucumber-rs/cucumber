@@ -11,7 +11,7 @@
 [1A[2K[31m   ✘  Given [0m[31mfoo is [0m[31m[1m3[0m[0m[31m[0m[31m
       Step failed:
       Defined: tests/features/output/scenario_outline_with_multiple_examples.feature:5:5
-      Matched: tests/output.rs:11:1
+      Matched: tests/output.rs:9:1
       Step panicked. Captured output: assertion failed: `(left == right)`
         left: `0`,
        right: `3`[0m
