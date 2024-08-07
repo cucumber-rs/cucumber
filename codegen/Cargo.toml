@@ -32,7 +32,7 @@ synthez = "0.3"
 
 [dev-dependencies]
 cucumber = { path = "..", features = ["libtest", "macros"] }
-derive_more = "0.99.17"
+derive_more = "1.0.0"
 futures = "0.3.17"
 tempfile = "3.2"
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "time"] }
