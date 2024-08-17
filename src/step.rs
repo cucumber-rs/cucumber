@@ -273,7 +273,7 @@ impl fmt::Display for AmbiguousMatchError {
 
 /// Location of a [`Step`] [`fn`] automatically filled by a proc macro.
 #[derive(Clone, Copy, Debug, Display, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[display(fmt = "{}:{}:{}", path, line, column)]
+#[display("{}:{}:{}", path, line, column)]
 pub struct Location {
     /// Path to the file where [`Step`] [`fn`] is located.
     pub path: &'static str,

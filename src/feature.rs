@@ -229,11 +229,11 @@ fn expand_scenario(
 /// [1]: https://cucumber.io/docs/gherkin/reference#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
-    fmt = "Failed to resolve <{}> at {}:{}:{}",
+    "Failed to resolve <{}> at {}:{}:{}",
     name,
-    "path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default()",
-    "pos.line",
-    "pos.col"
+    path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default(),
+    pos.line,
+    pos.col
 )]
 pub struct ExpandExamplesError {
     /// Position of the unknown template.

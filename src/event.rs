@@ -405,20 +405,20 @@ pub enum StepError {
     ///
     /// [`Regex`]: regex::Regex
     /// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
-    #[display(fmt = "Step doesn't match any function")]
+    #[display("Step doesn't match any function")]
     NotFound,
 
     /// [`Step`] matches multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step match is ambiguous: {}", _0)]
+    #[display("Step match is ambiguous: {}", _0)]
     AmbiguousMatch(step::AmbiguousMatchError),
 
     /// [`Step`] panicked.
     ///
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
+    #[display("Step panicked. Captured output: {}", coerce_error(_0))]
     Panic(#[error(not(source))] Info),
 }
 
