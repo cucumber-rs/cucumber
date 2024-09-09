@@ -646,7 +646,8 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     pub(crate) fn step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -730,7 +731,7 @@ impl<Out: io::Write> Basic<Out> {
         ));
 
         self.output
-            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+            .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -926,7 +927,8 @@ impl<Out: io::Write> Basic<Out> {
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     pub(crate) fn bg_step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -1009,7 +1011,7 @@ impl<Out: io::Write> Basic<Out> {
         ));
 
         self.output
-            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+            .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 }
 
@@ -1046,8 +1048,6 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .fold(None, |mut acc: Option<Vec<_>>, row| {
-            // False Positive: Due to mut borrowing.
-            #[allow(clippy::option_if_let_else)] // false positive
             if let Some(existing_len) = acc.as_mut() {
                 for (cell, max_len) in row.iter().zip(existing_len) {
                     *max_len = cmp::max(*max_len, cell.len());
@@ -1094,9 +1094,10 @@ where
     D: for<'a> Fn(&'a str) -> Cow<'a, str>,
     A: for<'a> Fn(&'a str) -> Cow<'a, str>,
 {
-    // PANIC: Slicing is OK here, as all indices are obtained from the source
-    //        string.
-    #![allow(clippy::string_slice)] // intentional
+    #![expect( // intentional
+        clippy::string_slice,
+        reason = "all indices are obtained from the source string"
+    )]
 
     let value = value.as_ref();
 

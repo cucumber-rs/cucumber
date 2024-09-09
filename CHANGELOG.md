@@ -13,8 +13,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.80 to get rid of `once_cell` crate. ([todo])
+- Bumped up [MSRV] to 1.81 to get rid of `once_cell` crate and for `#[expect]` attribute usage. ([4010c1ad], [todo])
 
+[4010c1ad]: /../../commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
 [todo]: /../../commit/todo-full
 
 

@@ -146,7 +146,7 @@ impl RetryOptions {
         scenario: &gherkin::Scenario,
         cli: &Cli,
     ) -> Option<Self> {
-        #[allow(clippy::shadow_unrelated)] // intentional
+        #[expect(clippy::shadow_unrelated, reason = "actually related")]
         let parse_tags = |tags: &[String]| {
             tags.iter().find_map(|tag| {
                 tag.strip_prefix("retry").map(|retries| {
@@ -895,7 +895,13 @@ async fn insert_features<W, S, F>(
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 // TODO: Needs refactoring.
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+#[expect(clippy::too_many_lines, reason = "needs refactoring")]
+#[cfg_attr(
+    feature = "tracing",
+    // TODO: Try remove on next Rust version update.
+    expect(clippy::duplicated_attributes, reason = "false positive"),
+    expect(clippy::too_many_arguments, reason = "needs refactoring")
+)]
 async fn execute<W, Before, After>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
@@ -999,8 +1005,10 @@ async fn execute<W, Before, After>(
                     coll.start_scenarios(&runnable);
                 }
                 async {
-                    // Cannot annotate `async` block with `-> !`.
-                    #[allow(clippy::infinite_loop)] // intentional
+                    #[expect( // intentional
+                        clippy::infinite_loop,
+                        reason = "cannot annotate `async` block with `-> !"
+                    )]
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1179,7 +1187,11 @@ where
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     // TODO: Needs refactoring.
-    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "needs refactoring")]
+    #[cfg_attr(
+        feature = "tracing",
+        expect(clippy::too_many_arguments, reason = "needs refactoring")
+    )]
     async fn run_scenario(
         &self,
         id: ScenarioId,
@@ -1724,7 +1736,11 @@ where
     ///
     /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
     /// details.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[cfg_attr(
+        feature = "tracing",
+        expect(clippy::too_many_arguments, reason = "needs refactoring")
+    )]
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
@@ -1786,7 +1802,8 @@ where
     ///
     /// See [`Self::emit_failed_events()`] for the explanation why we don't do
     /// that inside [`Self::run_after_hook()`].
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn emit_after_hook_events(
         &self,
         feature: Arc<gherkin::Feature>,
@@ -2239,7 +2256,7 @@ impl Features {
 
         let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
-        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+        #[expect(clippy::iter_over_hash_type, reason = "order doesn't matter")]
         for (which, values) in scenarios {
             for (id, f, r, s, ret) in values {
                 match ret {
@@ -2269,7 +2286,7 @@ impl Features {
 
         let mut storage = self.scenarios.lock().await;
 
-        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+        #[expect(clippy::iter_over_hash_type, reason = "order doesn't matter")]
         for (which, values) in with_retries {
             let ty_storage = storage.entry(which).or_default();
             for (id, f, r, s, ret) in values {
@@ -2282,7 +2299,10 @@ impl Features {
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
-            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+            #[expect(
+                clippy::iter_over_hash_type,
+                reason = "order doesn't matter"
+            )]
             for (which, mut values) in without_retries {
                 let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
@@ -2291,7 +2311,10 @@ impl Features {
         } else {
             // If there are no Serial Scenarios, we just extend already existing
             // Concurrent Scenarios.
-            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+            #[expect(
+                clippy::iter_over_hash_type,
+                reason = "order doesn't matter"
+            )]
             for (which, values) in without_retries {
                 storage.entry(which).or_default().extend(values);
             }
@@ -2329,7 +2352,8 @@ impl Features {
              ty,
              count: Option<usize>| {
                 let mut i = 0;
-                // TODO: Replace with `drain_filter`, once stabilized.
+                // TODO: Replace with `extract_if` instead of custom
+                //       `drain_filter`, once stabilized:
                 //       https://github.com/rust-lang/rust/issues/43244
                 let drained =
                     VecExt::drain_filter(storage, |(_, _, _, _, ret)| {

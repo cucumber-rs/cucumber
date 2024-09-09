@@ -276,7 +276,8 @@ impl<Out: io::Write> Json<Out> {
     }
 
     /// Handles the given [`event::Step`].
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn handle_step_event<W>(
         &mut self,
         feature: &gherkin::Feature,

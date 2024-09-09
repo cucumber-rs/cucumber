@@ -521,7 +521,10 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             // the standard library’s `print!()` macro.
             // This is the same as `tracing_subscriber::fmt::TestWriter` does
             // (check its documentation for details).
-            #[allow(clippy::print_stdout)] // intentional
+            #[expect( // intentional
+                clippy::print_stdout,
+                reason = "supporting `libtest` output capturing properly"
+            )]
             Scenario::Log(msg) => {
                 print!("{msg}");
                 vec![]
@@ -530,7 +533,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn expand_hook_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -576,7 +580,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn expand_step_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -943,7 +948,7 @@ impl TestEvent {
     }
 
     /// Creates a new [`TestEvent::Timeout`].
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "API uniformity")]
     fn timeout(name: String, exec_time: Option<Duration>) -> Self {
         Self::Timeout(TestEventInner::new(name).with_exec_time(exec_time))
     }

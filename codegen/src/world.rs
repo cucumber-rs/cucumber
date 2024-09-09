@@ -80,7 +80,7 @@ impl Definition {
     const STEPS: &'static [&'static str] = &["given", "when", "then"];
 
     /// Assertion to ensure, that [`Self::STEPS`] has exactly 3 step types.
-    #[allow(clippy::manual_assert)] // `assert_eq!` isn't const yet
+    #[expect(clippy::manual_assert, reason = "`assert_eq!` isn't const yet")]
     const EXACTLY_3_STEPS: () = if Self::STEPS.len() != 3 {
         panic!("expected exactly 3 step names");
     };

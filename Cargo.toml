@@ -2,7 +2,7 @@
 name = "cucumber"
 version = "0.21.1"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.81"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\

@@ -145,7 +145,7 @@ fn expand_scenario(
     /// [`Examples`]: gherkin::Examples
     // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
     //       https://github.com/Canop/lazy-regex/issues/10
-    #[allow(clippy::unwrap_used)] // never panics
+    #[expect(clippy::unwrap_used, reason = "regex is valid")]
     static TEMPLATE_REGEX: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"<([^>\s]+)>").unwrap());
 
@@ -174,9 +174,11 @@ fn expand_scenario(
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
                     .replace_all(str, |cap: &regex::Captures<'_>| {
-                        // PANIC: Unwrapping is OK here as `TEMPLATE_REGEX`
-                        //        contains this capture group.
-                        #[allow(clippy::unwrap_used)] // intentional
+                        #[expect( // intentional
+                            clippy::unwrap_used,
+                            reason = "`TEMPLATE_REGEX` contains this capture \
+                                      group"
+                        )]
                         let name = cap.get(1).unwrap().as_str();
 
                         row.clone()

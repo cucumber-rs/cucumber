@@ -127,7 +127,7 @@ where
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> task::Poll<Self::Output> {
-        #[allow(clippy::expect_used)] // intentional
+        #[expect(clippy::expect_used, reason = "should not happen normally")]
         let (mut a, mut b) = self
             .inner
             .take()

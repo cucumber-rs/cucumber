@@ -55,7 +55,7 @@ impl<T> Event<T> {
     /// Creates a new [`Event`] out of the given `value`.
     #[cfg_attr(
         not(feature = "timestamps"),
-        allow(clippy::missing_const_for_fn)
+        expect(clippy::missing_const_for_fn, reason = "API compliance")
     )]
     #[must_use]
     pub fn new(value: T) -> Self {
@@ -150,7 +150,6 @@ impl Retries {
 /// Top-level [Cucumber] run event.
 ///
 /// [Cucumber]: https://cucumber.io
-#[allow(variant_size_differences)]
 #[derive(Debug)]
 pub enum Cucumber<World> {
     /// [`Cucumber`] execution being started.
@@ -223,7 +222,7 @@ impl<World> Cucumber<World> {
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
+    pub const fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
         Self::Feature(feat, Feature::Started)
     }
 
@@ -231,7 +230,7 @@ impl<World> Cucumber<World> {
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub fn rule_started(
+    pub const fn rule_started(
         feat: Arc<gherkin::Feature>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
@@ -242,7 +241,7 @@ impl<World> Cucumber<World> {
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
+    pub const fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
         Self::Feature(feat, Feature::Finished)
     }
 
@@ -250,7 +249,7 @@ impl<World> Cucumber<World> {
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub fn rule_finished(
+    pub const fn rule_finished(
         feat: Arc<gherkin::Feature>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
@@ -441,7 +440,7 @@ pub enum HookType {
     After,
 }
 
-#[allow(clippy::use_debug)] // intentional
+#[expect(clippy::use_debug, reason = "intentional")]
 impl fmt::Display for HookType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")
@@ -556,7 +555,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_started(step: Arc<gherkin::Step>) -> Self {
+    pub const fn step_started(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Started)
     }
 
@@ -565,7 +564,7 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_started(step: Arc<gherkin::Step>) -> Self {
+    pub const fn background_step_started(step: Arc<gherkin::Step>) -> Self {
         Self::Background(step, Step::Started)
     }
 
@@ -573,7 +572,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_passed(
+    pub const fn step_passed(
         step: Arc<gherkin::Step>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
@@ -586,7 +585,7 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_passed(
+    pub const fn background_step_passed(
         step: Arc<gherkin::Step>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
@@ -598,7 +597,7 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn step_skipped(step: Arc<gherkin::Step>) -> Self {
+    pub const fn step_skipped(step: Arc<gherkin::Step>) -> Self {
         Self::Step(step, Step::Skipped)
     }
     /// Constructs an event of a skipped [`Background`] [`Step`].
@@ -606,7 +605,7 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
+    pub const fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
         Self::Background(step, Step::Skipped)
     }
 
@@ -678,7 +677,6 @@ impl<World> Clone for RetryableScenario<World> {
 /// Event explaining why a [Scenario] has finished.
 ///
 /// [Scenario]: https://cucumber.io/docs/gherkin/reference#example
-#[allow(variant_size_differences)]
 #[derive(Clone, Debug)]
 pub enum ScenarioFinished {
     /// [`Before`] [`Hook::Failed`].

@@ -311,8 +311,12 @@ impl Collector {
     }
 }
 
-// We better keep this here, as it's related to `tracing` capabilities only.
-#[allow(clippy::multiple_inherent_impl)] // intentional
+// TODO: Try remove on next Rust version update.
+#[expect(clippy::allow_attributes, reason = "`#[expect]` doesn't work here")]
+#[allow( // intentional
+    clippy::multiple_inherent_impl,
+    reason = "related to `tracing` capabilities only"
+)]
 impl ScenarioId {
     /// Name of the [`ScenarioId`] [`Span`] field.
     const SPAN_FIELD_NAME: &'static str = "__cucumber_scenario_id";
@@ -330,7 +334,7 @@ impl ScenarioId {
     /// Creates a new [`Span`] for a running [`Step`].
     ///
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::unused_self)]
+    #[expect(clippy::unused_self, reason = "API uniformity")]
     pub(crate) fn step_span(self, is_background: bool) -> Span {
         // `Level::ERROR` is used to minimize the chance of the user-provided
         // filter to skip it.
@@ -344,7 +348,7 @@ impl ScenarioId {
     /// Creates a new [`Span`] for running a [`Hook`].
     ///
     /// [`Hook`]: event::Hook
-    #[allow(clippy::unused_self)]
+    #[expect(clippy::unused_self, reason = "API uniformity")]
     pub(crate) fn hook_span(self, hook_ty: HookType) -> Span {
         // `Level::ERROR` is used to minimize the chance of the user-provided
         // filter to skip it.

@@ -550,8 +550,12 @@ pub trait Summarizable {}
 
 impl<T: writer::NonTransforming> Summarizable for T {}
 
-// We better keep this here, as it's related to summarization only.
-#[allow(clippy::multiple_inherent_impl)] // intentional
+// TODO: Try remove on next Rust version update.
+#[expect(clippy::allow_attributes, reason = "`#[expect]` doesn't work here")]
+#[allow( // intentional
+    clippy::multiple_inherent_impl,
+    reason = "related to summarization only"
+)]
 impl Styles {
     /// Generates a formatted summary [`String`].
     #[must_use]

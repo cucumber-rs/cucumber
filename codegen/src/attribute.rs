@@ -250,8 +250,6 @@ impl Step {
 
                 Ok((func_args, addon_parsing))
             } else {
-                // false positive: impl of `FnOnce` is not general enough
-                #[allow(clippy::redundant_closure_for_method_calls)]
                 let (idents, parsings): (Vec<_>, Vec<_>) =
                     itertools::process_results(
                         func.sig
