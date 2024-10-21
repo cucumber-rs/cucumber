@@ -81,8 +81,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
             let path = input.as_ref();
             path.canonicalize()
                 .or_else(|_| {
-                    let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                    buf.push(
+                    let buf = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
                         path.strip_prefix("/")
                             .or_else(|_| path.strip_prefix("./"))
                             .unwrap_or(path),
