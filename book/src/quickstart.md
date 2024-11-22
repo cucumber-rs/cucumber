@@ -69,7 +69,7 @@ fn main() {
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(
-        "tests/features/book/quickstart/simple.feature",
+        "tests/features/book/animal.feature",
     ));
 }
 ```
@@ -156,7 +156,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/simple.feature",
+#         "tests/features/book/animal.feature",
 #     ));
 # }
 ```
@@ -206,7 +206,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/simple.feature",
+#         "tests/features/book/animal.feature",
 #     ));
 # }
 ```
@@ -256,7 +256,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/simple.feature",
+#         "tests/features/book/animal.feature",
 #     ));
 # }
 ```
@@ -325,7 +325,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/concurrent.feature",
+#         "tests/features/book/animal.feature",
 #     ));
 # }
 ```
@@ -381,7 +381,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/simple.feature",
+#         "tests/features/book/animal.feature",
 #     ));
 # }
 ```
@@ -432,6 +432,7 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 #     cat: Cat,
 # }
 #
+// Don't forget to additionally `use tokio::time::{sleep, Duration};`.
 #[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;
@@ -459,7 +460,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("tests/features/book/quickstart/concurrent.feature").await;
+    AnimalWorld::run("tests/features/book/animal.feature").await;
 }
 ```
 ![record](rec/quickstart_concurrent_async.gif)
