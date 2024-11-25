@@ -18,7 +18,7 @@ harness = false  # allows Cucumber to print output instead of libtest
 
 At this point, while it won't do anything, it should successfully run `cargo test --test example` without errors, as long as the `example.rs` file has at least a `main()` function defined.
 
-Now, let's create a directory to store `.feature` files somewhere in the project (in this walkthrough it's `tests/features/book/` directory), and put a `.feature` file there (such as `animal.feature`). It should contain a [Gherkin] spec for the [scenario] we want to test. Here's a very simple example:
+Now, let's create a directory to store `.feature` files somewhere in the project (in this walkthrough it's `tests/features/book/quickstart/` directory), and put a `.feature` file there (such as `simple.feature`). It should contain a [Gherkin] spec for the [scenario] we want to test. Here's a very simple example:
 ```gherkin
 Feature: Animal feature
 
@@ -30,7 +30,7 @@ Feature: Animal feature
 
 To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario].
 
-To enable testing of our `animal.feature`, let's add this code to `example.rs`:
+To enable testing of our `simple.feature`, let's add this code to `example.rs`:
 ```rust
 # extern crate cucumber;
 # extern crate futures;
@@ -63,13 +63,13 @@ fn hungry_cat(world: &mut AnimalWorld) {
     world.cat.hungry = true;
 }
 
-// This runs before everything else, so you can setup things here.
+// This runs before everything else, so you can set up things here.
 fn main() {
     // You may choose any executor you like (`tokio`, `async-std`, etc.).
     // You may even have an `async` main, it doesn't matter. The point is that
     // Cucumber is composable. :)
     futures::executor::block_on(AnimalWorld::run(
-        "tests/features/book/animal.feature",
+        "tests/features/book/quickstart/simple.feature",
     ));
 }
 ```
@@ -156,7 +156,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/animal.feature",
+#         "tests/features/book/quickstart/simple.feature",
 #     ));
 # }
 ```
@@ -206,7 +206,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/animal.feature",
+#         "tests/features/book/quickstart/simple.feature",
 #     ));
 # }
 ```
@@ -256,7 +256,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/animal.feature",
+#         "tests/features/book/quickstart/simple.feature",
 #     ));
 # }
 ```
@@ -266,7 +266,7 @@ And see the test failing:
 
 > __TIP__: By default, unlike [unit tests](https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options), failed [step]s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use `--fail-fast` [CLI] option to stop execution on first failure.
 
-What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add an another [scenario] that looks quite similar:
+What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add another [scenario], that looks quite similar (let's put it into a separate `concurrent.feature`):
 ```gherkin
 Feature: Animal feature
 
@@ -325,7 +325,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/animal.feature",
+#         "tests/features/book/quickstart/concurrent.feature",
 #     ));
 # }
 ```
@@ -381,7 +381,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/animal.feature",
+#         "tests/features/book/quickstart/concurrent.feature",
 #     ));
 # }
 ```
@@ -460,7 +460,7 @@ async fn cat_is_fed(world: &mut AnimalWorld) {
 
 #[tokio::main]
 async fn main() {
-    AnimalWorld::run("tests/features/book/animal.feature").await;
+    AnimalWorld::run("tests/features/book/quickstart/concurrent.feature").await;
 }
 ```
 ![record](rec/quickstart_concurrent_async.gif)
