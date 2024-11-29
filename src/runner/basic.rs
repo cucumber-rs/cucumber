@@ -898,8 +898,6 @@ async fn insert_features<W, S, F>(
 #[expect(clippy::too_many_lines, reason = "needs refactoring")]
 #[cfg_attr(
     feature = "tracing",
-    // TODO: Try remove on next Rust version update.
-    expect(clippy::duplicated_attributes, reason = "false positive"),
     expect(clippy::too_many_arguments, reason = "needs refactoring")
 )]
 async fn execute<W, Before, After>(
@@ -955,13 +953,6 @@ async fn execute<W, Before, After>(
 
     executor.send_event(event::Cucumber::Started);
 
-    // TODO: Replace with `ControlFlow::map_break()` once stabilized:
-    //       https://github.com/rust-lang/rust/issues/75744
-    let map_break = |cf| match cf {
-        ControlFlow::Continue(cont) => cont,
-        ControlFlow::Break(()) => Some(0),
-    };
-
     #[cfg(feature = "tracing")]
     let waiter = logs_collector
         .as_ref()
@@ -970,8 +961,9 @@ async fn execute<W, Before, After>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        let (runnable, sleep) =
-            features.get(map_break(started_scenarios)).await;
+        let (runnable, sleep) = features
+            .get(started_scenarios.continue_value().unwrap_or(Some(0)))
+            .await;
         if run_scenarios.is_empty() && runnable.is_empty() {
             if features.is_finished(started_scenarios.is_break()).await {
                 break;

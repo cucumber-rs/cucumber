@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ["1.81.0"]
+        msrv: ["1.83.0"]
         crate:
           - cucumber-codegen
           - cucumber

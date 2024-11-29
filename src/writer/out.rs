@@ -12,7 +12,7 @@
 
 use std::{
     borrow::Cow,
-    io::{self, IsTerminal},
+    io::{self, IsTerminal as _},
     mem, str,
 };
 
