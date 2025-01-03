@@ -14,7 +14,7 @@ use std::{future::Future, hash::Hash, mem, sync::Arc};
 
 use derive_more::Deref;
 use either::Either;
-use linked_hash_map::LinkedHashMap;
+use hashlink::LinkedHashMap;
 
 use crate::{
     event::{self, Metadata, Retries},
@@ -327,7 +327,7 @@ impl<Writer> Normalized for AssertNormalized<Writer> {}
 /// queue for our events. This means by calling [`next()`] we reliably get the
 /// currently outputting item's events. We're doing that until it yields an
 /// event that corresponds to the item being finished, after which we remove the
-/// current item, as all its events have been printed out and we should do it
+/// current item, as all its events have been printed out, and we should do it
 /// all over again with a [`next()`] item.
 ///
 /// [`next()`]: Iterator::next()
