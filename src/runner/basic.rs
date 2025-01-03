@@ -2200,25 +2200,27 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
-        dbg!("--> wut1");
         let feature = Arc::new(feature);
 
         let local = feature
             .scenarios
             .iter()
-            .map(|s| (&feature, None, s))
+            .map(|s| (None, s))
             .chain(feature.rules.iter().flat_map(|r| {
                 r.scenarios
                     .iter()
-                    .map(|s| (&feature, Some(Arc::new(r.clone())), s))
+                    .map(|s| (Some(Arc::new(r.clone())), s))
                     .collect::<Vec<_>>()
             }))
-            .map(|(feat, rule, scenario)| {
-                let retries = retry(&**feat, rule.as_deref(), scenario, cli);
+            .map(|(rule, scenario)| {
+                let retries = retry(&feature, rule.as_deref(), scenario, cli);
                 (
                     ScenarioId::new(),
-                    Arc::clone(&feat),
+                    Arc::clone(&feature),
                     rule.as_ref().map(Arc::clone),
+                    // PERFORMANCE: It's OK to make a new `Arc` for each
+                    //              iteration here, since the `scenario` is
+                    //              unique per iteration.
                     Arc::new(scenario.clone()),
                     retries,
                 )
@@ -2226,10 +2228,8 @@ impl Features {
             .into_group_map_by(|(_, f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
-        dbg!("--> wut2");
 
         self.insert_scenarios(local).await;
-        dbg!("--> wut3");
     }
 
     /// Inserts the provided retried [`Scenario`] into this [`Features`]
