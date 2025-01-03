@@ -841,7 +841,6 @@ async fn insert_features<W, S, F>(
         ) -> ScenarioType
         + 'static,
 {
-    dbg!("-> running: start inserting features");
     let mut features = 0;
     let mut rules = 0;
     let mut scenarios = 0;
@@ -857,9 +856,7 @@ async fn insert_features<W, S, F>(
                 scenarios += f.count_scenarios();
                 steps += f.count_steps();
 
-                dbg!("-> running: inserting features: start");
                 into.insert(f, &which_scenario, &retries, &cli).await;
-                dbg!("-> running: inserting features: done");
             }
             Err(e) => {
                 parser_errors += 1;
@@ -873,8 +870,6 @@ async fn insert_features<W, S, F>(
         }
     }
 
-    dbg!("-> running: finish inserting features");
-
     drop(sender.unbounded_send(Ok(Event::new(
         event::Cucumber::ParsingFinished {
             features,
@@ -885,11 +880,7 @@ async fn insert_features<W, S, F>(
         },
     ))));
 
-    dbg!("-> running: finish inserting features reported");
-
     into.finish();
-
-    dbg!("-> running: finished inserting features");
 }
 
 /// Retrieves [`Feature`]s and executes them.
@@ -970,6 +961,7 @@ async fn execute<W, Before, After>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
+        dbg!("-> running: loop start");
         let (runnable, sleep) = features
             .get(started_scenarios.continue_value().unwrap_or(Some(0)))
             .await;
@@ -986,11 +978,13 @@ async fn execute<W, Before, After>(
             //       once it's available.
             if let Some(dur) = sleep {
                 let (sender, receiver) = oneshot::channel();
+                dbg!("-> running: start sleeping");
                 drop(thread::spawn(move || {
                     thread::sleep(dur);
                     sender.send(())
                 }));
                 _ = receiver.await.ok();
+                dbg!("-> running: finished sleeping");
             }
 
             continue;
@@ -1203,11 +1197,13 @@ where
         retries: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
+        dbg!("`run_scenario`: start");
         let retry_num = retries.map(|r| r.retries);
         let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) =
+                    (Arc::clone(f), r.as_ref().map(Arc::clone), Arc::clone(s));
                 let event = e(step).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1215,7 +1211,8 @@ where
         let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, cap, loc| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) =
+                    (Arc::clone(f), r.as_ref().map(Arc::clone), Arc::clone(s));
                 let event = e(step, cap, loc).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1237,10 +1234,11 @@ where
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),
-            rule.clone(),
+            rule.as_ref().map(Arc::clone),
             Arc::clone(&scenario),
             event::Scenario::Started.with_retries(retry_num),
         ));
+        dbg!("`run_scenario`: `event::Scenario::Started`");
 
         let is_failed = async {
             let mut result = async {
@@ -1402,10 +1400,11 @@ where
 
         self.send_event(event::Cucumber::scenario(
             Arc::clone(&feature),
-            rule.clone(),
+            rule.as_ref().map(Arc::clone),
             Arc::clone(&scenario),
             event::Scenario::Finished.with_retries(retry_num),
         ));
+        dbg!("`run_scenario`: `event::Scenario::Finished`");
 
         let next_try = retries
             .filter(|_| is_failed)
@@ -1414,7 +1413,7 @@ where
             self.storage
                 .insert_retried_scenario(
                     Arc::clone(&feature),
-                    rule.clone(),
+                    rule.as_ref().map(Arc::clone),
                     scenario,
                     scenario_ty,
                     Some(next_try),
@@ -1429,6 +1428,7 @@ where
             is_failed,
             next_try.is_some(),
         );
+        dbg!("`run_scenario`: `scenario_finished`");
     }
 
     /// Executes [`HookType::Before`], if present.

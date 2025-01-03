@@ -85,7 +85,7 @@ where
 
 impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World,
+    W: World + Debug,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
@@ -546,7 +546,7 @@ where
 
 impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World,
+    W: World + Debug,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + writer::Normalized,
@@ -757,12 +757,9 @@ where
             ..
         } = self;
 
-        dbg!("-> before parsing");
         let features = parser.parse(input, parser_cli);
-        dbg!("-> after parsing");
 
         let filtered = features.map(move |feature| {
-            dbg!("-> before filtering");
             let mut feature = feature?;
             let feat_scenarios = mem::take(&mut feature.scenarios);
             feature.scenarios = feat_scenarios
@@ -779,7 +776,6 @@ where
                     .collect();
             }
             feature.rules = rules;
-            dbg!("-> after filtering");
             Ok(feature)
         });
 
@@ -787,9 +783,7 @@ where
         let events_stream = runner.run(filtered, runner_cli);
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
-            dbg!("-> before writing");
             writer.handle_event(ev, &writer_cli).await;
-            dbg!("-> after writing");
         }
         dbg!("-> after running");
         writer
@@ -1179,7 +1173,7 @@ where
 
 impl<W, I, P, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World,
+    W: World + Debug,
     P: Parser<I>,
     R: Runner<W>,
     Wr: writer::Stats<W> + writer::Normalized,
