@@ -95,9 +95,10 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         };
 
         let features = || {
+            dbg!("-> parse features: start");
             let features = if let Some(walker) = cli.features {
                 walk(globwalk::glob(walker.0).unwrap_or_else(|e| {
-                    unreachable!("Invalid glob pattern: {e}")
+                    unreachable!("invalid glob pattern: {e}")
                 }))
             } else {
                 let feats_path = match get_features_path() {
@@ -123,13 +124,16 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
                 }
             };
 
-            features
+            dbg!("-> parse features: before expand_examples");
+            let f = features
                 .into_iter()
                 .map(|f| match f {
                     Ok(f) => f.expand_examples().map_err(ParseError::from),
                     Err(e) => Err(e.into()),
                 })
-                .collect()
+                .collect();
+            dbg!("-> parse features: collected");
+            f
         };
 
         stream::iter(features())

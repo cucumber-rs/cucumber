@@ -841,6 +841,7 @@ async fn insert_features<W, S, F>(
         ) -> ScenarioType
         + 'static,
 {
+    dbg!("-> running: start inserting features");
     let mut features = 0;
     let mut rules = 0;
     let mut scenarios = 0;
@@ -856,7 +857,9 @@ async fn insert_features<W, S, F>(
                 scenarios += f.count_scenarios();
                 steps += f.count_steps();
 
+                dbg!("-> running: inserting features: start");
                 into.insert(f, &which_scenario, &retries, &cli).await;
+                dbg!("-> running: inserting features: done");
             }
             Err(e) => {
                 parser_errors += 1;
@@ -870,6 +873,8 @@ async fn insert_features<W, S, F>(
         }
     }
 
+    dbg!("-> running: finish inserting features");
+
     drop(sender.unbounded_send(Ok(Event::new(
         event::Cucumber::ParsingFinished {
             features,
@@ -880,7 +885,11 @@ async fn insert_features<W, S, F>(
         },
     ))));
 
+    dbg!("-> running: finish inserting features reported");
+
     into.finish();
+
+    dbg!("-> running: finished inserting features");
 }
 
 /// Retrieves [`Feature`]s and executes them.
@@ -2191,6 +2200,9 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
+        dbg!("--> wut1");
+        let feature = Arc::new(feature);
+
         let local = feature
             .scenarios
             .iter()
@@ -2198,15 +2210,15 @@ impl Features {
             .chain(feature.rules.iter().flat_map(|r| {
                 r.scenarios
                     .iter()
-                    .map(|s| (&feature, Some(r), s))
+                    .map(|s| (&feature, Some(Arc::new(r.clone())), s))
                     .collect::<Vec<_>>()
             }))
             .map(|(feat, rule, scenario)| {
-                let retries = retry(feat, rule, scenario, cli);
+                let retries = retry(&**feat, rule.as_deref(), scenario, cli);
                 (
                     ScenarioId::new(),
-                    Arc::new(feat.clone()),
-                    rule.map(|r| Arc::new(r.clone())),
+                    Arc::clone(&feat),
+                    rule.as_ref().map(Arc::clone),
                     Arc::new(scenario.clone()),
                     retries,
                 )
@@ -2214,8 +2226,10 @@ impl Features {
             .into_group_map_by(|(_, f, r, s, _)| {
                 which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
             });
+        dbg!("--> wut2");
 
         self.insert_scenarios(local).await;
+        dbg!("--> wut3");
     }
 
     /// Inserts the provided retried [`Scenario`] into this [`Features`]
