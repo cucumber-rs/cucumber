@@ -17,8 +17,7 @@ use itertools::Itertools as _;
 
 use crate::{
     cli::Colored,
-    event,
-    event::Retries,
+    event::{self, Retries, Source},
     parser,
     writer::{self, out::Styles},
     Event, World, Writer,
@@ -185,7 +184,7 @@ pub struct Summarize<Writer> {
 /// [`Scenario`]: gherkin::Scenario
 type HandledScenarios = HashMap<
     (
-        Arc<gherkin::Feature>,
+        Source<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
     ),
@@ -221,7 +220,7 @@ where
                     }
                     Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
+                            feat.clone(),
                             Some(Arc::clone(rule)),
                             Arc::clone(sc),
                             ev,
@@ -229,7 +228,7 @@ where
                     }
                     Feature::Scenario(sc, ev) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
+                            feat.clone(),
                             None,
                             Arc::clone(sc),
                             ev,
@@ -336,7 +335,7 @@ impl<Writer> Summarize<Writer> {
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
+        feature: Source<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         step: &gherkin::Step,
@@ -398,7 +397,7 @@ impl<Writer> Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
+        feature: Source<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,

@@ -85,7 +85,7 @@ where
 
 impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World + Debug,
+    W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W>,
@@ -546,7 +546,7 @@ where
 
 impl<W, P, I, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World + Debug,
+    W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: Writer<W> + writer::Normalized,
@@ -776,18 +776,20 @@ where
                     .collect();
             }
             feature.rules = rules;
+
             Ok(feature)
         });
 
-        dbg!("-> before running");
         let events_stream = runner.run(filtered, runner_cli);
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
             let at = std::time::Instant::now();
             writer.handle_event(ev, &writer_cli).await;
-            eprintln!("-> writer.handle_event: {}s", at.elapsed().as_secs_f64());
+            eprintln!(
+                "-> writer.handle_event: {}s",
+                at.elapsed().as_secs_f64(),
+            );
         }
-        dbg!("-> after running");
         writer
     }
 }
@@ -1175,7 +1177,7 @@ where
 
 impl<W, I, P, R, Wr, Cli> Cucumber<W, P, I, R, Wr, Cli>
 where
-    W: World + Debug,
+    W: World,
     P: Parser<I>,
     R: Runner<W>,
     Wr: writer::Stats<W> + writer::Normalized,

@@ -18,7 +18,10 @@ use std::sync::Arc;
 
 use derive_more::Deref;
 
-use crate::{event, parser, writer, Event, World, Writer};
+use crate::{
+    event::{self, Source},
+    parser, writer, Event, World, Writer,
+};
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
@@ -69,7 +72,7 @@ where
             StepError::NotFound,
         };
 
-        let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
+        let map_failed = |f: &Source<_>, r: &Option<_>, sc: &Arc<_>| {
             if (self.should_fail)(f, r.as_deref(), sc) {
                 Step::Failed(None, None, None, NotFound)
             } else {
@@ -77,13 +80,13 @@ where
             }
         };
         let map_failed_bg =
-            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+            |f: Source<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
                 let ev = Scenario::Background(st, ev).with_retries(ret);
                 Cucumber::scenario(f, r, sc, ev)
             };
         let map_failed_step =
-            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+            |f: Source<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
                 let ev = Scenario::Step(st, ev).with_retries(ret);
                 Cucumber::scenario(f, r, sc, ev)

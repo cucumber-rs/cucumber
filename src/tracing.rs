@@ -21,7 +21,7 @@ use tracing_subscriber::{
 };
 
 use crate::{
-    event::{self, HookType},
+    event::{self, HookType, Source},
     runner::{
         self,
         basic::{RetryOptions, ScenarioId},
@@ -144,7 +144,7 @@ where
 type Scenarios = HashMap<
     ScenarioId,
     (
-        Arc<gherkin::Feature>,
+        Source<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
         Arc<gherkin::Scenario>,
         Option<RetryOptions>,
@@ -217,7 +217,7 @@ impl Collector {
         runnable: impl AsRef<
             [(
                 ScenarioId,
-                Arc<gherkin::Feature>,
+                Source<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
                 Arc<gherkin::Scenario>,
                 ScenarioType,
@@ -227,10 +227,8 @@ impl Collector {
     ) {
         for (id, f, r, s, _, ret) in runnable.as_ref() {
             drop(
-                self.scenarios.insert(
-                    *id,
-                    (Arc::clone(f), r.clone(), Arc::clone(s), *ret),
-                ),
+                self.scenarios
+                    .insert(*id, (f.clone(), r.clone(), Arc::clone(s), *ret)),
             );
         }
     }

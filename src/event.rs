@@ -19,12 +19,16 @@
 //! [`Runner`]: crate::Runner
 //! [Cucumber]: https://cucumber.io
 
-use std::{any::Any, fmt, sync::Arc};
-
 #[cfg(feature = "timestamps")]
 use std::time::SystemTime;
+use std::{
+    any::Any,
+    fmt,
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From};
+use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -156,7 +160,7 @@ pub enum Cucumber<World> {
     Started,
 
     /// [`Feature`] event.
-    Feature(Arc<gherkin::Feature>, Feature<World>),
+    Feature(Source<gherkin::Feature>, Feature<World>),
 
     /// All [`Feature`]s have been parsed.
     ///
@@ -198,7 +202,7 @@ impl<World> Clone for Cucumber<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Feature(f, ev) => Self::Feature(Arc::clone(f), ev.clone()),
+            Self::Feature(f, ev) => Self::Feature(f.clone(), ev.clone()),
             Self::ParsingFinished {
                 features,
                 rules,
@@ -222,50 +226,50 @@ impl<World> Cucumber<World> {
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub const fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
-        Self::Feature(feat, Feature::Started)
+    pub fn feature_started(feat: impl Into<Source<gherkin::Feature>>) -> Self {
+        Self::Feature(feat.into(), Feature::Started)
     }
 
     /// Constructs an event of a [`Rule`] being started.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub const fn rule_started(
-        feat: Arc<gherkin::Feature>,
+    pub fn rule_started(
+        feat: impl Into<Source<gherkin::Feature>>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
-        Self::Feature(feat, Feature::Rule(rule, Rule::Started))
+        Self::Feature(feat.into(), Feature::Rule(rule, Rule::Started))
     }
 
     /// Constructs an event of a [`Feature`] being finished.
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub const fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
-        Self::Feature(feat, Feature::Finished)
+    pub fn feature_finished(feat: impl Into<Source<gherkin::Feature>>) -> Self {
+        Self::Feature(feat.into(), Feature::Finished)
     }
 
     /// Constructs an event of a [`Rule`] being finished.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub const fn rule_finished(
-        feat: Arc<gherkin::Feature>,
+    pub fn rule_finished(
+        feat: impl Into<Source<gherkin::Feature>>,
         rule: Arc<gherkin::Rule>,
     ) -> Self {
-        Self::Feature(feat, Feature::Rule(rule, Rule::Finished))
+        Self::Feature(feat.into(), Feature::Rule(rule, Rule::Finished))
     }
 
     /// Constructs a [`Cucumber`] event from the given [`Scenario`] event.
     #[must_use]
     pub fn scenario(
-        feat: Arc<gherkin::Feature>,
+        feat: impl Into<Source<gherkin::Feature>>,
         rule: Option<Arc<gherkin::Rule>>,
         scenario: Arc<gherkin::Scenario>,
         event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
-            feat,
+            feat.into(),
             if let Some(r) = rule {
                 Feature::Rule(r, Rule::Scenario(scenario, event))
             } else {
@@ -421,7 +425,7 @@ pub enum StepError {
     Panic(#[error(not(source))] Info),
 }
 
-/// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
+/// Type of hook executed before or after all [`Scenario`]'s [`Step`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
@@ -696,4 +700,44 @@ pub enum ScenarioFinished {
         Option<step::Location>,
         StepError,
     ),
+}
+
+/// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
+/// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Eq`] and [`Hash`]
+/// implementations for using it extensively in [`Event`]s.
+#[derive(AsRef, Debug, Deref, From, Into)]
+#[as_ref(forward)]
+#[deref(forward)]
+pub struct Source<T>(Arc<T>);
+
+impl<T> Source<T> {
+    /// Wraps the provided `value` into a new [`Source`].
+    #[must_use]
+    pub fn new(value: T) -> Self {
+        Self(Arc::new(value))
+    }
+}
+
+// Manual implementation is required to omit the redundant `T: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<T> Clone for Source<T> {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
+// Manual implementation is required to omit the redundant `T: Eq` trait bound
+// imposed by `#[derive(Eq)]`.
+impl<T> Eq for Source<T> {}
+
+impl<T> PartialEq for Source<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T> Hash for Source<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Arc::as_ptr(&self.0).hash(state);
+    }
 }

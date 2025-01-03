@@ -148,7 +148,7 @@ where
                 Feature::Finished => {
                     let suite = self.suit.take().unwrap_or_else(|| {
                         panic!(
-                            "No `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
+                            "no `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
                             feat.name,
                         )
                     });
@@ -158,7 +158,7 @@ where
             Ok((Cucumber::Finished, _)) => {
                 self.report
                     .write_xml(&mut self.output)
-                    .unwrap_or_else(|e| panic!("Failed to write XML: {e}"));
+                    .unwrap_or_else(|e| panic!("failed to write XML: {e}"));
             }
         }
     }
@@ -303,7 +303,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     .as_mut()
                     .unwrap_or_else(|| {
                         panic!(
-                            "No `TestSuit` for `Scenario` \"{}\"\n\
+                            "no `TestSuit` for `Scenario` \"{}\"\n\
                              {WRAP_ADVICE}",
                             sc.name,
                         )
@@ -339,7 +339,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             })
             .unwrap_or_else(|| {
                 panic!(
-                    "No events for `Scenario` \"{}\"\n{WRAP_ADVICE}",
+                    "no events for `Scenario` \"{}\"\n{WRAP_ADVICE}",
                     sc.name,
                 )
             });
@@ -429,21 +429,21 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     ) -> Duration {
         let started_at = self.scenario_started_at.take().unwrap_or_else(|| {
             panic!(
-                "No `Started` event for `Scenario` \"{}\"\n{WRAP_ADVICE}",
+                "no `Started` event for `Scenario` \"{}\"\n{WRAP_ADVICE}",
                 sc.name,
             )
         });
         Duration::try_from(ended.duration_since(started_at).unwrap_or_else(
             |e| {
                 panic!(
-                    "Failed to compute duration between {ended:?} and \
+                    "failed to compute duration between {ended:?} and \
                      {started_at:?}: {e}",
                 )
             },
         ))
         .unwrap_or_else(|e| {
             panic!(
-                "Cannot covert `std::time::Duration` to `time::Duration`: {e}",
+                "cannot covert `std::time::Duration` to `time::Duration`: {e}",
             )
         })
     }

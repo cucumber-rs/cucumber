@@ -44,9 +44,9 @@ async fn fires_each_time() {
             if w.is_some() {
                 let after =
                     NUMBER_OF_AFTER_WORLDS.fetch_add(1, Ordering::SeqCst);
-                assert_ne!(after, 8, "Too much after `World`s!");
+                assert_ne!(after, 8, "too much after `World`s!");
             } else {
-                panic!("No `World` received");
+                panic!("no `World` received");
             }
 
             future::ready(()).boxed()
