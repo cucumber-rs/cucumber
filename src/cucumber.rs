@@ -783,7 +783,9 @@ where
         let events_stream = runner.run(filtered, runner_cli);
         futures::pin_mut!(events_stream);
         while let Some(ev) = events_stream.next().await {
+            let at = std::time::Instant::now();
             writer.handle_event(ev, &writer_cli).await;
+            eprintln!("-> writer.handle_event: {}s", at.elapsed().as_secs_f64());
         }
         dbg!("-> after running");
         writer
