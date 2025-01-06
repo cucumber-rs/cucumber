@@ -1248,7 +1248,7 @@ where
                 let feature_background = feature
                     .background
                     .as_ref()
-                    .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                    .map(|b| b.steps.iter().map(|s| Source::new(s.clone())))
                     .into_iter()
                     .flatten();
 
@@ -1274,7 +1274,7 @@ where
                         r.background
                             .as_ref()
                             .map(|b| {
-                                b.steps.iter().map(|s| Arc::new(s.clone()))
+                                b.steps.iter().map(|s| Source::new(s.clone()))
                             })
                             .into_iter()
                             .flatten()
@@ -1298,21 +1298,23 @@ where
                     })
                     .await?;
 
-                stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
-                    .map(Ok)
-                    .try_fold(rule_background, |world, step| {
-                        self.run_step(
-                            world,
-                            step,
-                            false,
-                            into_step_ev,
-                            id,
-                            #[cfg(feature = "tracing")]
-                            waiter,
-                        )
-                        .map_ok(Some)
-                    })
-                    .await
+                stream::iter(
+                    scenario.steps.iter().map(|s| Source::new(s.clone())),
+                )
+                .map(Ok)
+                .try_fold(rule_background, |world, step| {
+                    self.run_step(
+                        world,
+                        step,
+                        false,
+                        into_step_ev,
+                        id,
+                        #[cfg(feature = "tracing")]
+                        waiter,
+                    )
+                    .map_ok(Some)
+                })
+                .await
             }
             .await;
 
@@ -1531,22 +1533,22 @@ where
     async fn run_step<St, Ps, Sk>(
         &self,
         world_opt: Option<W>,
-        step: Arc<gherkin::Step>,
+        step: Source<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
-        St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        St: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
         Ps: FnOnce(
-            Arc<gherkin::Step>,
+            Source<gherkin::Step>,
             CaptureLocations,
             Option<step::Location>,
         ) -> event::Cucumber<W>,
-        Sk: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        Sk: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
     {
-        self.send_event(started(Arc::clone(&step)));
+        self.send_event(started(step.clone()));
 
         let run = async {
             let (step_fn, captures, loc, ctx) =
@@ -2455,7 +2457,7 @@ enum ExecutionFailure<World> {
         /// [`Step`] itself.
         ///
         /// [`Step`]: gherkin::Step
-        step: Arc<gherkin::Step>,
+        step: Source<gherkin::Step>,
 
         /// [`Step`]s [`regex`] [`CaptureLocations`].
         ///

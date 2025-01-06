@@ -496,10 +496,10 @@ pub enum Scenario<World> {
     /// [`Background`] [`Step`] event.
     ///
     /// [`Background`]: gherkin::Background
-    Background(Arc<gherkin::Step>, Step<World>),
+    Background(Source<gherkin::Step>, Step<World>),
 
     /// [`Step`] event.
-    Step(Arc<gherkin::Step>, Step<World>),
+    Step(Source<gherkin::Step>, Step<World>),
 
     /// [`Scenario`]'s log entry is emitted.
     Log(String),
@@ -518,9 +518,9 @@ impl<World> Clone for Scenario<World> {
             Self::Started => Self::Started,
             Self::Hook(ty, ev) => Self::Hook(*ty, ev.clone()),
             Self::Background(bg, ev) => {
-                Self::Background(Arc::clone(bg), ev.clone())
+                Self::Background(bg.clone(), ev.clone())
             }
-            Self::Step(st, ev) => Self::Step(Arc::clone(st), ev.clone()),
+            Self::Step(st, ev) => Self::Step(st.clone(), ev.clone()),
             Self::Log(msg) => Self::Log(msg.clone()),
             Self::Finished => Self::Finished,
         }
@@ -560,8 +560,8 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_started(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Started)
+    pub fn step_started(step: impl Into<Source<gherkin::Step>>) -> Self {
+        Self::Step(step.into(), Step::Started)
     }
 
     /// Constructs an event of a [`Background`] [`Step`] being started.
@@ -569,20 +569,22 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_started(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Started)
+    pub fn background_step_started(
+        step: impl Into<Source<gherkin::Step>>,
+    ) -> Self {
+        Self::Background(step.into(), Step::Started)
     }
 
     /// Constructs an event of a passed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_passed(
-        step: Arc<gherkin::Step>,
+    pub fn step_passed(
+        step: impl Into<Source<gherkin::Step>>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Step(step, Step::Passed(captures, loc))
+        Self::Step(step.into(), Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -590,28 +592,30 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_passed(
-        step: Arc<gherkin::Step>,
+    pub fn background_step_passed(
+        step: impl Into<Source<gherkin::Step>>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Background(step, Step::Passed(captures, loc))
+        Self::Background(step.into(), Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a skipped [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Skipped)
+    pub fn step_skipped(step: impl Into<Source<gherkin::Step>>) -> Self {
+        Self::Step(step.into(), Step::Skipped)
     }
     /// Constructs an event of a skipped [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Skipped)
+    pub fn background_step_skipped(
+        step: impl Into<Source<gherkin::Step>>,
+    ) -> Self {
+        Self::Background(step.into(), Step::Skipped)
     }
 
     /// Constructs an event of a failed [`Step`].
@@ -619,13 +623,13 @@ impl<World> Scenario<World> {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn step_failed(
-        step: Arc<gherkin::Step>,
+        step: impl Into<Source<gherkin::Step>>,
         captures: Option<regex::CaptureLocations>,
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
     ) -> Self {
-        Self::Step(step, Step::Failed(captures, loc, world, info.into()))
+        Self::Step(step.into(), Step::Failed(captures, loc, world, info.into()))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -634,13 +638,16 @@ impl<World> Scenario<World> {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn background_step_failed(
-        step: Arc<gherkin::Step>,
+        step: impl Into<Source<gherkin::Step>>,
         captures: Option<regex::CaptureLocations>,
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
     ) -> Self {
-        Self::Background(step, Step::Failed(captures, loc, world, info.into()))
+        Self::Background(
+            step.into(),
+            Step::Failed(captures, loc, world, info.into()),
+        )
     }
 
     /// Transforms this [`Scenario`] event into a [`RetryableScenario`] event.
