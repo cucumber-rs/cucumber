@@ -186,7 +186,7 @@ type HandledScenarios = HashMap<
     (
         Source<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Scenario>,
     ),
     Indicator,
 >;
@@ -222,7 +222,7 @@ where
                         self.handle_scenario(
                             feat.clone(),
                             Some(Arc::clone(rule)),
-                            Arc::clone(sc),
+                            sc.clone(),
                             ev,
                         );
                     }
@@ -230,7 +230,7 @@ where
                         self.handle_scenario(
                             feat.clone(),
                             None,
-                            Arc::clone(sc),
+                            sc.clone(),
                             ev,
                         );
                     }
@@ -337,7 +337,7 @@ impl<Writer> Summarize<Writer> {
         &mut self,
         feature: Source<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        scenario: Source<gherkin::Scenario>,
         step: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
@@ -399,7 +399,7 @@ impl<Writer> Summarize<Writer> {
         &mut self,
         feature: Source<gherkin::Feature>,
         rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        scenario: Source<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,
     ) {
         use event::{Hook, Scenario};

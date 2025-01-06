@@ -146,7 +146,7 @@ type Scenarios = HashMap<
     (
         Source<gherkin::Feature>,
         Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Scenario>,
         Option<RetryOptions>,
     ),
 >;
@@ -219,7 +219,7 @@ impl Collector {
                 ScenarioId,
                 Source<gherkin::Feature>,
                 Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
+                Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,
             )],
@@ -228,7 +228,7 @@ impl Collector {
         for (id, f, r, s, _, ret) in runnable.as_ref() {
             drop(
                 self.scenarios
-                    .insert(*id, (f.clone(), r.clone(), Arc::clone(s), *ret)),
+                    .insert(*id, (f.clone(), r.clone(), s.clone(), *ret)),
             );
         }
     }
@@ -265,9 +265,9 @@ impl Collector {
                     )
                     .map(|(f, r, s, opt)| {
                         event::Cucumber::scenario(
-                            Arc::clone(f),
+                            f.clone(),
                             r.clone(),
-                            Arc::clone(s),
+                            s.clone(),
                             event::RetryableScenario {
                                 event: event::Scenario::Log(msg.clone()),
                                 retries: opt.map(|o| o.retries),

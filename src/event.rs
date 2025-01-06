@@ -265,15 +265,15 @@ impl<World> Cucumber<World> {
     pub fn scenario(
         feat: impl Into<Source<gherkin::Feature>>,
         rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        scenario: impl Into<Source<gherkin::Scenario>>,
         event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
             feat.into(),
             if let Some(r) = rule {
-                Feature::Rule(r, Rule::Scenario(scenario, event))
+                Feature::Rule(r, Rule::Scenario(scenario.into(), event))
             } else {
-                Feature::Scenario(scenario, event)
+                Feature::Scenario(scenario.into(), event)
             },
         )
     }
@@ -293,7 +293,7 @@ pub enum Feature<World> {
     Rule(Arc<gherkin::Rule>, Rule<World>),
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
+    Scenario(Source<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Feature`] execution being finished.
     ///
@@ -308,7 +308,7 @@ impl<World> Clone for Feature<World> {
         match self {
             Self::Started => Self::Started,
             Self::Rule(r, ev) => Self::Rule(Arc::clone(r), ev.clone()),
-            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(s.clone(), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -325,7 +325,7 @@ pub enum Rule<World> {
     Started,
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
+    Scenario(Source<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Rule`] execution being finished.
     ///
@@ -339,7 +339,7 @@ impl<World> Clone for Rule<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(s.clone(), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
