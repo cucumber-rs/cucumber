@@ -184,7 +184,7 @@ pub mod tracing;
 
 // TODO: Remove once tests run without complains about it.
 #[cfg(test)]
-mod actually_used_crates_in_tests_and_book {
+mod actually_used_crates_in_doc_tests_and_book {
     use rand as _;
     use tempfile as _;
     use tokio as _;

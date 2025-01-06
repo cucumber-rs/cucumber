@@ -19,7 +19,7 @@ use futures::Stream;
 use crate::{event, parser, Event};
 #[cfg(doc)]
 use crate::{event::Source, Step};
-use crate::event::Source;
+
 #[doc(inline)]
 pub use self::basic::{Basic, ScenarioType};
 

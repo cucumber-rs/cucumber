@@ -167,6 +167,16 @@ mod attribute;
 mod parameter;
 mod world;
 
+// TODO: Remove once tests run without complains about it.
+#[cfg(test)]
+mod actually_used_crates_in_doc_tests {
+    use cucumber as _;
+    use derive_more as _;
+    use futures as _;
+    use tempfile as _;
+    use tokio as _;
+}
+
 use proc_macro::TokenStream;
 
 /// Helper macro for generating public shims for [`macro@given`], [`macro@when`]

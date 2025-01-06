@@ -19,6 +19,8 @@
 //! [`Runner`]: crate::Runner
 //! [Cucumber]: https://cucumber.io
 
+use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use ref_cast::RefCast;
 #[cfg(feature = "timestamps")]
 use std::time::SystemTime;
 use std::{
@@ -27,9 +29,6 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
-
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
-use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -713,17 +712,23 @@ pub enum ScenarioFinished {
 /// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
 /// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Eq`] and [`Hash`]
 /// implementations for using it extensively in [`Event`]s.
-#[derive(AsRef, Debug, Deref, From, Into, RefCast)]
+#[derive(AsRef, Deref, Display, From, Into, RefCast)]
 #[as_ref(forward)]
 #[deref(forward)]
 #[repr(transparent)]
-pub struct Source<T>(Arc<T>);
+pub struct Source<T: ?Sized>(Arc<T>);
 
 impl<T> Source<T> {
     /// Wraps the provided `value` into a new [`Source`].
     #[must_use]
     pub fn new(value: T) -> Self {
         Self(Arc::new(value))
+    }
+}
+
+impl<T: fmt::Debug + ?Sized> fmt::Debug for Source<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&**self, f)
     }
 }
 
@@ -737,15 +742,15 @@ impl<T> Clone for Source<T> {
 
 // Manual implementation is required to omit the redundant `T: Eq` trait bound
 // imposed by `#[derive(Eq)]`.
-impl<T> Eq for Source<T> {}
+impl<T: ?Sized> Eq for Source<T> {}
 
-impl<T> PartialEq for Source<T> {
+impl<T: ?Sized> PartialEq for Source<T> {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
-impl<T> Hash for Source<T> {
+impl<T: ?Sized> Hash for Source<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Arc::as_ptr(&self.0).hash(state);
     }
