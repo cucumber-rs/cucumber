@@ -28,8 +28,8 @@ use std::{
     sync::Arc,
 };
 
-use ref_cast::RefCast;
 use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -237,9 +237,9 @@ impl<World> Cucumber<World> {
     #[must_use]
     pub fn rule_started(
         feat: impl Into<Source<gherkin::Feature>>,
-        rule: Arc<gherkin::Rule>,
+        rule: impl Into<Source<gherkin::Rule>>,
     ) -> Self {
-        Self::Feature(feat.into(), Feature::Rule(rule, Rule::Started))
+        Self::Feature(feat.into(), Feature::Rule(rule.into(), Rule::Started))
     }
 
     /// Constructs an event of a [`Feature`] being finished.
@@ -256,23 +256,23 @@ impl<World> Cucumber<World> {
     #[must_use]
     pub fn rule_finished(
         feat: impl Into<Source<gherkin::Feature>>,
-        rule: Arc<gherkin::Rule>,
+        rule: impl Into<Source<gherkin::Rule>>,
     ) -> Self {
-        Self::Feature(feat.into(), Feature::Rule(rule, Rule::Finished))
+        Self::Feature(feat.into(), Feature::Rule(rule.into(), Rule::Finished))
     }
 
     /// Constructs a [`Cucumber`] event from the given [`Scenario`] event.
     #[must_use]
     pub fn scenario(
         feat: impl Into<Source<gherkin::Feature>>,
-        rule: Option<Arc<gherkin::Rule>>,
+        rule: Option<impl Into<Source<gherkin::Rule>>>,
         scenario: impl Into<Source<gherkin::Scenario>>,
         event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
             feat.into(),
             if let Some(r) = rule {
-                Feature::Rule(r, Rule::Scenario(scenario.into(), event))
+                Feature::Rule(r.into(), Rule::Scenario(scenario.into(), event))
             } else {
                 Feature::Scenario(scenario.into(), event)
             },
@@ -291,7 +291,7 @@ pub enum Feature<World> {
     Started,
 
     /// [`Rule`] event.
-    Rule(Arc<gherkin::Rule>, Rule<World>),
+    Rule(Source<gherkin::Rule>, Rule<World>),
 
     /// [`Scenario`] event.
     Scenario(Source<gherkin::Scenario>, RetryableScenario<World>),
@@ -308,7 +308,7 @@ impl<World> Clone for Feature<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Rule(r, ev) => Self::Rule(Arc::clone(r), ev.clone()),
+            Self::Rule(r, ev) => Self::Rule(r.clone(), ev.clone()),
             Self::Scenario(s, ev) => Self::Scenario(s.clone(), ev.clone()),
             Self::Finished => Self::Finished,
         }

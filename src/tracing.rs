@@ -1,6 +1,6 @@
 //! [`tracing`] integration layer.
 
-use std::{collections::HashMap, fmt, io, iter, sync::Arc};
+use std::{collections::HashMap, fmt, io, iter};
 
 use futures::channel::{mpsc, oneshot};
 use itertools::Either;
@@ -145,7 +145,7 @@ type Scenarios = HashMap<
     ScenarioId,
     (
         Source<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
+        Option<Source<gherkin::Rule>>,
         Source<gherkin::Scenario>,
         Option<RetryOptions>,
     ),
@@ -218,7 +218,7 @@ impl Collector {
             [(
                 ScenarioId,
                 Source<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
+                Option<Source<gherkin::Rule>>,
                 Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,

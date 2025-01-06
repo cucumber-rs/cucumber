@@ -10,7 +10,7 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap};
 
 use derive_more::Deref;
 use itertools::Itertools as _;
@@ -185,7 +185,7 @@ pub struct Summarize<Writer> {
 type HandledScenarios = HashMap<
     (
         Source<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
+        Option<Source<gherkin::Rule>>,
         Source<gherkin::Scenario>,
     ),
     Indicator,
@@ -221,7 +221,7 @@ where
                     Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
                         self.handle_scenario(
                             feat.clone(),
-                            Some(Arc::clone(rule)),
+                            Some(rule.clone()),
                             sc.clone(),
                             ev,
                         );
@@ -336,7 +336,7 @@ impl<Writer> Summarize<Writer> {
     fn handle_step<W>(
         &mut self,
         feature: Source<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
+        rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         step: &gherkin::Step,
         ev: &event::Step<W>,
@@ -398,7 +398,7 @@ impl<Writer> Summarize<Writer> {
     fn handle_scenario<W>(
         &mut self,
         feature: Source<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
+        rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,
     ) {
