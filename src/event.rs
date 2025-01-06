@@ -28,6 +28,7 @@ use std::{
     sync::Arc,
 };
 
+use ref_cast::RefCast;
 use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
 
 use crate::{step, writer::basic::coerce_error};
@@ -705,9 +706,10 @@ pub enum ScenarioFinished {
 /// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
 /// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Eq`] and [`Hash`]
 /// implementations for using it extensively in [`Event`]s.
-#[derive(AsRef, Debug, Deref, From, Into)]
+#[derive(AsRef, Debug, Deref, From, Into, RefCast)]
 #[as_ref(forward)]
 #[deref(forward)]
+#[repr(transparent)]
 pub struct Source<T>(Arc<T>);
 
 impl<T> Source<T> {
