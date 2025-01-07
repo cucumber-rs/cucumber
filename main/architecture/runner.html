@@ -343,10 +343,10 @@ impl CustomRunner {
 
         panic::set_hook(hook);
 
-        let scenario = Arc::new(scenario);
+        let scenario = event::Source::new(scenario);
         stream::once(future::ready(event::Scenario::Started))
             .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
-                let step = Arc::new(step);
+                let step = event::Source::new(step);
                 [
                     event::Scenario::Step(step.clone(), event::Step::Started),
                     event::Scenario::Step(step, ev),
@@ -362,7 +362,7 @@ impl CustomRunner {
     fn execute_feature(
         feature: gherkin::Feature,
     ) -&gt; impl Stream&lt;Item = event::Cucumber&lt;AnimalWorld&gt;&gt; {
-        let feature = Arc::new(feature);
+        let feature = event::Source::new(feature);
         stream::once(future::ready(event::Feature::Started))
             .chain(
                 stream::iter(feature.scenarios.clone())

@@ -333,10 +333,10 @@
 </span><span class="boring">
 </span><span class="boring">        panic::set_hook(hook);
 </span><span class="boring">
-</span><span class="boring">        let scenario = Arc::new(scenario);
+</span><span class="boring">        let scenario = event::Source::new(scenario);
 </span><span class="boring">        stream::once(future::ready(event::Scenario::Started))
 </span><span class="boring">            .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
-</span><span class="boring">                let step = Arc::new(step);
+</span><span class="boring">                let step = event::Source::new(step);
 </span><span class="boring">                [
 </span><span class="boring">                    event::Scenario::Step(step.clone(), event::Step::Started),
 </span><span class="boring">                    event::Scenario::Step(step, ev),
@@ -352,7 +352,7 @@
 </span><span class="boring">    fn execute_feature(
 </span><span class="boring">        feature: gherkin::Feature,
 </span><span class="boring">    ) -&gt; impl Stream&lt;Item = event::Cucumber&lt;AnimalWorld&gt;&gt; {
-</span><span class="boring">        let feature = Arc::new(feature);
+</span><span class="boring">        let feature = event::Source::new(feature);
 </span><span class="boring">        stream::once(future::ready(event::Feature::Started))
 </span><span class="boring">            .chain(
 </span><span class="boring">                stream::iter(feature.scenarios.clone())
