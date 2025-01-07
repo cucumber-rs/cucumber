@@ -13,11 +13,27 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.83 to get rid of `once_cell` crate and for `#[expect]` attribute usage. ([4010c1ad], [f1307038], [todo])
+- Bumped up [MSRV] to 1.83 to get rid of `once_cell` crate and for `#[expect]` attribute usage. ([4010c1ad], [f1307038], [b46930c3])
+- Replaced `Arc` with `PartialEq`/`Hash` pointer-optimized `Source` in `event`s: ([#352])
+    - `Source<gherkin::Feature>` in `event::Cucumber::Feature`.
+    - `Source<gherkin::Rule>` in `event::Feature::Rule`.
+    - `Source<gherkin::Scenario>` in `event::Feature::Scenario` and `event::Rule::Scenario`.
+    - `Source<gherkin::Step>` in `event::Scenario::Background` and `event::Scenario::Step`.
+- Made non-`const` the following constructor functions for input type polymorphism: ([#352])
+    - `event::Cucumber::feature_started()` and `event::Cucumber::feature_finished()`.
+    - `event::Cucumber::rule_started()` and `event::Cucumber::rule_finished()`.
+    - `event::Scenario::step_started()`, `event::Scenario::step_passed()` and `event::Scenario::step_skipped()`.
+    - `event::Scenario::background_step_started()`, `event::Scenario::background_step_passed()` and `event::Scenario::background_step_skipped()`.
 
+### Fixed
+
+- Performance degradation on large `.feature` files. ([#352], [#331])
+
+[#331]: /../../issues/331
+[#352]: /../../pull/352
 [4010c1ad]: /../../commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
+[b46930c3]: /../../commit/b46930c32ef5ae490df8063905144a45de27eda1
 [f1307038]: /../../commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
-[todo]: /../../commit/todo
 
 
 
