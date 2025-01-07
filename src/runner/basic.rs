@@ -45,7 +45,7 @@ use regex::{CaptureLocations, Regex};
 #[cfg(feature = "tracing")]
 use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
-    event::{self, HookType, Info, Retries},
+    event::{self, HookType, Info, Retries, Source},
     feature::Ext as _,
     future::{select_with_biased_first, FutureExt as _},
     parser, step,
@@ -1054,11 +1054,9 @@ async fn execute<W, Before, After>(
             storage.finished_receiver.try_next()
         {
             if let Some(rule) = rule {
-                if let Some(f) = storage.rule_scenario_finished(
-                    Arc::clone(&feat),
-                    rule,
-                    retried,
-                ) {
+                if let Some(f) =
+                    storage.rule_scenario_finished(feat.clone(), rule, retried)
+                {
                     executor.send_event(f);
                 }
             }
@@ -1187,9 +1185,9 @@ where
     async fn run_scenario(
         &self,
         id: ScenarioId,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -1198,7 +1196,7 @@ where
         let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 let event = e(step).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1206,7 +1204,7 @@ where
         let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, cap, loc| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 let event = e(step, cap, loc).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1227,9 +1225,9 @@ where
         );
 
         self.send_event(event::Cucumber::scenario(
-            Arc::clone(&feature),
+            feature.clone(),
             rule.clone(),
-            Arc::clone(&scenario),
+            scenario.clone(),
             event::Scenario::Started.with_retries(retry_num),
         ));
 
@@ -1250,7 +1248,7 @@ where
                 let feature_background = feature
                     .background
                     .as_ref()
-                    .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                    .map(|b| b.steps.iter().map(|s| Source::new(s.clone())))
                     .into_iter()
                     .flatten();
 
@@ -1276,7 +1274,7 @@ where
                         r.background
                             .as_ref()
                             .map(|b| {
-                                b.steps.iter().map(|s| Arc::new(s.clone()))
+                                b.steps.iter().map(|s| Source::new(s.clone()))
                             })
                             .into_iter()
                             .flatten()
@@ -1300,21 +1298,23 @@ where
                     })
                     .await?;
 
-                stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
-                    .map(Ok)
-                    .try_fold(rule_background, |world, step| {
-                        self.run_step(
-                            world,
-                            step,
-                            false,
-                            into_step_ev,
-                            id,
-                            #[cfg(feature = "tracing")]
-                            waiter,
-                        )
-                        .map_ok(Some)
-                    })
-                    .await
+                stream::iter(
+                    scenario.steps.iter().map(|s| Source::new(s.clone())),
+                )
+                .map(Ok)
+                .try_fold(rule_background, |world, step| {
+                    self.run_step(
+                        world,
+                        step,
+                        false,
+                        into_step_ev,
+                        id,
+                        #[cfg(feature = "tracing")]
+                        waiter,
+                    )
+                    .map_ok(Some)
+                })
+                .await
             }
             .await;
 
@@ -1356,9 +1356,9 @@ where
 
             if let Some(exec_error) = result.err() {
                 self.emit_failed_events(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
-                    Arc::clone(&scenario),
+                    scenario.clone(),
                     world.clone(),
                     exec_error,
                     retry_num,
@@ -1366,9 +1366,9 @@ where
             }
 
             self.emit_after_hook_events(
-                Arc::clone(&feature),
+                feature.clone(),
                 rule.clone(),
-                Arc::clone(&scenario),
+                scenario.clone(),
                 world,
                 after_hook_meta,
                 after_hook_error,
@@ -1392,9 +1392,9 @@ where
         }
 
         self.send_event(event::Cucumber::scenario(
-            Arc::clone(&feature),
+            feature.clone(),
             rule.clone(),
-            Arc::clone(&scenario),
+            scenario.clone(),
             event::Scenario::Finished.with_retries(retry_num),
         ));
 
@@ -1404,7 +1404,7 @@ where
         if let Some(next_try) = next_try {
             self.storage
                 .insert_retried_scenario(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
                     scenario,
                     scenario_ty,
@@ -1432,9 +1432,9 @@ where
     /// [`Hook::Failed`]: event::Hook::Failed
     async fn run_before_hook(
         &self,
-        feature: &Arc<gherkin::Feature>,
-        rule: Option<&Arc<gherkin::Rule>>,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: &Source<gherkin::Feature>,
+        rule: Option<&Source<gherkin::Rule>>,
+        scenario: &Source<gherkin::Scenario>,
         retries: Option<Retries>,
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -1457,9 +1457,9 @@ where
 
         if let Some(hook) = self.before_hook.as_ref() {
             self.send_event(event::Cucumber::scenario(
-                Arc::clone(feature),
+                feature.clone(),
                 rule.cloned(),
-                Arc::clone(scenario),
+                scenario.clone(),
                 event::Scenario::hook_started(HookType::Before)
                     .with_retries(retries),
             ));
@@ -1500,9 +1500,9 @@ where
             match result {
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
-                        Arc::clone(feature),
+                        feature.clone(),
                         rule.cloned(),
-                        Arc::clone(scenario),
+                        scenario.clone(),
                         event::Scenario::hook_passed(HookType::Before)
                             .with_retries(retries),
                     ));
@@ -1533,22 +1533,22 @@ where
     async fn run_step<St, Ps, Sk>(
         &self,
         world_opt: Option<W>,
-        step: Arc<gherkin::Step>,
+        step: Source<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
-        St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        St: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
         Ps: FnOnce(
-            Arc<gherkin::Step>,
+            Source<gherkin::Step>,
             CaptureLocations,
             Option<step::Location>,
         ) -> event::Cucumber<W>,
-        Sk: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        Sk: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
     {
-        self.send_event(started(Arc::clone(&step)));
+        self.send_event(started(step.clone()));
 
         let run = async {
             let (step_fn, captures, loc, ctx) =
@@ -1654,9 +1654,9 @@ where
     /// [1]: crate::Runner#order-guarantees
     fn emit_failed_events(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         world: Option<Arc<W>>,
         err: ExecutionFailure<W>,
         retries: Option<Retries>,
@@ -1736,9 +1736,9 @@ where
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
-        feature: &Arc<gherkin::Feature>,
-        rule: Option<&Arc<gherkin::Rule>>,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: &Source<gherkin::Feature>,
+        rule: Option<&Source<gherkin::Rule>>,
+        scenario: &Source<gherkin::Scenario>,
         ev: event::ScenarioFinished,
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -1798,9 +1798,9 @@ where
     #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn emit_after_hook_events(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         world: Option<Arc<W>>,
         meta: Option<AfterHookEventsMeta>,
         err: Option<Info>,
@@ -1816,9 +1816,9 @@ where
         if let Some(meta) = meta {
             self.send_event_with_meta(
                 event::Cucumber::scenario(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
-                    Arc::clone(&scenario),
+                    scenario.clone(),
                     event::Scenario::hook_started(HookType::After)
                         .with_retries(retries),
                 ),
@@ -1853,8 +1853,8 @@ where
     fn scenario_finished(
         &self,
         id: ScenarioId,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
         is_failed: IsFailed,
         is_retried: IsRetried,
     ) {
@@ -1940,7 +1940,7 @@ struct FinishedRulesAndFeatures {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    features_scenarios_count: HashMap<Arc<gherkin::Feature>, usize>,
+    features_scenarios_count: HashMap<Source<gherkin::Feature>, usize>,
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
@@ -1951,7 +1951,7 @@ struct FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     rule_scenarios_count:
-        HashMap<(Arc<gherkin::Feature>, Arc<gherkin::Rule>), usize>,
+        HashMap<(Source<gherkin::Feature>, Source<gherkin::Rule>), usize>,
 
     /// Receiver for notifying state of [`Scenario`]s completion.
     ///
@@ -1965,8 +1965,8 @@ struct FinishedRulesAndFeatures {
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesSender = mpsc::UnboundedSender<(
     ScenarioId,
-    Arc<gherkin::Feature>,
-    Option<Arc<gherkin::Rule>>,
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
     IsFailed,
     IsRetried,
 )>;
@@ -1977,8 +1977,8 @@ type FinishedFeaturesSender = mpsc::UnboundedSender<(
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesReceiver = mpsc::UnboundedReceiver<(
     ScenarioId,
-    Arc<gherkin::Feature>,
-    Option<Arc<gherkin::Rule>>,
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
     IsFailed,
     IsRetried,
 )>;
@@ -2001,8 +2001,8 @@ impl FinishedRulesAndFeatures {
     /// [`Scenario`]: gherkin::Scenario
     fn rule_scenario_finished<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Arc<gherkin::Rule>,
+        feature: Source<gherkin::Feature>,
+        rule: Source<gherkin::Rule>,
         is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
         if is_retried {
@@ -2011,13 +2011,13 @@ impl FinishedRulesAndFeatures {
 
         let finished_scenarios = self
             .rule_scenarios_count
-            .get_mut(&(Arc::clone(&feature), Arc::clone(&rule)))
-            .unwrap_or_else(|| panic!("No Rule {}", rule.name));
+            .get_mut(&(feature.clone(), rule.clone()))
+            .unwrap_or_else(|| panic!("no `Rule: {}`", rule.name));
         *finished_scenarios += 1;
         (rule.scenarios.len() == *finished_scenarios).then(|| {
             _ = self
                 .rule_scenarios_count
-                .remove(&(Arc::clone(&feature), Arc::clone(&rule)));
+                .remove(&(feature.clone(), rule.clone()));
             event::Cucumber::rule_finished(feature, rule)
         })
     }
@@ -2030,7 +2030,7 @@ impl FinishedRulesAndFeatures {
     /// [`Scenario`]: gherkin::Scenario
     fn feature_scenario_finished<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
+        feature: Source<gherkin::Feature>,
         is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
         if is_retried {
@@ -2040,7 +2040,7 @@ impl FinishedRulesAndFeatures {
         let finished_scenarios = self
             .features_scenarios_count
             .get_mut(&feature)
-            .unwrap_or_else(|| panic!("No Feature {}", feature.name));
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feature.name));
         *finished_scenarios += 1;
         let scenarios = feature.count_scenarios();
         (scenarios == *finished_scenarios).then(|| {
@@ -2081,9 +2081,9 @@ impl FinishedRulesAndFeatures {
         runnable: impl AsRef<
             [(
                 ScenarioId,
-                Arc<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
+                Source<gherkin::Feature>,
+                Option<Source<gherkin::Rule>>,
+                Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,
             )],
@@ -2092,10 +2092,10 @@ impl FinishedRulesAndFeatures {
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
-        for feature in runnable.iter().map(|(_, f, ..)| Arc::clone(f)).dedup() {
+        for feature in runnable.iter().map(|(_, f, ..)| f.clone()).dedup() {
             _ = self
                 .features_scenarios_count
-                .entry(Arc::clone(&feature))
+                .entry(feature.clone())
                 .or_insert_with(|| {
                     started_features.push(feature);
                     0
@@ -2106,13 +2106,13 @@ impl FinishedRulesAndFeatures {
         for (feat, rule) in runnable
             .iter()
             .filter_map(|(_, feat, rule, _, _, _)| {
-                rule.clone().map(|r| (Arc::clone(feat), r))
+                rule.clone().map(|r| (feat.clone(), r))
             })
             .dedup()
         {
             _ = self
                 .rule_scenarios_count
-                .entry((Arc::clone(&feat), Arc::clone(&rule)))
+                .entry((feat.clone(), rule.clone()))
                 .or_insert_with(|| {
                     started_rules.push((feat, rule));
                     0
@@ -2137,9 +2137,9 @@ type Scenarios = HashMap<
     ScenarioType,
     Vec<(
         ScenarioId,
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptionsWithDeadline>,
     )>,
 >;
@@ -2149,9 +2149,9 @@ type InsertedScenarios = HashMap<
     ScenarioType,
     Vec<(
         ScenarioId,
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptions>,
     )>,
 >;
@@ -2191,28 +2191,26 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
-        let feature = Arc::new(feature);
+        let feature = Source::new(feature);
 
         let local = feature
             .scenarios
             .iter()
             .map(|s| (None, s))
             .chain(feature.rules.iter().flat_map(|r| {
+                let rule = Some(Source::new(r.clone()));
                 r.scenarios
                     .iter()
-                    .map(|s| (Some(Arc::new(r.clone())), s))
+                    .map(|s| (rule.clone(), s))
                     .collect::<Vec<_>>()
             }))
             .map(|(rule, scenario)| {
                 let retries = retry(&feature, rule.as_deref(), scenario, cli);
                 (
                     ScenarioId::new(),
-                    Arc::clone(&feature),
-                    rule.as_ref().map(Arc::clone),
-                    // PERFORMANCE: It's OK to make a new `Arc` for each
-                    //              iteration here, since the `scenario` is
-                    //              unique per iteration.
-                    Arc::new(scenario.clone()),
+                    feature.clone(),
+                    rule,
+                    Source::new(scenario.clone()),
                     retries,
                 )
             })
@@ -2229,9 +2227,9 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_retried_scenario(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
     ) {
@@ -2263,7 +2261,7 @@ impl Features {
                         ..
                     })) => {
                         // `Retries::current` is `0`, so this `Scenario` run is
-                        // initial and we don't need to wait for retry delay.
+                        // initial, and we don't need to wait for retry delay.
                         let ret = ret.map(RetryOptions::without_deadline);
                         without_retries
                             .entry(which)
@@ -2328,9 +2326,9 @@ impl Features {
     ) -> (
         Vec<(
             ScenarioId,
-            Arc<gherkin::Feature>,
-            Option<Arc<gherkin::Rule>>,
-            Arc<gherkin::Scenario>,
+            Source<gherkin::Feature>,
+            Option<Source<gherkin::Rule>>,
+            Source<gherkin::Scenario>,
             ScenarioType,
             Option<RetryOptions>,
         )>,
@@ -2459,7 +2457,7 @@ enum ExecutionFailure<World> {
         /// [`Step`] itself.
         ///
         /// [`Step`]: gherkin::Step
-        step: Arc<gherkin::Step>,
+        step: Source<gherkin::Step>,
 
         /// [`Step`]s [`regex`] [`CaptureLocations`].
         ///

@@ -224,7 +224,7 @@ impl<Out: io::Write> Json<Out> {
 
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No `Started` event for `{hook_ty} Hook`")
+                panic!("no `Started` event for `{hook_ty} Hook`")
             });
             meta.at
                 .duration_since(started)
@@ -290,13 +290,13 @@ impl<Out: io::Write> Json<Out> {
     ) {
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No `Started` event for `Step` '{}'", step.value)
+                panic!("no `Started` event for `Step` '{}'", step.value)
             });
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
                     panic!(
-                        "Failed to compute duration between {:?} and \
+                        "failed to compute duration between {:?} and \
                          {started:?}: {e}",
                         meta.at,
                     );

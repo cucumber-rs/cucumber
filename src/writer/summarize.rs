@@ -10,15 +10,14 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap};
 
 use derive_more::Deref;
 use itertools::Itertools as _;
 
 use crate::{
     cli::Colored,
-    event,
-    event::Retries,
+    event::{self, Retries, Source},
     parser,
     writer::{self, out::Styles},
     Event, World, Writer,
@@ -185,9 +184,9 @@ pub struct Summarize<Writer> {
 /// [`Scenario`]: gherkin::Scenario
 type HandledScenarios = HashMap<
     (
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
     ),
     Indicator,
 >;
@@ -221,17 +220,17 @@ where
                     }
                     Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
-                            Some(Arc::clone(rule)),
-                            Arc::clone(sc),
+                            feat.clone(),
+                            Some(rule.clone()),
+                            sc.clone(),
                             ev,
                         );
                     }
                     Feature::Scenario(sc, ev) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
+                            feat.clone(),
                             None,
-                            Arc::clone(sc),
+                            sc.clone(),
                             ev,
                         );
                     }
@@ -336,9 +335,9 @@ impl<Writer> Summarize<Writer> {
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         step: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
@@ -398,9 +397,9 @@ impl<Writer> Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,
     ) {
         use event::{Hook, Scenario};

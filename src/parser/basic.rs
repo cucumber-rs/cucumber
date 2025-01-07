@@ -97,7 +97,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         let features = || {
             let features = if let Some(walker) = cli.features {
                 walk(globwalk::glob(walker.0).unwrap_or_else(|e| {
-                    unreachable!("Invalid glob pattern: {e}")
+                    unreachable!("invalid glob pattern: {e}")
                 }))
             } else {
                 let feats_path = match get_features_path() {

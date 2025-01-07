@@ -19,12 +19,17 @@
 //! [`Runner`]: crate::Runner
 //! [Cucumber]: https://cucumber.io
 
-use std::{any::Any, fmt, sync::Arc};
-
 #[cfg(feature = "timestamps")]
 use std::time::SystemTime;
+use std::{
+    any::Any,
+    fmt,
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From};
+use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -156,7 +161,7 @@ pub enum Cucumber<World> {
     Started,
 
     /// [`Feature`] event.
-    Feature(Arc<gherkin::Feature>, Feature<World>),
+    Feature(Source<gherkin::Feature>, Feature<World>),
 
     /// All [`Feature`]s have been parsed.
     ///
@@ -198,7 +203,7 @@ impl<World> Clone for Cucumber<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Feature(f, ev) => Self::Feature(Arc::clone(f), ev.clone()),
+            Self::Feature(f, ev) => Self::Feature(f.clone(), ev.clone()),
             Self::ParsingFinished {
                 features,
                 rules,
@@ -222,54 +227,54 @@ impl<World> Cucumber<World> {
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub const fn feature_started(feat: Arc<gherkin::Feature>) -> Self {
-        Self::Feature(feat, Feature::Started)
+    pub fn feature_started(feat: impl Into<Source<gherkin::Feature>>) -> Self {
+        Self::Feature(feat.into(), Feature::Started)
     }
 
     /// Constructs an event of a [`Rule`] being started.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub const fn rule_started(
-        feat: Arc<gherkin::Feature>,
-        rule: Arc<gherkin::Rule>,
+    pub fn rule_started(
+        feat: impl Into<Source<gherkin::Feature>>,
+        rule: impl Into<Source<gherkin::Rule>>,
     ) -> Self {
-        Self::Feature(feat, Feature::Rule(rule, Rule::Started))
+        Self::Feature(feat.into(), Feature::Rule(rule.into(), Rule::Started))
     }
 
     /// Constructs an event of a [`Feature`] being finished.
     ///
     /// [`Feature`]: gherkin::Feature
     #[must_use]
-    pub const fn feature_finished(feat: Arc<gherkin::Feature>) -> Self {
-        Self::Feature(feat, Feature::Finished)
+    pub fn feature_finished(feat: impl Into<Source<gherkin::Feature>>) -> Self {
+        Self::Feature(feat.into(), Feature::Finished)
     }
 
     /// Constructs an event of a [`Rule`] being finished.
     ///
     /// [`Rule`]: gherkin::Rule
     #[must_use]
-    pub const fn rule_finished(
-        feat: Arc<gherkin::Feature>,
-        rule: Arc<gherkin::Rule>,
+    pub fn rule_finished(
+        feat: impl Into<Source<gherkin::Feature>>,
+        rule: impl Into<Source<gherkin::Rule>>,
     ) -> Self {
-        Self::Feature(feat, Feature::Rule(rule, Rule::Finished))
+        Self::Feature(feat.into(), Feature::Rule(rule.into(), Rule::Finished))
     }
 
     /// Constructs a [`Cucumber`] event from the given [`Scenario`] event.
     #[must_use]
     pub fn scenario(
-        feat: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feat: impl Into<Source<gherkin::Feature>>,
+        rule: Option<impl Into<Source<gherkin::Rule>>>,
+        scenario: impl Into<Source<gherkin::Scenario>>,
         event: RetryableScenario<World>,
     ) -> Self {
         Self::Feature(
-            feat,
+            feat.into(),
             if let Some(r) = rule {
-                Feature::Rule(r, Rule::Scenario(scenario, event))
+                Feature::Rule(r.into(), Rule::Scenario(scenario.into(), event))
             } else {
-                Feature::Scenario(scenario, event)
+                Feature::Scenario(scenario.into(), event)
             },
         )
     }
@@ -286,10 +291,10 @@ pub enum Feature<World> {
     Started,
 
     /// [`Rule`] event.
-    Rule(Arc<gherkin::Rule>, Rule<World>),
+    Rule(Source<gherkin::Rule>, Rule<World>),
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
+    Scenario(Source<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Feature`] execution being finished.
     ///
@@ -303,8 +308,8 @@ impl<World> Clone for Feature<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Rule(r, ev) => Self::Rule(Arc::clone(r), ev.clone()),
-            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
+            Self::Rule(r, ev) => Self::Rule(r.clone(), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(s.clone(), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -321,7 +326,7 @@ pub enum Rule<World> {
     Started,
 
     /// [`Scenario`] event.
-    Scenario(Arc<gherkin::Scenario>, RetryableScenario<World>),
+    Scenario(Source<gherkin::Scenario>, RetryableScenario<World>),
 
     /// [`Rule`] execution being finished.
     ///
@@ -335,7 +340,7 @@ impl<World> Clone for Rule<World> {
     fn clone(&self) -> Self {
         match self {
             Self::Started => Self::Started,
-            Self::Scenario(s, ev) => Self::Scenario(Arc::clone(s), ev.clone()),
+            Self::Scenario(s, ev) => Self::Scenario(s.clone(), ev.clone()),
             Self::Finished => Self::Finished,
         }
     }
@@ -421,7 +426,7 @@ pub enum StepError {
     Panic(#[error(not(source))] Info),
 }
 
-/// Type of a hook executed before or after all [`Scenario`]'s [`Step`]s.
+/// Type of hook executed before or after all [`Scenario`]'s [`Step`]s.
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
@@ -491,10 +496,10 @@ pub enum Scenario<World> {
     /// [`Background`] [`Step`] event.
     ///
     /// [`Background`]: gherkin::Background
-    Background(Arc<gherkin::Step>, Step<World>),
+    Background(Source<gherkin::Step>, Step<World>),
 
     /// [`Step`] event.
-    Step(Arc<gherkin::Step>, Step<World>),
+    Step(Source<gherkin::Step>, Step<World>),
 
     /// [`Scenario`]'s log entry is emitted.
     Log(String),
@@ -513,9 +518,9 @@ impl<World> Clone for Scenario<World> {
             Self::Started => Self::Started,
             Self::Hook(ty, ev) => Self::Hook(*ty, ev.clone()),
             Self::Background(bg, ev) => {
-                Self::Background(Arc::clone(bg), ev.clone())
+                Self::Background(bg.clone(), ev.clone())
             }
-            Self::Step(st, ev) => Self::Step(Arc::clone(st), ev.clone()),
+            Self::Step(st, ev) => Self::Step(st.clone(), ev.clone()),
             Self::Log(msg) => Self::Log(msg.clone()),
             Self::Finished => Self::Finished,
         }
@@ -555,8 +560,8 @@ impl<World> Scenario<World> {
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_started(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Started)
+    pub fn step_started(step: impl Into<Source<gherkin::Step>>) -> Self {
+        Self::Step(step.into(), Step::Started)
     }
 
     /// Constructs an event of a [`Background`] [`Step`] being started.
@@ -564,20 +569,22 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_started(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Started)
+    pub fn background_step_started(
+        step: impl Into<Source<gherkin::Step>>,
+    ) -> Self {
+        Self::Background(step.into(), Step::Started)
     }
 
     /// Constructs an event of a passed [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_passed(
-        step: Arc<gherkin::Step>,
+    pub fn step_passed(
+        step: impl Into<Source<gherkin::Step>>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Step(step, Step::Passed(captures, loc))
+        Self::Step(step.into(), Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -585,28 +592,30 @@ impl<World> Scenario<World> {
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_passed(
-        step: Arc<gherkin::Step>,
+    pub fn background_step_passed(
+        step: impl Into<Source<gherkin::Step>>,
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Background(step, Step::Passed(captures, loc))
+        Self::Background(step.into(), Step::Passed(captures, loc))
     }
 
     /// Constructs an event of a skipped [`Step`].
     ///
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Self::Step(step, Step::Skipped)
+    pub fn step_skipped(step: impl Into<Source<gherkin::Step>>) -> Self {
+        Self::Step(step.into(), Step::Skipped)
     }
     /// Constructs an event of a skipped [`Background`] [`Step`].
     ///
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub const fn background_step_skipped(step: Arc<gherkin::Step>) -> Self {
-        Self::Background(step, Step::Skipped)
+    pub fn background_step_skipped(
+        step: impl Into<Source<gherkin::Step>>,
+    ) -> Self {
+        Self::Background(step.into(), Step::Skipped)
     }
 
     /// Constructs an event of a failed [`Step`].
@@ -614,13 +623,13 @@ impl<World> Scenario<World> {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn step_failed(
-        step: Arc<gherkin::Step>,
+        step: impl Into<Source<gherkin::Step>>,
         captures: Option<regex::CaptureLocations>,
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
     ) -> Self {
-        Self::Step(step, Step::Failed(captures, loc, world, info.into()))
+        Self::Step(step.into(), Step::Failed(captures, loc, world, info.into()))
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -629,13 +638,16 @@ impl<World> Scenario<World> {
     /// [`Step`]: gherkin::Step
     #[must_use]
     pub fn background_step_failed(
-        step: Arc<gherkin::Step>,
+        step: impl Into<Source<gherkin::Step>>,
         captures: Option<regex::CaptureLocations>,
         loc: Option<step::Location>,
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
     ) -> Self {
-        Self::Background(step, Step::Failed(captures, loc, world, info.into()))
+        Self::Background(
+            step.into(),
+            Step::Failed(captures, loc, world, info.into()),
+        )
     }
 
     /// Transforms this [`Scenario`] event into a [`RetryableScenario`] event.
@@ -696,4 +708,51 @@ pub enum ScenarioFinished {
         Option<step::Location>,
         StepError,
     ),
+}
+
+/// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
+/// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Hash`] and
+/// [`PartialEq`] implementations for using it extensively in [`Event`]s.
+#[derive(AsRef, Deref, Display, From, Into, RefCast)]
+#[as_ref(forward)]
+#[deref(forward)]
+#[repr(transparent)]
+pub struct Source<T: ?Sized>(Arc<T>);
+
+impl<T> Source<T> {
+    /// Wraps the provided `value` into a new [`Source`].
+    #[must_use]
+    pub fn new(value: T) -> Self {
+        Self(Arc::new(value))
+    }
+}
+
+impl<T: fmt::Debug + ?Sized> fmt::Debug for Source<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&**self, f)
+    }
+}
+
+// Manual implementation is required to omit the redundant `T: Clone` trait
+// bound imposed by `#[derive(Clone)]`.
+impl<T> Clone for Source<T> {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
+// Manual implementation is required to omit the redundant `T: Eq` trait bound
+// imposed by `#[derive(Eq)]`.
+impl<T: ?Sized> Eq for Source<T> {}
+
+impl<T: ?Sized> PartialEq for Source<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<T: ?Sized> Hash for Source<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Arc::as_ptr(&self.0).hash(state);
+    }
 }

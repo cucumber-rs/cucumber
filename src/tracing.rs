@@ -1,6 +1,6 @@
 //! [`tracing`] integration layer.
 
-use std::{collections::HashMap, fmt, io, iter, sync::Arc};
+use std::{collections::HashMap, fmt, io, iter};
 
 use futures::channel::{mpsc, oneshot};
 use itertools::Either;
@@ -21,7 +21,7 @@ use tracing_subscriber::{
 };
 
 use crate::{
-    event::{self, HookType},
+    event::{self, HookType, Source},
     runner::{
         self,
         basic::{RetryOptions, ScenarioId},
@@ -144,9 +144,9 @@ where
 type Scenarios = HashMap<
     ScenarioId,
     (
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptions>,
     ),
 >;
@@ -217,9 +217,9 @@ impl Collector {
         runnable: impl AsRef<
             [(
                 ScenarioId,
-                Arc<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
+                Source<gherkin::Feature>,
+                Option<Source<gherkin::Rule>>,
+                Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,
             )],
@@ -227,10 +227,8 @@ impl Collector {
     ) {
         for (id, f, r, s, _, ret) in runnable.as_ref() {
             drop(
-                self.scenarios.insert(
-                    *id,
-                    (Arc::clone(f), r.clone(), Arc::clone(s), *ret),
-                ),
+                self.scenarios
+                    .insert(*id, (f.clone(), r.clone(), s.clone(), *ret)),
             );
         }
     }
@@ -267,9 +265,9 @@ impl Collector {
                     )
                     .map(|(f, r, s, opt)| {
                         event::Cucumber::scenario(
-                            Arc::clone(f),
+                            f.clone(),
                             r.clone(),
-                            Arc::clone(s),
+                            s.clone(),
                             event::RetryableScenario {
                                 event: event::Scenario::Log(msg.clone()),
                                 retries: opt.map(|o| o.retries),
