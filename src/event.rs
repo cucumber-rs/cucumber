@@ -19,8 +19,6 @@
 //! [`Runner`]: crate::Runner
 //! [Cucumber]: https://cucumber.io
 
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
-use ref_cast::RefCast;
 #[cfg(feature = "timestamps")]
 use std::time::SystemTime;
 use std::{
@@ -29,6 +27,9 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
+
+use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};
 
@@ -710,8 +711,8 @@ pub enum ScenarioFinished {
 }
 
 /// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
-/// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Eq`] and [`Hash`]
-/// implementations for using it extensively in [`Event`]s.
+/// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Hash`] and
+/// [`PartialEq`] implementations for using it extensively in [`Event`]s.
 #[derive(AsRef, Deref, Display, From, Into, RefCast)]
 #[as_ref(forward)]
 #[deref(forward)]
