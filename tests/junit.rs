@@ -6,7 +6,10 @@ use regex::RegexBuilder;
 use tempfile::NamedTempFile;
 use tracing_subscriber::{
     filter::LevelFilter,
-    fmt::format::{DefaultFields, Format},
+    fmt::{
+        self,
+        format::{DefaultFields, Format},
+    },
     layer::SubscriberExt as _,
     Layer as _,
 };
@@ -35,8 +38,9 @@ async fn output() {
             .fail_on_skipped()
             .with_default_cli()
             .configure_and_init_tracing(
-                DefaultFields::new(),
-                Format::default().with_ansi(false).without_time(),
+                fmt::layer().fmt_fields(DefaultFields::new()).event_format(
+                    Format::default().with_ansi(false).without_time(),
+                ),
                 |layer| {
                     tracing_subscriber::registry()
                         .with(LevelFilter::INFO.and_then(layer))
