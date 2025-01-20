@@ -111,6 +111,9 @@ jobs:
           - cucumber-codegen
           - cucumber
         os: ["ubuntu", "macOS", "windows"]
+        # TODO: Currently disabled due to ICE. Remove once bumping MSRV.
+        exclude:
+          - { crate: "cucumber-codegen", os: "windows" }
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
