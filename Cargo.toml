@@ -83,7 +83,7 @@ smart-default = "0.7.1"
 # "macros" feature dependencies.
 anyhow = { version = "1.0.58", optional = true }
 cucumber-codegen = { version = "=0.21.1", path = "./codegen", optional = true }
-cucumber-expressions = { version = "0.3", features = ["into-regex"], optional = true }
+cucumber-expressions = { version = "0.4", features = ["into-regex"], optional = true }
 inventory = { version = "0.3", optional = true }
 
 # "output-json" and/or "libtest" features dependencies.
