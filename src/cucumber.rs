@@ -12,15 +12,9 @@
 //!
 //! [Cucumber]: https://cucumber.io
 
-use std::{
-    borrow::Cow,
-    fmt::{self, Debug},
-    marker::PhantomData,
-    mem,
-    path::Path,
-    time::Duration,
-};
+use std::{borrow::Cow, marker::PhantomData, mem, path::Path, time::Duration};
 
+use derive_more::with_trait::Debug;
 use futures::{future::LocalBoxFuture, StreamExt as _};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
@@ -40,7 +34,7 @@ use crate::{
 /// [`World::run()`] or [`World::cucumber()`] on your [`World`] deriver to get
 /// [Cucumber] up and running.
 ///
-/// Otherwise use [`Cucumber::new()`] to get the default [Cucumber] executor,
+/// Otherwise, use [`Cucumber::new()`] to get the default [Cucumber] executor,
 /// provide [`Step`]s with [`World::collection()`] or by hand with
 /// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
 ///
@@ -50,6 +44,7 @@ use crate::{
 /// [`Cucumber::with_writer()`] to construct your dream [Cucumber] executor!
 ///
 /// [Cucumber]: https://cucumber.io
+#[derive(Debug)]
 pub struct Cucumber<W, P, I, R, Wr, Cli = cli::Empty>
 where
     W: World,
@@ -77,9 +72,11 @@ where
     cli: Option<cli::Opts<P::Cli, R::Cli, Wr::Cli, Cli>>,
 
     /// Type of the [`World`] this [`Cucumber`] run on.
+    #[debug(ignore)]
     _world: PhantomData<W>,
 
     /// Type of the input consumed by [`Cucumber::parser`].
+    #[debug(ignore)]
     _parser_input: PhantomData<I>,
 }
 
@@ -811,27 +808,6 @@ where
             _world: PhantomData,
             _parser_input: PhantomData,
         }
-    }
-}
-
-impl<W, P, I, R, Wr, Cli> Debug for Cucumber<W, P, I, R, Wr, Cli>
-where
-    W: World,
-    P: Debug + Parser<I>,
-    <P as Parser<I>>::Cli: Debug,
-    R: Debug + Runner<W>,
-    <R as Runner<W>>::Cli: Debug,
-    Wr: Debug + Writer<W>,
-    <Wr as Writer<W>>::Cli: Debug,
-    Cli: clap::Args + Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Cucumber")
-            .field("parser", &self.parser)
-            .field("runner", &self.runner)
-            .field("writer", &self.writer)
-            .field("cli", &self.cli)
-            .finish()
     }
 }
 

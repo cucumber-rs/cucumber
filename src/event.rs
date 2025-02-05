@@ -23,13 +23,12 @@
 use std::time::SystemTime;
 use std::{
     any::Any,
-    fmt,
     hash::{Hash, Hasher},
     sync::Arc,
 };
 
 use derive_more::with_trait::{
-    AsRef, Deref, DerefMut, Display, Error, From, Into,
+    AsRef, Debug, Deref, DerefMut, Display, Error, From, Into,
 };
 use ref_cast::RefCast;
 
@@ -709,8 +708,10 @@ pub enum ScenarioFinished {
 /// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
 /// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Hash`] and
 /// [`PartialEq`] implementations for using it extensively in [`Event`]s.
-#[derive(AsRef, Deref, Display, From, Into, RefCast)]
+#[derive(AsRef, Debug, Deref, Display, From, Into, RefCast)]
 #[as_ref(forward)]
+#[debug("{:?}", **_0)]
+#[debug(bound(T: Debug))]
 #[deref(forward)]
 #[repr(transparent)]
 pub struct Source<T: ?Sized>(Arc<T>);
@@ -720,12 +721,6 @@ impl<T> Source<T> {
     #[must_use]
     pub fn new(value: T) -> Self {
         Self(Arc::new(value))
-    }
-}
-
-impl<T: fmt::Debug + ?Sized> fmt::Debug for Source<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&**self, f)
     }
 }
 

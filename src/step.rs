@@ -21,7 +21,7 @@ use std::{
     iter,
 };
 
-use derive_more::with_trait::{Deref, DerefMut, Display, Error};
+use derive_more::with_trait::{Debug, Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use itertools::Itertools as _;
@@ -43,52 +43,37 @@ pub type WithContext<'me, World> = (
 /// Collection of [`Step`]s.
 ///
 /// Every [`Step`] has to match with exactly 1 [`Regex`].
+#[derive(derive_more::Debug)]
 pub struct Collection<World> {
     /// Collection of [Given] [`Step`]s.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference#given
+    #[debug("{:?}",
+        given.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [When] [`Step`]s.
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference#when
+    #[debug("{:?}",
+        when.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [Then] [`Step`]s.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference#then
+    #[debug("{:?}",
+        then.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
-}
-
-impl<World> fmt::Debug for Collection<World> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Collection")
-            .field(
-                "given",
-                &self
-                    .given
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .field(
-                "when",
-                &self
-                    .when
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .field(
-                "then",
-                &self
-                    .then
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .finish()
-    }
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by

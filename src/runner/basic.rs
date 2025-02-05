@@ -14,7 +14,7 @@ use std::{
     any::Any,
     cmp,
     collections::HashMap,
-    fmt, iter, mem,
+    iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
@@ -27,7 +27,7 @@ use std::{
 
 #[cfg(feature = "tracing")]
 use crossbeam_utils::atomic::AtomicCell;
-use derive_more::with_trait::{Display, FromStr};
+use derive_more::with_trait::{Debug, Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
     channel::{mpsc, oneshot},
@@ -323,6 +323,7 @@ type IsRetried = bool;
 ///
 /// [1]: Runner#order-guarantees
 /// [`Scenario`]: gherkin::Scenario
+#[derive(Debug)]
 pub struct Basic<
     World,
     F = WhichScenarioFn,
@@ -360,11 +361,13 @@ pub struct Basic<
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
+    #[debug(ignore)]
     which_scenario: F,
 
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
+    #[debug(ignore)]
     retry_options: RetryOptionsFn,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
@@ -373,6 +376,7 @@ pub struct Basic<
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[debug(ignore)]
     before_hook: Option<Before>,
 
     /// Function, executed on each [`Scenario`] after running all [`Step`]s.
@@ -380,6 +384,7 @@ pub struct Basic<
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[debug(ignore)]
     after_hook: Option<After>,
 
     /// Indicates whether execution should be stopped after the first failure.
@@ -387,6 +392,7 @@ pub struct Basic<
 
     #[cfg(feature = "tracing")]
     /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
+    #[debug(ignore)]
     pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
 
@@ -417,21 +423,6 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             #[cfg(feature = "tracing")]
             logs_collector: Arc::clone(&self.logs_collector),
         }
-    }
-}
-
-// Implemented manually to omit redundant trait bounds on `World` and to omit
-// outputting `F`.
-impl<World, F, B, A> fmt::Debug for Basic<World, F, B, A> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Basic")
-            .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
-            .field("retries", &self.retries)
-            .field("retry_after", &self.retry_after)
-            .field("retry_filter", &self.retry_filter)
-            .field("steps", &self.steps)
-            .field("fail_fast", &self.fail_fast)
-            .finish_non_exhaustive()
     }
 }
 
