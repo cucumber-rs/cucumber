@@ -1,7 +1,7 @@
 use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
 use cucumber::{given, writer, writer::Coloring, World as _, WriterExt as _};
-use derive_more::Display;
+use derive_more::with_trait::Display;
 use futures::FutureExt as _;
 use regex::Regex;
 use tokio::{spawn, time};

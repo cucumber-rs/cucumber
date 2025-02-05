@@ -27,7 +27,7 @@ use std::{
 
 #[cfg(feature = "tracing")]
 use crossbeam_utils::atomic::AtomicCell;
-use derive_more::{Display, FromStr};
+use derive_more::with_trait::{Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
     channel::{mpsc, oneshot},

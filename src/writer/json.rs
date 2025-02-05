@@ -12,15 +12,10 @@
 //!
 //! [1]: https://github.com/cucumber/cucumber-json-schema
 
-use std::{
-    fmt::{self, Debug},
-    io, mem,
-    sync::LazyLock,
-    time::SystemTime,
-};
+use std::{fmt::Debug, io, mem, sync::LazyLock, time::SystemTime};
 
 use base64::Engine as _;
-use derive_more::Display;
+use derive_more::with_trait::Display;
 use inflector::Inflector as _;
 use mime::Mime;
 use serde::{Serialize, Serializer};
@@ -816,10 +811,10 @@ impl PartialEq<gherkin::Feature> for Feature {
 }
 
 /// Helper to use `#[serde(serialize_with = "serialize_display")]` with any type
-/// implementing [`fmt::Display`].
+/// implementing [`Display`].
 fn serialize_display<T, S>(display: &T, ser: S) -> Result<S::Ok, S::Error>
 where
-    T: fmt::Display,
+    T: Display,
     S: Serializer,
 {
     format_args!("{display}").serialize(ser)

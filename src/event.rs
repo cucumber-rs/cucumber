@@ -28,7 +28,9 @@ use std::{
     sync::Arc,
 };
 
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use derive_more::with_trait::{
+    AsRef, Deref, DerefMut, Display, Error, From, Into,
+};
 use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};

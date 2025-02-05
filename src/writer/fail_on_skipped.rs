@@ -14,7 +14,7 @@
 //! [`Skipped`]: event::Step::Skipped
 //! [`Step`]: gherkin::Step
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 
 use crate::{
     event::{self, Source},

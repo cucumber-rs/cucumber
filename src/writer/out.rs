@@ -17,7 +17,7 @@ use std::{
 };
 
 use console::Style;
-use derive_more::{Deref, DerefMut, Display, From, Into};
+use derive_more::with_trait::{Deref, DerefMut, Display, From, Into};
 
 use super::Coloring;
 

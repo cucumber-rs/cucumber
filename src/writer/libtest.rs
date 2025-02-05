@@ -19,7 +19,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use derive_more::From;
+use derive_more::with_trait::From;
 use either::Either;
 use itertools::Itertools as _;
 use serde::Serialize;

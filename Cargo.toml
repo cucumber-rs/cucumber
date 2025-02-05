@@ -65,7 +65,7 @@ tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 [dependencies]
 clap = { version = "4.3.2", features = ["derive", "wrap_help"] }
 console = "0.15"
-derive_more = { version = "2.0", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
+derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"

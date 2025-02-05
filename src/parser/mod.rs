@@ -16,7 +16,7 @@ pub mod basic;
 
 use std::sync::Arc;
 
-use derive_more::{Display, Error as DeriveError};
+use derive_more::with_trait::{Display, Error as StdError};
 use futures::Stream;
 
 use crate::feature::ExpandExamplesError;
@@ -57,18 +57,18 @@ pub trait Parser<I> {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// [`Parser`] error.
-#[derive(Clone, Debug, Display, DeriveError)]
+#[derive(Clone, Debug, Display, StdError)]
 pub enum Error {
     /// Failed to parse a [`Feature`].
     ///
     /// [`Feature`]: gherkin::Feature
-    #[display("Failed to parse feature: {}", _0)]
+    #[display("Failed to parse feature: {_0}")]
     Parsing(Arc<gherkin::ParseFileError>),
 
     /// Failed to expand [`Examples`]
     ///
     /// [`Examples`]: gherkin::Examples
-    #[display("Failed to expand examples: {}", _0)]
+    #[display("Failed to expand examples: {_0}")]
     ExampleExpansion(Arc<ExpandExamplesError>),
 }
 

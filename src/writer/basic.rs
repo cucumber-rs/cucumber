@@ -19,7 +19,7 @@ use std::{
     sync::LazyLock,
 };
 
-use derive_more::{Deref, DerefMut};
+use derive_more::with_trait::{Deref, DerefMut};
 use itertools::Itertools as _;
 use regex::CaptureLocations;
 use smart_default::SmartDefault;
