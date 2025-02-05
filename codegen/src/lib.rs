@@ -338,7 +338,7 @@ pub fn world(input: TokenStream) -> TokenStream {
 /// # use std::{convert::Infallible};
 /// #
 /// use cucumber::{given, when, Parameter, World};
-/// use derive_more::with_trait::{Deref, FromStr};
+/// use derive_more::{Deref, FromStr};
 ///
 /// #[derive(Debug, Default, World)]
 /// struct MyWorld;

@@ -43,7 +43,7 @@ pub type WithContext<'me, World> = (
 /// Collection of [`Step`]s.
 ///
 /// Every [`Step`] has to match with exactly 1 [`Regex`].
-#[derive(derive_more::Debug)]
+#[derive(Debug)]
 pub struct Collection<World> {
     /// Collection of [Given] [`Step`]s.
     ///
