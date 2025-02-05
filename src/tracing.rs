@@ -2,6 +2,7 @@
 
 use std::{collections::HashMap, fmt, io, iter};
 
+use derive_more::with_trait::Debug;
 use futures::channel::{mpsc, oneshot};
 use itertools::Either;
 use tracing::{
@@ -454,7 +455,7 @@ impl Visit for GetScenarioId {
         }
     }
 
-    fn record_debug(&mut self, _: &Field, _: &dyn fmt::Debug) {}
+    fn record_debug(&mut self, _: &Field, _: &dyn Debug) {}
 }
 
 /// [`FormatFields`] wrapper skipping [`Span`]s with a [`ScenarioId`].
@@ -482,7 +483,7 @@ impl<'w, F: FormatFields<'w>> FormatFields<'w> for SkipScenarioIdSpan<F> {
 struct IsScenarioIdSpan(bool);
 
 impl Visit for IsScenarioIdSpan {
-    fn record_debug(&mut self, field: &Field, _: &dyn fmt::Debug) {
+    fn record_debug(&mut self, field: &Field, _: &dyn Debug) {
         if field.name() == ScenarioId::SPAN_FIELD_NAME {
             self.0 = true;
         }

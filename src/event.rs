@@ -23,12 +23,13 @@
 use std::time::SystemTime;
 use std::{
     any::Any,
-    fmt,
     hash::{Hash, Hasher},
     sync::Arc,
 };
 
-use derive_more::{AsRef, Deref, DerefMut, Display, Error, From, Into};
+use derive_more::with_trait::{
+    AsRef, Debug, Deref, DerefMut, Display, Error, From, Into,
+};
 use ref_cast::RefCast;
 
 use crate::{step, writer::basic::coerce_error};
@@ -409,20 +410,20 @@ pub enum StepError {
     ///
     /// [`Regex`]: regex::Regex
     /// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
-    #[display(fmt = "Step doesn't match any function")]
+    #[display("Step doesn't match any function")]
     NotFound,
 
     /// [`Step`] matches multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step match is ambiguous: {}", _0)]
+    #[display("Step match is ambiguous: {_0}")]
     AmbiguousMatch(step::AmbiguousMatchError),
 
     /// [`Step`] panicked.
     ///
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
+    #[display("Step panicked. Captured output: {}", coerce_error(_0))]
     Panic(#[error(not(source))] Info),
 }
 
@@ -430,7 +431,8 @@ pub enum StepError {
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Display)]
+#[display("{self:?}")]
 pub enum HookType {
     /// Executing on each [`Scenario`] before running all [`Step`]s.
     ///
@@ -443,13 +445,6 @@ pub enum HookType {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     After,
-}
-
-#[expect(clippy::use_debug, reason = "intentional")]
-impl fmt::Display for HookType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
 }
 
 /// Event of running [`Before`] or [`After`] hook.
@@ -713,8 +708,10 @@ pub enum ScenarioFinished {
 /// Wrappers around a [`gherkin`] type ([`gherkin::Feature`],
 /// [`gherkin::Scenario`], etc.), providing cheap [`Clone`], [`Hash`] and
 /// [`PartialEq`] implementations for using it extensively in [`Event`]s.
-#[derive(AsRef, Deref, Display, From, Into, RefCast)]
+#[derive(AsRef, Debug, Deref, Display, From, Into, RefCast)]
 #[as_ref(forward)]
+#[debug("{:?}", **_0)]
+#[debug(bound(T: Debug))]
 #[deref(forward)]
 #[repr(transparent)]
 pub struct Source<T: ?Sized>(Arc<T>);
@@ -724,12 +721,6 @@ impl<T> Source<T> {
     #[must_use]
     pub fn new(value: T) -> Self {
         Self(Arc::new(value))
-    }
-}
-
-impl<T: fmt::Debug + ?Sized> fmt::Debug for Source<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&**self, f)
     }
 }
 

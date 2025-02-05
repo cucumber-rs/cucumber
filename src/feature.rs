@@ -16,7 +16,7 @@ use std::{
     sync::LazyLock,
 };
 
-use derive_more::{Display, Error};
+use derive_more::with_trait::{Display, Error};
 use regex::Regex;
 use sealed::sealed;
 
@@ -231,11 +231,10 @@ fn expand_scenario(
 /// [1]: https://cucumber.io/docs/gherkin/reference#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
-    fmt = "Failed to resolve <{}> at {}:{}:{}",
-    name,
-    "path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default()",
-    "pos.line",
-    "pos.col"
+    "Failed to resolve <{name}> at {}:{}:{}",
+    path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default(),
+    pos.line,
+    pos.col,
 )]
 pub struct ExpandExamplesError {
     /// Position of the unknown template.

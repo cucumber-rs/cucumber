@@ -12,7 +12,7 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 use itertools::Itertools as _;
 
 use crate::{

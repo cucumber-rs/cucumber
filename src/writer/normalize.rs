@@ -12,7 +12,7 @@
 
 use std::{future::Future, hash::Hash, mem};
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 

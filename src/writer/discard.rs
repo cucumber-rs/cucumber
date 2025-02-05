@@ -10,14 +10,14 @@
 
 //! Wrappers providing no-op implementations.
 
-use derive_more::{Deref, DerefMut};
+use derive_more::with_trait::{Deref, DerefMut};
 
 use crate::{event::Cucumber, parser, writer, Event, World, Writer};
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
 ///
 /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`] into a
-/// [`writer::Tee`], as the later accepts only [`ArbitraryWriter`]s.
+/// [`writer::Tee`], as the latter accepts only [`ArbitraryWriter`]s.
 ///
 /// [`ArbitraryWriter`]: writer::Arbitrary
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]

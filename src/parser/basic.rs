@@ -17,7 +17,7 @@ use std::{
     vec,
 };
 
-use derive_more::{Display, Error};
+use derive_more::with_trait::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::{GlobWalker, GlobWalkerBuilder};
@@ -164,7 +164,7 @@ impl Basic {
 
 /// Error of [`gherkin`] not supporting keywords in some language.
 #[derive(Clone, Debug, Display, Error)]
-#[display(fmt = "Language {} isn't supported", _0)]
+#[display("Language {_0} isn't supported")]
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,
 );

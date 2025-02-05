@@ -53,6 +53,7 @@ output-json = [
     "dep:mime",
     "dep:serde",
     "dep:serde_json",
+    "dep:serde_with",
     "timestamps",
 ]
 # Enables support for outputting JUnit XML report.
@@ -65,7 +66,7 @@ tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 [dependencies]
 clap = { version = "4.3.2", features = ["derive", "wrap_help"] }
 console = "0.15"
-derive_more = { version = "0.99.17", features = ["as_ref", "deref", "deref_mut", "display", "error", "from", "from_str", "into"], default-features = false }
+derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"
@@ -92,6 +93,7 @@ Inflector = { version = "0.11", default-features = false, optional = true }
 mime = { version = "0.3.16", optional = true }
 serde = { version = "1.0.157", features = ["derive"], optional = true }
 serde_json = { version = "1.0.18", optional = true }
+serde_with = { version = "3.0", optional = true }
 
 # "output-junit" feature dependencies.
 junit-report = { version = "0.8", optional = true }
@@ -102,7 +104,6 @@ tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3.16", optional = true }
 
 [dev-dependencies]
-derive_more = "0.99.17"
 rand = "0.9"
 tempfile = "3.2"
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "sync", "time"] }

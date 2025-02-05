@@ -1,7 +1,7 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
 use cucumber::{cli, given, then, when, writer, Parameter, World as _};
-use derive_more::{Deref, FromStr};
+use derive_more::with_trait::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 

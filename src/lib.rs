@@ -165,8 +165,6 @@
     unused_results,
     variant_size_differences
 )]
-// TODO: Remove on next `derive_more` major version.
-#![expect(clippy::uninlined_format_args, reason = "`derive_more` expansion")]
 
 pub mod cli;
 mod cucumber;
