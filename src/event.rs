@@ -409,20 +409,20 @@ pub enum StepError {
     ///
     /// [`Regex`]: regex::Regex
     /// [`fail_on_skipped()`]: crate::WriterExt::fail_on_skipped()
-    #[display(fmt = "Step doesn't match any function")]
+    #[display("Step doesn't match any function")]
     NotFound,
 
     /// [`Step`] matches multiple [`Regex`]es.
     ///
     /// [`Regex`]: regex::Regex
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step match is ambiguous: {}", _0)]
+    #[display("Step match is ambiguous: {_0}")]
     AmbiguousMatch(step::AmbiguousMatchError),
 
     /// [`Step`] panicked.
     ///
     /// [`Step`]: gherkin::Step
-    #[display(fmt = "Step panicked. Captured output: {}", "coerce_error(_0)")]
+    #[display("Step panicked. Captured output: {}", coerce_error(_0))]
     Panic(#[error(not(source))] Info),
 }
 
@@ -430,7 +430,8 @@ pub enum StepError {
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Display)]
+#[display("{self:?}")]
 pub enum HookType {
     /// Executing on each [`Scenario`] before running all [`Step`]s.
     ///
@@ -443,13 +444,6 @@ pub enum HookType {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     After,
-}
-
-#[expect(clippy::use_debug, reason = "intentional")]
-impl fmt::Display for HookType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
 }
 
 /// Event of running [`Before`] or [`After`] hook.
