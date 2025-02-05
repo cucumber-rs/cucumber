@@ -18,7 +18,8 @@ use base64::Engine as _;
 use derive_more::with_trait::Display;
 use inflector::Inflector as _;
 use mime::Mime;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
     cli, event,
@@ -426,13 +427,14 @@ impl Base64 {
 /// Data embedded to [Cucumber JSON format][1] output.
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
+#[serde_as]
 #[derive(Clone, Debug, Serialize)]
 pub struct Embedding {
     /// [`base64`] encoded data.
     pub data: Base64,
 
     /// [`Mime`] of this [`Embedding::data`].
-    #[serde(serialize_with = "serialize_display")]
+    #[serde_as(as = "DisplayFromStr")]
     pub mime_type: Mime,
 
     /// Optional name of the [`Embedding`].
@@ -808,14 +810,4 @@ impl PartialEq<gherkin::Feature> for Feature {
             .unwrap_or_default()
             && self.name == other.name
     }
-}
-
-/// Helper to use `#[serde(serialize_with = "serialize_display")]` with any type
-/// implementing [`Display`].
-fn serialize_display<T, S>(display: &T, ser: S) -> Result<S::Ok, S::Error>
-where
-    T: Display,
-    S: Serializer,
-{
-    format_args!("{display}").serialize(ser)
 }
