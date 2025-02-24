@@ -1,7 +1,7 @@
 use std::panic::AssertUnwindSafe;
 
 use clap::Parser;
-use cucumber::{cli, given, World as _};
+use cucumber::{World as _, cli, given};
 use futures::FutureExt as _;
 
 #[derive(cli::Args)]
@@ -41,14 +41,11 @@ async fn tags_option_filters_all_scenarios_with_subcommand() {
     ])
     .expect("Invalid command line");
 
-    let res = World::cucumber()
-        .with_cli(cli)
-        .run_and_exit("tests/features/cli");
+    let res =
+        World::cucumber().with_cli(cli).run_and_exit("tests/features/cli");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "2 steps failed");
@@ -66,14 +63,11 @@ async fn tags_option_filters_scenario1_with_subcommand() {
     ])
     .expect("Invalid command line");
 
-    let res = World::cucumber()
-        .with_cli(cli)
-        .run_and_exit("tests/features/cli");
+    let res =
+        World::cucumber().with_cli(cli).run_and_exit("tests/features/cli");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");
@@ -89,14 +83,11 @@ async fn tags_option_filters_scenario1_no_subcommand() {
     ])
     .expect("Invalid command line");
 
-    let res = World::cucumber()
-        .with_cli(cli)
-        .run_and_exit("tests/features/cli");
+    let res =
+        World::cucumber().with_cli(cli).run_and_exit("tests/features/cli");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");

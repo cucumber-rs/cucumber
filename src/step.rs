@@ -33,12 +33,8 @@ pub type Step<World> =
 
 /// Alias for a [`Step`] with [`regex::CaptureLocations`], [`Location`] and
 /// [`Context`] returned by [`Collection::find()`].
-pub type WithContext<'me, World> = (
-    &'me Step<World>,
-    regex::CaptureLocations,
-    Option<Location>,
-    Context,
-);
+pub type WithContext<'me, World> =
+    (&'me Step<World>, regex::CaptureLocations, Option<Location>, Context);
 
 /// Collection of [`Step`]s.
 ///
@@ -187,7 +183,7 @@ impl<World> Collection<World> {
                             .map(|(re, loc, ..)| (re.clone(), *loc))
                             .sorted()
                             .collect(),
-                    })
+                    });
                 }
             };
 
@@ -211,10 +207,7 @@ impl<World> Collection<World> {
             step_fn,
             captures,
             *loc,
-            Context {
-                step: step.clone(),
-                matches,
-            },
+            Context { step: step.clone(), matches },
         )))
     }
 }

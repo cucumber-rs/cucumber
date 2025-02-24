@@ -15,7 +15,7 @@ Throwing a panic in a [step] matching function makes the appropriate [step] fail
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -77,7 +77,7 @@ Similarly to [using the `?` operator in Rust tests][1], we may also return a `Re
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {

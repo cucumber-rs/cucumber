@@ -8,7 +8,7 @@ Reporting tests result to multiple outputs simultaneously may be achieved by usi
 # extern crate tokio;
 #
 # use std::{fs, io};
-use cucumber::{writer, World as _, WriterExt as _};
+use cucumber::{World as _, WriterExt as _, writer};
 
 # #[derive(cucumber::World, Debug, Default)]
 # struct World;

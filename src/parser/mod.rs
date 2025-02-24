@@ -19,10 +19,9 @@ use std::sync::Arc;
 use derive_more::with_trait::{Display, Error as StdError};
 use futures::Stream;
 
-use crate::feature::ExpandExamplesError;
-
 #[doc(inline)]
 pub use self::basic::Basic;
+use crate::feature::ExpandExamplesError;
 
 /// Source of parsed [`Feature`]s.
 ///

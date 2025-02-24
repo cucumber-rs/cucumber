@@ -10,19 +10,18 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::{convert::Infallible, future::Future};
-
-use futures::future;
-
-use crate::{step, Step, World};
+use std::convert::Infallible;
 
 pub use anyhow;
 pub use cucumber_expressions::{
-    expand::parameters::Provider as ParametersProvider, Expression, Spanned,
+    Expression, Spanned, expand::parameters::Provider as ParametersProvider,
 };
+use futures::future;
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
 pub use regex::Regex;
+
+use crate::{Step, World, step};
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {

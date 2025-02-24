@@ -25,16 +25,14 @@ use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    cli,
+    Event, World, Writer, WriterExt as _, cli,
     event::{self, Retries},
     parser,
     writer::{
-        self,
+        self, Arbitrary, Normalize, Summarize,
         basic::{coerce_error, trim_path},
         out::WriteStrExt as _,
-        Arbitrary, Normalize, Summarize,
     },
-    Event, World, Writer, WriterExt as _,
 };
 
 /// CLI options of a [`Libtest`] [`Writer`].
@@ -394,18 +392,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.started_at = Some(meta.at);
                 Vec::new()
             }
-            Ok((
-                Cucumber::ParsingFinished {
-                    steps,
-                    parser_errors,
-                    ..
-                },
-                _,
-            )) => {
-                vec![SuiteEvent::Started {
-                    test_count: steps + parser_errors,
-                }
-                .into()]
+            Ok((Cucumber::ParsingFinished { steps, parser_errors, .. }, _)) => {
+                vec![
+                    SuiteEvent::Started { test_count: steps + parser_errors }
+                        .into(),
+                ]
             }
             Ok((Cucumber::Finished, meta)) => {
                 let exec_time = self
@@ -743,15 +734,10 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             ),
         };
 
-        [
-            Some(feature_name),
-            rule_name,
-            Some(scenario_name),
-            Some(step_name),
-        ]
-        .into_iter()
-        .flatten()
-        .join("::")
+        [Some(feature_name), rule_name, Some(scenario_name), Some(step_name)]
+            .into_iter()
+            .flatten()
+            .join("::")
     }
 
     /// Saves [`Step`] starting [`SystemTime`].
@@ -998,12 +984,7 @@ struct TestEventInner {
 impl TestEventInner {
     /// Creates a new [`TestEventInner`].
     const fn new(name: String) -> Self {
-        Self {
-            name,
-            stdout: None,
-            stderr: None,
-            exec_time: None,
-        }
+        Self { name, stdout: None, stderr: None, exec_time: None }
     }
 
     /// Adds a [`TestEventInner::exec_time`].

@@ -6,15 +6,16 @@ use derive_more::with_trait::Debug;
 use futures::channel::{mpsc, oneshot};
 use itertools::Either;
 use tracing::{
+    Dispatch, Event, Span, Subscriber,
     field::{Field, Visit},
-    span, Dispatch, Event, Span, Subscriber,
+    span,
 };
 use tracing_subscriber::{
     field::RecordFields,
     filter::LevelFilter,
     fmt::{
-        format::{self, Format},
         FmtContext, FormatEvent, FormatFields, MakeWriter,
+        format::{self, Format},
     },
     layer::{self, Layer, Layered, SubscriberExt as _},
     registry::LookupSpan,
@@ -22,12 +23,12 @@ use tracing_subscriber::{
 };
 
 use crate::{
+    Cucumber, Parser, Runner, ScenarioType, World, Writer,
     event::{self, HookType, Source},
     runner::{
         self,
         basic::{RetryOptions, ScenarioId},
     },
-    Cucumber, Parser, Runner, ScenarioType, World, Writer,
 };
 
 impl<W, P, I, Wr, Cli, WhichSc, Before, After>
@@ -126,14 +127,10 @@ where
         );
         Dispatch::new(configure(layer)).init();
 
-        drop(
-            self.runner
-                .logs_collector
-                .swap(Box::new(Some(Collector::new(
-                    logs_receiver,
-                    span_close_receiver,
-                )))),
-        );
+        drop(self.runner.logs_collector.swap(Box::new(Some(Collector::new(
+            logs_receiver,
+            span_close_receiver,
+        )))));
 
         self
     }
@@ -254,29 +251,25 @@ impl Collector {
     ) -> Option<Vec<event::Cucumber<W>>> {
         self.notify_about_closing_spans();
 
-        self.logs_receiver
-            .try_next()
-            .ok()
-            .flatten()
-            .map(|(id, msg)| {
-                id.and_then(|k| self.scenarios.get(&k))
-                    .map_or_else(
-                        || Either::Left(self.scenarios.values()),
-                        |p| Either::Right(iter::once(p)),
+        self.logs_receiver.try_next().ok().flatten().map(|(id, msg)| {
+            id.and_then(|k| self.scenarios.get(&k))
+                .map_or_else(
+                    || Either::Left(self.scenarios.values()),
+                    |p| Either::Right(iter::once(p)),
+                )
+                .map(|(f, r, s, opt)| {
+                    event::Cucumber::scenario(
+                        f.clone(),
+                        r.clone(),
+                        s.clone(),
+                        event::RetryableScenario {
+                            event: event::Scenario::Log(msg.clone()),
+                            retries: opt.map(|o| o.retries),
+                        },
                     )
-                    .map(|(f, r, s, opt)| {
-                        event::Cucumber::scenario(
-                            f.clone(),
-                            r.clone(),
-                            s.clone(),
-                            event::RetryableScenario {
-                                event: event::Scenario::Log(msg.clone()),
-                                retries: opt.map(|o| o.retries),
-                            },
-                        )
-                    })
-                    .collect()
-            })
+                })
+                .collect()
+        })
     }
 
     /// Notifies all its subscribers about closing [`Span`]s via [`Callback`]s.
@@ -376,10 +369,7 @@ impl SpanCloseWaiter {
     /// Waits for the [`Span`] being closed.
     pub(crate) async fn wait_for_span_close(&self, id: span::Id) {
         let (sender, receiver) = oneshot::channel();
-        _ = self
-            .wait_span_event_sender
-            .unbounded_send((id, sender))
-            .ok();
+        _ = self.wait_span_event_sender.unbounded_send((id, sender)).ok();
         _ = receiver.await.ok();
     }
 }

@@ -16,12 +16,11 @@ pub mod basic;
 
 use futures::Stream;
 
-use crate::{event, parser, Event};
-#[cfg(doc)]
-use crate::{event::Source, Step};
-
 #[doc(inline)]
 pub use self::basic::{Basic, ScenarioType};
+use crate::{Event, event, parser};
+#[cfg(doc)]
+use crate::{Step, event::Source};
 
 /// Executor of [`Parser`] output producing [`Cucumber`] events for [`Writer`].
 ///

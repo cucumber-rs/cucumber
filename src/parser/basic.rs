@@ -23,9 +23,8 @@ use gherkin::GherkinEnv;
 use globwalk::{GlobWalker, GlobWalkerBuilder};
 use itertools::Itertools as _;
 
-use crate::feature::Ext as _;
-
 use super::{Error as ParseError, Parser};
+use crate::feature::Ext as _;
 
 /// CLI options of a [`Basic`] [`Parser`].
 #[derive(clap::Args, Clone, Debug, Default)]

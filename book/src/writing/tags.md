@@ -137,7 +137,7 @@ Feature: Animal feature
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 # 
 # #[derive(Debug, Default)]

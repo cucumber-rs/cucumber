@@ -23,7 +23,7 @@ These features are agnostic to the implementation, the only requirement is that 
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World as _};
+# use cucumber::{World as _, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(cucumber::World, Debug, Default)]

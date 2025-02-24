@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{given, then, when, Parameter, World as _};
+use cucumber::{Parameter, World as _, given, then, when};
 use derive_more::with_trait::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
@@ -56,10 +56,8 @@ async fn fires_each_time() {
         .max_concurrent_scenarios(1)
         .run_and_exit("tests/features/wait");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "4 steps failed, 1 parsing error, 8 hook errors");

@@ -1,6 +1,6 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
-use cucumber::{cli, given, then, when, writer, Parameter, World as _};
+use cucumber::{Parameter, World as _, cli, given, then, when, writer};
 use derive_more::with_trait::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
@@ -34,10 +34,8 @@ async fn main() {
         .with_cli(cli)
         .run_and_exit("tests/features/wait");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "4 steps failed, 1 parsing error");

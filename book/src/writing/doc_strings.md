@@ -56,7 +56,7 @@ In a [step] matching function, there’s no need to find this text and match it 
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use cucumber::{gherkin::Step, given, then, when, World};
+# use cucumber::{World, gherkin::Step, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {

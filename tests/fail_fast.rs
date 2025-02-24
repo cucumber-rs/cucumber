@@ -1,4 +1,4 @@
-use cucumber::{runner, then, writer::summarize::Stats, World as _};
+use cucumber::{World as _, runner, then, writer::summarize::Stats};
 
 #[derive(Clone, Copy, cucumber::World, Debug, Default)]
 struct World;
@@ -33,22 +33,12 @@ async fn correct_stats() {
 
         assert_eq!(
             *writer.scenarios_stats(),
-            Stats {
-                passed: p_sc,
-                skipped: 0,
-                failed: f_sc,
-                retried: r_sc,
-            },
+            Stats { passed: p_sc, skipped: 0, failed: f_sc, retried: r_sc },
             "Wrong `Stats` for `Scenario`s in `{feat}`",
         );
         assert_eq!(
             *writer.steps_stats(),
-            Stats {
-                passed: p_st,
-                skipped: 0,
-                failed: f_st,
-                retried: r_st,
-            },
+            Stats { passed: p_st, skipped: 0, failed: f_st, retried: r_st },
             "Wrong `Stats` for `Step`s in `{feat}`",
         );
     }

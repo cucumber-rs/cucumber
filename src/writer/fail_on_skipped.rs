@@ -17,8 +17,9 @@
 use derive_more::with_trait::Deref;
 
 use crate::{
+    Event, World, Writer,
     event::{self, Source},
-    parser, writer, Event, World, Writer,
+    parser, writer,
 };
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
@@ -241,10 +242,7 @@ impl<Writer> FailOnSkipped<Writer> {
             &gherkin::Scenario,
         ) -> bool,
     {
-        FailOnSkipped {
-            writer,
-            should_fail: predicate,
-        }
+        FailOnSkipped { writer, should_fail: predicate }
     }
 
     /// Returns the original [`Writer`], wrapped by this [`FailOnSkipped`] one.

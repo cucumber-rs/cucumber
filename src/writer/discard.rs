@@ -12,7 +12,7 @@
 
 use derive_more::with_trait::{Deref, DerefMut};
 
-use crate::{event::Cucumber, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, event::Cucumber, parser, writer};
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
 ///

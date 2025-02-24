@@ -1,6 +1,6 @@
 use std::io;
 
-use cucumber::{writer, StatsWriter as _, World as _, WriterExt as _};
+use cucumber::{StatsWriter as _, World as _, WriterExt as _, writer};
 
 #[derive(cucumber::World, Clone, Copy, Debug, Default)]
 struct World;

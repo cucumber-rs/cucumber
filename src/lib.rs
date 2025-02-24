@@ -12,22 +12,17 @@
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
     html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
 )]
-#![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![deny(
-    macro_use_extern_crate,
-    nonstandard_style,
-    rust_2018_idioms,
-    rustdoc::all,
-    trivial_casts,
-    trivial_numeric_casts
-)]
+#![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
+#![cfg_attr(not(any(doc, test)), doc = env!("CARGO_PKG_NAME"))]
+#![deny(nonstandard_style, rustdoc::all, trivial_casts, trivial_numeric_casts)]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     clippy::absolute_paths,
     clippy::allow_attributes,
     clippy::allow_attributes_without_reason,
     clippy::as_conversions,
+    clippy::as_pointer_underscore,
     clippy::as_ptr_cast_mut,
     clippy::assertions_on_result_states,
     clippy::branches_sharing_code,
@@ -41,6 +36,7 @@
     clippy::decimal_literal_representation,
     clippy::default_union_representation,
     clippy::derive_partial_eq_without_eq,
+    clippy::doc_include_without_cfg,
     clippy::else_if_without_else,
     clippy::empty_drop,
     clippy::empty_structs_with_brackets,
@@ -64,6 +60,7 @@
     clippy::large_include_file,
     clippy::large_stack_frames,
     clippy::let_underscore_untyped,
+    clippy::literal_string_with_formatting_args,
     clippy::lossy_float_literal,
     clippy::map_err_ignore,
     clippy::map_with_unused_argument_over_ranges,
@@ -140,29 +137,25 @@
     clippy::verbose_file_reads,
     clippy::while_float,
     clippy::wildcard_enum_match_arm,
-    explicit_outlives_requirements,
+    ambiguous_negative_literals,
+    closure_returning_async_block,
     future_incompatible,
+    impl_trait_redundant_captures,
     let_underscore_drop,
+    macro_use_extern_crate,
     meta_variable_misuse,
     missing_abi,
     missing_copy_implementations,
     missing_debug_implementations,
     missing_docs,
     redundant_lifetimes,
-    semicolon_in_expressions_from_macros,
+    rust_2018_idioms,
     single_use_lifetimes,
     unit_bindings,
     unnameable_types,
     unreachable_pub,
-    unsafe_op_in_unsafe_fn,
     unstable_features,
-    unused_crate_dependencies,
-    unused_extern_crates,
-    unused_import_braces,
-    unused_lifetimes,
-    unused_macro_rules,
-    unused_qualifications,
-    unused_results,
+    unused,
     variant_size_differences
 )]
 
@@ -184,31 +177,29 @@ pub mod tracing;
 
 // TODO: Remove once tests run without complains about it.
 #[cfg(test)]
-mod actually_used_crates_in_doc_tests_and_book {
+mod only_used_in_doc_tests_and_book {
     use rand as _;
     use tempfile as _;
     use tokio as _;
 }
 
+use std::fmt::Display;
 #[cfg(feature = "macros")]
 use std::{fmt::Debug, path::Path};
-use std::{fmt::Display, future::Future};
 
 #[cfg(feature = "macros")]
-use self::{
-    codegen::{StepConstructor as _, WorldInventory},
-    cucumber::DefaultCucumber,
-};
-
+#[doc(inline)]
+pub use cucumber_codegen::{Parameter, World, given, then, when};
 pub use gherkin;
 
 #[cfg(feature = "macros")]
 #[doc(inline)]
 pub use self::codegen::Parameter;
 #[cfg(feature = "macros")]
-#[doc(inline)]
-pub use cucumber_codegen::{given, then, when, Parameter, World};
-
+use self::{
+    codegen::{StepConstructor as _, WorldInventory},
+    cucumber::DefaultCucumber,
+};
 #[doc(inline)]
 pub use self::{
     cucumber::Cucumber,

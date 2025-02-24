@@ -18,8 +18,8 @@ use std::{
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::{Duration, Instant},
@@ -30,13 +30,13 @@ use crossbeam_utils::atomic::AtomicCell;
 use derive_more::with_trait::{Debug, Display, FromStr};
 use drain_filter_polyfill::VecExt;
 use futures::{
+    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
+    TryStreamExt as _,
     channel::{mpsc, oneshot},
     future::{self, Either, LocalBoxFuture},
     lock::Mutex,
     pin_mut,
     stream::{self, LocalBoxStream},
-    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
-    TryStreamExt as _,
 };
 use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
@@ -45,12 +45,12 @@ use regex::{CaptureLocations, Regex};
 #[cfg(feature = "tracing")]
 use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
+    Event, Runner, Step, World,
     event::{self, HookType, Info, Retries, Source},
     feature::Ext as _,
-    future::{select_with_biased_first, FutureExt as _},
+    future::{FutureExt as _, select_with_biased_first},
     parser, step,
     tag::Ext as _,
-    Event, Runner, Step, World,
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
@@ -127,10 +127,9 @@ impl RetryOptions {
     /// otherwise.
     #[must_use]
     pub fn next_try(self) -> Option<Self> {
-        self.retries.next_try().map(|num| Self {
-            retries: num,
-            after: self.after,
-        })
+        self.retries
+            .next_try()
+            .map(|num| Self { retries: num, after: self.after })
     }
 
     /// Parses [`RetryOptions`] from [`Feature`]'s, [`Rule`]'s, [`Scenario`]'s
@@ -146,7 +145,6 @@ impl RetryOptions {
         scenario: &gherkin::Scenario,
         cli: &Cli,
     ) -> Option<Self> {
-        #[expect(clippy::shadow_unrelated, reason = "actually related")]
         let parse_tags = |tags: &[String]| {
             tags.iter().find_map(|tag| {
                 tag.strip_prefix("retry").map(|retries| {
@@ -238,10 +236,7 @@ pub struct RetryOptionsWithDeadline {
 
 impl From<RetryOptionsWithDeadline> for RetryOptions {
     fn from(v: RetryOptionsWithDeadline) -> Self {
-        Self {
-            retries: v.retries,
-            after: v.after.map(|(at, _)| at),
-        }
+        Self { retries: v.retries, after: v.after.map(|(at, _)| at) }
     }
 }
 
@@ -798,15 +793,11 @@ where
 
         stream::select(
             receiver.map(Either::Left),
-            future::join(insert, execute)
-                .into_stream()
-                .map(Either::Right),
+            future::join(insert, execute).into_stream().map(Either::Right),
         )
-        .filter_map(|r| async {
-            match r {
-                Either::Left(ev) => Some(ev),
-                Either::Right(_) => None,
-            }
+        .filter_map(async |r| match r {
+            Either::Left(ev) => Some(ev),
+            Either::Right(_) => None,
         })
         .boxed_local()
     }
@@ -1389,9 +1380,8 @@ where
             event::Scenario::Finished.with_retries(retry_num),
         ));
 
-        let next_try = retries
-            .filter(|_| is_failed)
-            .and_then(RetryOptions::next_try);
+        let next_try =
+            retries.filter(|_| is_failed).and_then(RetryOptions::next_try);
         if let Some(next_try) = next_try {
             self.storage
                 .insert_retried_scenario(
@@ -1455,7 +1445,7 @@ where
                     .with_retries(retries),
             ));
 
-            let fut = init_world.and_then(|mut world| async {
+            let fut = init_world.and_then(async |mut world| {
                 let fut = async {
                     (hook)(
                         feature.as_ref(),
@@ -1816,12 +1806,12 @@ where
                 meta.started,
             );
 
-            let ev = if let Some(err) = err {
+            let ev = if let Some(e) = err {
                 event::Cucumber::scenario(
                     feature,
                     rule,
                     scenario,
-                    event::Scenario::hook_failed(HookType::After, world, err)
+                    event::Scenario::hook_failed(HookType::After, world, e)
                         .with_retries(retries),
                 )
             } else {
@@ -2067,9 +2057,12 @@ impl FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     /// [`Rule::Started`]: event::Rule::Started
     /// [`Scenario`]: gherkin::Scenario
-    fn start_scenarios<W>(
+    fn start_scenarios<W, R>(
         &mut self,
-        runnable: impl AsRef<
+        runnable: R,
+    ) -> impl Iterator<Item = event::Cucumber<W>> + use<W, R>
+    where
+        R: AsRef<
             [(
                 ScenarioId,
                 Source<gherkin::Feature>,
@@ -2079,7 +2072,7 @@ impl FinishedRulesAndFeatures {
                 Option<RetryOptions>,
             )],
         >,
-    ) -> impl Iterator<Item = event::Cucumber<W>> {
+    {
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
@@ -2516,9 +2509,9 @@ impl<W> ExecutionFailure<W> {
                 BeforeHookFailed(Arc::clone(panic_info))
             }
             Self::StepSkipped(_) => StepSkipped,
-            Self::StepPanicked {
-                captures, loc, err, ..
-            } => StepFailed(captures.clone(), *loc, err.clone()),
+            Self::StepPanicked { captures, loc, err, .. } => {
+                StepFailed(captures.clone(), *loc, err.clone())
+            }
         }
     }
 }
@@ -2575,40 +2568,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2629,50 +2610,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2693,50 +2659,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2761,40 +2712,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2819,40 +2758,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2936,10 +2863,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -2951,10 +2875,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -2966,10 +2887,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -2981,10 +2899,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2996,10 +2911,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3011,10 +2923,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3026,10 +2935,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3041,10 +2947,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3056,10 +2959,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3094,10 +2994,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3109,10 +3006,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3124,10 +3018,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3139,10 +3030,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3154,10 +3042,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3169,10 +3054,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3184,10 +3066,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3199,10 +3078,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3214,10 +3090,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3307,50 +3180,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3362,10 +3220,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: None,
                 }),
             );
@@ -3377,10 +3232,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3392,10 +3244,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3407,10 +3256,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3422,10 +3268,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3437,10 +3280,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3452,10 +3292,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3467,10 +3304,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3482,10 +3316,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3497,10 +3328,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3521,50 +3349,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3576,10 +3389,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3591,10 +3401,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3606,10 +3413,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3621,10 +3425,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3636,10 +3437,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3651,10 +3449,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3666,10 +3461,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3681,10 +3473,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3696,10 +3485,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3711,10 +3497,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );

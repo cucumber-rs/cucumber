@@ -28,11 +28,7 @@ pub mod repeat;
 pub mod summarize;
 pub mod tee;
 
-use std::future::Future;
-
 use sealed::sealed;
-
-use crate::{event, parser, Event};
 
 #[cfg(feature = "output-json")]
 #[doc(inline)]
@@ -53,6 +49,7 @@ pub use self::{
     summarize::{Summarizable, Summarize},
     tee::Tee,
 };
+use crate::{Event, event, parser};
 
 /// Writer of [`Cucumber`] events to some output.
 ///

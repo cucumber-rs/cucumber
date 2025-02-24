@@ -10,7 +10,7 @@
 
 //! Passing events to one of two [`Writer`]s based on a predicate.
 
-use crate::{cli, event, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, cli, event, parser, writer};
 
 /// Wrapper for passing events to one of two [`Writer`]s based on a predicate.
 #[derive(Clone, Copy, Debug)]
@@ -34,11 +34,7 @@ impl<L, R, F> Or<L, R, F> {
     /// otherwise the `right` [`Writer`] is used on [`false`].
     #[must_use]
     pub const fn new(left: L, right: R, predicate: F) -> Self {
-        Self {
-            left,
-            right,
-            predicate,
-        }
+        Self { left, right, predicate }
     }
 
     /// Returns the left [`Writer`] of this [`Or`] one.

@@ -19,18 +19,17 @@ use derive_more::with_trait::Display;
 use inflector::Inflector as _;
 use mime::Mime;
 use serde::Serialize;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    cli, event,
+    Event, World, Writer, cli, event,
     feature::ExpandExamplesError,
     parser,
     writer::{
-        self,
+        self, Ext as _,
         basic::{coerce_error, trim_path},
-        discard, Ext as _,
+        discard,
     },
-    Event, World, Writer,
 };
 
 /// [Cucumber JSON format][1] [`Writer`] implementation outputting JSON to an
@@ -140,9 +139,7 @@ impl<Out: io::Write> Json<Out> {
     /// [2]: crate::event::Cucumber
     #[must_use]
     pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Stats<Self>> {
-        Self::raw(output)
-            .discard_stats_writes()
-            .discard_arbitrary_writes()
+        Self::raw(output).discard_stats_writes().discard_arbitrary_writes()
     }
 
     /// Creates a new raw and non-[`Normalized`] [`Json`] [`Writer`] outputting
@@ -157,12 +154,7 @@ impl<Out: io::Write> Json<Out> {
     /// [2]: crate::event::Cucumber
     #[must_use]
     pub const fn raw(output: Out) -> Self {
-        Self {
-            output,
-            features: vec![],
-            started: None,
-            logs: vec![],
-        }
+        Self { output, features: vec![], started: None, logs: vec![] }
     }
 
     /// Handles the given [`event::Scenario`].
@@ -361,18 +353,14 @@ impl<Out: io::Write> Json<Out> {
         scenario: &gherkin::Scenario,
         ty: &'static str,
     ) -> &mut Element {
-        let f_pos = self
-            .features
-            .iter()
-            .position(|f| f == feature)
-            .unwrap_or_else(|| {
-                self.features.push(Feature::new(feature));
-                self.features.len() - 1
-            });
-        let f = self
-            .features
-            .get_mut(f_pos)
-            .unwrap_or_else(|| unreachable!());
+        let f_pos =
+            self.features.iter().position(|f| f == feature).unwrap_or_else(
+                || {
+                    self.features.push(Feature::new(feature));
+                    self.features.len() - 1
+                },
+            );
+        let f = self.features.get_mut(f_pos).unwrap_or_else(|| unreachable!());
 
         let el_pos = f
             .elements
@@ -658,10 +646,7 @@ impl Element {
             tags: scenario
                 .tags
                 .iter()
-                .map(|t| Tag {
-                    name: t.clone(),
-                    line: scenario.position.line,
-                })
+                .map(|t| Tag { name: t.clone(), line: scenario.position.line })
                 .collect(),
             steps: vec![],
         }

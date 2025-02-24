@@ -23,7 +23,7 @@ Increasing verbosity level with `-vv` CLI option, makes the state of the `World`
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -90,7 +90,7 @@ Feature: Animal feature
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -155,7 +155,7 @@ Coloring may be disabled by specifying `--color` CLI option:
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -225,7 +225,7 @@ Though [`cucumber`] crate doesn't capture any manual debug printing produced in 
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -289,7 +289,7 @@ To achieve natural output for debugging, the following preparations are required
 #
 # use std::{io, time::Duration};
 #
-# use cucumber::{given, then, when, writer, World, WriterExt as _};
+# use cucumber::{World, WriterExt as _, given, then, when, writer};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -362,7 +362,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{given, then, when, World as _};
+use cucumber::{World as _, given, then, when};
 use tokio::time;
 
 #[derive(cucumber::World, Debug, Default)]
@@ -402,9 +402,9 @@ As a number of [scenario]s grows, it may become quite difficult to find failed/s
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use std::{time::Duration};
+# use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -462,9 +462,9 @@ async fn main() {
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use std::{time::Duration};
+# use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]

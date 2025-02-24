@@ -14,7 +14,7 @@ use std::cmp;
 
 use futures::future;
 
-use crate::{cli, event, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, cli, event, parser, writer};
 
 /// Wrapper for passing events to multiple terminating [`Writer`]s
 /// simultaneously.

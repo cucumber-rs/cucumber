@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{given, then, when, World as _};
+use cucumber::{World as _, given, then, when};
 use tokio::time;
 
 #[derive(cucumber::World, Debug, Default)]
@@ -59,7 +59,7 @@ async fn main() {
 #     time::Duration,
 # };
 # 
-# use cucumber::{given, then, when, World as _};
+# use cucumber::{World as _, given, then, when};
 # use tokio::time;
 # 
 # #[derive(cucumber::World, Debug, Default)]

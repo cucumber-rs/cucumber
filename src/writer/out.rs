@@ -185,17 +185,12 @@ impl Styles {
         let div_ceil = |l, r| {
             let d = l / r;
             let rem = l % r;
-            if rem > 0 && r > 0 {
-                d + 1
-            } else {
-                d
-            }
+            if rem > 0 && r > 0 { d + 1 } else { d }
         };
         s.as_ref()
             .lines()
             .map(|l| {
-                self.term_width
-                    .map_or(1, |w| div_ceil(l.len(), usize::from(w)))
+                self.term_width.map_or(1, |w| div_ceil(l.len(), usize::from(w)))
             })
             .sum()
     }
@@ -231,9 +226,7 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_up(&mut self, n: usize) -> io::Result<()> {
-        (n > 0)
-            .then(|| self.write_str(format!("\x1b[{n}A")))
-            .unwrap_or(Ok(()))
+        (n > 0).then(|| self.write_str(format!("\x1b[{n}A"))).unwrap_or(Ok(()))
     }
 
     /// Writes a special sequence into this writer moving a cursor down on `n`
@@ -243,9 +236,7 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_down(&mut self, n: usize) -> io::Result<()> {
-        (n > 0)
-            .then(|| self.write_str(format!("\x1b[{n}B")))
-            .unwrap_or(Ok(()))
+        (n > 0).then(|| self.write_str(format!("\x1b[{n}B"))).unwrap_or(Ok(()))
     }
 
     /// Writes a special sequence into this writer clearing the last `n` lines.

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt::Debug, mem, sync::LazyLock};
 
-use cucumber::{cli, event, given, parser, then, when, Event, Writer};
+use cucumber::{Event, Writer, cli, event, given, parser, then, when};
 use regex::Regex;
 
 #[derive(cucumber::World, Debug, Default)]
@@ -63,8 +63,8 @@ mod spec {
     use std::{fmt, fs, io, sync::LazyLock};
 
     use cucumber::{
-        writer::{self, Coloring},
         World as _, WriterExt as _,
+        writer::{self, Coloring},
     };
     use globwalk::GlobWalkerBuilder;
     use itertools::Itertools;
@@ -84,11 +84,7 @@ mod spec {
     fn relative_path(cap: &Captures<'_>) -> String {
         format!(
             "tests{}",
-            cap[0]
-                .split("tests")
-                .skip(1)
-                .join("tests")
-                .replace('\\', "/")
+            cap[0].split("tests").skip(1).join("tests").replace('\\', "/")
         )
     }
 

@@ -19,15 +19,13 @@ use junit_report::{
 };
 
 use crate::{
-    event, parser,
+    Event, World, Writer, event, parser,
     writer::{
-        self,
-        basic::{coerce_error, trim_path, Coloring},
+        self, Ext as _, Verbosity,
+        basic::{Coloring, coerce_error, trim_path},
         discard,
         out::WritableString,
-        Ext as _, Verbosity,
     },
-    Event, World, Writer,
 };
 
 /// Advice phrase to use in panic messages of incorrect [events][1] ordering.
@@ -346,8 +344,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
 
         let case_name = format!(
             "{}Scenario: {}: {}{}:{}",
-            rule.map(|r| format!("Rule: {}: ", r.name))
-                .unwrap_or_default(),
+            rule.map(|r| format!("Rule: {}: ", r.name)).unwrap_or_default(),
             sc.name,
             feat.path
                 .as_ref()

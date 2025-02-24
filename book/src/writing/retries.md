@@ -49,7 +49,7 @@ Feature: Heads and tails
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use rand::Rng as _;
 # use tokio::time::sleep;
 #

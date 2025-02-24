@@ -146,10 +146,9 @@ impl Retries {
     /// otherwise.
     #[must_use]
     pub fn next_try(self) -> Option<Self> {
-        self.left.checked_sub(1).map(|left| Self {
-            left,
-            current: self.current + 1,
-        })
+        self.left
+            .checked_sub(1)
+            .map(|left| Self { left, current: self.current + 1 })
     }
 }
 
@@ -651,10 +650,7 @@ impl<World> Scenario<World> {
         self,
         retries: Option<Retries>,
     ) -> RetryableScenario<World> {
-        RetryableScenario {
-            event: self,
-            retries,
-        }
+        RetryableScenario { event: self, retries }
     }
 }
 
@@ -674,10 +670,7 @@ pub struct RetryableScenario<World> {
 // bound imposed by `#[derive(Clone)]`.
 impl<World> Clone for RetryableScenario<World> {
     fn clone(&self) -> Self {
-        Self {
-            event: self.event.clone(),
-            retries: self.retries,
-        }
+        Self { event: self.event.clone(), retries: self.retries }
     }
 }
 

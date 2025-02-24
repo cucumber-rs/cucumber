@@ -1,10 +1,10 @@
 //! Aiding [`Future`]s definitions.
 
-use std::{future::Future, pin::Pin, task};
+use std::{pin::Pin, task};
 
 use futures::{
-    future::{Either, FusedFuture, Then},
     FutureExt as _,
+    future::{Either, FusedFuture, Then},
 };
 use pin_project::pin_project;
 
@@ -67,10 +67,7 @@ pub(crate) struct YieldThenReturn<V> {
 impl<V> YieldThenReturn<V> {
     /// Creates a new [`YieldThenReturn`] [`Future`].
     const fn new(v: V) -> Self {
-        Self {
-            value: Some(v),
-            r#yield: yield_now(),
-        }
+        Self { value: Some(v), r#yield: yield_now() }
     }
 }
 
@@ -83,9 +80,7 @@ impl<V> Future for YieldThenReturn<V> {
     ) -> task::Poll<Self::Output> {
         let this = self.project();
         task::ready!(this.r#yield.poll_unpin(cx));
-        this.value
-            .take()
-            .map_or(task::Poll::Pending, task::Poll::Ready)
+        this.value.take().map_or(task::Poll::Pending, task::Poll::Ready)
     }
 }
 
@@ -105,9 +100,7 @@ where
     A: Future + Unpin,
     B: Future + Unpin,
 {
-    SelectWithBiasedFirst {
-        inner: Some((biased, regular)),
-    }
+    SelectWithBiasedFirst { inner: Some((biased, regular)) }
 }
 
 /// [`Future`] returned by a [`select_with_biased_first()`] function.

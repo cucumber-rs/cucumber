@@ -14,7 +14,7 @@ And configuring output to [`writer::Json`]:
 # extern crate tokio;
 #
 # use std::{fs, io};
-use cucumber::{writer, World as _};
+use cucumber::{World as _, writer};
 
 # #[derive(cucumber::World, Debug, Default)]
 # struct World;

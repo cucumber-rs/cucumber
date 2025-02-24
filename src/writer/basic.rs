@@ -25,15 +25,14 @@ use regex::CaptureLocations;
 use smart_default::SmartDefault;
 
 use crate::{
+    Event, World, Writer,
     cli::Colored,
     event::{self, Info, Retries},
     parser, step,
     writer::{
-        self,
+        self, Ext as _, Verbosity,
         out::{Styles, WriteStrExt as _},
-        Ext as _, Verbosity,
     },
-    Event, World, Writer,
 };
 
 /// CLI options of a [`Basic`] [`Writer`].
@@ -226,10 +225,7 @@ impl<Out: io::Write> Basic<Out> {
             re_output_after_clear: String::new(),
             verbosity: verbosity.into(),
         };
-        basic.apply_cli(Cli {
-            verbose: u8::from(basic.verbosity) + 1,
-            color,
-        });
+        basic.apply_cli(Cli { verbose: u8::from(basic.verbosity) + 1, color });
         basic
     }
 
@@ -1034,9 +1030,7 @@ fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
         .lines()
         .map(|line| format!("{}{line}", " ".repeat(indent)))
         .join("\n");
-    (!str.is_empty())
-        .then(|| format!("\n{str}"))
-        .unwrap_or_default()
+    (!str.is_empty()).then(|| format!("\n{str}")).unwrap_or_default()
 }
 
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
@@ -1101,9 +1095,8 @@ where
 
     let value = value.as_ref();
 
-    let (mut formatted, end) = (1..captures.len())
-        .filter_map(|group| captures.get(group))
-        .fold(
+    let (mut formatted, end) =
+        (1..captures.len()).filter_map(|group| captures.get(group)).fold(
             (String::with_capacity(value.len()), 0),
             |(mut str, old), (start, end)| {
                 // Ignore nested groups.

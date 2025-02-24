@@ -89,7 +89,7 @@ CLI may be extended even more with arbitrary options, if required. In such case 
 #
 # use std::time::Duration;
 #
-# use cucumber::{cli, given, then, when, World};
+# use cucumber::{World, cli, given, then, when};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #
@@ -172,7 +172,7 @@ async fn main() {
 #
 # use std::time::Duration;
 #
-# use cucumber::{cli, given, then, when, World};
+# use cucumber::{World, cli, given, then, when};
 # use futures::FutureExt as _;
 # use tokio::time::sleep;
 #

@@ -18,4 +18,4 @@ create-missing = false
 git_repository_url = "https://github.com/cucumber-rs/cucumber"
 
 [rust]
-edition = "2021"
+edition = "2024"

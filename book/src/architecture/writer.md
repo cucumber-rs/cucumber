@@ -18,8 +18,8 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 # };
 #
 # use cucumber::{
-#     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WriterExt as _,
+#     Event, World, WriterExt as _, cli, event, gherkin, given, parser, step, 
+#     then, when,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},
@@ -301,8 +301,8 @@ async fn main() {
 # use std::{path::PathBuf, time::Duration};
 #
 # use cucumber::{
-#     cli, event, gherkin, given, parser, then, when, Event, World, 
-#     WriterExt as _,
+#     Event, World, WriterExt as _, cli, event, gherkin, given, parser, 
+#     then, when,
 # };
 # use futures::{future, stream};
 # use tokio::time::sleep;

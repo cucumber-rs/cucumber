@@ -10,15 +10,16 @@
 
 //! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
-use std::{future::Future, hash::Hash, mem};
+use std::{hash::Hash, mem};
 
 use derive_more::with_trait::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
+    Event, World, Writer,
     event::{self, Metadata, Retries, Source},
-    parser, writer, Event, World, Writer,
+    parser, writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -53,10 +54,7 @@ pub struct Normalize<World, Writer> {
 // `#[derive(Clone)]`.
 impl<World, Writer: Clone> Clone for Normalize<World, Writer> {
     fn clone(&self) -> Self {
-        Self {
-            writer: self.writer.clone(),
-            queue: self.queue.clone(),
-        }
+        Self { writer: self.writer.clone(), queue: self.queue.clone() }
     }
 }
 
@@ -65,10 +63,7 @@ impl<W, Writer> Normalize<W, Writer> {
     /// and feed them to the given [`Writer`].
     #[must_use]
     pub fn new(writer: Writer) -> Self {
-        Self {
-            writer,
-            queue: CucumberQueue::new(Metadata::new(())),
-        }
+        Self { writer, queue: CucumberQueue::new(Metadata::new(())) }
     }
 
     /// Returns the original [`Writer`], wrapped by this [`Normalized`] one.
@@ -608,10 +603,7 @@ type RuleOrScenarioQueue<World> =
 /// [`Scenario`]: gherkin::Scenario
 type NextRuleOrScenario<'events, World> = Either<
     (Source<gherkin::Rule>, &'events mut RulesQueue<World>),
-    (
-        Source<gherkin::Scenario>,
-        &'events mut ScenariosQueue<World>,
-    ),
+    (Source<gherkin::Scenario>, &'events mut ScenariosQueue<World>),
 >;
 
 /// [`Queue`] of all events of a single [`Feature`].
@@ -707,10 +699,9 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         match self.current_item()? {
-            Either::Left((rule, events)) => events
-                .emit((path, rule), writer, cli)
-                .await
-                .map(Either::Left),
+            Either::Left((rule, events)) => {
+                events.emit((path, rule), writer, cli).await.map(Either::Left)
+            }
             Either::Right((scenario, events)) => events
                 .emit((path, None, scenario), writer, cli)
                 .await
@@ -731,10 +722,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
     type EmittedPath = (Source<gherkin::Feature>, Source<gherkin::Rule>);
 
     fn current_item(self) -> Option<Self::Current> {
-        self.fifo
-            .iter_mut()
-            .next()
-            .map(|((sc, _), ev)| (sc.clone(), ev))
+        self.fifo.iter_mut().next().map(|((sc, _), ev)| (sc.clone(), ev))
     }
 
     async fn emit<W: Writer<World>>(

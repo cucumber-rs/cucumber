@@ -35,7 +35,7 @@ To enable testing of our `simple.feature`, let's add this code to `example.rs`:
 # extern crate cucumber;
 # extern crate futures;
 #
-use cucumber::{given, World};
+use cucumber::{World, given};
 
 // These `Cat` definitions would normally be inside your project's code, 
 // not test code, but we create them here for the show case.
@@ -124,7 +124,7 @@ We can add a `when` [step] matcher:
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, when, World};
+# use cucumber::{World, given, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -169,7 +169,7 @@ Finally, how do we check our result? We expect that this will cause some change 
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -221,7 +221,7 @@ To assure that assertion is indeed happening, let's reverse it temporarily:
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -286,7 +286,7 @@ The only thing that is different is the `Given` [step]. But we don't have to wri
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -342,7 +342,7 @@ Alternatively, we also may use [Cucumber Expressions] for the same purpose (less
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -413,7 +413,7 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]

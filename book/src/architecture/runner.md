@@ -18,7 +18,7 @@ Now, let's implement a custom [`Runner`] which simply executes [scenario]s in [f
 # };
 #
 # use cucumber::{
-#     cli, event, gherkin, given, parser, step, then, when, Event, World,
+#     Event, World, cli, event, gherkin, given, parser, step, then, when,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},

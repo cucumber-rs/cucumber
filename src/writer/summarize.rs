@@ -16,11 +16,11 @@ use derive_more::with_trait::Deref;
 use itertools::Itertools as _;
 
 use crate::{
+    Event, World, Writer,
     cli::Colored,
     event::{self, Retries, Source},
     parser,
     writer::{self, out::Styles},
-    Event, World, Writer,
 };
 
 /// Execution statistics.
@@ -309,18 +309,8 @@ impl<Writer> From<Writer> for Summarize<Writer> {
             writer,
             features: 0,
             rules: 0,
-            scenarios: Stats {
-                passed: 0,
-                skipped: 0,
-                failed: 0,
-                retried: 0,
-            },
-            steps: Stats {
-                passed: 0,
-                skipped: 0,
-                failed: 0,
-                retried: 0,
-            },
+            scenarios: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
+            steps: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
             parsing_errors: 0,
             failed_hooks: 0,
             state: State::InProgress,
@@ -343,8 +333,8 @@ impl<Writer> Summarize<Writer> {
         retries: Option<Retries>,
     ) {
         use self::{
-            event::Step,
             Indicator::{Failed, Retried, Skipped},
+            event::Step,
         };
 
         match ev {

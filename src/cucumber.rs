@@ -15,17 +15,17 @@
 use std::{borrow::Cow, marker::PhantomData, mem, path::Path, time::Duration};
 
 use derive_more::with_trait::Debug;
-use futures::{future::LocalBoxFuture, StreamExt as _};
+use futures::{StreamExt as _, future::LocalBoxFuture};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::{
+    Event, Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
     cli, event, parser,
     runner::{self, basic::RetryOptions},
     step,
     tag::Ext as _,
-    writer, Event, Parser, Runner, ScenarioType, Step, World, Writer,
-    WriterExt as _,
+    writer,
 };
 
 /// Top-level [Cucumber] executor.
@@ -631,12 +631,7 @@ where
     where
         CustomCli: clap::Args,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
+        let Self { parser, runner, writer, .. } = self;
         Cucumber {
             parser,
             runner,
@@ -747,12 +742,7 @@ where
             )
         };
 
-        let Self {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
+        let Self { parser, runner, mut writer, .. } = self;
 
         let features = parser.parse(input, parser_cli);
 
@@ -993,13 +983,7 @@ where
             ) -> ScenarioType
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.which_scenario(func),
@@ -1048,13 +1032,7 @@ where
             ) -> LocalBoxFuture<'a, ()>
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.before(func),
@@ -1091,13 +1069,7 @@ where
             ) -> LocalBoxFuture<'a, ()>
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.after(func),

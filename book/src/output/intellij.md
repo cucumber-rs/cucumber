@@ -11,7 +11,7 @@ cucumber = { version = "0.20", features = ["libtest"] }
 # extern crate cucumber;
 # extern crate tokio;
 #
-use cucumber::{writer, World as _};
+use cucumber::{World as _, writer};
 
 # #[derive(cucumber::World, Debug, Default)]
 # struct World;

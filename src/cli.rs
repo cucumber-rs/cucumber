@@ -27,12 +27,11 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
+pub use clap::{Args, Parser};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::writer::Coloring;
-
-pub use clap::{Args, Parser};
 
 /// Root CLI (command line interface) of a top-level [`Cucumber`] executor.
 ///

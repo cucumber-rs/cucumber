@@ -749,9 +749,7 @@ fn remove_all_attrs_if_needed<'a>(
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
     let has_other_step_arguments = func.attrs.iter().any(|attr| {
         attr.meta.path().segments.last().is_some_and(|segment| {
-            ["given", "when", "then"]
-                .iter()
-                .any(|step| segment.ident == step)
+            ["given", "when", "then"].iter().any(|step| segment.ident == step)
         })
     });
 
@@ -824,7 +822,7 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
             return Err(syn::Error::new(
                 arg.span(),
                 "expected regular argument, found `self`",
-            ))
+            ));
         }
     };
 
