@@ -160,10 +160,10 @@
 </ul>
 <h2 id="panic"><a class="header" href="#panic">Panic</a></h2>
 <p>Throwing a panic in a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function makes the appropriate <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> failed:</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust should_panic edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
-</span><span class="boring">use cucumber::{given, then, when, World};
+</span><span class="boring">use cucumber::{World, given, then, when};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {
@@ -218,10 +218,10 @@ fn cat_is_fed(_: &amp;mut AnimalWorld) {
 </blockquote>
 <h2 id="result-and-"><a class="header" href="#result-and-"><code>Result</code> and <code>?</code></a></h2>
 <p>Similarly to <a href="https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-">using the <code>?</code> operator in Rust tests</a>, we may also return a <code>Result&lt;()&gt;</code> from a <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> matching function, so returning an <code>Err</code> will cause the <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a> to fail (anything implementing <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Display.html"><code>Display</code></a> is sufficient).</p>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust should_panic edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
-</span><span class="boring">use cucumber::{given, then, when, World};
+</span><span class="boring">use cucumber::{World, given, then, when};
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
 </span><span class="boring">struct Cat {

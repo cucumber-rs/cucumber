@@ -158,11 +158,11 @@
 <pre><code class="language-toml">cucumber = { version = "0.20", features = ["output-json"] }
 </code></pre>
 <p>And configuring output to <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Json.html"><code>writer::Json</code></a>:</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::{fs, io};
-</span>use cucumber::{writer, World as _};
+</span>use cucumber::{World as _, writer};
 
 <span class="boring">#[derive(cucumber::World, Debug, Default)]
 </span><span class="boring">struct World;

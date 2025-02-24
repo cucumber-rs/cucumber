@@ -189,13 +189,13 @@
     When I flip the coin
     Then the coin never lands
 </code></pre>
-<pre><pre class="playground"><code class="language-rust should_panic edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust should_panic edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate rand;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use cucumber::{given, then, when, World};
+</span><span class="boring">use cucumber::{World, given, then, when};
 </span><span class="boring">use rand::Rng as _;
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">

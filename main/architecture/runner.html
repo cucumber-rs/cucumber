@@ -155,7 +155,7 @@
                         <h1 id="custom-runner"><a class="header" href="#custom-runner">Custom <code>Runner</code></a></h1>
 <p>Now, let's implement a custom <a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> which simply executes <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s in <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s sequentially, without considering <a href="https://cucumber.io/docs/cucumber/api#tags">tag</a>s, <a href="https://cucumber.io/docs/gherkin/reference#rule">rule</a>s, <a href="https://cucumber.io/docs/gherkin/reference#background"><code>Background</code></a>s or other extras, and specifically suitable for our <code>AnimalWorld</code> (for implementation simplicity).</p>
 <p><a href="https://docs.rs/cucumber/*/cucumber/trait.Runner.html"><code>Runner</code></a> represents anything that transforms a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://cucumber.io/docs/gherkin/reference#feature">feature</a>s into a <a href="https://docs.rs/futures/*/futures/stream/trait.Stream.html"><code>Stream</code></a> of <a href="https://docs.rs/cucumber/*/cucumber/event/enum.Cucumber.html">cucumber events</a>.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate futures;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
@@ -167,7 +167,7 @@
 </span><span class="boring">};
 </span><span class="boring">
 </span><span class="boring">use cucumber::{
-</span><span class="boring">    cli, event, gherkin, given, parser, step, then, when, Event, World,
+</span><span class="boring">    Event, World, cli, event, gherkin, given, parser, step, then, when,
 </span><span class="boring">};
 </span><span class="boring">use futures::{
 </span><span class="boring">    future::{self, FutureExt as _},

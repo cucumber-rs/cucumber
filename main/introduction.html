@@ -164,12 +164,12 @@
 </code></pre>
 <p>These features are agnostic to the implementation, the only requirement is that they follow the expected format of phrases followed by the keywords (<code>Given</code>, <code>When</code>, <code>Then</code>). <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a> offers support for <a href="https://cucumber.io/docs/gherkin/languages">languages other than English</a>, as well.</p>
 <p><a href="https://cucumber.io">Cucumber</a> implementations then simply hook into these keywords and execute the logic corresponding to the keywords. <a href="https://docs.rs/cucumber"><code>cucumber</code></a> crate is one of such implementations and is the subject of this book.</p>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use cucumber::{given, then, when, World as _};
+</span><span class="boring">use cucumber::{World as _, given, then, when};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(cucumber::World, Debug, Default)]

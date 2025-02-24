@@ -171,12 +171,12 @@
       When I feed the cat
       Then the cat is not hungry
 </code></pre>
-<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">extern crate cucumber;
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
 </span><span class="boring">use std::time::Duration;
 </span><span class="boring">
-</span><span class="boring">use cucumber::{given, then, when, World};
+</span><span class="boring">use cucumber::{World, given, then, when};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
 </span><span class="boring">#[derive(Debug, Default)]
