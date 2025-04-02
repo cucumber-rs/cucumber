@@ -30,8 +30,8 @@ use crate::feature::Ext as _;
 #[derive(clap::Args, Clone, Debug, Default)]
 #[group(skip)]
 pub struct Cli {
-    /// Glob pattern to look for feature files with. By default, looks for
-    /// `*.feature`s in the path configured tests runner.
+    /// Glob pattern to look for feature files with. If not specified, looks for
+    /// `*.feature` files in the path configured in the test runner.
     #[arg(
         id = "input",
         long = "input",
