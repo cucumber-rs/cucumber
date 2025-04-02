@@ -26,7 +26,7 @@ Options:
           Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be careful about conflicting tags on different levels.
 
   -i, --input <glob>
-          Glob pattern to look for feature files with. By default, looks for `*.feature`s in the path configured tests runner
+          Glob pattern to look for feature files with. If not specified, looks for `*.feature` files in the path configured in the test runner
 
   -c, --concurrency <int>
           Number of scenarios to run concurrently. If not specified, uses the value configured in tests runner, or 64 by default
