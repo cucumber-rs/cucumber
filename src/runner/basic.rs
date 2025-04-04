@@ -151,19 +151,17 @@ impl RetryOptions {
                     let (num, rest) = retries
                         .strip_prefix('(')
                         .and_then(|s| {
-                            s.split_once(')').and_then(|(num, rest)| {
-                                num.parse::<usize>()
-                                    .ok()
-                                    .map(|num| (Some(num), rest))
-                            })
+                            let (num, rest) = s.split_once(')')?;
+                            num.parse::<usize>()
+                                .ok()
+                                .map(|num| (Some(num), rest))
                         })
                         .unwrap_or((None, retries));
 
                     let after = rest.strip_prefix(".after").and_then(|after| {
-                        after.strip_prefix('(').and_then(|after| {
-                            let (dur, _) = after.split_once(')')?;
-                            humantime::parse_duration(dur).ok()
-                        })
+                        let after = after.strip_prefix('(')?;
+                        let (dur, _) = after.split_once(')')?;
+                        humantime::parse_duration(dur).ok()
                     });
 
                     (num, after)
@@ -2037,7 +2035,7 @@ impl FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     fn finish_all_rules_and_features<W>(
         &mut self,
-    ) -> impl Iterator<Item = event::Cucumber<W>> + '_ {
+    ) -> impl Iterator<Item = event::Cucumber<W>> {
         self.rule_scenarios_count
             .drain()
             .map(|((feat, rule), _)| event::Cucumber::rule_finished(feat, rule))
@@ -2332,7 +2330,7 @@ impl Features {
              count: Option<usize>| {
                 let mut i = 0;
                 // TODO: Replace with `extract_if` instead of custom
-                //       `drain_filter`, once stabilized:
+                //       `drain_filter` in 1.87 Rust:
                 //       https://github.com/rust-lang/rust/issues/43244
                 let drained =
                     VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
@@ -2490,7 +2488,7 @@ struct AfterHookEventsMeta {
 
 impl<W> ExecutionFailure<W> {
     /// Takes the [`World`] leaving a [`None`] in its place.
-    fn take_world(&mut self) -> Option<W> {
+    const fn take_world(&mut self) -> Option<W> {
         match self {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)

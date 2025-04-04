@@ -755,12 +755,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         meta: event::Metadata,
         cli: &Cli,
     ) -> Option<Duration> {
-        self.step_started_at.take().and_then(|started| {
-            meta.at
-                .duration_since(started)
-                .ok()
-                .filter(|_| cli.report_time.is_some())
-        })
+        let started = self.step_started_at.take()?;
+        meta.at
+            .duration_since(started)
+            .ok()
+            .filter(|_| cli.report_time.is_some())
     }
 }
 

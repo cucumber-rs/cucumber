@@ -354,7 +354,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
     /// Marks this [`Queue`] as [`FinishedButNotEmitted`].
     ///
     /// [`FinishedButNotEmitted`]: FinishedState::FinishedButNotEmitted
-    fn finished(&mut self, meta: Metadata) {
+    const fn finished(&mut self, meta: Metadata) {
         self.state = FinishedState::FinishedButNotEmitted(meta);
     }
 
@@ -393,7 +393,7 @@ impl FinishedState {
     /// and makes it [`FinishedAndEmitted`].
     ///
     /// [`FinishedAndEmitted`]: FinishedState::FinishedAndEmitted
-    fn take_to_emit(&mut self) -> Option<Metadata> {
+    const fn take_to_emit(&mut self) -> Option<Metadata> {
         let current = mem::replace(self, Self::FinishedAndEmitted);
         if let Self::FinishedButNotEmitted(meta) = current {
             Some(meta)

@@ -836,31 +836,21 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
 /// Parses type of a first slice element of the given function signature.
 fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
     sig.inputs.iter().find_map(|arg| {
-        match arg {
-            syn::FnArg::Typed(typed_arg) => Some(typed_arg),
-            syn::FnArg::Receiver(_) => None,
+        let typed_arg = match arg {
+            syn::FnArg::Typed(typed_arg) => typed_arg,
+            syn::FnArg::Receiver(_) => return None,
+        };
+        let syn::Type::Reference(ty_ref) = typed_arg.ty.as_ref() else {
+            return None;
+        };
+        let syn::Type::Slice(slice) = ty_ref.elem.as_ref() else {
+            return None;
+        };
+        if let syn::Type::Path(ty) = slice.elem.as_ref() {
+            Some(ty)
+        } else {
+            None
         }
-        .and_then(|typed_arg| {
-            if let syn::Type::Reference(r) = typed_arg.ty.as_ref() {
-                Some(r)
-            } else {
-                None
-            }
-            .and_then(|ty_ref| {
-                if let syn::Type::Slice(s) = ty_ref.elem.as_ref() {
-                    Some(s)
-                } else {
-                    None
-                }
-                .and_then(|slice| {
-                    if let syn::Type::Path(ty) = slice.elem.as_ref() {
-                        Some(ty)
-                    } else {
-                        None
-                    }
-                })
-            })
-        })
     })
 }
 

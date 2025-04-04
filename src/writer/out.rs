@@ -226,7 +226,7 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_up(&mut self, n: usize) -> io::Result<()> {
-        (n > 0).then(|| self.write_str(format!("\x1b[{n}A"))).unwrap_or(Ok(()))
+        if n > 0 { self.write_str(format!("\x1b[{n}A")) } else { Ok(()) }
     }
 
     /// Writes a special sequence into this writer moving a cursor down on `n`
@@ -236,7 +236,7 @@ pub trait WriteStrExt: io::Write {
     ///
     /// If this writer fails to write a special sequence.
     fn move_cursor_down(&mut self, n: usize) -> io::Result<()> {
-        (n > 0).then(|| self.write_str(format!("\x1b[{n}B"))).unwrap_or(Ok(()))
+        if n > 0 { self.write_str(format!("\x1b[{n}B")) } else { Ok(()) }
     }
 
     /// Writes a special sequence into this writer clearing the last `n` lines.

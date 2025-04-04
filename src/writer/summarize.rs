@@ -240,7 +240,7 @@ where
                     self.state = State::FinishedButNotOutput;
                 }
                 Ok(Cucumber::Started | Cucumber::ParsingFinished { .. }) => {}
-            };
+            }
         }
 
         self.writer.handle_event(event, cli).await;

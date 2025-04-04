@@ -236,7 +236,7 @@ impl<Out: io::Write> Basic<Out> {
             1 => self.verbosity = Verbosity::Default,
             2 => self.verbosity = Verbosity::ShowWorld,
             _ => self.verbosity = Verbosity::ShowWorldAndDocString,
-        };
+        }
         self.styles.apply_coloring(cli.color);
     }
 

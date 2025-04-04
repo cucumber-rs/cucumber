@@ -217,12 +217,12 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     }
 
     /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
-    pub fn apply_cli(&mut self, cli: Cli) {
+    pub const fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
             None => {}
             Some(0) => self.verbosity = Verbosity::Default,
             _ => self.verbosity = Verbosity::ShowWorld,
-        };
+        }
     }
 
     /// Handles the given [`parser::Error`].

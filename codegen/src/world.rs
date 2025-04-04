@@ -191,7 +191,7 @@ impl Definition {
     /// Generates [`syn::Ident`]s of generic types for private trait impl.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    fn step_types(&self) -> impl Iterator<Item = syn::Ident> + '_ {
+    fn step_types(&self) -> impl Iterator<Item = syn::Ident> {
         Self::STEPS.iter().map(|step| {
             format_ident!("Cucumber{}{}", to_pascal_case(step), self.ident)
         })
