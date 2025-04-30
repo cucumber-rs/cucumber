@@ -163,9 +163,11 @@ fn expand_scenario(
             vals.iter()
                 .map(|v| header.iter().zip(v))
                 .enumerate()
-                .zip(iter::repeat((example.position, example.tags.iter())))
+                .zip(iter::repeat(example))
         })
-        .map(|((id, row), (position, tags))| {
+        .map(|((id, row), example)| {
+            let (position, tags) = (example.position, example.tags.iter());
+
             let replace_templates = |str: &str, pos| {
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
@@ -197,8 +199,8 @@ fn expand_scenario(
 
             let mut expanded = scenario.clone();
 
-            // This is done to differentiate `Hash`es of
-            // scenario outlines with the same examples.
+            // This is done to differentiate `Hash`es of `Scenario Outline`s
+            // with the same `Examples`.
             expanded.position = position;
             expanded.position.line += id + 2;
 
@@ -216,6 +218,15 @@ fn expand_scenario(
                     *value = replace_templates(value, s.position)?;
                 }
             }
+
+            let mut expanded_example = example.clone();
+            if let Some(table) = &mut expanded_example.table {
+                table.rows.resize(2, Vec::new());
+                if let Some(r) = table.rows.get_mut(1) {
+                    *r = row.map(|(_, v)| v.clone()).collect();
+                }
+            }
+            expanded.examples = vec![expanded_example];
 
             Ok(expanded)
         })
