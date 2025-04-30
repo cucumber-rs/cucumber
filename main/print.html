@@ -1508,6 +1508,9 @@ async fn cat_is_fed(world: &amp;mut AnimalWorld) {
 <blockquote>
 <p><strong>NOTE</strong>: <code>&lt;template&gt;</code>s are replaced even inside <a href="writing/doc_strings.html">doc strings</a> and <a href="writing/data_tables.html">data tables</a>.</p>
 </blockquote>
+<blockquote>
+<p><strong>NOTE</strong>: Only the currently executed row of <a href="https://cucumber.io/docs/gherkin/reference#examples"><code>Examples</code></a> table is accessible in <a href="https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run"><code>filter_run()</code></a> and other APIs having access to <a href="https://docs.rs/gherkin/*/gherkin/struct.Table.html#structfield.rows"><code>gherkin::Scenario::examples::table::rows</code></a> field.</p>
+</blockquote>
 <pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">extern crate cucumber;
 </span><span class="boring">extern crate tokio;
 </span><span class="boring">
