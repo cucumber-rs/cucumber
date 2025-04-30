@@ -118,7 +118,7 @@ mod spec {
         )
     }
 
-    /// Deterministic output of [`writer::Basic`].
+    /// Deterministic output of a [`writer::Basic`].
     #[derive(Clone, Debug, Default)]
     struct Output(Vec<u8>);
 
