@@ -163,7 +163,7 @@
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{World as _, WriterExt as _, writer};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -189,7 +189,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -223,7 +223,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{cli, writer, World as _, WriterExt as _};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -235,7 +235,7 @@ let cli = cli::Opts {
     tags_filter: cli.tags_filter,
     parser: cli.parser,
     runner: cli.runner,
-    // Replicate CLI arguments for every `writer::Basic`. 
+    // Replicate CLI arguments for every `writer::Basic`.
     writer: cli::Compose {
         left: cli.writer.clone(),
         right: cli.writer,

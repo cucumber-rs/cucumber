@@ -169,7 +169,7 @@
 use cucumber::{World as _, given, then, when};
 use tokio::time;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World;
 
 #[given(regex = r"(\d+) secs?")]
@@ -207,7 +207,7 @@ async fn main() {
 </span><span class="boring">use cucumber::{World as _, given, then, when};
 </span><span class="boring">use tokio::time;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r"(\d+) secs?")]

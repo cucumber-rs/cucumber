@@ -212,11 +212,11 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
 <p>By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, outputting <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> of <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s is omitted. To include them into the output use <code>-vvv</code> CLI option:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
       """
-      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
+      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous
       mash-up of cat food brands.
       """
     When I feed the cat
@@ -444,7 +444,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
-</span><span class="boring">    dbg!("here!");    
+</span><span class="boring">    dbg!("here!");
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
@@ -484,7 +484,7 @@ async fn main() {
 use cucumber::{World as _, given, then, when};
 use tokio::time;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World;
 
 #[given(regex = r"(\d+) secs?")]

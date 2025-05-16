@@ -160,7 +160,7 @@
 <p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a> (behavior-driven development) style workflow.</p>
 <p>It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a>. A typical feature could look something like this:</p>
 <pre><code class="language-gherkin">Feature: Eating too much cucumbers may not be good for you
-    
+
   Scenario: Eating a few isn't a problem
     Given Alice is hungry
     When she eats 3 cucumbers
@@ -176,7 +176,7 @@
 </span><span class="boring">use cucumber::{World as _, given, then, when};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World {
 </span><span class="boring">    user: Option&lt;String&gt;,
 </span><span class="boring">    capacity: usize,
@@ -185,7 +185,7 @@
 </span>#[given(expr = "{word} is hungry")] // Cucumber Expression
 async fn someone_is_hungry(w: &amp;mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
-    
+
     w.user = Some(user);
 }
 
@@ -194,7 +194,7 @@ async fn eat_cucumbers(w: &amp;mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
-    
+
     assert!(w.capacity &lt; 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
@@ -1586,7 +1586,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 </span><span class="boring">use futures::FutureExt as _;
 </span><span class="boring">use tokio::time;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">fn main() {
@@ -1600,7 +1600,7 @@ async fn animal_is_fed(world: &amp;mut AnimalWorld, which: String) {
 <p><strong>NOTE</strong>: <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> is enabled globally for all the executed <a href="https://cucumber.io/docs/gherkin/reference#example">scenario</a>s. No exception is possible.</p>
 </blockquote>
 <blockquote>
-<p><strong>WARNING</strong>: <strong>Think twice before using <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a>!</strong><br />
+<p><strong>WARNING</strong>: <strong>Think twice before using <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a>!</strong>
 Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> is invisible to people reading <code>.feature</code>s. You should consider using a <a href="writing/background.html"><code>Background</code></a> keyword as a more explicit alternative, especially if the setup should be readable by non-technical people. Only use a <a href="https://cucumber.io/docs/cucumber/api#before"><code>Before</code> hook</a> for low-level logic such as starting a browser or deleting data from a database.</p>
 </blockquote>
 <h2 id="after-hook"><a class="header" href="#after-hook"><code>After</code> hook</a></h2>
@@ -1615,7 +1615,7 @@ Whatever happens in a <a href="https://cucumber.io/docs/cucumber/api#before"><co
 </span><span class="boring">use futures::FutureExt as _;
 </span><span class="boring">use tokio::time;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">fn main() {
@@ -2328,11 +2328,11 @@ async fn feed_cat(_: &amp;mut AnimalWorld) {}
 <h3 id="output-doc-strings--vvv"><a class="header" href="#output-doc-strings--vvv">Output <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> (<code>-vvv</code>)</a></h3>
 <p>By <a href="https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html">default</a>, outputting <a href="https://cucumber.io/docs/gherkin/reference#doc-strings">doc strings</a> of <a href="https://cucumber.io/docs/gherkin/reference#steps">step</a>s is omitted. To include them into the output use <code>-vvv</code> CLI option:</p>
 <pre><code class="language-gherkin">Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
       """
-      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
+      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous
       mash-up of cat food brands.
       """
     When I feed the cat
@@ -2560,7 +2560,7 @@ async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">#[when("I feed the cat")]
 </span><span class="boring">async fn feed_cat(world: &amp;mut AnimalWorld) {
 </span><span class="boring">    sleep(Duration::from_secs(2)).await;
-</span><span class="boring">    dbg!("here!");    
+</span><span class="boring">    dbg!("here!");
 </span><span class="boring">    world.cat.feed();
 </span><span class="boring">}
 </span><span class="boring">
@@ -2600,7 +2600,7 @@ async fn main() {
 use cucumber::{World as _, given, then, when};
 use tokio::time;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World;
 
 #[given(regex = r"(\d+) secs?")]
@@ -2752,7 +2752,7 @@ async fn main() {
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{World as _, writer};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -2776,7 +2776,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{World as _, writer};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -2796,7 +2796,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{World as _, WriterExt as _, writer};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -2822,7 +2822,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{writer, World as _, WriterExt as _};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -2856,7 +2856,7 @@ World::cucumber()
 </span><span class="boring">use std::{fs, io};
 </span>use cucumber::{cli, writer, World as _, WriterExt as _};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]
@@ -2868,7 +2868,7 @@ let cli = cli::Opts {
     tags_filter: cli.tags_filter,
     parser: cli.parser,
     runner: cli.runner,
-    // Replicate CLI arguments for every `writer::Basic`. 
+    // Replicate CLI arguments for every `writer::Basic`.
     writer: cli::Compose {
         left: cli.writer.clone(),
         right: cli.writer,
@@ -2911,7 +2911,7 @@ World::cucumber()
 use cucumber::{World as _, given, then, when};
 use tokio::time;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World;
 
 #[given(regex = r"(\d+) secs?")]
@@ -2949,7 +2949,7 @@ async fn main() {
 </span><span class="boring">use cucumber::{World as _, given, then, when};
 </span><span class="boring">use tokio::time;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[given(regex = r"(\d+) secs?")]
@@ -2997,7 +2997,7 @@ async fn main() {
 </span><span class="boring">
 </span>use cucumber::{World as _, writer};
 
-<span class="boring">#[derive(cucumber::World, Debug, Default)]
+<span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World;
 </span><span class="boring">
 </span><span class="boring">#[tokio::main]

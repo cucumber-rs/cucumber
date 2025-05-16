@@ -159,7 +159,7 @@
 <p><a href="https://cucumber.io">Cucumber</a> is a specification for running tests in a <a href="https://en.wikipedia.org/wiki/Behavior-driven_development">BDD</a> (behavior-driven development) style workflow.</p>
 <p>It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language <a href="https://cucumber.io/docs/gherkin/reference">Gherkin</a>. A typical feature could look something like this:</p>
 <pre><code class="language-gherkin">Feature: Eating too much cucumbers may not be good for you
-    
+
   Scenario: Eating a few isn't a problem
     Given Alice is hungry
     When she eats 3 cucumbers
@@ -175,7 +175,7 @@
 </span><span class="boring">use cucumber::{World as _, given, then, when};
 </span><span class="boring">use tokio::time::sleep;
 </span><span class="boring">
-</span><span class="boring">#[derive(cucumber::World, Debug, Default)]
+</span><span class="boring">#[derive(Debug, Default, cucumber::World)]
 </span><span class="boring">struct World {
 </span><span class="boring">    user: Option&lt;String&gt;,
 </span><span class="boring">    capacity: usize,
@@ -184,7 +184,7 @@
 </span>#[given(expr = "{word} is hungry")] // Cucumber Expression
 async fn someone_is_hungry(w: &amp;mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
-    
+
     w.user = Some(user);
 }
 
@@ -193,7 +193,7 @@ async fn eat_cucumbers(w: &amp;mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
-    
+
     assert!(w.capacity &lt; 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
