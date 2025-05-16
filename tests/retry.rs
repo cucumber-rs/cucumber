@@ -49,5 +49,5 @@ async fn correctly() {
     }
 }
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World;

@@ -36,7 +36,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug, SmartDefault)]
+#[derive(Clone, Copy, Debug, SmartDefault, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of an output.

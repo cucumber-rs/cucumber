@@ -28,7 +28,6 @@ use std::{
 #[cfg(feature = "tracing")]
 use crossbeam_utils::atomic::AtomicCell;
 use derive_more::with_trait::{Debug, Display, FromStr};
-use drain_filter_polyfill::VecExt;
 use futures::{
     FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
     TryStreamExt as _,
@@ -54,7 +53,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
@@ -2329,13 +2328,10 @@ impl Features {
              ty,
              count: Option<usize>| {
                 let mut i = 0;
-                // TODO: Replace with `extract_if` instead of custom
-                //       `drain_filter` in 1.87 Rust:
-                //       https://github.com/rust-lang/rust/issues/43244
-                let drained =
-                    VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
-                        // Because `drain_filter` runs over entire `Vec` on
-                        // `Drop`, we can't just `.take(count)`.
+                let drained = storage
+                    .extract_if(.., |(_, _, _, _, ret)| {
+                        // Because of retries involved, we cannot just specify
+                        // `..count` range to `.extract_if()`.
                         if count.filter(|c| i >= *c).is_some() {
                             return false;
                         }

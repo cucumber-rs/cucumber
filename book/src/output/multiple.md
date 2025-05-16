@@ -10,7 +10,7 @@ Reporting tests result to multiple outputs simultaneously may be achieved by usi
 # use std::{fs, io};
 use cucumber::{World as _, WriterExt as _, writer};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]
@@ -43,7 +43,7 @@ While using [`writer::Tee`] for different [`Writer`]s is OK and straightforward 
 # use std::{fs, io};
 use cucumber::{writer, World as _, WriterExt as _};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]
@@ -81,7 +81,7 @@ To avoid this, you should manually construct the desired [`cli::Opts`] and suppl
 # use std::{fs, io};
 use cucumber::{cli, writer, World as _, WriterExt as _};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]
@@ -93,7 +93,7 @@ let cli = cli::Opts {
     tags_filter: cli.tags_filter,
     parser: cli.parser,
     runner: cli.runner,
-    // Replicate CLI arguments for every `writer::Basic`. 
+    // Replicate CLI arguments for every `writer::Basic`.
     writer: cli::Compose {
         left: cli.writer.clone(),
         right: cli.writer,

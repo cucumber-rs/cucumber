@@ -2,7 +2,7 @@
 name = "cucumber"
 version = "0.21.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.87"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\
@@ -67,7 +67,6 @@ tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 clap = { version = "4.3.2", features = ["derive", "wrap_help"] }
 console = "0.15"
 derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
-drain_filter_polyfill = "0.1.2"
 either = "1.6"
 futures = "0.3.17"
 gherkin = "0.14"

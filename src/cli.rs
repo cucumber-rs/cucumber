@@ -77,7 +77,7 @@ use crate::writer::Coloring;
 /// [`Parser`]: crate::Parser
 /// [`Runner`]: crate::Runner
 /// [`Writer`]: crate::Writer
-#[derive(clap::Parser, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Parser)]
 #[command(
     name = "cucumber",
     about = "Run the tests, pet a dog!",

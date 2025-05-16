@@ -13,9 +13,10 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.85 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [todo])
+- Bumped up [MSRV] to 1.87 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [todo])
 
 [4010c1ad]: /../../commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
+[9705253b]: /../../commit/9705253bda5caadfe3eea91f50420222158dd944
 [b46930c3]: /../../commit/b46930c32ef5ae490df8063905144a45de27eda1
 [f1307038]: /../../commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
 [todo]: /../../commit/todo
@@ -403,7 +404,7 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 ### Added
 
 - Attribute macros: ([#81])
-    - [`given`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.given.html); 
+    - [`given`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.given.html);
     - [`when`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.when.html);
     - [`then`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.then.html).
 

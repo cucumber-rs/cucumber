@@ -36,7 +36,7 @@ use crate::{
 };
 
 /// CLI options of a [`Libtest`] [`Writer`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Formatting of the output.

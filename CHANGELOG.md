@@ -13,7 +13,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.85 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b])
+- Bumped up [MSRV] to 1.87 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [todo])
 - Replaced `Arc` with `PartialEq`/`Hash` pointer-optimized `Source` in `event`s: ([#352])
     - `Source<gherkin::Feature>` in `event::Cucumber::Feature`.
     - `Source<gherkin::Rule>` in `event::Feature::Rule`.
@@ -38,6 +38,7 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 [9705253b]: /../../commit/9705253bda5caadfe3eea91f50420222158dd944
 [b46930c3]: /../../commit/b46930c32ef5ae490df8063905144a45de27eda1
 [f1307038]: /../../commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
+[todo]: /../../commit/todo
 
 
 

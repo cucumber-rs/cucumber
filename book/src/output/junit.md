@@ -16,7 +16,7 @@ And configuring output to [`writer::JUnit`]:
 # use std::{fs, io};
 use cucumber::{World as _, writer};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]

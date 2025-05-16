@@ -1,6 +1,6 @@
 use cucumber::{World as _, runner, then, writer::summarize::Stats};
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World;
 
 #[then(expr = "step panics")]
