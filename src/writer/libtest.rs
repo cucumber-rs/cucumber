@@ -59,7 +59,7 @@ pub struct Cli {
 
 /// Output formats.
 ///
-/// Currently supports only JSON.
+/// Currently, supports only JSON.
 #[derive(Clone, Copy, Debug)]
 pub enum Format {
     /// [`libtest`][1]'s JSON format.
