@@ -24,6 +24,8 @@ Options:
           Tag expression to filter scenarios by.
           
           Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be careful about conflicting tags on different levels.
+          
+          [env: CUCUMBER_FILTER_TAGS=@scenario-1]
 
   -i, --input <glob>
           Glob pattern to look for feature files with. If not specified, looks for `*.feature` files in the path configured in the test runner
