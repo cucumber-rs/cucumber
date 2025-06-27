@@ -109,6 +109,7 @@ where
         id = "tags",
         long = "tags",
         short = 't',
+        env = "CUCUMBER_FILTER_TAGS",
         value_name = "tagexpr",
         conflicts_with = "name",
         global = true

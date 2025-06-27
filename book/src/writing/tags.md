@@ -31,7 +31,7 @@ Feature: Animal feature
 ```
 
 To filter out running [scenario]s we may use:
-- either `--tags` [CLI] option providing [tag expressions] (also consider [escaping]);
+- either `--tags` [CLI] option providing [tag expressions] (also consider [escaping]). The expression can alternatively also be set using the `CUCUMBER_FILTER_TAGS` environment variable.
 - or [`filter_run()`]-like method.
 
 ![record](../rec/writing_tags_filtering.gif)
