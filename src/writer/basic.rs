@@ -1030,7 +1030,7 @@ fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
         .lines()
         .map(|line| format!("{}{line}", " ".repeat(indent)))
         .join("\n");
-    (!str.is_empty()).then(|| format!("\n{str}")).unwrap_or_default()
+    if str.is_empty() { String::new() } else { format!("\n{str}") }
 }
 
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to

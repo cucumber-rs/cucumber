@@ -551,9 +551,11 @@ impl Styles {
     pub fn summary<W>(&self, summary: &Summarize<W>) -> String {
         let features = self.maybe_plural("feature", summary.features);
 
-        let rules = (summary.rules > 0)
-            .then(|| format!("{}\n", self.maybe_plural("rule", summary.rules)))
-            .unwrap_or_default();
+        let rules = if summary.rules > 0 {
+            format!("{}\n", self.maybe_plural("rule", summary.rules))
+        } else {
+            String::new()
+        };
 
         let scenarios =
             self.maybe_plural("scenario", summary.scenarios.total());
@@ -562,23 +564,23 @@ impl Styles {
         let steps = self.maybe_plural("step", summary.steps.total());
         let steps_stats = self.format_stats(summary.steps);
 
-        let parsing_errors = (summary.parsing_errors > 0)
-            .then(|| {
-                self.err(
-                    self.maybe_plural("parsing error", summary.parsing_errors),
-                )
-            })
-            .unwrap_or_default();
+        let parsing_errors = if summary.parsing_errors > 0 {
+            self.err(self.maybe_plural("parsing error", summary.parsing_errors))
+        } else {
+            "".into()
+        };
 
-        let hook_errors = (summary.failed_hooks > 0)
-            .then(|| {
-                self.err(self.maybe_plural("hook error", summary.failed_hooks))
-            })
-            .unwrap_or_default();
+        let hook_errors = if summary.failed_hooks > 0 {
+            self.err(self.maybe_plural("hook error", summary.failed_hooks))
+        } else {
+            "".into()
+        };
 
-        let comma = (!parsing_errors.is_empty() && !hook_errors.is_empty())
-            .then(|| self.err(", "))
-            .unwrap_or_default();
+        let comma = if !parsing_errors.is_empty() && !hook_errors.is_empty() {
+            self.err(", ")
+        } else {
+            "".into()
+        };
 
         format!(
             "{summary}\n{features}\n{rules}{scenarios}{scenarios_stats}\n\
@@ -593,21 +595,21 @@ impl Styles {
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
         let mut formatted = [
-            (stats.passed > 0)
-                .then(|| self.bold(self.ok(format!("{} passed", stats.passed))))
-                .unwrap_or_default(),
-            (stats.skipped > 0)
-                .then(|| {
-                    self.bold(
-                        self.skipped(format!("{} skipped", stats.skipped)),
-                    )
-                })
-                .unwrap_or_default(),
-            (stats.failed > 0)
-                .then(|| {
-                    self.bold(self.err(format!("{} failed", stats.failed)))
-                })
-                .unwrap_or_default(),
+            if stats.passed > 0 {
+                self.bold(self.ok(format!("{} passed", stats.passed)))
+            } else {
+                "".into()
+            },
+            if stats.skipped > 0 {
+                self.bold(self.skipped(format!("{} skipped", stats.skipped)))
+            } else {
+                "".into()
+            },
+            if stats.failed > 0 {
+                self.bold(self.err(format!("{} failed", stats.failed)))
+            } else {
+                "".into()
+            },
         ]
         .into_iter()
         .filter(|s| !s.is_empty())
@@ -621,15 +623,15 @@ impl Styles {
             ))));
         }
 
-        (!formatted.is_empty())
-            .then(|| {
-                self.bold(format!(
-                    " {}{formatted}{}",
-                    self.bold("("),
-                    self.bold(")"),
-                ))
-            })
-            .unwrap_or_default()
+        if formatted.is_empty() {
+            "".into()
+        } else {
+            self.bold(format!(
+                " {}{formatted}{}",
+                self.bold("("),
+                self.bold(")"),
+            ))
+        }
     }
 
     /// Adds `s` to `singular` if the given `num` is not `1`.
@@ -641,7 +643,7 @@ impl Styles {
         self.bold(format!(
             "{num} {}{}",
             singular.into(),
-            (num != 1).then_some("s").unwrap_or_default(),
+            if num == 1 { "" } else { "s" },
         ))
     }
 }

@@ -723,12 +723,14 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Either::Right((step, is_bg)) => format!(
                 "{}: {} {}{}",
                 step.position.line,
-                is_bg
-                    .then(|| feature
+                if is_bg {
+                    feature
                         .background
                         .as_ref()
-                        .map_or("Background", |bg| bg.keyword.as_str()))
-                    .unwrap_or_default(),
+                        .map_or("Background", |bg| bg.keyword.as_str())
+                } else {
+                    ""
+                },
                 step.keyword,
                 step.value,
             ),
