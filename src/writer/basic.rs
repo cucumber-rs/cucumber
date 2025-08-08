@@ -1016,9 +1016,10 @@ impl<Out: io::Write> Basic<Out> {
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
 pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
-    err.downcast_ref::<String>()
+    (**err)
+        .downcast_ref::<String>()
         .map(|s| s.clone().into())
-        .or_else(|| err.downcast_ref::<&str>().map(|s| s.to_owned().into()))
+        .or_else(|| (**err).downcast_ref::<&str>().map(|s| s.to_owned().into()))
         .unwrap_or_else(|| "(Could not resolve panic payload)".into())
 }
 

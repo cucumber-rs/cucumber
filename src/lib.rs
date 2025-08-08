@@ -29,6 +29,7 @@
     clippy::cfg_not_test,
     clippy::clear_with_drain,
     clippy::clone_on_ref_ptr,
+    clippy::coerce_container_to_any,
     clippy::collection_is_never_read,
     clippy::create_dir,
     clippy::dbg_macro,
