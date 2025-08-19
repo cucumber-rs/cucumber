@@ -29,6 +29,7 @@ use crate::{
     writer::{
         self, Ext as _,
         basic::{coerce_error, trim_path},
+        common::{StepContext, OutputFormatter, WriterExt as _},
         discard,
     },
 };
@@ -102,16 +103,14 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
                 self.handle_scenario_event(&f, Some(&r), &sc, ev.event, meta);
             }
             Ok((Cucumber::Finished, _)) => {
-                self.output
-                    .write_all(
-                        match serde_json::to_string(&self.features) {
-                            Ok(json) => json.as_bytes(),
-                            Err(e) => {
-                                eprintln!("Warning: Failed to serialize JSON: {e}");
-                                return;
-                            }
-                        }
-                    )
+                let json = match serde_json::to_string(&self.features) {
+                    Ok(json) => json,
+                    Err(e) => {
+                        eprintln!("Warning: Failed to serialize JSON: {e}");
+                        return;
+                    }
+                };
+                self.output.write_all(json.as_bytes())
                     .unwrap_or_else(|e| {
                         eprintln!("Warning: Failed to write JSON: {e}");
                     });
@@ -179,20 +178,12 @@ impl<Out: io::Write> Json<Out> {
                 self.handle_hook_event(feature, rule, scenario, ty, ev, meta);
             }
             Scenario::Background(st, ev) => {
-                self.handle_step_event(
-                    feature,
-                    rule,
-                    scenario,
-                    "background",
-                    &st,
-                    ev,
-                    meta,
-                );
+                let context = crate::writer::common::StepContext::new(feature, rule, scenario, &st, &ev);
+                self.handle_step_event_with_context(&context, "background", meta);
             }
             Scenario::Step(st, ev) => {
-                self.handle_step_event(
-                    feature, rule, scenario, "scenario", &st, ev, meta,
-                );
+                let context = crate::writer::common::StepContext::new(feature, rule, scenario, &st, &ev);
+                self.handle_step_event_with_context(&context, "scenario", meta);
             }
             Scenario::Log(msg) => {
                 self.logs.push(msg);
@@ -220,7 +211,7 @@ impl<Out: io::Write> Json<Out> {
                 Some(started) => started,
                 None => {
                     eprintln!("Warning: no `Started` event for `{hook_ty} Hook`");
-                    return SystemTime::now();
+                    return 0;
                 }
             };
             meta.at
@@ -273,25 +264,24 @@ impl<Out: io::Write> Json<Out> {
         }
     }
 
-    /// Handles the given [`event::Step`].
-    // TODO: Needs refactoring.
-    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
-    fn handle_step_event<W>(
+    /// Handles the given [`event::Step`] with consolidated context.
+    fn handle_step_event_with_context<W>(
         &mut self,
-        feature: &gherkin::Feature,
-        rule: Option<&gherkin::Rule>,
-        scenario: &gherkin::Scenario,
+        context: &StepContext<'_, W>,
         ty: &'static str,
-        step: &gherkin::Step,
-        event: event::Step<W>,
         meta: event::Metadata,
     ) {
+        let feature = context.feature;
+        let rule = context.rule;
+        let scenario = context.scenario;
+        let step = context.step;
+        let event = context.event;
         let mut duration = || {
             let started = match self.started.take() {
                 Some(started) => started,
                 None => {
                     eprintln!("Warning: no `Started` event for `Step` '{}'", step.value);
-                    return SystemTime::now();
+                    return 0;
                 }
             };
             meta.at

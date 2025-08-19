@@ -1135,3 +1135,11 @@ pub(crate) fn trim_path(path: &str) -> &str {
         .trim_start_matches('/')
         .trim_start_matches('\\')
 }
+
+impl<Out: io::Write> crate::writer::common::OutputFormatter for Basic<Out> {
+    type Output = Out;
+
+    fn output_mut(&mut self) -> &mut Self::Output {
+        &mut self.output
+    }
+}
