@@ -29,7 +29,7 @@ use crate::{
     writer::{
         self, Ext as _,
         basic::{coerce_error, trim_path},
-        common::{StepContext, OutputFormatter, WriterExt as _},
+        common::{StepContext, ScenarioContext, WriterStats, OutputFormatter, WriterExt as _},
         discard,
     },
 };
@@ -66,6 +66,9 @@ pub struct Json<Out: io::Write> {
     ///
     /// [`Hook`]: event::Hook
     logs: Vec<String>,
+
+    /// Statistics tracking using consolidated utilities.
+    stats: WriterStats,
 }
 
 impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
@@ -158,7 +161,13 @@ impl<Out: io::Write> Json<Out> {
     /// [2]: crate::event::Cucumber
     #[must_use]
     pub const fn raw(output: Out) -> Self {
-        Self { output, features: vec![], started: None, logs: vec![] }
+        Self { 
+            output, 
+            features: vec![], 
+            started: None, 
+            logs: vec![],
+            stats: WriterStats::new(),
+        }
     }
 
     /// Handles the given [`event::Scenario`].
@@ -303,12 +312,16 @@ impl<Out: io::Write> Json<Out> {
                 _ = self.mut_or_insert_element(feature, rule, scenario, ty);
                 return;
             }
-            event::Step::Passed(..) => RunResult {
-                status: Status::Passed,
-                duration: duration(),
-                error_message: None,
+            event::Step::Passed(..) => {
+                self.stats.record_passed_step();
+                RunResult {
+                    status: Status::Passed,
+                    duration: duration(),
+                    error_message: None,
+                }
             },
             event::Step::Failed(_, loc, _, err) => {
+                self.stats.record_failed_step();
                 let status = match &err {
                     event::StepError::NotFound => Status::Undefined,
                     event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
@@ -327,10 +340,13 @@ impl<Out: io::Write> Json<Out> {
                     )),
                 }
             }
-            event::Step::Skipped => RunResult {
-                status: Status::Skipped,
-                duration: duration(),
-                error_message: None,
+            event::Step::Skipped => {
+                self.stats.record_skipped_step();
+                RunResult {
+                    status: Status::Skipped,
+                    duration: duration(),
+                    error_message: None,
+                }
             },
         };
 
