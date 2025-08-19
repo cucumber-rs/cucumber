@@ -162,6 +162,7 @@
 
 pub mod cli;
 mod cucumber;
+pub mod error;
 pub mod event;
 pub mod feature;
 pub(crate) mod future;
@@ -204,6 +205,7 @@ use self::{
 #[doc(inline)]
 pub use self::{
     cucumber::Cucumber,
+    error::{CucumberError, Result},
     event::Event,
     parser::Parser,
     runner::{Runner, ScenarioType},
@@ -231,7 +233,7 @@ pub trait World: Sized + 'static {
     type Error: Display;
 
     /// Creates a new [`World`] instance.
-    fn new() -> impl Future<Output = Result<Self, Self::Error>>;
+    fn new() -> impl Future<Output = std::result::Result<Self, Self::Error>>;
 
     #[cfg(feature = "macros")]
     /// Returns runner for tests with auto-wired steps marked by [`given`],

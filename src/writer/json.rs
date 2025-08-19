@@ -23,6 +23,7 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     Event, World, Writer, cli, event,
+    error::{WriterError, WriterResult},
     feature::ExpandExamplesError,
     parser,
     writer::{
@@ -103,13 +104,17 @@ impl<W: World + Debug, Out: io::Write> Writer<W> for Json<Out> {
             Ok((Cucumber::Finished, _)) => {
                 self.output
                     .write_all(
-                        serde_json::to_string(&self.features)
-                            .unwrap_or_else(|e| {
-                                panic!("Failed to serialize JSON: {e}")
-                            })
-                            .as_bytes(),
+                        match serde_json::to_string(&self.features) {
+                            Ok(json) => json.as_bytes(),
+                            Err(e) => {
+                                eprintln!("Warning: Failed to serialize JSON: {e}");
+                                return;
+                            }
+                        }
                     )
-                    .unwrap_or_else(|e| panic!("Failed to write JSON: {e}"));
+                    .unwrap_or_else(|e| {
+                        eprintln!("Warning: Failed to write JSON: {e}");
+                    });
             }
             _ => {}
         }
@@ -211,17 +216,22 @@ impl<Out: io::Write> Json<Out> {
         use event::{Hook, HookType};
 
         let mut duration = || {
-            let started = self.started.take().unwrap_or_else(|| {
-                panic!("no `Started` event for `{hook_ty} Hook`")
-            });
+            let started = match self.started.take() {
+                Some(started) => started,
+                None => {
+                    eprintln!("Warning: no `Started` event for `{hook_ty} Hook`");
+                    return SystemTime::now();
+                }
+            };
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
-                    panic!(
-                        "Failed to compute duration between {:?} and \
+                    eprintln!(
+                        "Warning: Failed to compute duration between {:?} and \
                          {started:?}: {e}",
                         meta.at,
                     );
+                    std::time::Duration::ZERO
                 })
                 .as_nanos()
         };
@@ -277,17 +287,22 @@ impl<Out: io::Write> Json<Out> {
         meta: event::Metadata,
     ) {
         let mut duration = || {
-            let started = self.started.take().unwrap_or_else(|| {
-                panic!("no `Started` event for `Step` '{}'", step.value)
-            });
+            let started = match self.started.take() {
+                Some(started) => started,
+                None => {
+                    eprintln!("Warning: no `Started` event for `Step` '{}'", step.value);
+                    return SystemTime::now();
+                }
+            };
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
-                    panic!(
-                        "failed to compute duration between {:?} and \
+                    eprintln!(
+                        "Warning: failed to compute duration between {:?} and \
                          {started:?}: {e}",
                         meta.at,
                     );
+                    std::time::Duration::ZERO
                 })
                 .as_nanos()
         };

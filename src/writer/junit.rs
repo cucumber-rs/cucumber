@@ -20,6 +20,7 @@ use junit_report::{
 
 use crate::{
     Event, World, Writer, event, parser,
+    error::{WriterError, WriterResult},
     writer::{
         self, Ext as _, Verbosity,
         basic::{Coloring, coerce_error, trim_path},
@@ -144,19 +145,25 @@ where
                     self.handle_scenario_event(&feat, None, &sc, ev, meta);
                 }
                 Feature::Finished => {
-                    let suite = self.suit.take().unwrap_or_else(|| {
-                        panic!(
-                            "no `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
-                            feat.name,
-                        )
-                    });
+                    let suite = match self.suit.take() {
+                        Some(suite) => suite,
+                        None => {
+                            eprintln!(
+                                "Warning: no `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
+                                feat.name,
+                            );
+                            return;
+                        }
+                    };
                     self.report.add_testsuite(suite);
                 }
             },
             Ok((Cucumber::Finished, _)) => {
                 self.report
                     .write_xml(&mut self.output)
-                    .unwrap_or_else(|e| panic!("failed to write XML: {e}"));
+                    .unwrap_or_else(|e| {
+                        eprintln!("Warning: failed to write XML: {e}");
+                    });
             }
         }
     }

@@ -160,7 +160,9 @@ where
                 Feature::Finished => Ok(()),
             },
         }
-        .unwrap_or_else(|e| panic!("failed to write into terminal: {e}"));
+        .unwrap_or_else(|e| {
+            eprintln!("Warning: Failed to write to terminal: {e}");
+        });
     }
 }
 
@@ -171,8 +173,9 @@ where
     Out: io::Write,
 {
     async fn write(&mut self, val: Val) {
-        self.write_line(val.as_ref())
-            .unwrap_or_else(|e| panic!("failed to write: {e}"));
+        if let Err(e) = self.write_line(val.as_ref()) {
+            eprintln!("Warning: Failed to write output: {e}");
+        }
     }
 }
 
