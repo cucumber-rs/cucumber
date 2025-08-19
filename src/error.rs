@@ -52,6 +52,7 @@ pub enum StepError {
     #[display("Step panicked: {message}")]
     Panic {
         /// The panic message.
+        #[error(not(source))]
         message: String,
         /// The panic payload if available.
         payload: Option<Arc<dyn std::any::Any + Send + 'static>>,
@@ -61,6 +62,7 @@ pub enum StepError {
     #[display("No matching step found for: {step_text}")]
     NoMatch {
         /// The step text that couldn't be matched.
+        #[error(not(source))]
         step_text: String,
     },
 
@@ -68,6 +70,7 @@ pub enum StepError {
     #[display("Ambiguous step: {step_text} matches {count} step definitions")]
     Ambiguous {
         /// The step text with multiple matches.
+        #[error(not(source))]
         step_text: String,
         /// Number of matching step definitions.
         count: usize,
@@ -77,6 +80,7 @@ pub enum StepError {
     #[display("Step timed out after {duration:?}: {step_text}")]
     Timeout {
         /// The step text that timed out.
+        #[error(not(source))]
         step_text: String,
         /// The timeout duration.
         duration: std::time::Duration,
@@ -97,6 +101,7 @@ pub enum WorldError {
     #[display("World is in invalid state: {reason}")]
     InvalidState {
         /// Reason for the invalid state.
+        #[error(not(source))]
         reason: String,
     },
 }
@@ -104,6 +109,10 @@ pub enum WorldError {
 /// Writer-specific errors.
 #[derive(Debug, Display, Error)]
 pub enum WriterError {
+    /// I/O error during output operations.
+    #[display("I/O error: {_0}")]
+    Io(io::Error),
+
     /// Failed to serialize output.
     #[cfg(any(feature = "output-json", feature = "libtest"))]
     #[display("Serialization failed: {_0}")]
@@ -116,12 +125,13 @@ pub enum WriterError {
     /// XML generation error (for JUnit output).
     #[cfg(feature = "output-junit")]
     #[display("XML generation failed: {_0}")]
-    Xml(String),
+    Xml(#[error(not(source))] String),
 
     /// Output buffer is full or unavailable.
     #[display("Output unavailable: {reason}")]
     Unavailable {
         /// Reason why output is unavailable.
+        #[error(not(source))]
         reason: String,
     },
 }
@@ -133,6 +143,7 @@ pub enum ConfigError {
     #[display("Invalid retry configuration: {reason}")]
     InvalidRetry {
         /// Reason for the invalid retry config.
+        #[error(not(source))]
         reason: String,
     },
 
@@ -140,6 +151,7 @@ pub enum ConfigError {
     #[display("Invalid tag filter: {expression}")]
     InvalidTagFilter {
         /// The invalid tag expression.
+        #[error(not(source))]
         expression: String,
     },
 
@@ -147,6 +159,7 @@ pub enum ConfigError {
     #[display("Feature file not found: {path}")]
     FeatureFileNotFound {
         /// The path that couldn't be found.
+        #[error(not(source))]
         path: String,
     },
 
@@ -154,6 +167,7 @@ pub enum ConfigError {
     #[display("Invalid CLI arguments: {reason}")]
     InvalidCliArgs {
         /// Reason for the invalid arguments.
+        #[error(not(source))]
         reason: String,
     },
 }
@@ -262,6 +276,12 @@ impl From<io::Error> for CucumberError {
 impl From<WriterError> for CucumberError {
     fn from(err: WriterError) -> Self {
         Self::Writer(err)
+    }
+}
+
+impl From<io::Error> for WriterError {
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
     }
 }
 
