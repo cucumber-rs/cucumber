@@ -10,9 +10,26 @@
 
 //! Tools for outputting [`Cucumber`] events.
 //!
+//! This module provides various writers for different output formats, along with
+//! consolidation utilities in the [`common`] module that reduce code duplication
+//! and provide shared functionality across different writer implementations.
+//!
+//! # Writer Consolidation
+//! 
+//! The [`common`] module provides:
+//! - [`StepContext`] and [`ScenarioContext`] to consolidate commonly-passed parameters
+//! - [`WriterStats`] for standardized statistics tracking
+//! - [`OutputFormatter`] trait for common output operations with proper error handling
+//! - Helper utilities for world formatting, error handling, and context management
+//!
 //! [`Cucumber`]: crate::event::Cucumber
+//! [`StepContext`]: common::StepContext
+//! [`ScenarioContext`]: common::ScenarioContext
+//! [`WriterStats`]: common::WriterStats
+//! [`OutputFormatter`]: common::OutputFormatter
 
 pub mod basic;
+pub mod common;
 pub mod discard;
 pub mod fail_on_skipped;
 #[cfg(feature = "output-json")]
@@ -42,6 +59,10 @@ pub use self::libtest::Libtest;
 #[doc(inline)]
 pub use self::{
     basic::{Basic, Coloring},
+    common::{
+        StepContext, ScenarioContext, WriterStats, OutputFormatter,
+        WorldFormatter, ErrorFormatter, WriterExt as CommonWriterExt,
+    },
     fail_on_skipped::FailOnSkipped,
     normalize::{AssertNormalized, Normalize, Normalized},
     or::Or,
