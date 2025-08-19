@@ -8,3 +8,4 @@
 **/*.rs.bk
 
 /*.cast.json
+lcov.info

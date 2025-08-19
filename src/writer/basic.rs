@@ -31,6 +31,7 @@ use crate::{
     parser, step,
     writer::{
         self, Ext as _, Verbosity,
+        common::{StepContext, OutputFormatter},
         out::{Styles, WriteStrExt as _},
     },
 };
@@ -160,7 +161,9 @@ where
                 Feature::Finished => Ok(()),
             },
         }
-        .unwrap_or_else(|e| panic!("failed to write into terminal: {e}"));
+        .unwrap_or_else(|e| {
+            eprintln!("Warning: Failed to write to terminal: {e}");
+        });
     }
 }
 
@@ -171,8 +174,9 @@ where
     Out: io::Write,
 {
     async fn write(&mut self, val: Val) {
-        self.write_line(val.as_ref())
-            .unwrap_or_else(|e| panic!("failed to write: {e}"));
+        if let Err(e) = self.write_line(val.as_ref()) {
+            eprintln!("Warning: Failed to write output: {e}");
+        }
     }
 }
 
@@ -730,6 +734,7 @@ impl<Out: io::Write> Basic<Out> {
             .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
+
     /// Outputs the [`Background`] [`Step`]'s
     /// [started]/[passed]/[skipped]/[failed] event.
     ///
@@ -1009,6 +1014,49 @@ impl<Out: io::Write> Basic<Out> {
         self.output
             .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
+
+    /// Outputs the [failed] [`Step`] using consolidated context (new API).
+    ///
+    /// [failed]: event::Step::Failed
+    /// [`Step`]: gherkin::Step
+    pub(crate) fn step_failed_with_context<W: Debug>(
+        &mut self,
+        context: &StepContext<'_, W>,
+        loc: Option<step::Location>,
+        err: &event::StepError,
+    ) -> io::Result<()> {
+        self.step_failed(
+            context.feature,
+            context.step,
+            context.captures,
+            loc,
+            context.retries.copied(),
+            context.world,
+            err,
+        )
+    }
+
+    /// Outputs the [failed] [`Background`] [`Step`] using consolidated context (new API).
+    ///
+    /// [failed]: event::Step::Failed
+    /// [`Background`]: gherkin::Background
+    /// [`Step`]: gherkin::Step
+    pub(crate) fn bg_step_failed_with_context<W: Debug>(
+        &mut self,
+        context: &StepContext<'_, W>,
+        loc: Option<step::Location>,
+        err: &event::StepError,
+    ) -> io::Result<()> {
+        self.bg_step_failed(
+            context.feature,
+            context.step,
+            context.captures,
+            loc,
+            context.retries.copied(),
+            context.world,
+            err,
+        )
+    }
 }
 
 /// Tries to coerce [`catch_unwind()`] output to [`String`].
@@ -1131,4 +1179,12 @@ pub(crate) fn trim_path(path: &str) -> &str {
     path.trim_start_matches(&**CURRENT_DIR)
         .trim_start_matches('/')
         .trim_start_matches('\\')
+}
+
+impl<Out: io::Write> crate::writer::common::OutputFormatter for Basic<Out> {
+    type Output = Out;
+
+    fn output_mut(&mut self) -> &mut Self::Output {
+        &mut self.output
+    }
 }

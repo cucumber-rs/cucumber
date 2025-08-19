@@ -31,6 +31,7 @@ use crate::{
     writer::{
         self, Arbitrary, Normalize, Summarize,
         basic::{coerce_error, trim_path},
+        common::{ScenarioContext, StepContext, WriterStats, OutputFormatter, WriterExt as _},
         out::WriteStrExt as _,
     },
 };
@@ -197,6 +198,9 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     /// [`Hook::Started`]: event::Hook::Started
     /// [`Step::Started`]: event::Step::Started
     step_started_at: Option<SystemTime>,
+
+    /// Consolidated statistics tracking.
+    stats: WriterStats,
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -216,6 +220,7 @@ impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
             features_without_path: self.features_without_path,
             started_at: self.started_at,
             step_started_at: self.step_started_at,
+            stats: self.stats.clone(),
         }
     }
 }
@@ -326,6 +331,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             features_without_path: 0,
             started_at: None,
             step_started_at: None,
+            stats: WriterStats::new(),
         }
     }
 
@@ -570,6 +576,18 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         }
     }
 
+    /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s using consolidated context.
+    fn expand_hook_event_with_context<W>(
+        &mut self,
+        context: &ScenarioContext<'_, W>,
+        hook: event::HookType,
+        ev: event::Hook<W>,
+        meta: event::Metadata,
+        cli: &Cli,
+    ) -> Vec<LibTestJsonEvent> {
+        self.expand_hook_event(context.feature, context.rule, context.scenario, hook, ev, context.retries, meta, cli)
+    }
+
     /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
     // TODO: Needs refactoring.
     #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
@@ -674,6 +692,27 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         };
 
         vec![ev.into()]
+    }
+
+    /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s using consolidated context.
+    fn expand_step_event_with_context<W>(
+        &mut self,
+        context: &StepContext<'_, W>,
+        is_background: bool,
+        meta: event::Metadata,
+        cli: &Cli,
+    ) -> Vec<LibTestJsonEvent> {
+        self.expand_step_event(
+            context.feature,
+            context.rule,
+            context.scenario,
+            context.step,
+            context.event.clone(), // Clone needed since we're passing by value
+            context.retries,
+            is_background,
+            meta,
+            cli,
+        )
     }
 
     /// Generates test case name.
@@ -813,6 +852,14 @@ where
         self.output
             .write_line(val.as_ref())
             .unwrap_or_else(|e| panic!("failed to write: {e}"));
+    }
+}
+
+impl<W, Out: io::Write> OutputFormatter for Libtest<W, Out> {
+    type Output = Out;
+
+    fn output_mut(&mut self) -> &mut Self::Output {
+        &mut self.output
     }
 }
 
