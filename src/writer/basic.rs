@@ -65,7 +65,7 @@ impl Colored for Cli {
 }
 
 /// Possible policies of a [`console`] output coloring.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Coloring {
     /// Letting [`console::colors_enabled()`] to decide, whether output should
     /// be colored.
