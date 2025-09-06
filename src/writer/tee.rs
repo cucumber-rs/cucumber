@@ -48,6 +48,18 @@ impl<L, R> Tee<L, R> {
     pub const fn new(left: L, right: R) -> Self {
         Self { left, right }
     }
+
+    /// Returns the left [`Writer`] of this [`Tee`] one.
+    #[must_use]
+    pub const fn left_writer(&self) -> &L {
+        &self.left
+    }
+
+    /// Returns the right [`Writer`] of this [`Tee`] one.
+    #[must_use]
+    pub const fn right_writer(&self) -> &R {
+        &self.right
+    }
 }
 
 impl<W, L, R> Writer<W> for Tee<L, R>
