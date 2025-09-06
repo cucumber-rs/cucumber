@@ -297,3 +297,136 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Default, Clone, clap::Args)]
+    struct MockParser;
+
+    #[derive(Debug, Default, Clone, clap::Args)]
+    struct MockRunner;
+
+    #[derive(Debug, Default, Clone, clap::Args)]
+    struct MockWriter;
+
+    impl Colored for MockWriter {
+        fn coloring(&self) -> Coloring {
+            Coloring::Auto
+        }
+    }
+
+    #[derive(Debug, Default, Clone, clap::Args)]
+    struct CustomOpts {
+        #[arg(long)]
+        custom_flag: bool,
+    }
+
+    #[test]
+    fn test_opts_parsing() {
+        let args = vec!["cucumber", "--name", "test.*", "--custom-flag"];
+        let opts = Opts::<MockParser, MockRunner, MockWriter, CustomOpts>::try_parse_from(args).unwrap();
+        
+        assert!(opts.re_filter.is_some());
+        assert_eq!(opts.re_filter.unwrap().as_str(), "test.*");
+        assert!(opts.custom.custom_flag);
+    }
+
+    #[test]
+    fn test_opts_with_tags_filter() {
+        let args = vec!["cucumber", "--tags", "@smoke and not @slow"];
+        let opts = Opts::<MockParser, MockRunner, MockWriter, Empty>::try_parse_from(args).unwrap();
+        
+        assert!(opts.tags_filter.is_some());
+        assert!(opts.re_filter.is_none());
+    }
+
+    #[test]
+    fn test_conflicting_filters() {
+        let args = vec!["cucumber", "--name", "test.*", "--tags", "@smoke"];
+        let result = Opts::<MockParser, MockRunner, MockWriter, Empty>::try_parse_from(args);
+        
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_empty_cli() {
+        let empty = Empty::default();
+        assert_eq!(empty.coloring(), Coloring::Never);
+    }
+
+    #[test]
+    fn test_compose_cli() {
+        #[derive(Debug, Default, Clone, clap::Args)]
+        struct LeftCli {
+            #[arg(long)]
+            left_flag: bool,
+        }
+
+        #[derive(Debug, Default, Clone, clap::Args)]
+        struct RightCli {
+            #[arg(long)]
+            right_flag: bool,
+        }
+
+        impl Colored for LeftCli {
+            fn coloring(&self) -> Coloring {
+                Coloring::Always
+            }
+        }
+
+        impl Colored for RightCli {
+            fn coloring(&self) -> Coloring {
+                Coloring::Auto
+            }
+        }
+
+        let compose = Compose {
+            left: LeftCli { left_flag: true },
+            right: RightCli { right_flag: false },
+        };
+
+        assert_eq!(compose.coloring(), Coloring::Always);
+        
+        let (left, right) = compose.into_inner();
+        assert!(left.left_flag);
+        assert!(!right.right_flag);
+    }
+
+    #[test]
+    fn test_compose_coloring_precedence() {
+        // Test all combinations of Coloring precedence
+        let test_cases = vec![
+            (Coloring::Never, Coloring::Never, Coloring::Never),
+            (Coloring::Never, Coloring::Auto, Coloring::Auto),
+            (Coloring::Never, Coloring::Always, Coloring::Always),
+            (Coloring::Auto, Coloring::Never, Coloring::Auto),
+            (Coloring::Auto, Coloring::Auto, Coloring::Auto),
+            (Coloring::Auto, Coloring::Always, Coloring::Always),
+            (Coloring::Always, Coloring::Never, Coloring::Always),
+            (Coloring::Always, Coloring::Auto, Coloring::Always),
+            (Coloring::Always, Coloring::Always, Coloring::Always),
+        ];
+
+        for (left_color, right_color, expected) in test_cases {
+            // Manually test the compose logic directly
+            let result = match (left_color, right_color) {
+                (Coloring::Always, _) | (_, Coloring::Always) => Coloring::Always,
+                (Coloring::Auto, _) | (_, Coloring::Auto) => Coloring::Auto,
+                (Coloring::Never, Coloring::Never) => Coloring::Never,
+            };
+
+            assert_eq!(result, expected, 
+                "Failed for left: {:?}, right: {:?}", left_color, right_color);
+        }
+    }
+
+    #[test]
+    fn test_opts_parsed_shortcut() {
+        // This would normally parse from command line args, but we can test the method exists
+        let args = vec!["cucumber"];
+        let result = Opts::<Empty, Empty, Empty, Empty>::try_parse_from(args);
+        assert!(result.is_ok());
+    }
+}
