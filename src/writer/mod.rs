@@ -494,3 +494,30 @@ impl Verbosity {
         matches!(self, Self::ShowWorldAndDocString)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_verbosity_conversions() {
+        assert_eq!(Verbosity::default() as u8, 0);
+        assert_eq!(u8::from(Verbosity::ShowWorld), 1);
+        assert_eq!(u8::from(Verbosity::ShowWorldAndDocString), 2);
+        
+        assert!(matches!(Verbosity::from(0), Verbosity::Default));
+        assert!(matches!(Verbosity::from(255), Verbosity::ShowWorldAndDocString));
+    }
+
+    #[test]
+    fn test_verbosity_flags() {
+        assert!(!Verbosity::Default.shows_world());
+        assert!(!Verbosity::Default.shows_docstring());
+        
+        assert!(Verbosity::ShowWorld.shows_world());
+        assert!(!Verbosity::ShowWorld.shows_docstring());
+        
+        assert!(Verbosity::ShowWorldAndDocString.shows_world());
+        assert!(Verbosity::ShowWorldAndDocString.shows_docstring());
+    }
+}
