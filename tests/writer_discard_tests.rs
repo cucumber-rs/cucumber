@@ -119,15 +119,8 @@ async fn test_arbitrary_discard_writer() {
     let events = inner.events.clone();
     let mut arbitrary_writer = Arbitrary::wrap(inner);
 
-    #[cfg(feature = "timestamps")]
-    let started_event = Event { value: cucumber::event::Cucumber::Started, at: std::time::SystemTime::now() };
-    #[cfg(feature = "timestamps")]
-    let finished_event = Event { value: cucumber::event::Cucumber::Finished, at: std::time::SystemTime::now() };
-    
-    #[cfg(not(feature = "timestamps"))]
-    let started_event = Event { value: cucumber::event::Cucumber::Started };
-    #[cfg(not(feature = "timestamps"))]
-    let finished_event = Event { value: cucumber::event::Cucumber::Finished };
+    let started_event = Event::new(cucumber::event::Cucumber::Started);
+    let finished_event = Event::new(cucumber::event::Cucumber::Finished);
     arbitrary_writer.handle_event(Ok(started_event), &MockCli::default()).await;
     arbitrary_writer.handle_event(Ok(finished_event), &MockCli::default()).await;
 
@@ -196,15 +189,8 @@ async fn test_stats_discard_writer() {
     let events = inner.events.clone();
     let mut stats_writer = Stats::wrap(inner);
 
-    #[cfg(feature = "timestamps")]
-    let started_event = Event { value: cucumber::event::Cucumber::Started, at: std::time::SystemTime::now() };
-    #[cfg(feature = "timestamps")]
-    let finished_event = Event { value: cucumber::event::Cucumber::Finished, at: std::time::SystemTime::now() };
-    
-    #[cfg(not(feature = "timestamps"))]
-    let started_event = Event { value: cucumber::event::Cucumber::Started };
-    #[cfg(not(feature = "timestamps"))]
-    let finished_event = Event { value: cucumber::event::Cucumber::Finished };
+    let started_event = Event::new(cucumber::event::Cucumber::Started);
+    let finished_event = Event::new(cucumber::event::Cucumber::Finished);
     stats_writer.handle_event(Ok(started_event), &MockCli::default()).await;
     stats_writer.handle_event(Ok(finished_event), &MockCli::default()).await;
 

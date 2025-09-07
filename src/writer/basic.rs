@@ -31,7 +31,7 @@ use crate::{
     parser, step,
     writer::{
         self, Ext as _, Verbosity,
-        common::{StepContext, OutputFormatter},
+        common::OutputFormatter,
         out::{Styles, WriteStrExt as _},
     },
 };

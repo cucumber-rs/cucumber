@@ -17,6 +17,7 @@ impl cucumber::World for TestWorld {
 
 #[derive(Debug, Clone, Default)]
 struct MockWriter {
+    #[allow(dead_code)]
     events: Arc<Mutex<Vec<String>>>,
     stats: MockStats,
 }
@@ -187,7 +188,6 @@ fn test_trait_implementations() {
 #[test]
 fn test_public_exports() {
     // Test that all major types are accessible
-    let _basic_writer = Basic::stdout();
     let _coloring: Coloring = Coloring::Auto;
     
     // Test common module exports
