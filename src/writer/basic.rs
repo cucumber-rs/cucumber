@@ -1015,48 +1015,6 @@ impl<Out: io::Write> Basic<Out> {
             .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
-    /// Outputs the [failed] [`Step`] using consolidated context (new API).
-    ///
-    /// [failed]: event::Step::Failed
-    /// [`Step`]: gherkin::Step
-    pub(crate) fn step_failed_with_context<W: Debug>(
-        &mut self,
-        context: &StepContext<'_, W>,
-        loc: Option<step::Location>,
-        err: &event::StepError,
-    ) -> io::Result<()> {
-        self.step_failed(
-            context.feature,
-            context.step,
-            context.captures,
-            loc,
-            context.retries.copied(),
-            context.world,
-            err,
-        )
-    }
-
-    /// Outputs the [failed] [`Background`] [`Step`] using consolidated context (new API).
-    ///
-    /// [failed]: event::Step::Failed
-    /// [`Background`]: gherkin::Background
-    /// [`Step`]: gherkin::Step
-    pub(crate) fn bg_step_failed_with_context<W: Debug>(
-        &mut self,
-        context: &StepContext<'_, W>,
-        loc: Option<step::Location>,
-        err: &event::StepError,
-    ) -> io::Result<()> {
-        self.bg_step_failed(
-            context.feature,
-            context.step,
-            context.captures,
-            loc,
-            context.retries.copied(),
-            context.world,
-            err,
-        )
-    }
 }
 
 /// Tries to coerce [`catch_unwind()`] output to [`String`].
