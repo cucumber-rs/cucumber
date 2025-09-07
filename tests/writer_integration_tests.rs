@@ -26,6 +26,7 @@ impl MockWriter {
         }
     }
 
+    #[allow(dead_code)]
     fn events(&self) -> Vec<String> {
         self.events.lock().unwrap().clone()
     }

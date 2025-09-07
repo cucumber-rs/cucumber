@@ -186,7 +186,7 @@ fn shared_utilities_are_accessible() {
 #[test]
 fn consolidation_backwards_compatibility() {
     // Test that old APIs still work
-    let buffer: Vec<u8> = Vec::new();
+    let _buffer: Vec<u8> = Vec::new();
     // Compilation test - Basic::new creates normalized writers
     
     // Should be able to create writer as before - just ensure it compiles
@@ -195,9 +195,9 @@ fn consolidation_backwards_compatibility() {
 // Regression tests to ensure consolidation doesn't break existing functionality
 #[test]
 fn basic_writer_verbosity_levels() {
-    let mut buffer1: Vec<u8> = Vec::new();
-    let mut buffer2: Vec<u8> = Vec::new();
-    let mut buffer3: Vec<u8> = Vec::new();
+    let _buffer1: Vec<u8> = Vec::new();
+    let buffer2: Vec<u8> = Vec::new();
+    let buffer3: Vec<u8> = Vec::new();
     
     // Compilation test
     drop(buffer2); // Compilation test
@@ -208,9 +208,9 @@ fn basic_writer_verbosity_levels() {
 
 #[test]
 fn basic_writer_coloring_options() {
-    let mut buffer1: Vec<u8> = Vec::new();
-    let mut buffer2: Vec<u8> = Vec::new();
-    let mut buffer3: Vec<u8> = Vec::new();
+    let buffer1: Vec<u8> = Vec::new();
+    let buffer2: Vec<u8> = Vec::new();
+    let buffer3: Vec<u8> = Vec::new();
     
     drop(buffer1); // Compilation test
     drop(buffer2); // Compilation test
