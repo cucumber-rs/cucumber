@@ -188,7 +188,7 @@ impl RetryOptions {
 
         apply_cli(
             parse_tags(&scenario.tags)
-                .or_else(|| rule.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&rule?.tags))
                 .or_else(|| parse_tags(&feature.tags)),
         )
     }

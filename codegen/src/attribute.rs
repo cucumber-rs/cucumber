@@ -302,8 +302,7 @@ impl Step {
         let (ident, ty) = parse_fn_arg(arg)?;
 
         let is_ctx_arg =
-            self.arg_name_of_step_context.as_ref().map(|i| *i == *ident)
-                == Some(true);
+            self.arg_name_of_step_context.as_ref().is_some_and(|i| i == ident);
 
         let decl = if is_ctx_arg {
             quote! {
