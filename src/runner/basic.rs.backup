@@ -1,0 +1,139 @@
+// Copyright (c) 2018-2025  Brendan Molloy <brendan@bbqsrc.net>,
+//                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
+//                          Kai Ren <tyranron@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Default [`Runner`] implementation.
+//!
+//! This module provides the Basic runner implementation, which has been refactored
+//! into modular components for better maintainability and testing.
+//!
+//! The implementation is now organized into several focused modules under the `basic/` directory:
+//!
+//! - CLI options and type definitions
+//! - Core Basic struct and builder methods  
+//! - Runner trait implementation
+//! - Execution orchestration logic
+//! - Individual scenario execution
+//! - Scenario storage and management
+//! - Supporting utilities and structures
+//!
+//! Each module contains comprehensive inline unit tests and follows the Single Responsibility Principle.
+
+mod basic;
+
+// Re-export the main types for backward compatibility
+pub use self::basic::{
+    Basic, Cli, ScenarioType, RetryOptions, RetryOptionsWithDeadline,
+    WhichScenarioFn, RetryOptionsFn, BeforeHookFn, AfterHookFn, ScenarioId,
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Runner, World};
+    use futures::stream;
+    use std::time::Duration;
+
+    #[derive(Debug)]
+    struct TestWorld;
+
+    impl World for TestWorld {}
+
+    #[test]
+    fn test_public_api_compatibility() {
+        // Test that all the main types are properly re-exported
+        let _runner = Basic::<TestWorld>::default();
+        let _cli = Cli::default();
+        let _scenario_type = ScenarioType::Concurrent;
+        let _scenario_id = ScenarioId::new();
+    }
+
+    #[test]
+    fn test_runner_builder_pattern() {
+        let runner = Basic::<TestWorld>::default()
+            .max_concurrent_scenarios(5)
+            .retries(3)
+            .retry_after(Duration::from_secs(1))
+            .fail_fast();
+
+        // Verify builder pattern works
+        assert_eq!(runner.max_concurrent_scenarios, Some(5));
+        assert_eq!(runner.retries, Some(3));
+        assert_eq!(runner.retry_after, Some(Duration::from_secs(1)));
+        assert!(runner.fail_fast);
+    }
+
+    #[tokio::test]
+    async fn test_runner_integration() {
+        let runner = Basic::<TestWorld>::default();
+        let features = stream::empty();
+        let cli = Cli::default();
+        
+        let mut events = runner.run(features, cli);
+        
+        // Should receive at least parsing finished and cucumber finished events
+        let parsing_finished = events.next().await;
+        assert!(parsing_finished.is_some());
+        
+        let finished = events.next().await;
+        assert!(finished.is_some());
+    }
+
+    #[test]
+    fn test_scenario_type_equality() {
+        assert_eq!(ScenarioType::Serial, ScenarioType::Serial);
+        assert_eq!(ScenarioType::Concurrent, ScenarioType::Concurrent);
+        assert_ne!(ScenarioType::Serial, ScenarioType::Concurrent);
+    }
+
+    #[test]
+    fn test_scenario_id_uniqueness() {
+        let id1 = ScenarioId::new();
+        let id2 = ScenarioId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn test_retry_options_next_try() {
+        use crate::event::Retries;
+        
+        let opts = RetryOptions {
+            retries: Retries::initial(2),
+            after: Some(Duration::from_secs(1)),
+        };
+
+        let next = opts.next_try().unwrap();
+        assert_eq!(next.retries.left, 1);
+        assert_eq!(next.after, Some(Duration::from_secs(1)));
+
+        let last = next.next_try();
+        assert!(last.is_none());
+    }
+
+    #[test]
+    fn test_cli_default() {
+        let cli = Cli::default();
+        assert_eq!(cli.concurrency, None);
+        assert!(!cli.fail_fast);
+        assert_eq!(cli.retry, None);
+        assert_eq!(cli.retry_after, None);
+        assert!(cli.retry_tag_filter.is_none());
+    }
+
+    #[test]
+    fn test_which_scenario_fn_signature() {
+        let _which_scenario: WhichScenarioFn = |_feature, _rule, scenario| {
+            if scenario.tags.contains(&"@serial".to_string()) {
+                ScenarioType::Serial
+            } else {
+                ScenarioType::Concurrent
+            }
+        };
+    }
+}

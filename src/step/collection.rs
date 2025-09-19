@@ -235,6 +235,7 @@ mod tests {
         let collection = Collection::new().given(None, regex, test_step);
         
         let step = GherkinStep {
+            keyword: "Given".to_string(),
             ty: StepType::Given,
             value: "I have 5 cucumbers".to_string(),
             docstring: None,

@@ -315,7 +315,7 @@ mod tests {
             ScenarioType::Concurrent
         };
         
-        let retry_fn = Arc::new(|_, _, _, _| None);
+        let retry_fn = Arc::new(|_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &Cli| -> Option<RetryOptions> { None });
         
         insert_features(
             features.clone(),
@@ -354,7 +354,7 @@ mod tests {
             ScenarioType::Concurrent
         };
         
-        let retry_fn = Arc::new(|_, _, _, _| None);
+        let retry_fn = Arc::new(|_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &Cli| -> Option<RetryOptions> { None });
         
         let error_stream = stream::once(async { 
             Err(parser::Error::Parsing(std::sync::Arc::new(gherkin::ParseFileError::Reading {
@@ -378,7 +378,7 @@ mod tests {
         assert!(error_event.is_err());
         
         // Then ParsingFinished event
-        let event = receiver.next().await.unwrap().unwrap();
+        let event: Event<event::Cucumber<TestWorld>> = receiver.next().await.unwrap().unwrap();
         match event.value {
             event::Cucumber::ParsingFinished { parser_errors, .. } => {
                 assert_eq!(parser_errors, 1);

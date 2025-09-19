@@ -592,6 +592,7 @@ mod tests {
         
         let feature = gherkin::Feature {
             tags: vec![],
+            keyword: "Feature".to_string(),
             name: "Test Feature".to_string(),
             span: gherkin::Span { start: 0, end: 0 },
             description: None,
@@ -619,6 +620,8 @@ mod tests {
                 },
             ],
             rules: vec![],
+            position: gherkin::LineCol { line: 1, col: 1 },
+            path: None,
         };
         
         let which_scenario = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, scenario: &gherkin::Scenario| {
@@ -692,7 +695,7 @@ mod tests {
             None,
         )];
         
-        let events: Vec<_> = storage.start_scenarios(runnable).collect();
+        let events: Vec<event::Cucumber<TestWorld>> = storage.start_scenarios(runnable).collect();
         assert_eq!(events.len(), 1); // Should have feature started event
     }
 
@@ -703,6 +706,7 @@ mod tests {
         
         let feature = Source::new(gherkin::Feature {
             tags: vec![],
+            keyword: "Feature".to_string(),
             name: "Test Feature".to_string(),
             span: gherkin::Span { start: 0, end: 0 },
             description: None,
@@ -720,6 +724,8 @@ mod tests {
                 },
             ],
             rules: vec![],
+            position: gherkin::LineCol { line: 1, col: 1 },
+            path: None,
         });
         
         // Start tracking this feature

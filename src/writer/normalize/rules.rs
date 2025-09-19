@@ -150,6 +150,7 @@ mod tests {
             rules: Vec::new(),
             tags: Vec::new(),
             keyword: "Feature".to_string(),
+            span: gherkin::Span { start: 0, end: 0 },
             position: gherkin::LineCol { line: 1, col: 1 },
             path: Some("test.feature".into()),
         })
@@ -163,6 +164,7 @@ mod tests {
             scenarios: Vec::new(),
             tags: Vec::new(),
             keyword: "Rule".to_string(),
+            span: gherkin::Span { start: 0, end: 0 },
             position: gherkin::LineCol { line: 2, col: 1 },
         })
     }
@@ -174,6 +176,7 @@ mod tests {
             steps: Vec::new(),
             tags: Vec::new(),
             keyword: "Scenario".to_string(),
+            span: gherkin::Span { start: 0, end: 0 },
             position: gherkin::LineCol { line: 3, col: 1 },
             examples: Vec::new(),
         })
