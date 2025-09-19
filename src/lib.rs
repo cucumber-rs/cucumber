@@ -8,6 +8,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Cucumber testing framework for Rust.
+//!
+//! This crate provides a Cucumber testing framework implementation for Rust,
+//! allowing you to write tests in Gherkin format and execute them using
+//! step definitions written in Rust.
+
 #![doc(
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
     html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
@@ -160,6 +166,13 @@
     variant_size_differences
 )]
 
+// Module declarations - organized by responsibility
+mod clippy_config;
+pub mod exports;
+pub mod features;
+pub mod world;
+
+// Existing core modules
 pub mod cli;
 mod cucumber;
 pub mod error;
@@ -172,151 +185,20 @@ pub mod step;
 pub mod tag;
 pub mod writer;
 
+// Feature-dependent modules
 #[cfg(feature = "macros")]
 pub mod codegen;
 #[cfg(feature = "tracing")]
 pub mod tracing;
 
-// TODO: Remove once tests run without complains about it.
+// Test utilities for internal testing
 #[cfg(test)]
-mod only_used_in_doc_tests_and_book {
-    use rand as _;
-    use tempfile as _;
-    use tokio as _;
-}
+pub mod test_utils;
 
-use std::fmt::Display;
-#[cfg(feature = "macros")]
-use std::{fmt::Debug, path::Path};
-
-#[cfg(feature = "macros")]
+// Re-export everything from the exports module for backward compatibility
 #[doc(inline)]
-pub use cucumber_codegen::{Parameter, World, given, then, when};
-pub use gherkin;
+pub use exports::*;
 
-#[cfg(feature = "macros")]
+// Re-export the World trait at the crate root for backward compatibility
 #[doc(inline)]
-pub use self::codegen::Parameter;
-#[cfg(feature = "macros")]
-use self::{
-    codegen::{StepConstructor as _, WorldInventory},
-    cucumber::DefaultCucumber,
-};
-#[doc(inline)]
-pub use self::{
-    cucumber::Cucumber,
-    error::{CucumberError, Result},
-    event::Event,
-    parser::Parser,
-    runner::{Runner, ScenarioType},
-    step::Step,
-    writer::{
-        Arbitrary as ArbitraryWriter, Ext as WriterExt, Stats as StatsWriter,
-        Writer,
-    },
-};
-
-/// Represents a shared user-defined state for a [Cucumber] run.
-/// It lives on per-[scenario][0] basis.
-///
-/// This crate doesn't provide out-of-box solution for managing state shared
-/// across [scenarios][0], because we want some friction there to avoid tests
-/// being dependent on each other. If your workflow needs a way to share state
-/// between [scenarios][0] (ex. database connection pool), we recommend using
-/// a [`std::sync::LazyLock`] or organize it other way via [shared state][1].
-///
-/// [0]: https://cucumber.io/docs/gherkin/reference#descriptions
-/// [1]: https://doc.rust-lang.org/book/ch16-03-shared-state.html
-/// [Cucumber]: https://cucumber.io
-pub trait World: Sized + 'static {
-    /// Error of creating a new [`World`] instance.
-    type Error: Display;
-
-    /// Creates a new [`World`] instance.
-    fn new() -> impl Future<Output = std::result::Result<Self, Self::Error>>;
-
-    #[cfg(feature = "macros")]
-    /// Returns runner for tests with auto-wired steps marked by [`given`],
-    /// [`when`] and [`then`] attributes.
-    #[must_use]
-    fn collection() -> step::Collection<Self>
-    where
-        Self: Debug + WorldInventory,
-    {
-        let mut out = step::Collection::new();
-
-        for given in inventory::iter::<Self::Given> {
-            let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex(), fun);
-        }
-
-        for when in inventory::iter::<Self::When> {
-            let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex(), fun);
-        }
-
-        for then in inventory::iter::<Self::Then> {
-            let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex(), fun);
-        }
-
-        out
-    }
-
-    #[cfg(feature = "macros")]
-    /// Returns default [`Cucumber`] with all the auto-wired [`Step`]s.
-    #[must_use]
-    fn cucumber<I: AsRef<Path>>() -> DefaultCucumber<Self, I>
-    where
-        Self: Debug + WorldInventory,
-    {
-        Cucumber::new().steps(Self::collection())
-    }
-
-    #[cfg(feature = "macros")]
-    /// Runs [`Cucumber`].
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    fn run<I: AsRef<Path>>(input: I) -> impl Future<Output = ()>
-    where
-        Self: Debug + WorldInventory,
-    {
-        Self::cucumber().run_and_exit(input)
-    }
-
-    #[cfg(feature = "macros")]
-    /// Runs [`Cucumber`] with [`Scenario`]s filter.
-    ///
-    /// [`Feature`]s sourced by [`Parser`] are fed into [`Runner`] where the
-    /// later produces events handled by [`Writer`].
-    ///
-    /// # Panics
-    ///
-    /// If encountered errors while parsing [`Feature`]s or at least one
-    /// [`Step`] panicked.
-    ///
-    /// [`Feature`]: gherkin::Feature
-    /// [`Scenario`]: gherkin::Scenario
-    /// [`Step`]: gherkin::Step
-    fn filter_run<I, F>(input: I, filter: F) -> impl Future<Output = ()>
-    where
-        Self: Debug + WorldInventory,
-        I: AsRef<Path>,
-        F: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-            ) -> bool
-            + 'static,
-    {
-        Self::cucumber().filter_run_and_exit(input, filter)
-    }
-}
+pub use world::World;
