@@ -12,6 +12,7 @@ use tracing_subscriber::{
     layer::{Layered, SubscriberExt as _},
     registry::LookupSpan,
     util::SubscriberInitExt as _,
+    Layer as _,
 };
 
 use crate::{

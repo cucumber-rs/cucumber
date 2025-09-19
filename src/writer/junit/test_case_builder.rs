@@ -20,6 +20,7 @@ use crate::{
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// Builder for creating JUnit test cases from Cucumber scenario events.
+#[derive(Debug)]
 pub struct JUnitTestCaseBuilder<W> {
     verbosity: Verbosity,
     _phantom: std::marker::PhantomData<W>,
@@ -244,7 +245,7 @@ mod tests {
             steps: vec![],
             tags: vec![],
             position: LineCol { line: 5, col: 3 },
-            examples: None,
+            examples: vec![],
         }
     }
 

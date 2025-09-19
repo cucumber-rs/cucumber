@@ -16,14 +16,14 @@ use super::types::Callback;
 /// [`Step`]: gherkin::Step
 /// [`Subscriber`]: tracing::Subscriber
 #[derive(Clone, Debug)]
-pub(crate) struct SpanCloseWaiter {
+pub struct SpanCloseWaiter {
     /// Sender for subscribing to the [`Span`] closing.
     wait_span_event_sender: mpsc::UnboundedSender<(span::Id, Callback)>,
 }
 
 impl SpanCloseWaiter {
     /// Creates a new [`SpanCloseWaiter`].
-    pub(crate) const fn new(
+    pub const fn new(
         wait_span_event_sender: mpsc::UnboundedSender<(span::Id, Callback)>,
     ) -> Self {
         Self {
@@ -32,7 +32,7 @@ impl SpanCloseWaiter {
     }
 
     /// Waits for the [`Span`] being closed.
-    pub(crate) async fn wait_for_span_close(&self, id: span::Id) {
+    pub async fn wait_for_span_close(&self, id: span::Id) {
         let (sender, receiver) = oneshot::channel();
         _ = self.wait_span_event_sender.unbounded_send((id, sender)).ok();
         _ = receiver.await.ok();

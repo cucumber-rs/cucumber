@@ -16,7 +16,7 @@ impl<Out: io::Write> Basic<Out> {
     /// [started]: event::Scenario::Started
     /// [step]: event::Step
     /// [`Scenario`]: gherkin::Scenario
-    pub(super) fn scenario<W: Debug>(
+    pub(crate) fn scenario<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
         scenario: &gherkin::Scenario,

@@ -21,8 +21,9 @@ use crate::{
     event,
     parser,
     writer::{
-        self, Normalize,
+        self, Normalize, ext::Ext as _,
         common::{WriterStats, OutputFormatter},
+        out::WriteStrExt as _,
     },
 };
 
@@ -236,7 +237,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     /// [1]: https://doc.rust-lang.org/rustc/tests/index.html
     /// [2]: https://github.com/intellij-rust/intellij-rust/issues/9041
     #[must_use]
-    pub const fn raw(output: Out) -> Self {
+    pub fn raw(output: Out) -> Self {
         Self {
             output,
             events: Vec::new(),

@@ -216,7 +216,7 @@ mod tests {
         
         let event = Ok(Event::new(Cucumber::Started));
         
-        assert_normalized.handle_event(event, &()).await;
+        assert_normalized.handle_event(event, &EmptyCli).await;
         
         // Event should be passed through to inner writer
         assert_eq!(assert_normalized.get_events_count(), 1);

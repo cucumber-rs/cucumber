@@ -222,7 +222,7 @@ mod tests {
         let rule = create_test_rule();
         
         // Emit should start by emitting the rule started event
-        let result = (&mut queue).emit((feature, rule), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, rule), &mut writer, &EmptyCli).await;
         
         // Should emit rule started event
         assert!(writer.events.contains(&"RuleStarted".to_string()));

@@ -18,6 +18,7 @@ use super::{error_handler::ErrorHandler, test_case_builder::JUnitTestCaseBuilder
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// Handles different types of events for JUnit XML generation.
+#[derive(Debug)]
 pub struct EventHandler<W, Out: io::Write> {
     test_case_builder: JUnitTestCaseBuilder<W>,
     _phantom: std::marker::PhantomData<Out>,
@@ -82,7 +83,7 @@ impl<W: World + Debug, Out: io::Write> EventHandler<W, Out> {
                     )
                 });
 
-                let duration = JUnitTestCaseBuilder::calculate_duration(started_at, meta.at, sc);
+                let duration = JUnitTestCaseBuilder::<W>::calculate_duration(started_at, meta.at, sc);
                 let scenario_events = mem::take(events);
                 let test_case = self.test_case_builder.build_test_case(
                     feat,
@@ -185,7 +186,7 @@ mod tests {
             steps: vec![],
             tags: vec![],
             position: LineCol { line: 5, col: 3 },
-            examples: None,
+            examples: vec![],
         }
     }
 

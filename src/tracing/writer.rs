@@ -84,6 +84,7 @@ impl io::Write for CollectorWriter {
 mod tests {
     use super::*;
     use futures::TryStreamExt;
+    use std::io::Write;
 
     #[test]
     fn test_collector_writer_creation() {

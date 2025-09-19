@@ -17,6 +17,7 @@ pub use cli_and_types::{
     WhichScenarioFn, RetryOptionsFn, BeforeHookFn, AfterHookFn,
 };
 pub use basic_struct::Basic;
+pub use supporting_structures::ScenarioId;
 
 #[cfg(test)]
 mod tests {

@@ -171,7 +171,7 @@ mod tests {
         
         // Test emit returns Some when should_emit is true
         let emitter2 = MockEmitter::new(true);
-        let result = emitter2.emit((), &mut writer, &()).await;
+        let result = emitter2.emit((), &mut writer, &EmptyCli).await;
         assert_eq!(result, Some(42));
     }
 
@@ -186,7 +186,7 @@ mod tests {
         
         // Test emit returns None when should_emit is false
         let emitter2 = MockEmitter::new(false);
-        let result = emitter2.emit((), &mut writer, &()).await;
+        let result = emitter2.emit((), &mut writer, &EmptyCli).await;
         assert_eq!(result, None);
     }
 
@@ -196,7 +196,7 @@ mod tests {
         let mut writer = MockWriter::new();
         
         // Test that emit can work with a writer
-        let result = emitter.emit((), &mut writer, &()).await;
+        let result = emitter.emit((), &mut writer, &EmptyCli).await;
         assert!(result.is_some());
         
         // Writer should remain functional

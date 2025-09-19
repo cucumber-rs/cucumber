@@ -68,7 +68,7 @@ mod tests {
             steps: vec![],
             tags: vec![],
             position: LineCol { line: 5, col: 3 },
-            examples: None,
+            examples: vec![],
         }
     }
 

@@ -18,7 +18,7 @@ use super::{
 
 /// Collector of [`tracing::Event`]s.
 #[derive(Debug)]
-pub(crate) struct Collector {
+pub struct Collector {
     /// [`Scenarios`] with their IDs.
     scenarios: Scenarios,
 
@@ -197,11 +197,11 @@ mod tests {
         let mut collector = Collector::new(logs_receiver, span_receiver);
         
         let feature = gherkin::Feature {
-            name: Some("Test Feature".to_string()),
+            name: "Test Feature".to_string(),
             ..Default::default()
         };
         let scenario = gherkin::Scenario {
-            name: Some("Test Scenario".to_string()),
+            name: "Test Scenario".to_string(),
             ..Default::default()
         };
         
@@ -229,11 +229,11 @@ mod tests {
         let mut collector = Collector::new(logs_receiver, span_receiver);
         
         let feature = gherkin::Feature {
-            name: Some("Test Feature".to_string()),
+            name: "Test Feature".to_string(),
             ..Default::default()
         };
         let scenario = gherkin::Scenario {
-            name: Some("Test Scenario".to_string()),
+            name: "Test Scenario".to_string(),
             ..Default::default()
         };
         

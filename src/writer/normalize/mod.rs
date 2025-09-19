@@ -258,7 +258,7 @@ mod integration_tests {
 
     #[test]
     fn test_scenarios_queue_integration() {
-        let mut queue = ScenariosQueue::new();
+        let mut queue: scenarios::ScenariosQueue<()> = ScenariosQueue::new();
         
         // Start with empty queue
         assert!((&mut queue).current_item().is_none());

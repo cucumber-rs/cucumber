@@ -20,6 +20,7 @@ use crate::{
         self,
         common::WriterExt as _,
         discard,
+        ext::Ext as _,
         json::{feature::Feature, handlers::EventHandler},
     },
 };
@@ -123,7 +124,7 @@ impl<Out: io::Write> Json<Out> {
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     /// [2]: crate::event::Cucumber
     #[must_use]
-    pub const fn raw(output: Out) -> Self {
+    pub fn raw(output: Out) -> Self {
         Self { 
             output, 
             handler: EventHandler::new(),
@@ -201,12 +202,12 @@ mod tests {
     }
 
     #[test]
-    fn json_writer_const_raw() {
-        const fn test_const() -> Json<Cursor<Vec<u8>>> {
+    fn json_writer_raw_creation() {
+        fn test_creation() -> Json<Cursor<Vec<u8>>> {
             Json::raw(Cursor::new(Vec::new()))
         }
         
-        let writer = test_const();
+        let writer = test_creation();
         assert_eq!(writer.feature_count(), 0);
     }
 

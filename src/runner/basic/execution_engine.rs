@@ -302,6 +302,7 @@ mod tests {
     use futures::stream;
     use std::sync::{Arc, Mutex};
     use crate::test_utils::common::TestWorld;
+    use crate::runner::basic::RetryOptions;
 
     // Using common TestWorld from test_utils
 

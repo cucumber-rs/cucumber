@@ -121,8 +121,9 @@ mod tests {
         fn format_from_str_unknown() {
             let result = Format::from_str("unknown");
             assert!(result.is_err());
-            assert!(result.unwrap_err().contains("Unknown option"));
-            assert!(result.unwrap_err().contains("expected `pretty` or `json`"));
+            let err = result.unwrap_err();
+            assert!(err.contains("Unknown option"));
+            assert!(err.contains("expected `pretty` or `json`"));
         }
 
         #[test]
@@ -161,8 +162,9 @@ mod tests {
         fn report_time_from_str_unknown() {
             let result = ReportTime::from_str("unknown");
             assert!(result.is_err());
-            assert!(result.unwrap_err().contains("Unknown option"));
-            assert!(result.unwrap_err().contains("expected `plain` or `colored`"));
+            let err = result.unwrap_err();
+            assert!(err.contains("Unknown option"));
+            assert!(err.contains("expected `plain` or `colored`"));
         }
 
         #[test]

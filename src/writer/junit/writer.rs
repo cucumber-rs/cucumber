@@ -61,7 +61,7 @@ pub struct JUnit<W, Out: io::Write> {
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
 // `#[derive(Clone)]`.
-impl<World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
+impl<World: std::fmt::Debug + crate::World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
     fn clone(&self) -> Self {
         Self {
             output: self.output.clone(),
@@ -69,7 +69,7 @@ impl<World, Out: Clone + io::Write> Clone for JUnit<World, Out> {
             suit: self.suit.clone(),
             scenario_started_at: self.scenario_started_at,
             events: self.events.clone(),
-            event_handler: EventHandler::new(
+            event_handler: EventHandler::<World, Out>::new(
                 JUnitTestCaseBuilder::new(self.verbosity)
             ),
             verbosity: self.verbosity,
@@ -95,12 +95,12 @@ where
 
         match event.map(Event::split) {
             Err(err) => {
-                EventHandler::handle_parser_error(&mut self.report, &err);
+                EventHandler::<W, Out>::handle_parser_error(&mut self.report, &err);
             }
             Ok((Cucumber::Started | Cucumber::ParsingFinished { .. }, _)) => {}
             Ok((Cucumber::Feature(feat, ev), meta)) => match ev {
                 Feature::Started => {
-                    self.suit = Some(EventHandler::handle_feature_started(&feat, meta));
+                    self.suit = Some(EventHandler::<W, Out>::handle_feature_started(&feat, meta));
                 }
                 Feature::Rule(_, Rule::Started | Rule::Finished) => {}
                 Feature::Rule(r, Rule::Scenario(sc, ev)) => {
@@ -128,12 +128,12 @@ where
                     );
                 }
                 Feature::Finished => {
-                    let suite = EventHandler::handle_feature_finished(&feat, self.suit.take());
+                    let suite = EventHandler::<W, Out>::handle_feature_finished(&feat, self.suit.take());
                     self.report.add_testsuite(suite);
                 }
             },
             Ok((Cucumber::Finished, _)) => {
-                EventHandler::handle_cucumber_finished(&mut self.report, &mut self.output);
+                EventHandler::<W, Out>::handle_cucumber_finished(&mut self.report, &mut self.output);
             }
         }
     }
@@ -141,7 +141,7 @@ where
 
 impl<W, O: io::Write> writer::NonTransforming for JUnit<W, O> {}
 
-impl<W: Debug, Out: io::Write> JUnit<W, Out> {
+impl<W: Debug + World, Out: io::Write> JUnit<W, Out> {
     /// Creates a new [`Normalized`] [`JUnit`] [`Writer`] outputting XML report
     /// into the given `output`.
     ///
@@ -190,7 +190,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             suit: None,
             scenario_started_at: None,
             events: vec![],
-            event_handler: EventHandler::new(JUnitTestCaseBuilder::new(verbosity)),
+            event_handler: EventHandler::<W, Out>::new(JUnitTestCaseBuilder::new(verbosity)),
             verbosity,
         }
     }
@@ -200,7 +200,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         if let Some(verbosity) = cli.to_verbosity() {
             self.verbosity = verbosity;
             // Update the event handler with new verbosity
-            self.event_handler = EventHandler::new(JUnitTestCaseBuilder::new(self.verbosity));
+            self.event_handler = EventHandler::<W, Out>::new(JUnitTestCaseBuilder::new(self.verbosity));
         }
     }
 }

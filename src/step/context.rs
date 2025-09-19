@@ -71,6 +71,7 @@ mod tests {
 
     fn create_test_step() -> GherkinStep {
         GherkinStep {
+            keyword: "Given".to_string(),
             ty: StepType::Given,
             value: "I have 5 cucumbers".to_string(),
             docstring: None,

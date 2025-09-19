@@ -467,7 +467,7 @@ mod tests {
         queue.feature_finished(Event::new(&feature));
         
         // Emit should handle the feature
-        let result = (&mut queue).emit((), &mut writer, &()).await;
+        let result = (&mut queue).emit((), &mut writer, &EmptyCli).await;
         
         // Should emit feature started and finished events
         assert!(writer.events.contains(&"FeatureStarted".to_string()));

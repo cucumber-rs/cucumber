@@ -517,6 +517,7 @@ mod tests {
     use super::*;
     use futures::channel::mpsc;
     use std::sync::Arc;
+    use crate::test_utils::common::TestWorld;
 
     #[tokio::test]
     async fn test_features_empty() {

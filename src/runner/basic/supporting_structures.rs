@@ -23,7 +23,7 @@ use crate::{
 ///
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Copy, Debug, Display, Eq, FromStr, Hash, PartialEq)]
-pub struct ScenarioId(pub(crate) u64);
+pub struct ScenarioId(pub u64);
 
 impl ScenarioId {
     /// Creates a new unique [`ScenarioId`].
@@ -41,34 +41,6 @@ impl Default for ScenarioId {
     }
 }
 
-#[cfg(feature = "tracing")]
-impl ScenarioId {
-    /// Creates a [`tracing::Span`] for a [`Scenario`].
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    pub(super) fn scenario_span(&self) -> tracing::Span {
-        tracing::info_span!("Scenario", id = %self.0)
-    }
-
-    /// Creates a [`tracing::Span`] for a [`Step`].
-    ///
-    /// [`Step`]: gherkin::Step
-    pub(super) fn step_span(&self, is_background: bool) -> tracing::Span {
-        let step_type = if is_background { "Background Step" } else { "Step" };
-        tracing::info_span!(step_type, scenario.id = %self.0)
-    }
-
-    /// Creates a [`tracing::Span`] for a [`Hook`].
-    ///
-    /// [`Hook`]: crate::event::Hook
-    pub(super) fn hook_span(&self, hook_type: event::HookType) -> tracing::Span {
-        let hook_name = match hook_type {
-            event::HookType::Before => "Before Hook",
-            event::HookType::After => "After Hook",
-        };
-        tracing::info_span!(hook_name, scenario.id = %self.0)
-    }
-}
 
 /// Alias for a failed [`Scenario`].
 ///

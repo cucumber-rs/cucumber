@@ -26,6 +26,7 @@ use crate::{
 };
 
 /// Handler for processing Cucumber events and updating JSON structures.
+#[derive(Clone, Debug)]
 pub struct EventHandler {
     /// Collection of [`Feature`]s to output [JSON][1] into.
     ///
@@ -468,11 +469,11 @@ mod tests {
         let scenario = create_test_scenario();
         
         let element = handler.mut_or_insert_element(&feature, None, &scenario, "scenario");
+        assert_eq!(element.name, "Test Scenario");
+        assert_eq!(element.r#type, "scenario");
         
         assert_eq!(handler.features.len(), 1);
         assert_eq!(handler.features[0].elements.len(), 1);
-        assert_eq!(element.name, "Test Scenario");
-        assert_eq!(element.r#type, "scenario");
     }
 
     #[test]
@@ -487,10 +488,10 @@ mod tests {
         
         // Second call should return the same element
         let element2 = handler.mut_or_insert_element(&feature, None, &scenario, "scenario");
+        assert_eq!(element2.name, "Modified");
         
         assert_eq!(handler.features.len(), 1);
         assert_eq!(handler.features[0].elements.len(), 1);
-        assert_eq!(element2.name, "Modified");
     }
 
     #[test]

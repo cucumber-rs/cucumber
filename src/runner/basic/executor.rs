@@ -855,7 +855,7 @@ mod tests {
 
     // Using common TestWorld from test_utils
 
-    fn create_test_executor() {
+    fn create_test_executor() -> (Executor<TestWorld, impl Future<Output = ()>, impl Future<Output = ()>>, mpsc::UnboundedReceiver<event::Cucumber<TestWorld>>) {
         let (event_sender, event_receiver) = mpsc::unbounded();
         let (finished_sender, _) = mpsc::unbounded();
         let collection = step::Collection::<TestWorld>::new();
