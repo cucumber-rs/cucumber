@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_cucumber_queue_new_feature() {
-        let mut queue = CucumberQueue::new(Metadata::new(()));
+        let mut queue: CucumberQueue<()> = CucumberQueue::new(Metadata::new(()));
         let feature = create_test_feature();
         let feature_event = Event::new(feature.clone());
         

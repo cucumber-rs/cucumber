@@ -849,29 +849,25 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::channel::mpsc;
+    use futures::{channel::mpsc, future::LocalBoxFuture};
     use std::sync::Arc;
     use crate::test_utils::common::TestWorld;
 
     // Using common TestWorld from test_utils
 
-    fn create_test_executor() -> (Executor<TestWorld, impl Future<Output = ()>, impl Future<Output = ()>>, mpsc::UnboundedReceiver<event::Cucumber<TestWorld>>) {
+    type BeforeHook = for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a mut TestWorld) -> LocalBoxFuture<'a, ()>;
+    type AfterHook = for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a event::ScenarioFinished, Option<&'a mut TestWorld>) -> LocalBoxFuture<'a, ()>;
+
+    fn create_test_executor() -> (Executor<TestWorld, BeforeHook, AfterHook>, mpsc::UnboundedReceiver<parser::Result<Event<event::Cucumber<TestWorld>>>>) {
         let (event_sender, event_receiver) = mpsc::unbounded();
         let (finished_sender, _) = mpsc::unbounded();
         let collection = step::Collection::<TestWorld>::new();
         let features = Features::default();
 
-        let before_hook = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &mut TestWorld| {
-            Box::pin(async {}) as LocalBoxFuture<'_, ()>
-        };
-        let after_hook = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &event::ScenarioFinished, _: Option<&mut TestWorld>| {
-            Box::pin(async {}) as LocalBoxFuture<'_, ()>
-        };
-        
         let executor = Executor::new(
             collection,
-            Some(before_hook),
-            Some(after_hook),
+            None::<BeforeHook>,
+            None::<AfterHook>,
             event_sender,
             finished_sender,
             features,
@@ -1106,7 +1102,7 @@ mod tests {
         match event.value {
             event::Cucumber::Feature(_, event::Feature::Scenario(_, scenario_event)) => {
                 match scenario_event.event {
-                    event::Scenario::Hook { ty: HookType::Before, event: event::Hook::Failed { .. }} => {},
+                    event::Scenario::Hook(HookType::Before, event::Hook::Failed { .. }) => {},
                     _ => panic!("Expected Before Hook Failed event"),
                 }
             },

@@ -518,6 +518,7 @@ mod tests {
     use futures::channel::mpsc;
     use std::sync::Arc;
     use crate::test_utils::common::TestWorld;
+    use crate::runner::basic::{RetryOptions, Cli};
 
     #[tokio::test]
     async fn test_features_empty() {
@@ -633,7 +634,7 @@ mod tests {
             }
         };
         
-        let retry_fn = Arc::new(|_, _, _, _| None);
+        let retry_fn = Arc::new(|_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &Cli| -> Option<RetryOptions> { None });
         let cli = Cli::default();
         
         features.insert(feature, &which_scenario, &retry_fn, &cli).await;

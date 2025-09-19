@@ -243,7 +243,7 @@ mod tests {
         queue.finished(Metadata::new(()));
         
         // Emit should emit the rule finished event and return the rule
-        let result = (&mut queue).emit((feature, rule.clone()), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, rule.clone()), &mut writer, &EmptyCli).await;
         
         // Should emit rule started and finished events
         assert!(writer.events.contains(&"RuleStarted".to_string()));
@@ -273,7 +273,7 @@ mod tests {
         // Mark the queue as finished so it will emit
         queue.finished(Metadata::new(()));
         
-        let result = (&mut queue).emit((feature, rule.clone()), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, rule.clone()), &mut writer, &EmptyCli).await;
         
         // Should process scenarios and finish
         assert_eq!(result, Some(rule));
