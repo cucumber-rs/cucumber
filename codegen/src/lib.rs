@@ -109,7 +109,6 @@
     clippy::string_lit_as_bytes,
     clippy::string_lit_chars_any,
     clippy::string_slice,
-    clippy::string_to_string,
     clippy::suboptimal_flops,
     clippy::suspicious_operation_groupings,
     clippy::suspicious_xor_used_as_pow,
