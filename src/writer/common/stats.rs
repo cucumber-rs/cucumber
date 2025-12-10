@@ -77,9 +77,9 @@ impl WriterStats {
         }
 
         match event {
-            event::Step::Passed(_, _) => self.record_passed_step(),
+            event::Step::Passed { .. } => self.record_passed_step(),
             event::Step::Skipped => self.record_skipped_step(),
-            event::Step::Failed(_, _, _, _) => self.record_failed_step(),
+            event::Step::Failed { .. } => self.record_failed_step(),
             event::Step::Started => {} // No stats change
         }
     }
@@ -190,16 +190,18 @@ mod tests {
 
         // Test passed step - create a simple CaptureLocations
         let captures = regex::Regex::new(r"test").unwrap().capture_locations();
-        let passed_event: event::Step<i32> = event::Step::Passed(captures, None);
+        let passed_event: event::Step<i32> = event::Step::Passed { captures, location: None };
         stats.update_from_step_event(&passed_event, Some(&retries));
         assert_eq!(stats.passed_steps, 1);
         assert_eq!(stats.retried_steps, 1); // Should record retry
 
         // Test failed step  
-        let failed_event: event::Step<i32> = event::Step::Failed(
-            None, None, None, 
-            crate::event::StepError::NotFound
-        );
+        let failed_event: event::Step<i32> = event::Step::Failed {
+            captures: None,
+            location: None,
+            world: None,
+            error: crate::event::StepError::NotFound
+        };
         stats.update_from_step_event(&failed_event, None);
         assert_eq!(stats.failed_steps, 1);
         
