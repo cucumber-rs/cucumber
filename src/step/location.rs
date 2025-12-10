@@ -49,11 +49,16 @@ impl Location {
     /// Returns the filename from the path.
     #[must_use]
     pub fn filename(&self) -> &str {
-        self.path
-            .split('/')
-            .last()
-            .or_else(|| self.path.split('\\').last())
-            .unwrap_or(self.path)
+        // Try to find the last component from either path separator
+        let unix_parts: Vec<&str> = self.path.split('/').collect();
+        let windows_parts: Vec<&str> = self.path.split('\\').collect();
+        
+        // Use whichever gave us more parts (meaning it found separators)
+        if unix_parts.len() > windows_parts.len() {
+            unix_parts.last().copied().unwrap_or(self.path)
+        } else {
+            windows_parts.last().copied().unwrap_or(self.path)
+        }
     }
 
     /// Returns a short representation of the location (filename:line:column).
