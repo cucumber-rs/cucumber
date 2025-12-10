@@ -136,8 +136,8 @@ impl<W: World + Debug> JUnitTestCaseBuilder<W> {
             Scenario::Started
             | Scenario::Log(_)
             | Scenario::Hook(_, Hook::Started | Hook::Passed)
-            | Scenario::Background(_, Step::Started | Step::Passed(_, _))
-            | Scenario::Step(_, Step::Started | Step::Passed(_, _)) => {
+            | Scenario::Background(_, Step::Started | Step::Passed { .. })
+            | Scenario::Step(_, Step::Started | Step::Passed { .. }) => {
                 TestCaseBuilder::success(case_name, duration).build()
             }
             Scenario::Background(_, Step::Skipped)
@@ -151,8 +151,8 @@ impl<W: World + Debug> JUnitTestCaseBuilder<W> {
                 coerce_error(e).as_ref(),
             )
             .build(),
-            Scenario::Background(_, Step::Failed(_, _, _, e))
-            | Scenario::Step(_, Step::Failed(_, _, _, e)) => {
+            Scenario::Background(_, Step::Failed { error: e, .. })
+            | Scenario::Step(_, Step::Failed { error: e, .. }) => {
                 TestCaseBuilder::failure(
                     case_name,
                     duration,
@@ -269,7 +269,10 @@ mod tests {
                         table: None,
                         position: LineCol { line: 6, col: 5 },
                     },
-                    Step::Passed("".to_string(), None),
+                    Step::Passed {
+                        captures: regex::Regex::new("").unwrap().capture_locations(),
+                        location: None,
+                    },
                 ),
                 retries: None,
             },
@@ -303,12 +306,12 @@ mod tests {
                         table: None,
                         position: LineCol { line: 7, col: 5 },
                     },
-                    Step::Failed(
-                        "".to_string(),
-                        None,
-                        None,
-                        Arc::new(StepError::NotFound),
-                    ),
+                    Step::Failed {
+                        captures: None,
+                        location: None,
+                        world: None,
+                        error: StepError::NotFound,
+                    },
                 ),
                 retries: None,
             },

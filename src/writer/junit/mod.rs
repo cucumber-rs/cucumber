@@ -125,7 +125,10 @@ mod tests {
                 FeatureEvent::Scenario(
                     scenario.clone(),
                     event::RetryableScenario {
-                        event: ScenarioEvent::Step(step, Step::Passed("".to_string(), None)),
+                        event: ScenarioEvent::Step(step, Step::Passed {
+                            captures: regex::Regex::new("").unwrap().capture_locations(),
+                            location: None,
+                        }),
                         retries: None,
                     },
                 ),
@@ -224,12 +227,12 @@ mod tests {
                         event::RetryableScenario {
                             event: ScenarioEvent::Step(
                                 failed_step,
-                                Step::Failed(
-                                    "".to_string(),
-                                    None,
-                                    None,
-                                    std::sync::Arc::new(crate::event::StepError::NotFound),
-                                ),
+                                Step::Failed {
+                                    captures: None,
+                                    location: None,
+                                    world: None,
+                                    error: crate::event::StepError::NotFound,
+                                },
                             ),
                             retries: None,
                         },

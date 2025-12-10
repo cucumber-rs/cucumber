@@ -267,7 +267,10 @@ mod tests {
                     table: None,
                     position: LineCol { line: 6, col: 5 },
                 },
-                Step::Passed("".to_string(), None),
+                Step::Passed {
+                    captures: regex::Regex::new("").unwrap().capture_locations(),
+                    location: None,
+                },
             ),
             retries: None,
         };
