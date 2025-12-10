@@ -38,6 +38,7 @@ impl StepExecutor {
         let mut skipped_steps = 0;
         let mut failed_steps = 0;
         let mut step_failed = false;
+        let mut last_failure: Option<(Option<regex::CaptureLocations>, Option<step::Location>, event::StepError)> = None;
 
         // Execute all steps in the scenario
         for step in &scenario.steps {
@@ -75,16 +76,30 @@ impl StepExecutor {
                 }
                 event::Step::Passed { .. } => passed_steps += 1,
                 event::Step::Skipped => skipped_steps += 1,
-                event::Step::Failed { .. } => {
+                event::Step::Failed { captures, location, error, .. } => {
                     failed_steps += 1;
                     step_failed = true;
+                    last_failure = Some((captures, location, error));
                 }
             }
         }
 
+        // Determine the scenario outcome based on canonical Cucumber behavior:
+        // 1. If any step failed -> StepFailed
+        // 2. If any step was skipped (but none failed) -> StepSkipped
+        // 3. If all steps passed -> StepPassed
+        let scenario_finished = if let Some((captures, location, error)) = last_failure {
+            event::ScenarioFinished::StepFailed(captures, location, error)
+        } else if skipped_steps > 0 {
+            event::ScenarioFinished::StepSkipped
+        } else {
+            event::ScenarioFinished::StepPassed
+        };
+        
         AfterHookEventsMeta {
             started: event::Metadata::new(()),
             finished: event::Metadata::new(()),
+            scenario_finished,
         }
     }
 
@@ -311,6 +326,7 @@ mod tests {
         let meta = AfterHookEventsMeta {
             started: event::Metadata::new(()),
             finished: event::Metadata::new(()),
+            scenario_finished: event::ScenarioFinished::StepPassed,
         };
         
         // Just verify it can be created
@@ -323,6 +339,7 @@ mod tests {
         let meta = AfterHookEventsMeta {
             started: event::Metadata::new(()),
             finished: event::Metadata::new(()),
+            scenario_finished: event::ScenarioFinished::StepPassed,
         };
         
         // Verify both fields exist

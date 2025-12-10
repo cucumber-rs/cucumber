@@ -226,7 +226,10 @@ where
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
         let (meta, scenario_finished) = match step_results {
-            Ok(meta) => (meta, event::ScenarioFinished::StepPassed),
+            Ok(meta) => {
+                let finished = meta.scenario_finished.clone();
+                (meta, finished)
+            },
             Err(failure) => {
                 let finished = failure.get_scenario_finished_event();
                 // Handle execution failure

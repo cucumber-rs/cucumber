@@ -164,6 +164,9 @@ pub(super) struct AfterHookEventsMeta {
 
     /// [`Metadata`] at the time [`HookType::After`] finished.
     pub(super) finished: Metadata,
+    
+    /// The outcome of the scenario execution.
+    pub(super) scenario_finished: event::ScenarioFinished,
 }
 
 /// Coerces the given `value` into a type-erased [`Info`].
@@ -267,6 +270,7 @@ mod tests {
         let _meta = AfterHookEventsMeta {
             started: Metadata::new(()),
             finished: Metadata::new(()),
+            scenario_finished: event::ScenarioFinished::StepPassed,
         };
         
         // Just test that structure can be created and has timing info
