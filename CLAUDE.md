@@ -1,0 +1,1 @@
+- implementation code should be composed of modules of 300 LOC or less, including inline unit tests. refactor otherwise.

@@ -57,6 +57,7 @@ pub(super) type IsRetried = bool;
 ///
 /// [`Executor::emit_failed_events()`]: super::executor::Executor::emit_failed_events
 /// [`Step`]: gherkin::Step
+#[derive(Debug)]
 pub(super) enum ExecutionFailure<World> {
     /// [`HookType::Before`] panicked.
     BeforeHookPanicked {
