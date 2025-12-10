@@ -110,7 +110,7 @@ impl<World> Scenario<World> {
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Step(step.into(), Step::Passed(captures, loc))
+        Self::Step(step.into(), Step::Passed { captures, location: loc })
     }
 
     /// Constructs an event of a passed [`Background`] [`Step`].
@@ -123,7 +123,7 @@ impl<World> Scenario<World> {
         captures: regex::CaptureLocations,
         loc: Option<step::Location>,
     ) -> Self {
-        Self::Background(step.into(), Step::Passed(captures, loc))
+        Self::Background(step.into(), Step::Passed { captures, location: loc })
     }
 
     /// Constructs an event of a skipped [`Step`].
@@ -155,7 +155,7 @@ impl<World> Scenario<World> {
         world: Option<Arc<World>>,
         info: impl Into<StepError>,
     ) -> Self {
-        Self::Step(step.into(), Step::Failed(captures, loc, world, info.into()))
+        Self::Step(step.into(), Step::Failed { captures, location: loc, world, error: info.into() })
     }
 
     /// Constructs an event of a failed [`Background`] [`Step`].
@@ -172,7 +172,7 @@ impl<World> Scenario<World> {
     ) -> Self {
         Self::Background(
             step.into(),
-            Step::Failed(captures, loc, world, info.into()),
+            Step::Failed { captures, location: loc, world, error: info.into() },
         )
     }
 

@@ -31,17 +31,48 @@ pub enum Step<World> {
     /// [`Step`] passed.
     ///
     /// [`Step`]: gherkin::Step
-    Passed(regex::CaptureLocations, Option<step::Location>),
+    Passed {
+        /// [`Regex`] [`CaptureLocations`] of the matched [`Step`].
+        ///
+        /// [`CaptureLocations`]: regex::CaptureLocations
+        /// [`Regex`]: regex::Regex
+        /// [`Step`]: gherkin::Step
+        captures: regex::CaptureLocations,
+
+        /// [`Location`] of the [`fn`] that matched this [`Step`].
+        ///
+        /// [`Location`]: step::Location
+        /// [`Step`]: gherkin::Step
+        location: Option<step::Location>,
+    },
 
     /// [`Step`] failed.
     ///
     /// [`Step`]: gherkin::Step
-    Failed(
-        Option<regex::CaptureLocations>,
-        Option<step::Location>,
-        Option<Arc<World>>,
-        StepError,
-    ),
+    Failed {
+        /// [`Regex`] [`CaptureLocations`] of the matched [`Step`] (if any).
+        ///
+        /// [`CaptureLocations`]: regex::CaptureLocations
+        /// [`Regex`]: regex::Regex
+        /// [`Step`]: gherkin::Step
+        captures: Option<regex::CaptureLocations>,
+
+        /// [`Location`] of the [`fn`] that matched this [`Step`] (if any).
+        ///
+        /// [`Location`]: step::Location
+        /// [`Step`]: gherkin::Step
+        location: Option<step::Location>,
+
+        /// [`World`] at the time [`Step`] has failed (if any).
+        ///
+        /// [`Step`]: gherkin::Step
+        world: Option<Arc<World>>,
+
+        /// Error that caused the [`Step`] to fail.
+        ///
+        /// [`Step`]: gherkin::Step
+        error: StepError,
+    },
 }
 
 // Manual implementation is required to omit the redundant `World: Clone` trait
@@ -51,9 +82,15 @@ impl<World> Clone for Step<World> {
         match self {
             Self::Started => Self::Started,
             Self::Skipped => Self::Skipped,
-            Self::Passed(captures, loc) => Self::Passed(captures.clone(), *loc),
-            Self::Failed(captures, loc, w, info) => {
-                Self::Failed(captures.clone(), *loc, w.clone(), info.clone())
+            Self::Passed { captures, location } => Self::Passed {
+                captures: captures.clone(),
+                location: *location,
+            },
+            Self::Failed { captures, location, world, error } => Self::Failed {
+                captures: captures.clone(),
+                location: *location,
+                world: world.clone(),
+                error: error.clone(),
             }
         }
     }
