@@ -920,7 +920,7 @@ mod tests {
         
         let event: event::Cucumber<TestWorld> = event::Cucumber::scenario(
             feature,
-            None,
+            None::<event::source::Source<gherkin::Rule>>,
             scenario,
             event::RetryableScenario {
                 event: event::Scenario::<TestWorld>::Started,
@@ -951,19 +951,19 @@ mod tests {
         let events = vec![
             event::Cucumber::<TestWorld>::scenario(
                 feature.clone(),
-                None,
+                None::<event::source::Source<gherkin::Rule>>,
                 scenario.clone(),
                 event::RetryableScenario {
                     event: event::Scenario::<TestWorld>::Started,
                     retries: None,
                 },
             ),
-            event::Cucumber::scenario(
+            event::Cucumber::<TestWorld>::scenario(
                 feature,
-                None,
+                None::<event::source::Source<gherkin::Rule>>,
                 scenario,
                 event::RetryableScenario {
-                    event: event::Scenario::Finished,
+                    event: event::Scenario::<TestWorld>::Finished,
                     retries: None,
                 },
             ),
