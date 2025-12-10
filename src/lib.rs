@@ -175,6 +175,7 @@ pub mod world;
 // Existing core modules
 pub mod cli;
 mod cucumber;
+mod cucumber_ext;
 pub mod error;
 pub mod event;
 pub mod feature;
@@ -184,6 +185,9 @@ pub mod runner;
 pub mod step;
 pub mod tag;
 pub mod writer;
+
+/// Prelude module with commonly used types for external integrations
+pub mod prelude;
 
 // Feature-dependent modules
 #[cfg(feature = "observability")]
