@@ -197,7 +197,7 @@ impl EventHandler {
                 _ = self.mut_or_insert_element(feature, rule, scenario, ty);
                 return;
             }
-            event::Step::Passed(..) => {
+            event::Step::Passed { .. } => {
                 self.stats.record_passed_step();
                 RunResult {
                     status: Status::Passed,
@@ -205,9 +205,9 @@ impl EventHandler {
                     error_message: None,
                 }
             }
-            event::Step::Failed(_, loc, _, err) => {
+            event::Step::Failed { location, error, .. } => {
                 self.stats.record_failed_step();
-                let status = match &err {
+                let status = match &error {
                     event::StepError::NotFound => Status::Undefined,
                     event::StepError::AmbiguousMatch(..) => Status::Ambiguous,
                     event::StepError::Panic(..) => Status::Failed,
@@ -216,8 +216,8 @@ impl EventHandler {
                     status,
                     duration: duration(),
                     error_message: Some(format!(
-                        "{}{err}",
-                        loc.map(|l| format!(
+                        "{}{error}",
+                        location.map(|l| format!(
                             "Matched: {}:{}:{}\n",
                             l.path, l.line, l.column,
                         ))
