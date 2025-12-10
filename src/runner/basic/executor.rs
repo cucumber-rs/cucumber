@@ -918,12 +918,12 @@ mod tests {
         let (executor, mut receiver) = create_test_executor();
         let (feature, scenario) = create_test_feature_and_scenario();
         
-        let event = event::Cucumber::scenario(
+        let event: event::Cucumber<TestWorld> = event::Cucumber::scenario(
             feature,
             None,
             scenario,
             event::RetryableScenario {
-                event: event::Scenario::Started,
+                event: event::Scenario::<TestWorld>::Started,
                 retries: None,
             },
         );
@@ -949,12 +949,12 @@ mod tests {
         let (feature, scenario) = create_test_feature_and_scenario();
         
         let events = vec![
-            event::Cucumber::scenario(
+            event::Cucumber::<TestWorld>::scenario(
                 feature.clone(),
                 None,
                 scenario.clone(),
                 event::RetryableScenario {
-                    event: event::Scenario::Started,
+                    event: event::Scenario::<TestWorld>::Started,
                     retries: None,
                 },
             ),
