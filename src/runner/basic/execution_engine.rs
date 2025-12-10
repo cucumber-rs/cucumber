@@ -120,6 +120,7 @@ pub(super) async fn execute<W, Before, After>(
     after_hook: Option<After>,
     fail_fast: bool,
     #[cfg(feature = "tracing")] mut logs_collector: Option<TracingCollector>,
+    #[cfg(feature = "observability")] observers: std::sync::Arc<std::sync::Mutex<crate::observer::ObserverRegistry<W>>>,
 ) where
     W: World,
     Before: 'static
@@ -158,6 +159,8 @@ pub(super) async fn execute<W, Before, After>(
         event_sender,
         finished_sender,
         features.clone(),
+        #[cfg(feature = "observability")]
+        observers,
     );
 
     executor.send_event(event::Cucumber::Started);
@@ -406,6 +409,8 @@ mod tests {
             false,
             #[cfg(feature = "tracing")]
             None,
+            #[cfg(feature = "observability")]
+            std::sync::Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
         ).await;
         
         // Should receive Started event

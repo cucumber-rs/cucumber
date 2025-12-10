@@ -99,6 +99,8 @@ where
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            self.observers.clone(),
         );
 
         stream::select(

@@ -133,12 +133,9 @@ where
         >,
         finished_sender: FinishedFeaturesSender,
         storage: Features,
-    ) -> Self {
         #[cfg(feature = "observability")]
-        let observers = std::sync::Arc::new(std::sync::Mutex::new(
-            crate::observer::ObserverRegistry::new()
-        ));
-        
+        observers: std::sync::Arc<std::sync::Mutex<crate::observer::ObserverRegistry<W>>>,
+    ) -> Self {
         Self {
             collection,
             before_hook,
@@ -571,6 +568,8 @@ mod tests {
             event_sender,
             finished_sender,
             storage,
+            #[cfg(feature = "observability")]
+            std::sync::Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
         );
         
         (executor, event_receiver)

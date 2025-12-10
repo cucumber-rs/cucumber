@@ -109,6 +109,8 @@ mod integration_tests {
             event_sender,
             finished_sender,
             storage,
+            #[cfg(feature = "observability")]
+            std::sync::Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
         );
         
         (executor, event_receiver)
