@@ -17,6 +17,16 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0005](0005-retry-mechanism.md) | Scenario Retry Mechanism | Accepted | Automatic retry for flaky tests with configurable options |
 | [0006](0006-concurrent-execution-model.md) | Concurrent Scenario Execution | Accepted | Controlled parallel execution with serial/concurrent classification |
 | [0007](0007-world-lifecycle-management.md) | World Lifecycle Management | Accepted | Per-scenario World instances with proper initialization and cleanup |
+| [0008](0008-three-component-architecture.md) | Three-Component Architecture | Accepted (Original) | Parser-Runner-Writer separation for ultimate extensibility |
+| [0009](0009-async-trait-migration.md) | Async Trait Migration | Accepted (v0.21.0) | Migration from async_trait macro to native async fn in traits |
+| [0010](0010-world-trait-unification.md) | World Trait Unification | Accepted (v0.14.0) | Merge WorldInit into World trait with derive macro |
+| [0011](0011-writer-normalization.md) | Writer Normalization | Accepted (Original) | Automatic event reordering for consistent output |
+| [0012](0012-writer-composition.md) | Writer Composition | Accepted | Tee and Or combinators for complex output strategies |
+| [0013](0013-performance-optimizations.md) | Performance Optimizations | Accepted (v0.22.0) | Memory and performance improvements for large files |
+| [0014](0014-libtest-integration.md) | Libtest Integration | Accepted (v0.13.0) | IDE test runner support via libtest protocol |
+| [0015](0015-stats-collection.md) | Stats Collection | Accepted | Comprehensive test execution metrics tracking |
+| [0016](0016-cli-trait-pattern.md) | CLI Trait Pattern | Accepted (Original) | Component-specific CLI configuration via associated types |
+| [0017](0017-fail-fast-mechanism.md) | Fail-Fast Mechanism | Accepted (v0.11.3) | Stop test execution on first failure for faster feedback |
 
 ## ADR Template
 
