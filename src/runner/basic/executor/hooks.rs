@@ -115,7 +115,8 @@ impl HookExecutor {
         scenario_finished: &event::ScenarioFinished,
         send_event: impl Fn(event::Cucumber<W>),
         #[cfg(feature = "tracing")] waiter: Option<&crate::tracing::SpanCloseWaiter>,
-    ) where
+    ) -> Option<Info>
+    where
         W: World,
         After: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -162,11 +163,11 @@ impl HookExecutor {
                 }
             }
 
-            let hook_event = match result {
-                Ok(()) => event::Hook::Passed,
+            let (hook_event, error) = match result {
+                Ok(()) => (event::Hook::Passed, None),
                 Err(err) => {
                     let info = coerce_into_info(err);
-                    event::Hook::Failed(None, info)
+                    (event::Hook::Failed(None, info.clone()), Some(info))
                 }
             };
 
@@ -182,7 +183,10 @@ impl HookExecutor {
                 )
             );
             send_event(event.value);
+
+            return error;
         }
+        None
     }
 }
 
