@@ -73,7 +73,7 @@ where
 
         let map_failed = |f: &Source<_>, r: &Option<_>, sc: &Source<_>| {
             if (self.should_fail)(f, r.as_deref(), sc) {
-                Step::Failed(None, None, None, NotFound)
+                Step::Failed { captures: None, location: None, world: None, error: NotFound }
             } else {
                 Step::Skipped
             }

@@ -277,7 +277,7 @@ impl<Writer> Summarize<Writer> {
 
         match ev {
             Step::Started => {}
-            Step::Passed(..) => {
+            Step::Passed { .. } => {
                 self.steps.increment_passed();
                 if scenario.steps.last().filter(|s| *s == step).is_some() {
                     ScenarioTracker::remove_scenario(
@@ -299,10 +299,10 @@ impl<Writer> Summarize<Writer> {
                     Indicator::Skipped,
                 );
             }
-            Step::Failed(_, _, _, err) => {
+            Step::Failed { error, .. } => {
                 if retries
                     .filter(|r| {
-                        r.left > 0 && !matches!(err, event::StepError::NotFound)
+                        r.left > 0 && !matches!(error, event::StepError::NotFound)
                     })
                     .is_some()
                 {

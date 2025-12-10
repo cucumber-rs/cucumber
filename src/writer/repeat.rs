@@ -218,10 +218,10 @@ impl<W, Wr> Repeat<W, Wr> {
                             Rule::Scenario(
                                 _,
                                 RetryableScenario {
-                                    event: Scenario::Step(_, Step::Failed(..))
+                                    event: Scenario::Step(_, Step::Failed { .. })
                                         | Scenario::Background(
                                             _,
-                                            Step::Failed(..),
+                                            Step::Failed { .. },
                                         )
                                         | Scenario::Hook(_, Hook::Failed(..)),
                                     ..
@@ -230,8 +230,8 @@ impl<W, Wr> Repeat<W, Wr> {
                         ) | Feature::Scenario(
                             _,
                             RetryableScenario {
-                                event: Scenario::Step(_, Step::Failed(..))
-                                    | Scenario::Background(_, Step::Failed(..))
+                                event: Scenario::Step(_, Step::Failed { .. })
+                                    | Scenario::Background(_, Step::Failed { .. })
                                     | Scenario::Hook(_, Hook::Failed(..)),
                                 ..
                             },
