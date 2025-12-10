@@ -152,6 +152,6 @@ mod integration_tests {
             position: gherkin::LineCol { line: 2, col: 1 },
         };
         
-        (Source::new(feature, None), Source::new(scenario, None))
+        (Source::new(feature), Source::new(scenario))
     }
 }

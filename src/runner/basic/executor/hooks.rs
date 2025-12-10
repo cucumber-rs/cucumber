@@ -32,28 +32,24 @@ impl HookExecutor {
     ) -> Result<(), ExecutionFailure<W>>
     where
         W: World,
-        Before: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-                &mut W,
-            ) -> LocalBoxFuture<'_, ()>
-            + Send
-            + Sync,
+        Before: for<'a> Fn(
+                &'a gherkin::Feature,
+                Option<&'a gherkin::Rule>,
+                &'a gherkin::Scenario,
+                &'a mut W,
+            ) -> LocalBoxFuture<'a, ()>,
     {
         if let Some(before_hook) = hook {
             let event = Event::new(
-                event::Cucumber::feature(
+                event::Cucumber::scenario(
                     feature.clone(),
-                    event::Feature::scenario(
-                        rule.clone(),
-                        scenario.clone(),
-                        event::RetryableScenario {
-                            event: event::Scenario::Hook(HookType::Before, event::Hook::Started),
-                            retries: None,
-                        },
-                    ),
-                ),
+                    rule.clone(),
+                    scenario.clone(),
+                    event::RetryableScenario {
+                        event: event::Scenario::Hook(HookType::Before, event::Hook::Started),
+                        retries: None,
+                    },
+                )
             );
             send_event(event.value);
 
@@ -63,9 +59,9 @@ impl HookExecutor {
             let _guard = span.enter();
 
             let result = AssertUnwindSafe(before_hook(
-                &feature.value,
-                rule.as_ref().map(|r| &r.value),
-                &scenario.value,
+                &*feature,
+                rule.as_ref().map(|r| &**r),
+                &*scenario,
                 world,
             ))
             .catch_unwind()
@@ -79,33 +75,28 @@ impl HookExecutor {
                 }
             }
 
-            let hook_event = match result {
-                Ok(()) => event::Hook::Passed,
+            let (hook_event, should_fail) = match result {
+                Ok(()) => (event::Hook::Passed, false),
                 Err(err) => {
-                    let info = coerce_into_info(&err);
-                    event::Hook::Failed { 
-                        world: Some(world), 
-                        info 
-                    }
+                    let info = coerce_into_info(err);
+                    (event::Hook::Failed(None, info), true)
                 }
             };
 
             let event = Event::new(
-                event::Cucumber::feature(
+                event::Cucumber::scenario(
                     feature,
-                    event::Feature::scenario(
-                        rule,
-                        scenario,
-                        event::RetryableScenario {
-                            event: event::Scenario::Hook(HookType::Before, hook_event),
-                            retries: None,
-                        },
-                    ),
-                ),
+                    rule,
+                    scenario,
+                    event::RetryableScenario {
+                        event: event::Scenario::Hook(HookType::Before, hook_event),
+                        retries: None,
+                    },
+                )
             );
             send_event(event.value);
 
-            if let event::Hook::Failed { .. } = hook_event {
+            if should_fail {
                 return Err(ExecutionFailure::Before);
             }
         }
@@ -121,34 +112,30 @@ impl HookExecutor {
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         world: Option<&mut W>,
-        meta: AfterHookEventsMeta,
+        scenario_finished: &event::ScenarioFinished,
         send_event: impl Fn(event::Cucumber<W>),
         #[cfg(feature = "tracing")] waiter: Option<&crate::tracing::SpanCloseWaiter>,
     ) where
         W: World,
-        After: Fn(
-                &gherkin::Feature,
-                Option<&gherkin::Rule>,
-                &gherkin::Scenario,
-                &event::ScenarioFinished,
-                Option<&mut W>,
-            ) -> LocalBoxFuture<'_, ()>
-            + Send
-            + Sync,
+        After: for<'a> Fn(
+                &'a gherkin::Feature,
+                Option<&'a gherkin::Rule>,
+                &'a gherkin::Scenario,
+                &'a event::ScenarioFinished,
+                Option<&'a mut W>,
+            ) -> LocalBoxFuture<'a, ()>,
     {
         if let Some(after_hook) = hook {
             let event = Event::new(
-                event::Cucumber::feature(
+                event::Cucumber::scenario(
                     feature.clone(),
-                    event::Feature::scenario(
-                        rule.clone(),
-                        scenario.clone(),
-                        event::RetryableScenario {
-                            event: event::Scenario::Hook(HookType::After, event::Hook::Started),
-                            retries: None,
-                        },
-                    ),
-                ),
+                    rule.clone(),
+                    scenario.clone(),
+                    event::RetryableScenario {
+                        event: event::Scenario::Hook(HookType::After, event::Hook::Started),
+                        retries: None,
+                    },
+                )
             );
             send_event(event.value);
 
@@ -157,17 +144,11 @@ impl HookExecutor {
             #[cfg(feature = "tracing")]
             let _guard = span.enter();
 
-            let finished = event::ScenarioFinished {
-                passed_steps: meta.passed_steps,
-                skipped_steps: meta.skipped_steps,
-                failed_steps: meta.failed_steps,
-            };
-
             let result = AssertUnwindSafe(after_hook(
-                &feature.value,
-                rule.as_ref().map(|r| &r.value),
-                &scenario.value,
-                &finished,
+                &*feature,
+                rule.as_ref().map(|r| &**r),
+                &*scenario,
+                scenario_finished,
                 world,
             ))
             .catch_unwind()
@@ -184,26 +165,21 @@ impl HookExecutor {
             let hook_event = match result {
                 Ok(()) => event::Hook::Passed,
                 Err(err) => {
-                    let info = coerce_into_info(&err);
-                    event::Hook::Failed { 
-                        world, 
-                        info 
-                    }
+                    let info = coerce_into_info(err);
+                    event::Hook::Failed(None, info)
                 }
             };
 
             let event = Event::new(
-                event::Cucumber::feature(
+                event::Cucumber::scenario(
                     feature,
-                    event::Feature::scenario(
-                        rule,
-                        scenario,
-                        event::RetryableScenario {
-                            event: event::Scenario::Hook(HookType::After, hook_event),
-                            retries: None,
-                        },
-                    ),
-                ),
+                    rule,
+                    scenario,
+                    event::RetryableScenario {
+                        event: event::Scenario::Hook(HookType::After, hook_event),
+                        retries: None,
+                    },
+                )
             );
             send_event(event.value);
         }
@@ -278,11 +254,7 @@ mod tests {
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
-        let meta = AfterHookEventsMeta {
-            passed_steps: 1,
-            skipped_steps: 0,
-            failed_steps: 0,
-        };
+        let scenario_finished = event::ScenarioFinished::StepPassed;
         
         HookExecutor::run_after_hook(
             None::<&fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario, &event::ScenarioFinished, Option<&mut TestWorld>) -> BoxFuture<'_, ()>>,
@@ -291,7 +263,7 @@ mod tests {
             None,
             scenario,
             Some(&mut world),
-            meta,
+            &scenario_finished,
             move |event| events_clone.lock().unwrap().push(event),
             #[cfg(feature = "tracing")]
             None,
@@ -308,11 +280,7 @@ mod tests {
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
-        let meta = AfterHookEventsMeta {
-            passed_steps: 1,
-            skipped_steps: 0,
-            failed_steps: 0,
-        };
+        let scenario_finished = event::ScenarioFinished::StepPassed;
         
         let after_hook = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &event::ScenarioFinished, _: Option<&mut TestWorld>| {
             Box::pin(async {}) as BoxFuture<'_, ()>
@@ -325,7 +293,7 @@ mod tests {
             None,
             scenario,
             Some(&mut world),
-            meta,
+            &scenario_finished,
             move |event| events_clone.lock().unwrap().push(event),
             #[cfg(feature = "tracing")]
             None,
@@ -362,6 +330,6 @@ mod tests {
             position: gherkin::LineCol { line: 2, col: 1 },
         };
         
-        (Source::new(feature, None), Source::new(scenario, None))
+        (Source::new(feature), Source::new(scenario))
     }
 }

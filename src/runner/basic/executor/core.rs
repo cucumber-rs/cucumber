@@ -77,21 +77,17 @@ where
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
             &'a mut W,
-        ) -> LocalBoxFuture<'a, ()>
-        + Send
-        + Sync,
+        ) -> LocalBoxFuture<'a, ()>,
     After: for<'a> Fn(
             &'a gherkin::Feature,
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
             &'a event::ScenarioFinished,
             Option<&'a mut W>,
-        ) -> LocalBoxFuture<'a, ()>
-        + Send
-        + Sync,
+        ) -> LocalBoxFuture<'a, ()>,
 {
     /// Creates a new [`Executor`].
-    pub const fn new(
+    pub fn new(
         collection: step::Collection<W>,
         before_hook: Option<Before>,
         after_hook: Option<After>,
@@ -123,37 +119,27 @@ where
         retries: Option<Retries>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
-        let scenario_type = if retries.as_ref().is_some_and(|r| r.get() > 0) {
-            ScenarioType::Retried
-        } else {
-            ScenarioType::Regular
-        };
+        // We can use the ScenarioType later if needed
+        let _is_retry = retries.as_ref().is_some_and(|r| r.current > 0);
 
         // Create world instance for this scenario
-        let mut world = W::new().await;
+        let mut world = match W::new().await {
+            Ok(world) => world,
+            Err(_) => {
+                // Handle world creation error
+                // For now, just return early
+                return;
+            }
+        };
 
         // Send started event
-        let started_event = event::Cucumber::feature(
+        let started_event = event::Cucumber::scenario(
             feature.clone(),
-            match rule.as_ref() {
-                Some(rule) => event::Feature::rule(
-                    rule.clone(),
-                    event::Rule::scenario(
-                        scenario.clone(),
-                        event::RetryableScenario {
-                            event: event::Scenario::Started,
-                            retries,
-                        },
-                    ),
-                ),
-                None => event::Feature::scenario(
-                    rule.clone(),
-                    scenario.clone(),
-                    event::RetryableScenario {
-                        event: event::Scenario::Started,
-                        retries,
-                    },
-                ),
+            rule.clone(),
+            scenario.clone(),
+            event::RetryableScenario {
+                event: event::Scenario::Started,
+                retries,
             },
         );
         self.event_sender.send_event(started_event);
@@ -239,9 +225,10 @@ where
         retries: Option<Retries>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
-        let meta = match step_results {
-            Ok(meta) => meta,
+        let (meta, scenario_finished) = match step_results {
+            Ok(meta) => (meta, event::ScenarioFinished::StepPassed),
             Err(failure) => {
+                let finished = failure.get_scenario_finished_event();
                 // Handle execution failure
                 self.handle_execution_failure(
                     failure,
@@ -264,7 +251,7 @@ where
             rule.clone(),
             scenario.clone(),
             Some(&mut world),
-            meta,
+            &scenario_finished,
             |event| self.event_sender.send_event(event),
             #[cfg(feature = "tracing")]
             waiter,
@@ -272,27 +259,13 @@ where
         .await;
 
         // Send finished event
-        let finished_event = event::Cucumber::feature(
+        let finished_event = event::Cucumber::scenario(
             feature.clone(),
-            match rule.as_ref() {
-                Some(rule) => event::Feature::rule(
-                    rule.clone(),
-                    event::Rule::scenario(
-                        scenario.clone(),
-                        event::RetryableScenario {
-                            event: event::Scenario::Finished,
-                            retries,
-                        },
-                    ),
-                ),
-                None => event::Feature::scenario(
-                    rule.clone(),
-                    scenario.clone(),
-                    event::RetryableScenario {
-                        event: event::Scenario::Finished,
-                        retries,
-                    },
-                ),
+            rule.clone(),
+            scenario.clone(),
+            event::RetryableScenario {
+                event: event::Scenario::Finished,
+                retries,
             },
         );
         self.event_sender.send_event(finished_event);
@@ -311,36 +284,28 @@ where
         // Handle different types of execution failures
         // Implementation depends on specific failure handling requirements
         match failure {
-            ExecutionFailure::Before => {
+            ExecutionFailure::BeforeHookPanicked { .. } => {
                 // Handle before hook failure
             }
-            ExecutionFailure::Step(_) => {
+            ExecutionFailure::StepPanicked { .. } => {
                 // Handle step failure
+            }
+            ExecutionFailure::StepSkipped(_) => {
+                // Handle step skipped
+            }
+            ExecutionFailure::Before => {
+                // Handle before hook failure (simplified variant)
             }
         }
 
         // Send appropriate failure events
-        let failure_event = event::Cucumber::feature(
+        let failure_event = event::Cucumber::scenario(
             feature,
-            match rule.as_ref() {
-                Some(rule) => event::Feature::rule(
-                    rule.clone(),
-                    event::Rule::scenario(
-                        scenario,
-                        event::RetryableScenario {
-                            event: event::Scenario::Finished,
-                            retries,
-                        },
-                    ),
-                ),
-                None => event::Feature::scenario(
-                    rule,
-                    scenario,
-                    event::RetryableScenario {
-                        event: event::Scenario::Finished,
-                        retries,
-                    },
-                ),
+            rule,
+            scenario,
+            event::RetryableScenario {
+                event: event::Scenario::Finished,
+                retries,
             },
         );
         self.event_sender.send_event(failure_event);
@@ -428,6 +393,6 @@ mod tests {
             position: gherkin::LineCol { line: 2, col: 1 },
         };
         
-        (Source::new(feature, None), Source::new(scenario, None))
+        (Source::new(feature), Source::new(scenario))
     }
 }
