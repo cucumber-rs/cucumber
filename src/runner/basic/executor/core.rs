@@ -23,7 +23,6 @@ use super::super::{
     scenario_storage::{Features, FinishedFeaturesSender},
     supporting_structures::{
         ScenarioId, ExecutionFailure, AfterHookEventsMeta, IsFailed, IsRetried,
-        coerce_into_info,
     },
 };
 
@@ -116,11 +115,11 @@ where
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
-        retries: Option<Retries>,
+        scenario_ty: ScenarioType,
+        retry_options: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
-        // We can use the ScenarioType later if needed
-        let _is_retry = retries.as_ref().is_some_and(|r| r.current > 0);
+        let retries = retry_options.map(|opts| opts.retries);
 
         // Create world instance for this scenario
         let mut world = match W::new().await {
@@ -163,9 +162,10 @@ where
             feature,
             rule,
             scenario,
+            scenario_ty,
             execution_result,
             world,
-            retries,
+            retry_options,
             #[cfg(feature = "tracing")]
             waiter,
         )
@@ -220,34 +220,68 @@ where
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
+        scenario_ty: ScenarioType,
         step_results: Result<AfterHookEventsMeta, ExecutionFailure<W>>,
         mut world: W,
-        retries: Option<Retries>,
+        retry_options: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
-        let (meta, scenario_finished) = match step_results {
+        let retries = retry_options.map(|opts| opts.retries);
+        // Check if this is actually a retry attempt (current > 0)
+        let is_retry = retries.as_ref().is_some_and(|r| r.current > 0);
+        
+        let (meta, scenario_finished, is_failed) = match step_results {
             Ok(meta) => {
                 let finished = meta.scenario_finished.clone();
-                (meta, finished)
+                let failed = matches!(finished, event::ScenarioFinished::StepFailed(_, _, _));
+                (meta, finished, failed)
             },
             Err(failure) => {
                 let finished = failure.get_scenario_finished_event();
+                let failed = true; // ExecutionFailure always indicates failure
                 // Handle execution failure
                 self.handle_execution_failure(
                     failure,
                     id,
-                    feature,
-                    rule,
-                    scenario,
+                    feature.clone(),
+                    rule.clone(),
+                    scenario.clone(),
                     retries,
                 )
                 .await;
+                
+                // Check if scenario will be retried
+                let next_try = retry_options
+                    .filter(|_| failed)
+                    .and_then(RetryOptions::next_try);
+                
+                if let Some(next_try) = next_try {
+                    // Insert scenario back into storage for retry
+                    self.storage
+                        .insert_retried_scenario(
+                            feature.clone(),
+                            rule.clone(),
+                            scenario.clone(),
+                            scenario_ty,
+                            Some(next_try),
+                        )
+                        .await;
+                }
+                
+                // Notify scenario finished
+                self.scenario_finished(
+                    id,
+                    feature,
+                    rule,
+                    failed,
+                    next_try.is_some(),
+                );
                 return;
             }
         };
 
         // Run after hook
-        HookExecutor::run_after_hook(
+        let after_hook_error = HookExecutor::run_after_hook(
             self.after_hook.as_ref(),
             id,
             feature.clone(),
@@ -261,6 +295,8 @@ where
         )
         .await;
 
+        let is_failed = is_failed || after_hook_error.is_some();
+
         // Send finished event
         let finished_event = event::Cucumber::scenario(
             feature.clone(),
@@ -272,6 +308,33 @@ where
             },
         );
         self.event_sender.send_event(finished_event);
+
+        // Check if scenario will be retried
+        let next_try = retry_options
+            .filter(|_| is_failed)
+            .and_then(RetryOptions::next_try);
+        
+        if let Some(next_try) = next_try {
+            // Insert scenario back into storage for retry
+            self.storage
+                .insert_retried_scenario(
+                    feature.clone(),
+                    rule.clone(),
+                    scenario.clone(),
+                    scenario_ty,
+                    Some(next_try),
+                )
+                .await;
+        }
+
+        // Notify scenario finished (use next_try.is_some() to indicate if it will be retried)
+        self.scenario_finished(
+            id,
+            feature,
+            rule,
+            is_failed,
+            next_try.is_some(),
+        );
     }
 
     /// Handles execution failures during scenario execution.
@@ -325,6 +388,23 @@ where
         events: impl IntoIterator<Item = event::Cucumber<W>>,
     ) {
         self.event_sender.send_all_events(events);
+    }
+
+    /// Notifies that a scenario has finished.
+    fn scenario_finished(
+        &self,
+        id: ScenarioId,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        is_failed: IsFailed,
+        is_retried: IsRetried,
+    ) {
+        // If the receiver end is dropped, then no one listens for events
+        // so we can just ignore it.
+        drop(
+            self.finished_sender
+                .unbounded_send((id, feature, rule, is_failed, is_retried)),
+        );
     }
 }
 
