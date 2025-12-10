@@ -285,7 +285,10 @@ mod tests {
         assert_eq!(next.retries.left, 1);
         assert_eq!(next.after, Some(Duration::from_secs(1)));
 
-        let last = next.next_try();
+        let next2 = next.next_try().unwrap();
+        assert_eq!(next2.retries.left, 0);
+        
+        let last = next2.next_try();
         assert!(last.is_none());
     }
 

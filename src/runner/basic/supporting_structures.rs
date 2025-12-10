@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_after_hook_events_meta() {
-        let meta = AfterHookEventsMeta {
+        let _meta = AfterHookEventsMeta {
             started: Metadata::new(()),
             finished: Metadata::new(()),
         };
