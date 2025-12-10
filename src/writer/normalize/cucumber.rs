@@ -392,7 +392,7 @@ mod tests {
         queue.feature_finished(finish_event);
         
         // Check that the feature queue is marked as finished
-        let feature_queue = queue.fifo.get(&feature).unwrap();
+        let feature_queue: &FeatureQueue<TestWorld> = queue.fifo.get(&feature).unwrap();
         assert!(matches!(feature_queue.state, FinishedState::FinishedButNotEmitted(_)));
     }
 
@@ -408,7 +408,7 @@ mod tests {
         // Then add a rule to it
         queue.new_rule(&feature, Event::new(rule.clone()));
         
-        let feature_queue = queue.fifo.get(&feature).unwrap();
+        let feature_queue: &FeatureQueue<TestWorld> = queue.fifo.get(&feature).unwrap();
         assert!(feature_queue.fifo.contains_key(&Either::Left(rule)));
     }
 
@@ -425,8 +425,8 @@ mod tests {
         // Mark rule as finished
         queue.rule_finished(&feature, Event::new(rule.clone()));
         
-        let feature_queue = queue.fifo.get(&feature).unwrap();
-        let rule_queue = feature_queue.fifo.get(&Either::Left(rule)).unwrap();
+        let feature_queue: &FeatureQueue<TestWorld> = queue.fifo.get(&feature).unwrap();
+        let rule_queue: &Either<Queue<(Source<gherkin::Scenario>, Option<event::Retries>), super::ScenariosQueue<TestWorld>>, _> = feature_queue.fifo.get(&Either::Left(rule)).unwrap();
         if let Either::Left(rule_queue) = rule_queue {
             assert!(matches!(rule_queue.state, FinishedState::FinishedButNotEmitted(_)));
         } else {
@@ -446,7 +446,7 @@ mod tests {
         // Add scenario event
         let scenario_event = Event::new(
             RetryableScenario {
-                event: event::Scenario::Started,
+                event: event::Scenario::<TestWorld>::Started,
                 retries: None,
             }
         );
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_feature_queue_new_rule() {
-        let mut feature_queue = FeatureQueue::new(Metadata::new(()));
+        let mut feature_queue: FeatureQueue<TestWorld> = FeatureQueue::new(Metadata::new(()));
         let rule = create_test_rule();
         
         feature_queue.new_rule(Event::new(rule.clone()));
@@ -488,7 +488,7 @@ mod tests {
 
     #[test]
     fn test_feature_queue_rule_finished() {
-        let mut feature_queue = FeatureQueue::new(Metadata::new(()));
+        let mut feature_queue: FeatureQueue<TestWorld> = FeatureQueue::new(Metadata::new(()));
         let rule = create_test_rule();
         
         // Add rule first
@@ -497,7 +497,7 @@ mod tests {
         // Mark as finished
         feature_queue.rule_finished(Event::new(rule.clone()));
         
-        let rule_queue = feature_queue.fifo.get(&Either::Left(rule)).unwrap();
+        let rule_queue: &Either<Queue<(Source<gherkin::Scenario>, Option<event::Retries>), super::ScenariosQueue<TestWorld>>, _> = feature_queue.fifo.get(&Either::Left(rule)).unwrap();
         if let Either::Left(rule_queue) = rule_queue {
             assert!(matches!(rule_queue.state, FinishedState::FinishedButNotEmitted(_)));
         }
@@ -505,7 +505,7 @@ mod tests {
 
     #[test]
     fn test_feature_queue_insert_scenario_event_with_rule() {
-        let mut feature_queue = FeatureQueue::new(Metadata::new(()));
+        let mut feature_queue: FeatureQueue<TestWorld> = FeatureQueue::new(Metadata::new(()));
         let rule = create_test_rule();
         let scenario = create_test_scenario();
         
@@ -515,7 +515,7 @@ mod tests {
         // Add scenario to rule
         let scenario_event = Event::new(
             RetryableScenario {
-                event: event::Scenario::Started,
+                event: event::Scenario::<TestWorld>::Started,
                 retries: None,
             }
         );
@@ -530,13 +530,13 @@ mod tests {
 
     #[test]
     fn test_feature_queue_insert_scenario_event_without_rule() {
-        let mut feature_queue = FeatureQueue::new(Metadata::new(()));
+        let mut feature_queue: FeatureQueue<TestWorld> = FeatureQueue::new(Metadata::new(()));
         let scenario = create_test_scenario();
         
         // Add scenario directly to feature
         let scenario_event = Event::new(
             RetryableScenario {
-                event: event::Scenario::Started,
+                event: event::Scenario::<TestWorld>::Started,
                 retries: None,
             }
         );

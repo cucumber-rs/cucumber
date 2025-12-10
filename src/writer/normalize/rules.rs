@@ -210,7 +210,7 @@ mod tests {
         let current = (&mut queue).current_item();
         assert!(current.is_some());
         if let Some((sc, _)) = current {
-            assert_eq!(sc.value.name, "Test Scenario");
+            assert_eq!(sc.name, "Test Scenario");
         }
     }
 

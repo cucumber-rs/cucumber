@@ -198,6 +198,7 @@ impl<W, Wr: writer::NonTransforming> writer::NonTransforming
 mod tests {
     use super::*;
     use crate::{Event, event::{Cucumber, Metadata}, writer};
+    use crate::test_utils::common::EmptyCli;
 
     // Mock writer for testing
     #[derive(Debug, Clone)]
@@ -251,7 +252,7 @@ mod tests {
     #[test]
     fn test_normalize_new() {
         let mock_writer = MockWriter::new();
-        let normalize = Normalize::new(mock_writer.clone());
+        let normalize: Normalize<(), _> = Normalize::new(mock_writer.clone());
         
         assert_eq!(normalize.inner_writer().get_events().len(), 0);
     }
@@ -259,7 +260,7 @@ mod tests {
     #[test]
     fn test_normalize_clone() {
         let mock_writer = MockWriter::new();
-        let normalize = Normalize::new(mock_writer);
+        let normalize: Normalize<(), _> = Normalize::new(mock_writer);
         let cloned = normalize.clone();
         
         // Both should have separate but equivalent states
@@ -269,11 +270,11 @@ mod tests {
     #[tokio::test]
     async fn test_normalize_cucumber_started_event() {
         let mock_writer = MockWriter::new();
-        let mut normalize = Normalize::new(mock_writer.clone());
+        let mut normalize: Normalize<(), _> = Normalize::new(mock_writer.clone());
         
         let event = Ok(Event::new(Cucumber::Started));
         
-        normalize.handle_event(event, &()).await;
+        normalize.handle_event(event, &EmptyCli).await;
         
         // Started events should pass through immediately
         assert_eq!(normalize.inner_writer().get_events(), vec!["Started"]);
@@ -282,15 +283,15 @@ mod tests {
     #[tokio::test]
     async fn test_normalize_finished_state() {
         let mock_writer = MockWriter::new();
-        let mut normalize = Normalize::new(mock_writer.clone());
+        let mut normalize: Normalize<(), _> = Normalize::new(mock_writer.clone());
         
         // First, finish the queue
         let finish_event = Ok(Event::new(Cucumber::Finished));
-        normalize.handle_event(finish_event, &()).await;
+        normalize.handle_event(finish_event, &EmptyCli).await;
         
         // Now any event should pass through without normalization
         let event = Ok(Event::new(Cucumber::Started));
-        normalize.handle_event(event, &()).await;
+        normalize.handle_event(event, &EmptyCli).await;
         
         assert!(normalize.queue.is_finished_and_emitted());
     }

@@ -169,7 +169,7 @@ mod integration_tests {
 
         // Test that Cucumber::Started events pass through immediately
         let started_event = Ok(Event::new(event::Cucumber::Started));
-        normalize.handle_event(started_event, &()).await;
+        normalize.handle_event(started_event, &EmptyCli).await;
 
         let events = normalize.inner_writer().get_events();
         assert!(events.contains(&"CucumberStarted".to_string()));
@@ -183,15 +183,15 @@ mod integration_tests {
 
         // Start a feature
         let feature_started = Ok(Event::new(event::Cucumber::feature_started(feature.clone())));
-        normalize.handle_event(feature_started, &()).await;
+        normalize.handle_event(feature_started, &EmptyCli).await;
 
         // Finish the feature
         let feature_finished = Ok(Event::new(event::Cucumber::feature_finished(feature)));
-        normalize.handle_event(feature_finished, &()).await;
+        normalize.handle_event(feature_finished, &EmptyCli).await;
 
         // Finish cucumber
         let cucumber_finished = Ok(Event::new(event::Cucumber::Finished));
-        normalize.handle_event(cucumber_finished, &()).await;
+        normalize.handle_event(cucumber_finished, &EmptyCli).await;
 
         let events = normalize.inner_writer().get_events();
         assert!(events.contains(&"FeatureStarted".to_string()));

@@ -214,7 +214,7 @@ mod tests {
         let mock_writer = MockWriter::new();
         let mut assert_normalized = AssertNormalized::new(mock_writer);
         
-        let event = Ok(Event::new(Cucumber::Started));
+        let event = Ok(Event::new(Cucumber::<TestWorld>::Started));
         
         assert_normalized.handle_event(event, &EmptyCli).await;
         
@@ -228,7 +228,7 @@ mod tests {
         let assert_normalized = AssertNormalized::new(mock_writer);
         
         // Stats should be delegated to inner writer
-        assert_eq!(assert_normalized.passed_steps(), 5);
+        assert_eq!(<AssertNormalized<TestWorld, _> as writer::Stats<TestWorld>>::passed_steps(&assert_normalized), 5);
         assert_eq!(assert_normalized.skipped_steps(), 2);
         assert_eq!(assert_normalized.failed_steps(), 1);
         assert_eq!(assert_normalized.retried_steps(), 0);

@@ -83,7 +83,7 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
 #[allow(dead_code)]
 mod tests {
     use super::*;
-    use crate::{Event, event::{Cucumber, Metadata, RetryableScenario}, Writer, parser, event::Source};
+    use crate::{Event, event::{Cucumber, Metadata, RetryableScenario, Retries}, Writer, parser, event::Source};
     use std::{sync::Arc, future::Future};
     use crate::test_utils::common::{EmptyCli, TestWorld};
 
@@ -249,7 +249,7 @@ mod tests {
             }
         ));
         
-        let result = (&mut queue).emit((feature, None, scenario), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, None, scenario), &mut writer, &EmptyCli).await;
         
         // Should emit the scenario started event
         assert!(writer.events.contains(&"ScenarioStarted".to_string()));
@@ -271,7 +271,7 @@ mod tests {
             }
         ));
         
-        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &EmptyCli).await;
         
         // Should emit the scenario finished event
         assert!(writer.events.contains(&"ScenarioFinished".to_string()));
@@ -294,7 +294,7 @@ mod tests {
             }
         ));
         
-        let result = (&mut queue).emit((feature, Some(rule), scenario), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, Some(rule), scenario), &mut writer, &EmptyCli).await;
         
         // Should emit the scenario event within a rule context
         assert!(writer.events.contains(&"ScenarioStarted".to_string()));
@@ -307,7 +307,7 @@ mod tests {
         let mut writer = MockWriter::new();
         let feature = create_test_feature();
         let scenario = create_test_scenario();
-        let retries = Some(3);
+        let retries = Some(Retries { current: 1, left: 3 });
         
         queue.0.push(Event::new(
             RetryableScenario {
@@ -316,7 +316,7 @@ mod tests {
             }
         ));
         
-        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &EmptyCli).await;
         
         // Should return the scenario with retries
         assert_eq!(result, Some((scenario, retries)));
@@ -343,7 +343,7 @@ mod tests {
             }
         ));
         
-        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &()).await;
+        let result = (&mut queue).emit((feature, None, scenario.clone()), &mut writer, &EmptyCli).await;
         
         // Should emit both events
         assert!(writer.events.contains(&"ScenarioStarted".to_string()));
