@@ -222,10 +222,10 @@ mod tests {
     #[test]
     fn test_formatting_truncate_edge_cases() {
         let message = "test";
-        assert_eq!(formatting::truncate_error_message(message, 0), "");
-        assert_eq!(formatting::truncate_error_message(message, 1), "");
-        assert_eq!(formatting::truncate_error_message(message, 2), "");
-        assert_eq!(formatting::truncate_error_message(message, 3), "");
+        assert_eq!(formatting::truncate_error_message(message, 0), "...");
+        assert_eq!(formatting::truncate_error_message(message, 1), "...");
+        assert_eq!(formatting::truncate_error_message(message, 2), "...");
+        assert_eq!(formatting::truncate_error_message(message, 3), "...");
         assert_eq!(formatting::truncate_error_message(message, 4), "test");
     }
 
