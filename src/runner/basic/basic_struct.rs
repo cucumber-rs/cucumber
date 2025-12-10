@@ -106,6 +106,11 @@ pub struct Basic<
     /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
     #[debug(ignore)]
     pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
+
+    #[cfg(feature = "observability")]
+    /// Registry of observers for test execution monitoring.
+    #[debug(ignore)]
+    pub(super) observers: Arc<std::sync::Mutex<crate::observer::ObserverRegistry<World>>>,
 }
 
 #[cfg(feature = "tracing")]
@@ -119,6 +124,7 @@ const _: () = {
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
 // `#[derive(Clone)]`.
+#[cfg(not(feature = "observability"))]
 impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
     fn clone(&self) -> Self {
         Self {
@@ -134,10 +140,34 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             fail_fast: self.fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector: Arc::clone(&self.logs_collector),
+            #[cfg(feature = "observability")]
+            observers: Arc::clone(&self.observers),
         }
     }
 }
 
+#[cfg(feature = "observability")]
+impl<World: crate::World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
+    fn clone(&self) -> Self {
+        Self {
+            max_concurrent_scenarios: self.max_concurrent_scenarios,
+            retries: self.retries,
+            retry_after: self.retry_after,
+            retry_filter: self.retry_filter.clone(),
+            steps: self.steps.clone(),
+            which_scenario: self.which_scenario.clone(),
+            retry_options: Arc::clone(&self.retry_options),
+            before_hook: self.before_hook.clone(),
+            after_hook: self.after_hook.clone(),
+            fail_fast: self.fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::clone(&self.logs_collector),
+            observers: Arc::clone(&self.observers),
+        }
+    }
+}
+
+#[cfg(not(feature = "observability"))]
 impl<World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |feature, rule, scenario| {
@@ -164,6 +194,40 @@ impl<World> Default for Basic<World> {
             fail_fast: false,
             #[cfg(feature = "tracing")]
             logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
+            #[cfg(feature = "observability")]
+            observers: Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
+        }
+    }
+}
+
+#[cfg(feature = "observability")]
+impl<World: crate::World> Default for Basic<World> {
+    fn default() -> Self {
+        let which_scenario: WhichScenarioFn = |feature, rule, scenario| {
+            use crate::tag::Ext as _;
+            scenario
+                .tags
+                .iter()
+                .chain(rule.iter().flat_map(|r| &r.tags))
+                .chain(&feature.tags)
+                .find(|tag| *tag == "serial")
+                .map_or(ScenarioType::Concurrent, |_| ScenarioType::Serial)
+        };
+
+        Self {
+            max_concurrent_scenarios: Some(64),
+            retries: None,
+            retry_after: None,
+            retry_filter: None,
+            steps: step::Collection::new(),
+            which_scenario,
+            retry_options: Arc::new(RetryOptions::parse_from_tags),
+            before_hook: None,
+            after_hook: None,
+            fail_fast: false,
+            #[cfg(feature = "tracing")]
+            logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
+            observers: Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
         }
     }
 }
@@ -258,6 +322,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
             ..
         } = self;
         Basic {
@@ -273,6 +339,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
         }
     }
 
@@ -322,6 +390,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
             ..
         } = self;
         Basic {
@@ -337,6 +407,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
         }
     }
 
@@ -374,6 +446,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
             ..
         } = self;
         Basic {
@@ -389,6 +463,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
+            #[cfg(feature = "observability")]
+            observers,
         }
     }
 
@@ -426,6 +502,35 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     #[must_use]
     pub fn then(mut self, regex: Regex, step: Step<World>) -> Self {
         self.steps = mem::take(&mut self.steps).then(None, regex, step);
+        self
+    }
+
+    /// Registers an observer for test execution monitoring.
+    /// 
+    /// This allows external systems to observe test execution events
+    /// without modifying the writer chain.
+    /// 
+    /// # Example
+    /// ```
+    /// # use cucumber::runner::Basic;
+    /// # #[cfg(feature = "observability")]
+    /// # fn example<W: cucumber::World>() {
+    /// let runner = Basic::<W>::default()
+    ///     .register_observer(Box::new(my_observer));
+    /// # }
+    /// ```
+    #[cfg(feature = "observability")]
+    #[must_use]
+    pub fn register_observer(
+        self,
+        observer: Box<dyn crate::observer::TestObserver<World>>,
+    ) -> Self 
+    where
+        World: crate::World
+    {
+        if let Ok(mut registry) = self.observers.lock() {
+            registry.register(observer);
+        }
         self
     }
 }
