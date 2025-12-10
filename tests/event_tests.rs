@@ -334,22 +334,22 @@ fn test_step_error_coercion() {
 #[test]
 fn test_step_failed_structure() {
     // Test Step::Failed with proper parameters
-    let failed_step = Step::<TestWorld>::Failed(
-        None, 
-        Some(step::Location {
+    let failed_step = Step::<TestWorld>::Failed {
+        captures: None,
+        location: Some(step::Location {
             path: "test.feature",
             line: 10,
             column: 1,
         }),
-        Some(Arc::new(TestWorld)),
-        StepError::NotFound
-    );
+        world: Some(Arc::new(TestWorld)),
+        error: StepError::NotFound
+    };
     
-    if let Step::Failed(_, loc, world, err) = failed_step {
-        assert!(loc.is_some());
-        assert_eq!(loc.unwrap().line, 10);
+    if let Step::Failed { location, world, error, .. } = failed_step {
+        assert!(location.is_some());
+        assert_eq!(location.unwrap().line, 10);
         assert!(world.is_some());
-        assert!(matches!(err, StepError::NotFound));
+        assert!(matches!(error, StepError::NotFound));
     }
 }
 
