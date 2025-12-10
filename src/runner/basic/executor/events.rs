@@ -1,25 +1,133 @@
 //! Event sending logic for the Basic executor.
 
 use futures::channel::mpsc;
+use std::sync::{Arc, Mutex};
 
 use crate::{Event, World, event, parser};
+use super::super::supporting_structures::ScenarioId;
+use event::source::Source;
 
 /// Event sending functionality for the Executor.
+#[cfg(not(feature = "observability"))]
 pub(super) struct EventSender<W> {
     sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
 }
 
+/// Event sending functionality for the Executor with observability.
+#[cfg(feature = "observability")]
+pub(super) struct EventSender<W: World> {
+    sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
+    observers: Arc<Mutex<crate::observer::ObserverRegistry<W>>>,
+    current_context: Arc<Mutex<Option<ScenarioContext>>>,
+}
+
+/// Context information for the current scenario
+#[cfg(feature = "observability")]
+#[derive(Clone, Debug)]
+pub(super) struct ScenarioContext {
+    pub scenario_id: ScenarioId,
+    pub feature: Source<gherkin::Feature>,
+    pub rule: Option<Source<gherkin::Rule>>,
+    pub scenario: Source<gherkin::Scenario>,
+    pub retries: Option<event::Retries>,
+}
+
 impl<W: World> EventSender<W> {
     /// Creates a new EventSender.
+    #[cfg(not(feature = "observability"))]
     pub(super) fn new_with_sender(sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>) -> Self {
         Self { sender }
     }
 
+    /// Creates a new EventSender with observer support.
+    #[cfg(feature = "observability")]
+    pub(super) fn new_with_sender(
+        sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
+    ) -> Self {
+        Self {
+            sender,
+            observers: Arc::new(Mutex::new(crate::observer::ObserverRegistry::new())),
+            current_context: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    /// Creates a new EventSender with a shared observer registry.
+    #[cfg(feature = "observability")]
+    pub(super) fn with_observers(
+        sender: mpsc::UnboundedSender<parser::Result<Event<event::Cucumber<W>>>>,
+        observers: Arc<Mutex<crate::observer::ObserverRegistry<W>>>,
+    ) -> Self {
+        Self {
+            sender,
+            observers,
+            current_context: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    /// Updates the current scenario context
+    #[cfg(feature = "observability")]
+    pub(super) fn set_scenario_context(
+        &self,
+        id: ScenarioId,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
+        retries: Option<event::Retries>,
+    ) {
+        if let Ok(mut context) = self.current_context.lock() {
+            *context = Some(ScenarioContext {
+                scenario_id: id,
+                feature,
+                rule,
+                scenario,
+                retries,
+            });
+        }
+    }
+
+    /// Clears the current scenario context
+    #[cfg(feature = "observability")]
+    pub(super) fn clear_scenario_context(&self) {
+        if let Ok(mut context) = self.current_context.lock() {
+            *context = None;
+        }
+    }
+
     /// Sends a single event.
     pub(super) fn send_event(&self, event: event::Cucumber<W>) {
+        // Send the event through the channel
+        let event_wrapper = Event::new(event.clone());
         self.sender
-            .unbounded_send(Ok(Event::new(event)))
+            .unbounded_send(Ok(event_wrapper.clone()))
             .unwrap_or_else(|e| panic!("Failed to send `Cucumber` event: {e}"));
+        
+        // Notify observers if enabled
+        #[cfg(feature = "observability")]
+        self.notify_observers(&event_wrapper, &event);
+    }
+
+    /// Notifies observers about an event with context
+    #[cfg(feature = "observability")]
+    fn notify_observers(&self, event_wrapper: &Event<event::Cucumber<W>>, event: &event::Cucumber<W>) {
+        if let Ok(context) = self.current_context.lock() {
+            if let Some(ref ctx) = *context {
+                // Build observation context from scenario context
+                let observation_context = crate::observer::ObservationContext {
+                    scenario_id: Some(ctx.scenario_id.0),
+                    feature_name: ctx.feature.name.clone(),
+                    rule_name: ctx.rule.as_ref().map(|r| r.name.clone()),
+                    scenario_name: ctx.scenario.name.clone(),
+                    retry_info: ctx.retries.clone(),
+                    tags: ctx.scenario.tags.clone(),
+                    timestamp: std::time::Instant::now(),
+                };
+                
+                // Notify all registered observers
+                if let Ok(mut registry) = self.observers.lock() {
+                    registry.notify(event_wrapper, &observation_context);
+                }
+            }
+        }
     }
 
     /// Sends multiple events.

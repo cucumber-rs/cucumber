@@ -243,7 +243,7 @@ impl StepExecutor {
 mod tests {
     use super::*;
     use crate::{event, test_utils::common::TestWorld};
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
 
     #[tokio::test]
     async fn test_run_steps_empty_scenario() {
@@ -261,6 +261,7 @@ mod tests {
             None,
             scenario,
             &mut world,
+            None, // retries
             move |event| events_clone.lock().unwrap().push(event),
             #[cfg(feature = "tracing")]
             None,
@@ -291,6 +292,7 @@ mod tests {
             None,
             scenario,
             &mut world,
+            None, // retries
             move |event| events_clone.lock().unwrap().push(event),
             #[cfg(feature = "tracing")]
             None,
@@ -317,6 +319,7 @@ mod tests {
             None,
             scenario,
             step,
+            None, // retries
             &move |event: event::Cucumber<TestWorld>| events_clone.lock().unwrap().push(event),
         );
         

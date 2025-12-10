@@ -186,6 +186,8 @@ pub mod tag;
 pub mod writer;
 
 // Feature-dependent modules
+#[cfg(feature = "observability")]
+pub mod observer;
 #[cfg(feature = "macros")]
 pub mod codegen;
 #[cfg(feature = "tracing")]

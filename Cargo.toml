@@ -62,6 +62,8 @@ output-junit = ["dep:junit-report", "timestamps"]
 timestamps = []
 # Enables integraion with `tracing` crate.
 tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
+# Enables observability hooks for external monitoring systems
+observability = []
 
 [dependencies]
 clap = { version = "4.3.2", features = ["derive", "wrap_help"] }

@@ -1,7 +1,5 @@
 //! Core Executor struct and main scenario execution logic.
 
-use std::sync::Arc;
-
 use futures::{
     channel::mpsc,
     future::LocalBoxFuture,
@@ -11,7 +9,7 @@ use futures::{
 use crate::tracing::SpanCloseWaiter;
 use crate::{
     Event, World,
-    event::{self, HookType, Info, Retries, source::Source},
+    event::{self, HookType, Retries, source::Source},
     parser, step,
 };
 
@@ -33,6 +31,7 @@ use super::{
 /// Runs [`Scenario`]s and notifies about their state of completion.
 ///
 /// [`Scenario`]: gherkin::Scenario
+#[cfg(not(feature = "observability"))]
 pub struct Executor<W, Before, After> {
     /// [`Step`]s [`Collection`].
     ///
@@ -67,6 +66,47 @@ pub struct Executor<W, Before, After> {
     storage: Features,
 }
 
+/// Runs [`Scenario`]s and notifies about their state of completion (with observability).
+///
+/// [`Scenario`]: gherkin::Scenario
+#[cfg(feature = "observability")]
+pub struct Executor<W: World, Before, After> {
+    /// [`Step`]s [`Collection`].
+    ///
+    /// [`Collection`]: step::Collection
+    collection: step::Collection<W>,
+
+    /// Function, executed on each [`Scenario`] before running all [`Step`]s,
+    /// including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    before_hook: Option<Before>,
+
+    /// Function, executed on each [`Scenario`] after running all [`Step`]s.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    after_hook: Option<After>,
+
+    /// Event sender for scenario events.
+    event_sender: EventSender<W>,
+
+    /// Sender for notifying of [`Scenario`]s completion.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    finished_sender: FinishedFeaturesSender,
+
+    /// [`Scenario`]s storage.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    storage: Features,
+    
+    /// Observer registry for external monitoring
+    observers: std::sync::Arc<std::sync::Mutex<crate::observer::ObserverRegistry<W>>>,
+}
+
 impl<W: World, Before, After> Executor<W, Before, After>
 where
     Before: for<'a> Fn(
@@ -94,13 +134,31 @@ where
         finished_sender: FinishedFeaturesSender,
         storage: Features,
     ) -> Self {
+        #[cfg(feature = "observability")]
+        let observers = std::sync::Arc::new(std::sync::Mutex::new(
+            crate::observer::ObserverRegistry::new()
+        ));
+        
         Self {
             collection,
             before_hook,
             after_hook,
+            #[cfg(not(feature = "observability"))]
             event_sender: EventSender::new_with_sender(event_sender),
+            #[cfg(feature = "observability")]
+            event_sender: EventSender::with_observers(event_sender, observers.clone()),
             finished_sender,
             storage,
+            #[cfg(feature = "observability")]
+            observers,
+        }
+    }
+    
+    /// Register an observer for monitoring test execution
+    #[cfg(feature = "observability")]
+    pub fn register_observer(&self, observer: Box<dyn crate::observer::TestObserver<W>>) {
+        if let Ok(mut registry) = self.observers.lock() {
+            registry.register(observer);
         }
     }
 
@@ -117,6 +175,18 @@ where
         retry_options: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) {
+        // Set the scenario context for observer notifications
+        #[cfg(feature = "observability")]
+        {
+            let retries = retry_options.as_ref().map(|opts| opts.retries);
+            self.event_sender.set_scenario_context(
+                id,
+                feature.clone(),
+                rule.clone(),
+                scenario.clone(),
+                retries,
+            );
+        }
         let retries = retry_options.map(|opts| opts.retries);
 
         // Create world instance for this scenario
@@ -217,6 +287,10 @@ where
             waiter,
         )
         .await;
+        
+        // Clear the scenario context after completion
+        #[cfg(feature = "observability")]
+        self.event_sender.clear_scenario_context();
     }
 
     /// Executes all steps of a scenario including hooks.
@@ -418,7 +492,27 @@ where
 
     /// Sends a single event.
     pub fn send_event(&self, event: event::Cucumber<W>) {
+        // Send through normal channel
+        let event_wrapped = Event::new(event.clone());
         self.event_sender.send_event(event);
+        
+        // Notify observers if enabled
+        #[cfg(feature = "observability")]
+        {
+            if let Ok(mut registry) = self.observers.lock() {
+                // Build context from current scenario information
+                let context = crate::observer::ObservationContext {
+                    scenario_id: None, // TODO: Track current scenario ID
+                    feature_name: String::new(), // TODO: Extract from event
+                    rule_name: None,
+                    scenario_name: String::new(), // TODO: Extract from event
+                    retry_info: None, // TODO: Extract from event
+                    tags: Vec::new(),
+                    timestamp: std::time::Instant::now(),
+                };
+                registry.notify(&event_wrapped, &context);
+            }
+        }
     }
 
     /// Sends multiple events.

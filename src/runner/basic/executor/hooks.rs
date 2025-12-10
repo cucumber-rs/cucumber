@@ -192,7 +192,7 @@ impl HookExecutor {
 mod tests {
     use super::*;
     use crate::{event, test_utils::common::TestWorld};
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
 
     #[tokio::test]
     async fn test_run_before_hook_none() {
