@@ -5,6 +5,6 @@ Feature: Outline
       Step failed:
       Defined: tests/features/output/scenario_outline_adjacent_templates.feature:5:5
       Matched: tests/output.rs:10:1
-      Step panicked. Captured output: assertion failed: `(left == right)`
-        left: `1`,
-       right: `101`
+      Step panicked. Captured output: (Could not resolve panic payload)
+?  Then foo is 21
+   Step skipped: tests/features/output/scenario_outline_adjacent_templates.feature:6:5
