@@ -37,12 +37,12 @@ impl<W: World> TestObserver<W> for NullObserver {
 }
 
 /// Registry for managing multiple observers
-pub struct ObserverRegistry<W: World> {
+pub struct ObserverRegistry<W> {
     observers: Vec<Box<dyn TestObserver<W>>>,
     enabled: bool,
 }
 
-impl<W: World> ObserverRegistry<W> {
+impl<W> ObserverRegistry<W> {
     pub fn new() -> Self {
         Self {
             observers: Vec::new(),
@@ -50,13 +50,19 @@ impl<W: World> ObserverRegistry<W> {
         }
     }
     
-    pub fn register(&mut self, observer: Box<dyn TestObserver<W>>) {
+    pub fn register(&mut self, observer: Box<dyn TestObserver<W>>) 
+    where 
+        W: World,
+    {
         self.observers.push(observer);
         self.enabled = true;
     }
     
     #[inline]
-    pub fn notify(&mut self, event: &Event<event::Cucumber<W>>, context: &ObservationContext) {
+    pub fn notify(&mut self, event: &Event<event::Cucumber<W>>, context: &ObservationContext)
+    where
+        W: World,
+    {
         if self.enabled {
             for observer in &mut self.observers {
                 observer.on_event(event, context);
