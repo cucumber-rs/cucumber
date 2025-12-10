@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn test_send_multiple_events() {
         let (sender, mut receiver) = mpsc::unbounded();
-        let event_sender = EventSender::<TestWorld>::new(sender);
+        let event_sender = EventSender::<TestWorld>::new_with_sender(sender);
         
         let events = vec![
             event::Cucumber::<TestWorld>::Started,
@@ -94,10 +94,10 @@ mod tests {
     #[test]
     fn test_send_event_with_meta() {
         let (sender, mut receiver) = mpsc::unbounded();
-        let event_sender = EventSender::<TestWorld>::new(sender);
+        let event_sender = EventSender::<TestWorld>::new_with_sender(sender);
         
         let event = event::Cucumber::<TestWorld>::Started;
-        let meta = crate::event::Metadata::new(None, Vec::new(), Vec::new(), 1);
+        let meta = crate::event::Metadata::new(());
         
         event_sender.send_event_with_meta(event, &meta);
         
@@ -110,7 +110,7 @@ mod tests {
     #[should_panic(expected = "Failed to send `Cucumber` event")]
     fn test_send_event_panics_on_closed_channel() {
         let (sender, receiver) = mpsc::unbounded();
-        let event_sender = EventSender::<TestWorld>::new(sender);
+        let event_sender = EventSender::<TestWorld>::new_with_sender(sender);
         
         // Close the receiver to make the channel closed
         drop(receiver);
@@ -124,8 +124,8 @@ mod tests {
         let (sender1, mut receiver1) = mpsc::unbounded();
         let (sender2, mut receiver2) = mpsc::unbounded();
         
-        let event_sender1 = EventSender::<TestWorld>::new(sender1);
-        let event_sender2 = EventSender::<TestWorld>::new(sender2);
+        let event_sender1 = EventSender::<TestWorld>::new_with_sender(sender1);
+        let event_sender2 = EventSender::<TestWorld>::new_with_sender(sender2);
         
         event_sender1.send_event(event::Cucumber::<TestWorld>::Started);
         event_sender2.send_event(event::Cucumber::<TestWorld>::Finished);

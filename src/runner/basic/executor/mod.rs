@@ -30,8 +30,8 @@ mod integration_tests {
     };
     use futures::{channel::mpsc, future::LocalBoxFuture, TryStreamExt as _};
 
-    type BeforeHook = fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario, &mut TestWorld) -> LocalBoxFuture<'_, ()>;
-    type AfterHook = fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario, &event::ScenarioFinished, Option<&mut TestWorld>) -> LocalBoxFuture<'_, ()>;
+    type BeforeHook = for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a mut TestWorld) -> LocalBoxFuture<'a, ()>;
+    type AfterHook = for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a event::ScenarioFinished, Option<&'a mut TestWorld>) -> LocalBoxFuture<'a, ()>;
 
     #[test]
     fn test_executor_creation() {

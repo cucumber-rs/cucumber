@@ -190,19 +190,18 @@ impl HookExecutor {
 mod tests {
     use super::*;
     use crate::{event, test_utils::common::TestWorld};
-    use futures::future::BoxFuture;
     use std::sync::Mutex;
 
     #[tokio::test]
     async fn test_run_before_hook_none() {
-        let id = ScenarioId::new(1);
+        let id = ScenarioId::new();
         let (feature, scenario) = create_test_feature_and_scenario();
         let mut world = TestWorld;
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
         let result = HookExecutor::run_before_hook(
-            None::<&fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario, &mut TestWorld) -> BoxFuture<'_, ()>>,
+            None::<&for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a mut TestWorld) -> LocalBoxFuture<'a, ()>>,
             id,
             feature,
             None,
@@ -219,15 +218,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_before_hook_success() {
-        let id = ScenarioId::new(1);
+        let id = ScenarioId::new();
         let (feature, scenario) = create_test_feature_and_scenario();
         let mut world = TestWorld;
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
-        let before_hook = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &mut TestWorld| {
-            Box::pin(async {}) as BoxFuture<'_, ()>
-        };
+        fn before_hook<'a>(_: &'a gherkin::Feature, _: Option<&'a gherkin::Rule>, _: &'a gherkin::Scenario, _: &'a mut TestWorld) -> LocalBoxFuture<'a, ()> {
+            Box::pin(async {})
+        }
         
         let result = HookExecutor::run_before_hook(
             Some(&before_hook),
@@ -248,7 +247,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_after_hook_none() {
-        let id = ScenarioId::new(1);
+        let id = ScenarioId::new();
         let (feature, scenario) = create_test_feature_and_scenario();
         let mut world = TestWorld;
         let events = Arc::new(Mutex::new(Vec::new()));
@@ -257,7 +256,7 @@ mod tests {
         let scenario_finished = event::ScenarioFinished::StepPassed;
         
         HookExecutor::run_after_hook(
-            None::<&fn(&gherkin::Feature, Option<&gherkin::Rule>, &gherkin::Scenario, &event::ScenarioFinished, Option<&mut TestWorld>) -> BoxFuture<'_, ()>>,
+            None::<&for<'a> fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a event::ScenarioFinished, Option<&'a mut TestWorld>) -> LocalBoxFuture<'a, ()>>,
             id,
             feature,
             None,
@@ -274,7 +273,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_after_hook_success() {
-        let id = ScenarioId::new(1);
+        let id = ScenarioId::new();
         let (feature, scenario) = create_test_feature_and_scenario();
         let mut world = TestWorld;
         let events = Arc::new(Mutex::new(Vec::new()));
@@ -282,9 +281,9 @@ mod tests {
         
         let scenario_finished = event::ScenarioFinished::StepPassed;
         
-        let after_hook = |_: &gherkin::Feature, _: Option<&gherkin::Rule>, _: &gherkin::Scenario, _: &event::ScenarioFinished, _: Option<&mut TestWorld>| {
-            Box::pin(async {}) as BoxFuture<'_, ()>
-        };
+        fn after_hook<'a>(_: &'a gherkin::Feature, _: Option<&'a gherkin::Rule>, _: &'a gherkin::Scenario, _: &'a event::ScenarioFinished, _: Option<&'a mut TestWorld>) -> LocalBoxFuture<'a, ()> {
+            Box::pin(async {})
+        }
         
         HookExecutor::run_after_hook(
             Some(&after_hook),
