@@ -37,23 +37,23 @@ impl<Out: io::Write> Basic<Out> {
             Step::Started => {
                 self.step_started(step)?;
             }
-            Step::Passed(captures, _) => {
-                self.step_passed(sc, step, captures, retries)?;
+            Step::Passed { captures, .. } => {
+                self.step_passed(sc, step, &captures, retries)?;
                 self.indent = self.indent.saturating_sub(4);
             }
             Step::Skipped => {
                 self.step_skipped(feat, step)?;
                 self.indent = self.indent.saturating_sub(4);
             }
-            Step::Failed(c, loc, w, i) => {
+            Step::Failed { captures, location, world, error } => {
                 self.step_failed(
                     feat,
                     step,
-                    c.as_ref(),
-                    *loc,
+                    captures.as_ref(),
+                    *location,
                     retries,
-                    w.as_ref(),
-                    i,
+                    world.as_ref(),
+                    error,
                 )?;
                 self.indent = self.indent.saturating_sub(4);
             }
