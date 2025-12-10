@@ -13,11 +13,6 @@ mod steps;
 
 pub use core::Executor;
 
-// Internal re-exports for module communication
-use hooks::HookExecutor;
-use steps::StepExecutor;
-use events::EventSender;
-
 #[cfg(test)]
 mod integration_tests {
     use super::*;

@@ -12,12 +12,10 @@ use derive_more::with_trait::{Display, FromStr};
 use regex::CaptureLocations;
 
 use crate::{
-    event::{self, Info, Metadata, StepError},
+    event::{self, Info, Metadata},
     event::source::Source,
     step,
 };
-
-use std::collections::HashMap;
 
 /// ID of a [`Scenario`], uniquely identifying it.
 ///

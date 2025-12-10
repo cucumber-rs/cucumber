@@ -3,10 +3,8 @@
 use std::sync::Arc;
 
 use futures::{
-    FutureExt as _, StreamExt as _, TryFutureExt as _, TryStreamExt as _,
     channel::mpsc,
     future::LocalBoxFuture,
-    stream,
 };
 
 #[cfg(feature = "tracing")]
@@ -14,7 +12,6 @@ use crate::tracing::SpanCloseWaiter;
 use crate::{
     Event, World,
     event::{self, HookType, Info, Retries, source::Source},
-    future::FutureExt as _,
     parser, step,
 };
 
@@ -23,6 +20,7 @@ use super::super::{
     scenario_storage::{Features, FinishedFeaturesSender},
     supporting_structures::{
         ScenarioId, ExecutionFailure, AfterHookEventsMeta, IsFailed, IsRetried,
+        coerce_into_info,
     },
 };
 
@@ -124,9 +122,57 @@ where
         // Create world instance for this scenario
         let mut world = match W::new().await {
             Ok(world) => world,
-            Err(_) => {
-                // Handle world creation error
-                // For now, just return early
+            Err(_err) => {
+                // Emit world creation error as a before hook failure
+                let error_info = coerce_into_info("Failed to create World");
+                let started_event = event::Cucumber::scenario(
+                    feature.clone(),
+                    rule.clone(),
+                    scenario.clone(),
+                    event::RetryableScenario {
+                        event: event::Scenario::Hook(
+                            HookType::Before,
+                            event::Hook::Failed(None, error_info.clone())
+                        ),
+                        retries,
+                    },
+                );
+                self.event_sender.send_event(started_event);
+                
+                let finished_event = event::Cucumber::scenario(
+                    feature.clone(),
+                    rule.clone(),
+                    scenario.clone(),
+                    event::RetryableScenario {
+                        event: event::Scenario::Finished,
+                        retries,
+                    },
+                );
+                self.event_sender.send_event(finished_event);
+                
+                // Check if scenario will be retried
+                let next_try = retry_options
+                    .and_then(RetryOptions::next_try);
+                
+                if let Some(next_try) = next_try {
+                    self.storage
+                        .insert_retried_scenario(
+                            feature.clone(),
+                            rule.clone(),
+                            scenario,
+                            scenario_ty,
+                            Some(next_try),
+                        )
+                        .await;
+                }
+                
+                self.scenario_finished(
+                    id,
+                    feature,
+                    rule,
+                    true, // World creation failure is a failure
+                    next_try.is_some(),
+                );
                 return;
             }
         };
@@ -151,6 +197,7 @@ where
                 rule.clone(),
                 scenario.clone(),
                 &mut world,
+                retries,
                 #[cfg(feature = "tracing")]
                 waiter,
             )
@@ -180,6 +227,7 @@ where
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         world: &mut W,
+        retries: Option<Retries>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<AfterHookEventsMeta, ExecutionFailure<W>> {
         // Run before hook
@@ -204,6 +252,7 @@ where
             rule.clone(),
             scenario.clone(),
             world,
+            retries,
             |event| self.event_sender.send_event(event),
             #[cfg(feature = "tracing")]
             waiter,
@@ -338,33 +387,23 @@ where
     }
 
     /// Handles execution failures during scenario execution.
+    /// 
+    /// Note: The actual failure events are already emitted by the respective
+    /// modules (hooks, steps) where the failures occur. This method is kept
+    /// for potential future use but currently just sends the finished event.
     async fn handle_execution_failure(
         &self,
-        failure: ExecutionFailure<W>,
-        id: ScenarioId,
+        _failure: ExecutionFailure<W>,
+        _id: ScenarioId,
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         retries: Option<Retries>,
     ) {
-        // Handle different types of execution failures
-        // Implementation depends on specific failure handling requirements
-        match failure {
-            ExecutionFailure::BeforeHookPanicked { .. } => {
-                // Handle before hook failure
-            }
-            ExecutionFailure::StepPanicked { .. } => {
-                // Handle step failure
-            }
-            ExecutionFailure::StepSkipped(_) => {
-                // Handle step skipped
-            }
-            ExecutionFailure::Before => {
-                // Handle before hook failure (simplified variant)
-            }
-        }
-
-        // Send appropriate failure events
+        // Failure events are already emitted by the respective modules
+        // (hooks module for hook failures, steps module for step failures)
+        // This method just sends the finished event
+        
         let failure_event = event::Cucumber::scenario(
             feature,
             rule,

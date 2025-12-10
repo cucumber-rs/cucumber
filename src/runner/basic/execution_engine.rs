@@ -8,7 +8,7 @@ use std::{
 };
 
 use futures::{
-    Stream, StreamExt as _, TryStreamExt as _,
+    Stream, StreamExt as _,
     channel::{mpsc, oneshot},
     future,
     pin_mut,

@@ -1,18 +1,16 @@
 //! Hook execution logic for the Basic executor.
 
-use std::{panic::AssertUnwindSafe, sync::Arc};
+use std::panic::AssertUnwindSafe;
 
-use futures::{FutureExt as _, TryFutureExt as _, future::LocalBoxFuture};
+use futures::{FutureExt as _, future::LocalBoxFuture};
 
 use crate::{
     Event, World,
     event::{self, HookType, Info, source::Source},
-    future::FutureExt as _,
-    step,
 };
 
 use super::super::supporting_structures::{
-    ScenarioId, ExecutionFailure, AfterHookEventsMeta, coerce_into_info,
+    ScenarioId, ExecutionFailure, coerce_into_info,
 };
 
 /// Hook execution functionality for the Executor.

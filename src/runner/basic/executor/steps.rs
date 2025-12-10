@@ -1,14 +1,12 @@
 //! Step execution logic for the Basic executor.
 
-use std::{panic::AssertUnwindSafe, sync::Arc};
+use std::panic::AssertUnwindSafe;
 
-use futures::{FutureExt as _, TryFutureExt as _};
-use regex::CaptureLocations;
+use futures::FutureExt as _;
 
 use crate::{
     Event, World,
     event::{self, source::Source},
-    future::FutureExt as _,
     step,
 };
 
@@ -28,6 +26,7 @@ impl StepExecutor {
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         world: &mut W,
+        retries: Option<crate::event::Retries>,
         send_event: impl Fn(event::Cucumber<W>) + Clone,
         #[cfg(feature = "tracing")] waiter: Option<&crate::tracing::SpanCloseWaiter>,
     ) -> AfterHookEventsMeta
@@ -50,6 +49,7 @@ impl StepExecutor {
                     rule.clone(),
                     scenario.clone(),
                     Source::new(step.clone()),
+                    retries,
                     &send_event,
                 );
                 continue;
@@ -63,6 +63,7 @@ impl StepExecutor {
                 scenario.clone(),
                 Source::new(step.clone()),
                 world,
+                retries,
                 send_event.clone(),
                 #[cfg(feature = "tracing")]
                 waiter,
@@ -112,6 +113,7 @@ impl StepExecutor {
         scenario: Source<gherkin::Scenario>,
         step: Source<gherkin::Step>,
         world: &mut W,
+        retries: Option<crate::event::Retries>,
         send_event: impl Fn(event::Cucumber<W>),
         #[cfg(feature = "tracing")] waiter: Option<&crate::tracing::SpanCloseWaiter>,
     ) -> event::Step<W>
@@ -128,7 +130,7 @@ impl StepExecutor {
                         step.clone(),
                         event::Step::Started,
                     ),
-                    retries: None,
+                    retries,
                 },
             )
         );
@@ -200,7 +202,7 @@ impl StepExecutor {
                 scenario,
                 event::RetryableScenario {
                     event: event::Scenario::Step(step, step_event.clone()),
-                    retries: None,
+                    retries,
                 },
             )
         );
@@ -215,6 +217,7 @@ impl StepExecutor {
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         step: Source<gherkin::Step>,
+        retries: Option<crate::event::Retries>,
         send_event: &impl Fn(event::Cucumber<W>),
     ) where
         W: World,
@@ -228,7 +231,7 @@ impl StepExecutor {
                 scenario,
                 event::RetryableScenario {
                     event: event::Scenario::Step(step, step_event),
-                    retries: None,
+                    retries,
                 },
             )
         );
