@@ -230,7 +230,9 @@ pub(super) async fn execute<W, Before, After>(
                 *sc -= runnable.len();
             }
 
-            for (id, f, r, s, ty, retries) in runnable {
+            for (id, f, r, s, ty, retry_options) in runnable {
+                // Convert RetryOptions to Retries if needed
+                let retries = retry_options.map(|opts| opts.retries);
                 run_scenarios.push(
                     executor
                         .run_scenario(
@@ -238,7 +240,6 @@ pub(super) async fn execute<W, Before, After>(
                             f,
                             r,
                             s,
-                            ty,
                             retries,
                             #[cfg(feature = "tracing")]
                             waiter.as_ref(),

@@ -12,10 +12,12 @@ use derive_more::with_trait::{Display, FromStr};
 use regex::CaptureLocations;
 
 use crate::{
-    event::{self, Info, Metadata},
+    event::{self, Info, Metadata, StepError},
     event::source::Source,
     step,
 };
+
+use std::collections::HashMap;
 
 /// ID of a [`Scenario`], uniquely identifying it.
 ///
@@ -119,6 +121,9 @@ pub(super) enum ExecutionFailure<World> {
         /// [`Step`]: gherkin::Step
         is_background: bool,
     },
+
+    /// [`HookType::Before`] failed.
+    Before,
 }
 
 impl<W> ExecutionFailure<W> {
@@ -128,6 +133,7 @@ impl<W> ExecutionFailure<W> {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)
             | Self::StepPanicked { world, .. } => world.take(),
+            Self::Before => None,
         }
     }
 
@@ -145,9 +151,11 @@ impl<W> ExecutionFailure<W> {
             Self::StepPanicked { captures, loc, err, .. } => {
                 StepFailed(captures.clone(), *loc, err.clone())
             }
+            Self::Before => BeforeHookFailed(Arc::new("Before hook failed")),
         }
     }
 }
+
 
 /// [`Metadata`] of [`HookType::After`] events.
 pub(super) struct AfterHookEventsMeta {
