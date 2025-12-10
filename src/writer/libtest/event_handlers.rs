@@ -309,7 +309,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 LibtestUtils::step_started_at(self, meta, cli);
                 TestEvent::started(name)
             }
-            Step::Passed(_, loc) => {
+            Step::Passed { location, .. } => {
                 self.passed += 1;
 
                 let event = TestEvent::ok(name, LibtestUtils::step_exec_time(self, meta, cli));
@@ -323,7 +323,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                             .unwrap_or(&feature.name),
                         step.position.line,
                         step.position.col,
-                        loc.map(|l| format!(
+                        location.map(|l| format!(
                             "\n{}:{}:{} (matched)",
                             l.path, l.line, l.column,
                         ))
@@ -353,9 +353,9 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     event
                 }
             }
-            Step::Failed(_, loc, world, err) => {
+            Step::Failed { location, world, error, .. } => {
                 if retries.is_some_and(|r| {
-                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                    r.left > 0 && !matches!(error, event::StepError::NotFound)
                 }) {
                     self.retried += 1;
                 } else {
@@ -364,7 +364,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
                 TestEvent::failed(name, LibtestUtils::step_exec_time(self, meta, cli))
                     .with_stdout(format!(
-                        "{}:{}:{} (defined){}\n{err}{}",
+                        "{}:{}:{} (defined){}\n{error}{}",
                         feature
                             .path
                             .as_ref()
@@ -372,7 +372,7 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                             .unwrap_or(&feature.name),
                         step.position.line,
                         step.position.col,
-                        loc.map(|l| format!(
+                        location.map(|l| format!(
                             "\n{}:{}:{} (matched)",
                             l.path, l.line, l.column,
                         ))
