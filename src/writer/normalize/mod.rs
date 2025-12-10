@@ -165,10 +165,10 @@ mod integration_tests {
     #[tokio::test]
     async fn test_normalize_wrapper_integration() {
         let mock_writer = MockWriter::new();
-        let mut normalize = Normalize::new(mock_writer.clone());
+        let mut normalize: wrapper::Normalize<TestWorld, _> = Normalize::new(mock_writer.clone());
 
         // Test that Cucumber::Started events pass through immediately
-        let started_event = Ok(Event::new(event::Cucumber::Started));
+        let started_event = Ok(Event::new(event::Cucumber::<TestWorld>::Started));
         normalize.handle_event(started_event, &EmptyCli).await;
 
         let events = normalize.inner_writer().get_events();
@@ -178,19 +178,19 @@ mod integration_tests {
     #[tokio::test]
     async fn test_normalize_feature_lifecycle() {
         let mock_writer = MockWriter::new();
-        let mut normalize = Normalize::new(mock_writer.clone());
+        let mut normalize: wrapper::Normalize<TestWorld, _> = Normalize::new(mock_writer.clone());
         let feature = create_test_feature();
 
         // Start a feature
-        let feature_started = Ok(Event::new(event::Cucumber::feature_started(feature.clone())));
+        let feature_started = Ok(Event::new(event::Cucumber::<TestWorld>::feature_started(feature.clone())));
         normalize.handle_event(feature_started, &EmptyCli).await;
 
         // Finish the feature
-        let feature_finished = Ok(Event::new(event::Cucumber::feature_finished(feature)));
+        let feature_finished = Ok(Event::new(event::Cucumber::<TestWorld>::feature_finished(feature)));
         normalize.handle_event(feature_finished, &EmptyCli).await;
 
         // Finish cucumber
-        let cucumber_finished = Ok(Event::new(event::Cucumber::Finished));
+        let cucumber_finished = Ok(Event::new(event::Cucumber::<TestWorld>::Finished));
         normalize.handle_event(cucumber_finished, &EmptyCli).await;
 
         let events = normalize.inner_writer().get_events();
