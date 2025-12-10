@@ -225,16 +225,16 @@ mod tests {
     #[test]
     fn test_assert_normalized_stats() {
         let mock_writer = MockWriter::new();
-        let assert_normalized = AssertNormalized::new(mock_writer);
+        let assert_normalized: AssertNormalized<MockWriter> = AssertNormalized::new(mock_writer);
         
         // Stats should be delegated to inner writer
-        assert_eq!(<AssertNormalized<TestWorld, _> as writer::Stats<TestWorld>>::passed_steps(&assert_normalized), 5);
-        assert_eq!(assert_normalized.skipped_steps(), 2);
-        assert_eq!(assert_normalized.failed_steps(), 1);
-        assert_eq!(assert_normalized.retried_steps(), 0);
-        assert_eq!(assert_normalized.parsing_errors(), 0);
-        assert_eq!(assert_normalized.hook_errors(), 0);
-        assert!(assert_normalized.execution_has_failed());
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::passed_steps(&assert_normalized), 5);
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::skipped_steps(&assert_normalized), 2);
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::failed_steps(&assert_normalized), 1);
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::retried_steps(&assert_normalized), 0);
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::parsing_errors(&assert_normalized), 0);
+        assert_eq!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::hook_errors(&assert_normalized), 0);
+        assert!(<AssertNormalized<MockWriter> as crate::writer::Stats<TestWorld>>::execution_has_failed(&assert_normalized));
     }
 
     #[tokio::test]
