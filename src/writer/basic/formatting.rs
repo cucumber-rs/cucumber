@@ -13,11 +13,27 @@ use crate::event::Info;
 
 /// Coerces error information into a readable string.
 pub fn coerce_error(err: &Info) -> Cow<'static, str> {
-    (**err)
-        .downcast_ref::<String>()
-        .map(|s| s.clone().into())
-        .or_else(|| (**err).downcast_ref::<&str>().map(|s| s.to_owned().into()))
-        .unwrap_or_else(|| "(Could not resolve panic payload)".into())
+    use std::any::Any;
+    
+    // First try direct downcast
+    if let Some(s) = (**err).downcast_ref::<String>() {
+        return s.clone().into();
+    }
+    if let Some(&s) = (**err).downcast_ref::<&str>() {
+        return s.to_owned().into();
+    }
+    
+    // Handle Box<dyn Any> from catch_unwind
+    if let Some(boxed) = (**err).downcast_ref::<Box<dyn Any + Send>>() {
+        if let Some(s) = boxed.downcast_ref::<String>() {
+            return s.clone().into();
+        }
+        if let Some(&s) = boxed.downcast_ref::<&str>() {
+            return s.to_owned().into();
+        }
+    }
+    
+    "(Could not resolve panic payload)".into()
 }
 
 /// Formats the given [`str`] by adding `indent`s to each line to prettify the
