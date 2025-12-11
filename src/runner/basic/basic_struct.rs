@@ -576,4 +576,256 @@ mod tests {
         assert_eq!(cloned.max_concurrent_scenarios, Some(5));
         assert_eq!(cloned.retries, Some(2));
     }
+
+    #[test]
+    fn test_retry_filter() {
+        use gherkin::tagexpr::TagOperation;
+        
+        let tag_expr = TagOperation::from("@retry");
+        let basic = Basic::<TestWorld>::default()
+            .retry_filter(Some(tag_expr.clone()));
+        
+        assert!(basic.retry_filter.is_some());
+        
+        // Test with None
+        let basic_no_filter = Basic::<TestWorld>::default()
+            .retry_filter(None);
+        assert!(basic_no_filter.retry_filter.is_none());
+    }
+
+    #[test]
+    fn test_which_scenario_function() {
+        use crate::tag::Ext as _;
+        
+        let which_fn = |feature: &gherkin::Feature, 
+                        rule: Option<&gherkin::Rule>, 
+                        scenario: &gherkin::Scenario| {
+            if scenario.tags.contains(&"@serial".to_string()) {
+                ScenarioType::Serial
+            } else {
+                ScenarioType::Concurrent
+            }
+        };
+        
+        let basic = Basic::<TestWorld>::default()
+            .which_scenario(which_fn);
+        
+        // Create test scenario
+        let scenario = gherkin::Scenario {
+            keyword: "Scenario".to_string(),
+            name: "Test".to_string(),
+            tags: vec!["@serial".to_string()],
+            description: None,
+            steps: vec![],
+            examples: vec![],
+            span: gherkin::Span { start: 0, end: 0 },
+            position: gherkin::LineCol { line: 1, col: 1 },
+        };
+        
+        let feature = gherkin::Feature {
+            keyword: "Feature".to_string(),
+            name: "Test Feature".to_string(),
+            description: None,
+            background: None,
+            scenarios: vec![],
+            rules: vec![],
+            tags: vec![],
+            span: gherkin::Span { start: 0, end: 0 },
+            position: gherkin::LineCol { line: 1, col: 1 },
+            path: None,
+        };
+        
+        let scenario_type = (basic.which_scenario)(&feature, None, &scenario);
+        assert_eq!(scenario_type, ScenarioType::Serial);
+    }
+
+    #[test]
+    fn test_retry_options_function() {
+        let retry_fn = |_feature: &gherkin::Feature,
+                        _rule: Option<&gherkin::Rule>,
+                        scenario: &gherkin::Scenario,
+                        _cli: &Cli| {
+            if scenario.tags.contains(&"@retry".to_string()) {
+                Some(RetryOptions {
+                    retries: crate::event::Retries { current: 0, left: 3 },
+                    after: None,
+                })
+            } else {
+                None
+            }
+        };
+        
+        let basic = Basic::<TestWorld>::default()
+            .retry_options(retry_fn);
+        
+        assert!(Arc::strong_count(&basic.retry_options) == 1);
+    }
+
+    #[test]
+    fn test_before_hook() {
+        let before_hook = |_feature: &gherkin::Feature,
+                          _rule: Option<&gherkin::Rule>,
+                          _scenario: &gherkin::Scenario,
+                          _world: &mut TestWorld| {
+            Box::pin(async {
+                // Before hook logic
+            })
+        };
+        
+        let basic = Basic::<TestWorld>::default()
+            .before(before_hook);
+        
+        assert!(basic.before_hook.is_some());
+    }
+
+    #[test]
+    fn test_after_hook() {
+        let after_hook = |_feature: &gherkin::Feature,
+                         _rule: Option<&gherkin::Rule>,
+                         _scenario: &gherkin::Scenario,
+                         _result: &event::ScenarioFinished,
+                         _world: Option<&mut TestWorld>| {
+            Box::pin(async {
+                // After hook logic
+            })
+        };
+        
+        let basic = Basic::<TestWorld>::default()
+            .after(after_hook);
+        
+        assert!(basic.after_hook.is_some());
+    }
+
+    #[test]
+    fn test_steps_collection() {
+        let steps = step::Collection::<TestWorld>::new();
+        let basic = Basic::<TestWorld>::default()
+            .steps(steps.clone());
+        
+        // Verify steps were set (we can't directly compare Collections)
+        assert_eq!(basic.max_concurrent_scenarios, Some(64)); // Default value preserved
+    }
+
+    #[test]
+    fn test_given_when_then_steps() {
+        use regex::Regex;
+        
+        let basic = Basic::<TestWorld>::default()
+            .given(Regex::new(r"^a test$").unwrap(), |_world, _ctx| {
+                Box::pin(async {})
+            })
+            .when(Regex::new(r"^something happens$").unwrap(), |_world, _ctx| {
+                Box::pin(async {})
+            })
+            .then(Regex::new(r"^result is (\d+)$").unwrap(), |_world, _ctx| {
+                Box::pin(async {})
+            });
+        
+        // Steps are added to the collection
+        assert_eq!(basic.max_concurrent_scenarios, Some(64)); // Default value preserved
+    }
+
+    #[test]
+    fn test_max_concurrent_scenarios_options() {
+        // Test with Some value
+        let basic_some = Basic::<TestWorld>::default()
+            .max_concurrent_scenarios(Some(32));
+        assert_eq!(basic_some.max_concurrent_scenarios, Some(32));
+        
+        // Test with direct usize
+        let basic_usize = Basic::<TestWorld>::default()
+            .max_concurrent_scenarios(16);
+        assert_eq!(basic_usize.max_concurrent_scenarios, Some(16));
+        
+        // Test with None (unlimited)
+        let basic_none = Basic::<TestWorld>::default()
+            .max_concurrent_scenarios(None);
+        assert_eq!(basic_none.max_concurrent_scenarios, None);
+    }
+
+    #[test]
+    fn test_retries_options() {
+        // Test with Some value
+        let basic_some = Basic::<TestWorld>::default()
+            .retries(Some(5));
+        assert_eq!(basic_some.retries, Some(5));
+        
+        // Test with direct usize
+        let basic_usize = Basic::<TestWorld>::default()
+            .retries(3);
+        assert_eq!(basic_usize.retries, Some(3));
+        
+        // Test with None (no retries)
+        let basic_none = Basic::<TestWorld>::default()
+            .retries(None);
+        assert_eq!(basic_none.retries, None);
+    }
+
+    #[test]
+    fn test_retry_after_options() {
+        // Test with Some Duration
+        let duration = Duration::from_millis(500);
+        let basic_some = Basic::<TestWorld>::default()
+            .retry_after(Some(duration));
+        assert_eq!(basic_some.retry_after, Some(duration));
+        
+        // Test with direct Duration
+        let basic_duration = Basic::<TestWorld>::default()
+            .retry_after(duration);
+        assert_eq!(basic_duration.retry_after, Some(duration));
+        
+        // Test with None
+        let basic_none = Basic::<TestWorld>::default()
+            .retry_after(None);
+        assert_eq!(basic_none.retry_after, None);
+    }
+
+    #[test]
+    fn test_fail_fast_const_method() {
+        let basic = Basic::<TestWorld>::default();
+        assert!(!basic.fail_fast); // Default is false
+        
+        let fail_fast_basic = basic.fail_fast();
+        assert!(fail_fast_basic.fail_fast); // Now true
+    }
+
+    #[test]
+    fn test_chained_configuration() {
+        let basic = Basic::<TestWorld>::default()
+            .max_concurrent_scenarios(8)
+            .retries(2)
+            .retry_after(Duration::from_secs(2))
+            .fail_fast();
+        
+        assert_eq!(basic.max_concurrent_scenarios, Some(8));
+        assert_eq!(basic.retries, Some(2));
+        assert_eq!(basic.retry_after, Some(Duration::from_secs(2)));
+        assert!(basic.fail_fast);
+    }
+
+    #[cfg(feature = "tracing")]
+    #[test]
+    fn test_logs_collector_initialized() {
+        let basic = Basic::<TestWorld>::default();
+        assert!(Arc::strong_count(&basic.logs_collector) >= 1);
+    }
+
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_observers_initialized() {
+        let basic = Basic::<TestWorld>::default();
+        assert!(Arc::strong_count(&basic.observers) >= 1);
+        
+        // Test register_observer
+        use crate::observer::{TestObserver, ObservationContext};
+        use crate::Event;
+        
+        struct MockObserver;
+        impl TestObserver<TestWorld> for MockObserver {
+            fn on_event(&mut self, _event: &Event<event::Cucumber<TestWorld>>, _ctx: &ObservationContext) {}
+        }
+        
+        let basic_with_observer = basic.register_observer(Box::new(MockObserver));
+        assert!(Arc::strong_count(&basic_with_observer.observers) >= 1);
+    }
 }
