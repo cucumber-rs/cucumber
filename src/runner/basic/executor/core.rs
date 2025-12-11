@@ -555,6 +555,127 @@ mod tests {
         assert!(true); // Basic creation test
     }
 
+    #[test]
+    fn test_send_event() {
+        let (executor, mut receiver) = create_test_executor();
+        let test_event = event::Cucumber::<TestWorld>::Started;
+        
+        executor.send_event(test_event);
+        
+        // Verify event was sent
+        let received = receiver.try_next().unwrap();
+        assert!(received.is_some());
+        assert!(matches!(received.unwrap().unwrap().value, event::Cucumber::Started));
+    }
+
+    #[test]
+    fn test_send_all_events() {
+        let (executor, mut receiver) = create_test_executor();
+        let events = vec![
+            event::Cucumber::<TestWorld>::Started,
+            event::Cucumber::Finished,
+        ];
+        
+        executor.send_all_events(events);
+        
+        // Verify both events were sent
+        let first = receiver.try_next().unwrap();
+        assert!(first.is_some());
+        let second = receiver.try_next().unwrap();
+        assert!(second.is_some());
+    }
+
+    #[test]
+    fn test_scenario_finished_notification() {
+        let collection = step::Collection::<TestWorld>::new();
+        let (event_sender, _event_receiver) = mpsc::unbounded();
+        let (finished_sender, mut finished_receiver) = mpsc::unbounded();
+        let storage = Features::default();
+        
+        let executor = Executor::new(
+            collection,
+            None,
+            None,
+            event_sender,
+            finished_sender,
+            storage,
+            #[cfg(feature = "observability")]
+            std::sync::Arc::new(std::sync::Mutex::new(crate::observer::ObserverRegistry::new())),
+        );
+        
+        let id = ScenarioId::new();
+        let (feature, scenario) = create_test_feature_and_scenario();
+        
+        // Notify scenario finished
+        executor.scenario_finished(
+            id,
+            feature.clone(),
+            None, // No rule
+            false, // Not failed
+            false, // Not retried
+        );
+        
+        // Verify notification was sent
+        let notification = finished_receiver.try_next().unwrap();
+        assert!(notification.is_some());
+        let (received_id, received_feature, _rule, is_failed, is_retried) = notification.unwrap();
+        assert_eq!(received_id, id);
+        assert_eq!(received_feature.name, feature.name);
+        assert!(!is_failed);
+        assert!(!is_retried);
+    }
+
+    #[tokio::test]
+    async fn test_handle_execution_failure() {
+        let (executor, mut receiver) = create_test_executor();
+        let (feature, scenario) = create_test_feature_and_scenario();
+        let id = ScenarioId::new();
+        
+        let failure = ExecutionFailure::BeforeHookPanicked(
+            crate::runner::basic::supporting_structures::coerce_into_info("Before hook failed")
+        );
+        
+        executor.handle_execution_failure(
+            failure,
+            id,
+            feature.clone(),
+            None, // No rule
+            scenario.clone(),
+            None, // No retries
+        ).await;
+        
+        // Should send finished event
+        let event = receiver.try_next().unwrap();
+        assert!(event.is_some());
+        match event.unwrap().unwrap().value {
+            event::Cucumber::Feature { 
+                event: event::Feature::Scenario(_, event::RetryableScenario { 
+                    event: event::Scenario::Finished, 
+                    .. 
+                }), 
+                .. 
+            } => {},
+            _ => panic!("Expected Scenario::Finished event"),
+        }
+    }
+
+    #[cfg(feature = "observability")]
+    #[test]
+    fn test_register_observer() {
+        use crate::observer::{TestObserver, ObservationContext};
+        
+        struct MockObserver;
+        impl TestObserver<TestWorld> for MockObserver {
+            fn on_event(&mut self, _event: &Event<event::Cucumber<TestWorld>>, _ctx: &ObservationContext) {}
+        }
+        
+        let (executor, _) = create_test_executor();
+        let observer = Box::new(MockObserver);
+        
+        // Should not panic
+        executor.register_observer(observer);
+    }
+
     fn create_test_executor() -> (Executor<TestWorld, BeforeHook, AfterHook>, mpsc::UnboundedReceiver<parser::Result<Event<event::Cucumber<TestWorld>>>>) {
         let collection = step::Collection::<TestWorld>::new();
         let (event_sender, event_receiver) = mpsc::unbounded();

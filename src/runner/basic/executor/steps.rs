@@ -254,7 +254,7 @@ mod tests {
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
-        let _meta = StepExecutor::run_steps(
+        let meta = StepExecutor::run_steps(
             &collection,
             id,
             feature,
@@ -285,7 +285,7 @@ mod tests {
         let events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = events.clone();
         
-        let _meta = StepExecutor::run_steps(
+        let meta = StepExecutor::run_steps(
             &collection,
             id,
             feature,

@@ -10,7 +10,7 @@ use super::event_struct::Info;
 ///
 /// [`Scenario`]: gherkin::Scenario
 /// [`Step`]: gherkin::Step
-#[derive(Clone, Copy, Debug, Display)]
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq)]
 #[display("{self:?}")]
 pub enum HookType {
     /// Executing on each [`Scenario`] before running all [`Step`]s.
