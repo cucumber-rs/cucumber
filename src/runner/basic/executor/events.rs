@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_event_sender_creation() {
         let (sender, _receiver) = mpsc::unbounded();
-        let event_sender = EventSender::<TestWorld>::new_with_sender(sender);
+        let _event_sender = EventSender::<TestWorld>::new_with_sender(sender);
         
         // EventSender should be created successfully
         assert!(true); // Basic existence check
