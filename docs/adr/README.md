@@ -27,6 +27,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0015](0015-stats-collection.md) | Stats Collection | Accepted | Comprehensive test execution metrics tracking |
 | [0016](0016-cli-trait-pattern.md) | CLI Trait Pattern | Accepted (Original) | Component-specific CLI configuration via associated types |
 | [0017](0017-fail-fast-mechanism.md) | Fail-Fast Mechanism | Accepted (v0.11.3) | Stop test execution on first failure for faster feedback |
+| [0018](0018-panic-payload-extraction.md) | Panic Payload Extraction Enhancement | Accepted | Enhanced error handling to display actual panic messages instead of generic placeholders |
 
 ## ADR Template
 
