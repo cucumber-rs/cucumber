@@ -490,7 +490,7 @@ where
     /// Sends a single event.
     pub fn send_event(&self, event: event::Cucumber<W>) {
         // Send through normal channel
-        let event_wrapped = Event::new(event.clone());
+        let _event_wrapped = Event::new(event.clone());
         self.event_sender.send_event(event);
         
         // Notify observers if enabled
@@ -592,7 +592,7 @@ mod tests {
         let (finished_sender, mut finished_receiver) = mpsc::unbounded();
         let storage = Features::default();
         
-        let executor = Executor::new(
+        let executor: Executor<TestWorld, BeforeHook, AfterHook> = Executor::new(
             collection,
             None,
             None,
@@ -604,7 +604,7 @@ mod tests {
         );
         
         let id = ScenarioId::new();
-        let (feature, scenario) = create_test_feature_and_scenario();
+        let (feature, _scenario) = create_test_feature_and_scenario();
         
         // Notify scenario finished
         executor.scenario_finished(
@@ -631,9 +631,13 @@ mod tests {
         let (feature, scenario) = create_test_feature_and_scenario();
         let id = ScenarioId::new();
         
-        let failure = ExecutionFailure::BeforeHookPanicked(
-            crate::runner::basic::supporting_structures::coerce_into_info("Before hook failed")
-        );
+        let info = crate::runner::basic::supporting_structures::coerce_into_info("Before hook failed");
+        let meta = event::Metadata::new(());
+        let failure = ExecutionFailure::BeforeHookPanicked {
+            world: None,
+            panic_info: info,
+            meta,
+        };
         
         executor.handle_execution_failure(
             failure,
@@ -648,13 +652,10 @@ mod tests {
         let event = receiver.try_next().unwrap();
         assert!(event.is_some());
         match event.unwrap().unwrap().value {
-            event::Cucumber::Feature { 
-                event: event::Feature::Scenario(_, event::RetryableScenario { 
-                    event: event::Scenario::Finished, 
-                    .. 
-                }), 
+            event::Cucumber::Feature(_, event::Feature::Scenario(_, event::RetryableScenario { 
+                event: event::Scenario::Finished, 
                 .. 
-            } => {},
+            })) => {},
             _ => panic!("Expected Scenario::Finished event"),
         }
     }
@@ -682,7 +683,7 @@ mod tests {
         let (finished_sender, _finished_receiver) = mpsc::unbounded();
         let storage = Features::default();
         
-        let executor = Executor::new(
+        let executor: Executor<TestWorld, BeforeHook, AfterHook> = Executor::new(
             collection,
             None,
             None,
