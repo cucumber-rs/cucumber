@@ -10,3 +10,5 @@
       Step panicked. Captured output: assertion failed: `(left == right)`
         left: `1`,
        right: `101`[0m
+[36m?  Then foo is 21
+   Step skipped: tests/features/output/scenario_outline_adjacent_templates.feature:6:5[0m
