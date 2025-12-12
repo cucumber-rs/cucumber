@@ -36,7 +36,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug, SmartDefault)]
+#[derive(Clone, Copy, Debug, SmartDefault, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of an output.
@@ -1016,9 +1016,10 @@ impl<Out: io::Write> Basic<Out> {
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
 pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
-    err.downcast_ref::<String>()
+    (**err)
+        .downcast_ref::<String>()
         .map(|s| s.clone().into())
-        .or_else(|| err.downcast_ref::<&str>().map(|s| s.to_owned().into()))
+        .or_else(|| (**err).downcast_ref::<&str>().map(|s| s.to_owned().into()))
         .unwrap_or_else(|| "(Could not resolve panic payload)".into())
 }
 
@@ -1030,7 +1031,7 @@ fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
         .lines()
         .map(|line| format!("{}{line}", " ".repeat(indent)))
         .join("\n");
-    (!str.is_empty()).then(|| format!("\n{str}")).unwrap_or_default()
+    if str.is_empty() { String::new() } else { format!("\n{str}") }
 }
 
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to

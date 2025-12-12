@@ -13,7 +13,7 @@ cucumber = { version = "0.20", features = ["libtest"] }
 #
 use cucumber::{World as _, writer};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]

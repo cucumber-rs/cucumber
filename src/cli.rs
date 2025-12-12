@@ -77,7 +77,7 @@ use crate::writer::Coloring;
 /// [`Parser`]: crate::Parser
 /// [`Runner`]: crate::Runner
 /// [`Writer`]: crate::Writer
-#[derive(clap::Parser, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Parser)]
 #[command(
     name = "cucumber",
     about = "Run the tests, pet a dog!",
@@ -111,6 +111,7 @@ where
         short = 't',
         value_name = "tagexpr",
         conflicts_with = "name",
+        env = "CUCUMBER_FILTER_TAGS",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,

@@ -74,5 +74,5 @@ async fn step(_: &mut World, n: usize) {
     tracing::info!("in span: {n:?}");
 }
 
-#[derive(Clone, cucumber::World, Debug, Default, Display)]
+#[derive(Clone, Debug, Default, Display, cucumber::World)]
 struct World;

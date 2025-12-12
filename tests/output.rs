@@ -3,7 +3,7 @@ use std::{borrow::Cow, fmt::Debug, mem, sync::LazyLock};
 use cucumber::{Event, Writer, cli, event, given, parser, then, when};
 use regex::Regex;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World(usize);
 
 #[given(regex = r"foo is (\d+)")]
@@ -118,7 +118,7 @@ mod spec {
         )
     }
 
-    /// Deterministic output of [`writer::Basic`].
+    /// Deterministic output of a [`writer::Basic`].
     #[derive(Clone, Debug, Default)]
     struct Output(Vec<u8>);
 

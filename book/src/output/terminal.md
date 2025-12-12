@@ -66,7 +66,7 @@ async fn feed_cat(_: &mut AnimalWorld) {}
 ```
 ![record](../rec/output_terminal_verbose_1.gif)
 
-This is intended to help debugging failed tests. 
+This is intended to help debugging failed tests.
 
 
 ### Output [doc strings][doc] (`-vvv`)
@@ -74,11 +74,11 @@ This is intended to help debugging failed tests.
 By [default][1], outputting [doc strings][doc] of [step]s is omitted. To include them into the output use `-vvv` CLI option:
 ```gherkin
 Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
       """
-      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous 
+      A hungry cat called Felix is rescued from a Whiskas tin in a calamitous
       mash-up of cat food brands.
       """
     When I feed the cat
@@ -322,7 +322,7 @@ To achieve natural output for debugging, the following preparations are required
 # #[when("I feed the cat")]
 # async fn feed_cat(world: &mut AnimalWorld) {
 #     sleep(Duration::from_secs(2)).await;
-#     dbg!("here!");    
+#     dbg!("here!");
 #     world.cat.feed();
 # }
 #
@@ -365,7 +365,7 @@ use std::{
 use cucumber::{World as _, given, then, when};
 use tokio::time;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World;
 
 #[given(regex = r"(\d+) secs?")]
@@ -522,12 +522,12 @@ async fn main() {
 
 
 [#177]: https://github.com/cucumber-rs/cucumber/issues/177
-[`.max_concurrent_scenarios()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.max_concurrent_scenarios 
+[`.max_concurrent_scenarios()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.max_concurrent_scenarios
 [`Coloring::Never`]: https://docs.rs/cucumber/*/cucumber/writer/enum.Coloring.html#variant.Never
 [`cucumber`]: https://docs.rs/cucumber
 [`Cucumber::repeat_failed()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_failed
 [`Cucumber::repeat_skipped()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.repeat_skipped
-[`dbg!`]: https://doc.rust-lang.org/stable/std/macro.dbg.html 
+[`dbg!`]: https://doc.rust-lang.org/stable/std/macro.dbg.html
 [`println!`]: https://doc.rust-lang.org/stable/std/macro.println.html
 [`writer::AssertNormalized`]: https://docs.rs/cucumber/*/cucumber/writer/struct.AssertNormalized.html
 [`writer::Basic::raw`]: https://docs.rs/cucumber/*/cucumber/writer/struct.Basic.html#method.raw

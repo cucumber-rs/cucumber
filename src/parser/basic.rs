@@ -27,7 +27,7 @@ use super::{Error as ParseError, Parser};
 use crate::feature::Ext as _;
 
 /// CLI options of a [`Basic`] [`Parser`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Glob pattern to look for feature files with. If not specified, looks for

@@ -55,5 +55,5 @@ async fn step(world: &mut World, secs: CustomU64) {
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World(usize);

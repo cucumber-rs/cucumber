@@ -28,7 +28,6 @@ use std::{
 #[cfg(feature = "tracing")]
 use crossbeam_utils::atomic::AtomicCell;
 use derive_more::with_trait::{Debug, Display, FromStr};
-use drain_filter_polyfill::VecExt;
 use futures::{
     FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
     TryStreamExt as _,
@@ -54,7 +53,7 @@ use crate::{
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
@@ -189,7 +188,7 @@ impl RetryOptions {
 
         apply_cli(
             parse_tags(&scenario.tags)
-                .or_else(|| rule.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&rule?.tags))
                 .or_else(|| parse_tags(&feature.tags)),
         )
     }
@@ -983,10 +982,6 @@ async fn execute<W, Before, After>(
                     coll.start_scenarios(&runnable);
                 }
                 async {
-                    #[expect( // intentional
-                        clippy::infinite_loop,
-                        reason = "cannot annotate `async` block with `-> !"
-                    )]
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1028,23 +1023,21 @@ async fn execute<W, Before, After>(
                 select_with_biased_first(forward_logs, run_scenarios.next())
                     .await
                     .factor_first();
-            if finished_scenario.is_some() {
-                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
-                {
-                    *sc += 1;
-                }
+            if finished_scenario.is_some()
+                && let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+            {
+                *sc += 1;
             }
         }
 
         while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(rule) = rule {
-                if let Some(f) =
+            if let Some(rule) = rule
+                && let Some(f) =
                     storage.rule_scenario_finished(feat.clone(), rule, retried)
-                {
-                    executor.send_event(f);
-                }
+            {
+                executor.send_event(f);
             }
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);
@@ -2335,13 +2328,10 @@ impl Features {
              ty,
              count: Option<usize>| {
                 let mut i = 0;
-                // TODO: Replace with `extract_if` instead of custom
-                //       `drain_filter` in 1.87 Rust:
-                //       https://github.com/rust-lang/rust/issues/43244
-                let drained =
-                    VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
-                        // Because `drain_filter` runs over entire `Vec` on
-                        // `Drop`, we can't just `.take(count)`.
+                let drained = storage
+                    .extract_if(.., |(_, _, _, _, ret)| {
+                        // Because of retries involved, we cannot just specify
+                        // `..count` range to `.extract_if()`.
                         if count.filter(|c| i >= *c).is_some() {
                             return false;
                         }

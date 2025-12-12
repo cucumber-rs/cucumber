@@ -34,7 +34,7 @@ use crate::{
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// CLI options of a [`JUnit`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of JUnit XML report output.
