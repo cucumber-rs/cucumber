@@ -17,13 +17,15 @@ Usage: cucumber [OPTIONS]
 Options:
   -n, --name <regex>
           Regex to filter scenarios by their name
-          
+
           [aliases: scenario-name]
 
   -t, --tags <tagexpr>
           Tag expression to filter scenarios by.
-          
+
           Note: Tags from Feature, Rule and Scenario are merged together on filtering, so be careful about conflicting tags on different levels.
+
+          [env: CUCUMBER_FILTER_TAGS=]
 
   -i, --input <glob>
           Glob pattern to look for feature files with. If not specified, looks for `*.feature` files in the path configured in the test runner
@@ -33,7 +35,7 @@ Options:
 
       --fail-fast
           Run tests until the first failure
-          
+
           [aliases: ff]
 
       --retry <int>
@@ -41,7 +43,7 @@ Options:
 
       --retry-after <duration>
           Delay between each scenario retry attempt.
-          
+
           Duration is represented in a human-readable format like `12min5s`.
           Supported suffixes:
           - `nsec`, `ns` — nanoseconds.
@@ -55,12 +57,12 @@ Options:
 
   -v...
           Verbosity of an output.
-          
+
           `-v` is default verbosity, `-vv` additionally outputs world on failed steps, `-vvv` additionally outputs step's doc string (if present).
 
       --color <auto|always|never>
           Coloring policy for a console output
-          
+
           [default: auto]
 
   -h, --help
@@ -235,7 +237,7 @@ struct Smoke {
 #[tokio::main]
 async fn main() {
     let opts = cli::Opts::<_, _, _, CustomOpts>::parsed();
-    
+
     let pre_pause = if let Some(SubCommand::Smoke(Smoke { pre_pause })) =
         opts.custom.command
     {

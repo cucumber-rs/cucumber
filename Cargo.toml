@@ -64,7 +64,7 @@ timestamps = []
 tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
-clap = { version = "4.3.2", features = ["derive", "wrap_help"] }
+clap = { version = "4.3.2", features = ["derive", "env", "wrap_help"] }
 console = "0.16"
 derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 either = "1.6"
@@ -104,6 +104,7 @@ tracing-subscriber = { version = "0.3.16", optional = true }
 
 [dev-dependencies]
 rand = "0.9"
+serial_test = "3.0"
 tempfile = "3.2"
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "sync", "time"] }
 

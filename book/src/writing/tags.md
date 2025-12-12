@@ -31,7 +31,8 @@ Feature: Animal feature
 ```
 
 To filter out running [scenario]s we may use:
-- either `--tags` [CLI] option providing [tag expressions] (also consider [escaping]);
+- either `--tags` [CLI] option providing [tag expressions] (also consider [escaping]).
+- or `CUCUMBER_FILTER_TAGS` environment variable containing [tag expressions] (also consider [escaping]).
 - or [`filter_run()`]-like method.
 
 ![record](../rec/writing_tags_filtering.gif)
@@ -65,13 +66,13 @@ Feature: Animal feature
     Then the <animal> is not hungry
 
   @home
-  Examples: 
+  Examples:
     | animal | n |
     | cat    | 2 |
     | dog    | 3 |
 
   @dire
-  Examples: 
+  Examples:
     | animal | n |
     | lion   | 1 |
     | wolf   | 1 |
@@ -90,7 +91,7 @@ Feature: Animal feature
 
 ```gherkin
 Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
     When I feed the cat
@@ -120,7 +121,7 @@ Using [`Cucumber::fail_on_skipped()`] method fails the whole test suite if some 
 
 ```gherkin
 Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
     When I feed the cat
@@ -139,7 +140,7 @@ Feature: Animal feature
 #
 # use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
-# 
+#
 # #[derive(Debug, Default)]
 # struct Animal {
 #     pub hungry: bool,
@@ -194,7 +195,7 @@ async fn main() {
 
 ```gherkin
 Feature: Animal feature
-    
+
   Scenario: If we feed a hungry cat it will no longer be hungry
     Given a hungry cat
     When I feed the cat
