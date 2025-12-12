@@ -43,7 +43,7 @@ test: test.cargo
 #
 # Usage:
 #	make cargo.doc [crate=<crate-name>]
-#	               [private=(yes|no)] [docsrs=(no|yes)]
+#	               [private=(yes|no)] [deps=(yes|no)] [docsrs=(no|yes)]
 #	               [open=(yes|no)] [clean=(no|yes)]
 
 cargo.doc:
@@ -55,6 +55,7 @@ endif
 		$(if $(call eq,$(crate),),--workspace,-p $(crate)) \
 		--all-features \
 		$(if $(call eq,$(private),no),,--document-private-items) \
+		$(if $(call eq,$(deps),no),--no-deps,) \
 		$(if $(call eq,$(open),no),,--open)
 
 

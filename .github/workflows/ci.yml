@@ -192,9 +192,13 @@ jobs:
         with:
           toolchain: nightly
 
+      # TODO: Use `deps=yes` always once new version of `anstyle-parse` crate
+      #       is released.
       - run: make cargo.doc crate=${{ matrix.crate }}
                             private=yes docsrs=yes
                             open=no
+                            deps=${{ (matrix.crate == 'cucumber' && 'no')
+                                  ||                                'yes' }}
         env:
           RUSTFLAGS: -D warnings
 
