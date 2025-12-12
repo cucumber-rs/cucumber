@@ -576,6 +576,11 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Sets a hook, executed on each [`Scenario`] before running all its
     /// [`Step`]s, including [`Background`] ones.
     ///
+    /// > **NOTE**: Only one [`before`] hook can be registered. If
+    /// >           multiple calls are made, only the last one will be
+    /// >           run.
+    ///
+    /// [`before`]: Self::before()
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
@@ -622,9 +627,14 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Sets hook, executed on each [`Scenario`] after running all its
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] ones.
     ///
+    /// > **NOTE**: Only one [`after`] hook can be registered. If
+    /// >           multiple calls are made, only the last one will be
+    /// >           run.
+    ///
     /// Last `World` argument is supplied to the function, in case it was
     /// initialized before by running [`before`] hook or any [`Step`].
     ///
+    /// [`after`]: Self::after()
     /// [`before`]: Self::before()
     /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
