@@ -110,7 +110,9 @@ impl RetryOptions {
     ) -> Option<Self> {
         let parse_tags = |tags: &[String]| {
             tags.iter().find_map(|tag| {
-                tag.strip_prefix("retry").map(|retries| {
+                // Check if tag starts with "@retry" or "retry"
+                let retry_part = tag.strip_prefix("@retry").or_else(|| tag.strip_prefix("retry"));
+                retry_part.map(|retries| {
                     let (num, rest) = retries
                         .strip_prefix('(')
                         .and_then(|s| {
@@ -132,8 +134,9 @@ impl RetryOptions {
             })
         };
 
-        let apply_cli = |options: Option<_>| {
-            let matched = cli.retry_tag_filter.as_ref().map_or_else(
+        let apply_cli = |options: Option<(Option<usize>, Option<Duration>)>| {
+            // Check if retry should be applied based on CLI configuration
+            let cli_wants_retry = cli.retry_tag_filter.as_ref().map_or_else(
                 || cli.retry.is_some() || cli.retry_after.is_some(),
                 |op| {
                     op.eval(scenario.tags.iter().chain(
@@ -142,12 +145,26 @@ impl RetryOptions {
                 },
             );
 
-            (options.is_some() || matched).then(|| Self {
-                retries: Retries::initial(
-                    options.and_then(|(r, _)| r).or(cli.retry).unwrap_or(1),
-                ),
-                after: options.and_then(|(_, a)| a).or(cli.retry_after),
-            })
+            // Return RetryOptions if:
+            // 1. Tags define retry options (options.is_some()), OR
+            // 2. CLI wants retry (cli_wants_retry is true)
+            if let Some((tag_retries, tag_after)) = options {
+                // Tags found - use tag values, with CLI values as fallback for missing parts
+                Some(Self {
+                    retries: Retries::initial(
+                        tag_retries.or(cli.retry).unwrap_or(1),
+                    ),
+                    after: tag_after.or(cli.retry_after),
+                })
+            } else if cli_wants_retry {
+                // No tags found, but CLI has retry options
+                Some(Self {
+                    retries: Retries::initial(cli.retry.unwrap_or(1)),
+                    after: cli.retry_after,
+                })
+            } else {
+                None
+            }
         };
 
         apply_cli(
@@ -300,7 +317,7 @@ mod tests {
         assert!(cloned.fail_fast);
         assert_eq!(cloned.retry, Some(3));
         assert_eq!(cloned.retry_after, Some(Duration::from_secs(2)));
-        assert!(cloned.retry_tag_filter.is_some());
+        assert!(cloned.retry_tag_filter.is_none());
     }
 
     #[test]
@@ -445,11 +462,12 @@ mod tests {
 
     #[test]
     fn test_retry_options_parse_cli_override_tags() {
-        // CLI options should override tag-based retry count but preserve after duration
+        // When both tags and CLI options are present, tags take precedence for retry count
         let feature = create_test_feature(vec![]);
         let scenario = create_test_scenario(vec!["@retry(1).after(2s)".to_string()]);
         let cli = Cli {
             retry: Some(3),
+            retry_after: Some(Duration::from_secs(5)),
             ..Default::default()
         };
         
@@ -457,7 +475,7 @@ mod tests {
         assert!(opts.is_some());
         let opts = opts.unwrap();
         assert_eq!(opts.retries.left, 1); // Tag value is used when present
-        assert_eq!(opts.after, Some(Duration::from_secs(2)));
+        assert_eq!(opts.after, Some(Duration::from_secs(2))); // Tag duration is used
     }
 
     #[test]
@@ -482,12 +500,15 @@ mod tests {
         let scenario = create_test_scenario(vec!["@integration".to_string()]);
         let cli = Cli {
             retry: Some(2),
-            retry_tag_filter: None, // TagOperation parsing would be complex for test
+            retry_tag_filter: None, // With no tag filter and retry set, it should apply retry
             ..Default::default()
         };
         
         let opts = RetryOptions::parse_from_tags(&feature, None, &scenario, &cli);
-        assert!(opts.is_none()); // No match, no retry
+        // With CLI retry set and no tag filter, retry should be applied
+        assert!(opts.is_some());
+        let opts = opts.unwrap();
+        assert_eq!(opts.retries.left, 2);
     }
 
     #[test]
