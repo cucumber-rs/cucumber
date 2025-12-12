@@ -35,7 +35,7 @@ fn invalid_step(_world: &mut World) {
 #[tokio::test]
 #[parallel]
 async fn tags_option_filters_all_scenarios_with_subcommand() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
+    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from([
         "test",
         "smoke",
         r#"--report-name="smoke.report""#,
@@ -58,7 +58,7 @@ async fn tags_option_filters_all_scenarios_with_subcommand() {
 #[tokio::test]
 #[parallel]
 async fn tags_option_filters_scenario1_with_subcommand() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
+    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from([
         "test",
         "smoke",
         r#"--report-name="smoke.report""#,
@@ -81,7 +81,7 @@ async fn tags_option_filters_scenario1_with_subcommand() {
 #[tokio::test]
 #[parallel]
 async fn tags_option_filters_scenario1_no_subcommand() {
-    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&[
+    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from([
         "test",
         "--tags=@scenario-1",
     ])
@@ -106,7 +106,7 @@ async fn tags_option_filters_scenario1_via_env() {
         env::set_var("CUCUMBER_FILTER_TAGS", "@scenario-1");
     }
 
-    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(&["test"])
+    let cli = cli::Opts::<_, _, _, CustomCli>::try_parse_from(["test"])
         .expect("Invalid command line");
 
     let res =

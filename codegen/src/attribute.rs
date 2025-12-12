@@ -112,6 +112,9 @@ impl Step {
             self.fn_arguments_and_additional_parsing()?;
 
         let regex = self.gen_regex()?;
+        let allow_trivial_regex_attr =
+            matches!(self.attr_arg, AttributeArgument::Literal(_))
+                .then(|| quote! { #[allow(clippy::trivial_regex)] });
 
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
         let unwrapping = (!self.returns_unit())
@@ -135,6 +138,7 @@ impl Step {
                         column: ::std::column!(),
                     },
                     regex: || {
+                        #allow_trivial_regex_attr
                         static LAZY: ::std::sync::LazyLock<
                             ::cucumber::codegen::Regex
                         > = ::std::sync::LazyLock::new(|| { #regex });
