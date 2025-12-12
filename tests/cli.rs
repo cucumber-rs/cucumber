@@ -117,4 +117,8 @@ async fn tags_option_filters_scenario1_via_env() {
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");
+
+    unsafe {
+        env::remove_var("CUCUMBER_FILTER_TAGS");
+    }
 }
