@@ -626,7 +626,7 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
 
     /// Sets hook, executed on each [`Scenario`] after running all its
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] ones.
-    /// 
+    ///
     /// > **NOTE**: Only one [`after`] hook can be registered. If
     /// >           multiple calls are made, only the last one will be
     /// >           run.
