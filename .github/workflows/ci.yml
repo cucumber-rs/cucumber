@@ -21,7 +21,7 @@ jobs:
   ################
 
   pr:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ always() && github.event_name == 'pull_request' }}
     needs:
       - clippy
       - feature
@@ -32,7 +32,13 @@ jobs:
       - test-book
     runs-on: ubuntu-latest
     steps:
-      - run: true
+      - run: ${{ needs.clippy.result == 'success'
+              && needs.feature.result == 'success'
+              && needs.msrv.result == 'success'
+              && needs.rustdoc.result == 'success'
+              && needs.rustfmt.result == 'success'
+              && needs.test.result == 'success'
+              && needs.test-book.result == 'success' }}
 
 
 
@@ -44,7 +50,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -55,7 +61,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -84,7 +90,7 @@ jobs:
           - tracing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -106,14 +112,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        msrv: ["1.87.0"]
+        msrv: ["1.88.0"]
         crate:
           - cucumber-codegen
           - cucumber
         os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
@@ -136,7 +142,7 @@ jobs:
         os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -157,7 +163,7 @@ jobs:
         os: ["ubuntu", "macOS", "windows"]
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -181,14 +187,18 @@ jobs:
           - cucumber
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: nightly
 
+      # TODO: Use `deps=yes` always once new version of `anstyle-parse` crate
+      #       is released.
       - run: make cargo.doc crate=${{ matrix.crate }}
                             private=yes docsrs=yes
                             open=no
+                            deps=${{ (matrix.crate == 'cucumber' && 'no')
+                                  ||                                'yes' }}
         env:
           RUSTFLAGS: -D warnings
 
@@ -205,7 +215,7 @@ jobs:
     needs: ["release-github"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -231,7 +241,7 @@ jobs:
       - test-book
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Parse release version
         id: release
@@ -246,6 +256,15 @@ jobs:
           test "${{ steps.release.outputs.version }}" \
             == "$(grep -m1 'version = "' Cargo.toml | cut -d '"' -f2)"
 
+      - name: Ensure CHANGELOG date is today
+        run: |
+          today="$(date '+%Y-%m-%d')"
+          changelog="$(grep -E '^## \[${{ steps.release.outputs.version }}\] ·'\
+                            CHANGELOG.md \
+                       | cut -d' ' -f4 | tr -d ' ')"
+          echo "Changelog: $changelog"
+          echo "Today: $today"
+          [ "$changelog" = "$today" ]
       - name: Parse CHANGELOG link
         id: changelog
         run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## \[${{ steps.release.outputs.version }}\]/{s/^## \[\(.*\)\][^0-9]*\([0-9].*\)/\1--\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"
@@ -274,7 +293,7 @@ jobs:
     needs: ["test-book"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: peaceiris/actions-mdbook@v2
 
       - run: make book.build

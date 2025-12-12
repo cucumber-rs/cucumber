@@ -2,7 +2,7 @@
 name = "cucumber"
 version = "0.21.1"
 edition = "2024"
-rust-version = "1.87"
+rust-version = "1.88"
 description = """\
     Cucumber testing framework for Rust, with async support. \
     Fully native, no external test runners or dependencies.\
@@ -64,12 +64,12 @@ timestamps = []
 tracing = ["dep:crossbeam-utils", "dep:tracing", "dep:tracing-subscriber"]
 
 [dependencies]
-clap = { version = "4.3.2", features = ["derive", "wrap_help", "env"] }
-console = "0.15"
+clap = { version = "4.3.2", features = ["derive", "env", "wrap_help"] }
+console = "0.16"
 derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 either = "1.6"
 futures = "0.3.17"
-gherkin = "0.14"
+gherkin = "0.15"
 globwalk = "0.9"
 humantime = "2.1"
 itertools = "0.14"
@@ -83,7 +83,7 @@ smart-default = "0.7.1"
 # "macros" feature dependencies.
 anyhow = { version = "1.0.58", optional = true }
 cucumber-codegen = { version = "=0.21.1", path = "./codegen", optional = true }
-cucumber-expressions = { version = "0.4", features = ["into-regex"], optional = true }
+cucumber-expressions = { version = "0.5", features = ["into-regex"], optional = true }
 inventory = { version = "0.3", optional = true }
 
 # "output-json" and/or "libtest" features dependencies.

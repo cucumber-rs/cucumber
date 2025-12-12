@@ -303,9 +303,7 @@ impl Collector {
     }
 }
 
-// TODO: Try remove on next Rust version update.
-#[expect(clippy::allow_attributes, reason = "`#[expect]` doesn't work here")]
-#[allow( // intentional
+#[expect( // related to `tracing` capabilities only
     clippy::multiple_inherent_impl,
     reason = "related to `tracing` capabilities only"
 )]

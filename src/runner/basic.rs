@@ -188,7 +188,7 @@ impl RetryOptions {
 
         apply_cli(
             parse_tags(&scenario.tags)
-                .or_else(|| rule.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&rule?.tags))
                 .or_else(|| parse_tags(&feature.tags)),
         )
     }
@@ -976,10 +976,6 @@ async fn execute<W, Before, After>(
                     coll.start_scenarios(&runnable);
                 }
                 async {
-                    #[expect( // intentional
-                        clippy::infinite_loop,
-                        reason = "cannot annotate `async` block with `-> !"
-                    )]
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1021,23 +1017,21 @@ async fn execute<W, Before, After>(
                 select_with_biased_first(forward_logs, run_scenarios.next())
                     .await
                     .factor_first();
-            if finished_scenario.is_some() {
-                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
-                {
-                    *sc += 1;
-                }
+            if finished_scenario.is_some()
+                && let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+            {
+                *sc += 1;
             }
         }
 
         while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(rule) = rule {
-                if let Some(f) =
+            if let Some(rule) = rule
+                && let Some(f) =
                     storage.rule_scenario_finished(feat.clone(), rule, retried)
-                {
-                    executor.send_event(f);
-                }
+            {
+                executor.send_event(f);
             }
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);

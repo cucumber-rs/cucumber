@@ -12,7 +12,7 @@
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
     html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
 )]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
 #![cfg_attr(not(any(doc, test)), doc = env!("CARGO_PKG_NAME"))]
 #![deny(nonstandard_style, rustdoc::all, trivial_casts, trivial_numeric_casts)]
@@ -29,6 +29,7 @@
     clippy::cfg_not_test,
     clippy::clear_with_drain,
     clippy::clone_on_ref_ptr,
+    clippy::coerce_container_to_any,
     clippy::collection_is_never_read,
     clippy::create_dir,
     clippy::dbg_macro,
@@ -91,6 +92,7 @@
     clippy::rc_mutex,
     clippy::read_zero_byte_vec,
     clippy::redundant_clone,
+    clippy::redundant_test_prefix,
     clippy::redundant_type_annotations,
     clippy::renamed_function_params,
     clippy::ref_patterns,
@@ -108,7 +110,6 @@
     clippy::string_lit_as_bytes,
     clippy::string_lit_chars_any,
     clippy::string_slice,
-    clippy::string_to_string,
     clippy::suboptimal_flops,
     clippy::suspicious_operation_groupings,
     clippy::suspicious_xor_used_as_pow,
@@ -135,6 +136,7 @@
     clippy::use_self,
     clippy::useless_let_if_seq,
     clippy::verbose_file_reads,
+    clippy::volatile_composites,
     clippy::while_float,
     clippy::wildcard_enum_match_arm,
     ambiguous_negative_literals,
