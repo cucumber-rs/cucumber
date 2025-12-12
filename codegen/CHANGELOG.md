@@ -13,13 +13,13 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.87 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [todo])
+- Bumped up [MSRV] to 1.88 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [0c7dfc3c])
 
+[0c7dfc3c]: /../../commit/0c7dfc3c80f0f58ce9a52f252485d1d14e6eb0ed
 [4010c1ad]: /../../commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
 [9705253b]: /../../commit/9705253bda5caadfe3eea91f50420222158dd944
 [b46930c3]: /../../commit/b46930c32ef5ae490df8063905144a45de27eda1
 [f1307038]: /../../commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
-[todo]: /../../commit/todo
 
 
 

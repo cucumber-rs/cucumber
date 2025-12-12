@@ -136,6 +136,7 @@
     clippy::use_self,
     clippy::useless_let_if_seq,
     clippy::verbose_file_reads,
+    clippy::volatile_composites,
     clippy::while_float,
     clippy::wildcard_enum_match_arm,
     ambiguous_negative_literals,

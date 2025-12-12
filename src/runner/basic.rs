@@ -1017,23 +1017,21 @@ async fn execute<W, Before, After>(
                 select_with_biased_first(forward_logs, run_scenarios.next())
                     .await
                     .factor_first();
-            if finished_scenario.is_some() {
-                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
-                {
-                    *sc += 1;
-                }
+            if finished_scenario.is_some()
+                && let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+            {
+                *sc += 1;
             }
         }
 
         while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(rule) = rule {
-                if let Some(f) =
+            if let Some(rule) = rule
+                && let Some(f) =
                     storage.rule_scenario_finished(feat.clone(), rule, retried)
-                {
-                    executor.send_event(f);
-                }
+            {
+                executor.send_event(f);
             }
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);

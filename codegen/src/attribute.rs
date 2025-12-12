@@ -84,10 +84,10 @@ impl Step {
         }?
         .or_else(|| {
             func.sig.inputs.iter().find_map(|arg| {
-                if let Ok((ident, _)) = parse_fn_arg(arg) {
-                    if ident == "step" {
-                        return Some(ident.clone());
-                    }
+                if let Ok((ident, _)) = parse_fn_arg(arg)
+                    && ident == "step"
+                {
+                    return Some(ident.clone());
                 }
                 None
             })
@@ -793,10 +793,10 @@ fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
 
         let (mut other, mut removed): (Vec<_>, Vec<_>) =
             attrs.into_iter().partition_map(|attr| {
-                if let Some(ident) = attr.meta.path().get_ident() {
-                    if ident == attr_arg {
-                        return Either::Right(attr);
-                    }
+                if let Some(ident) = attr.meta.path().get_ident()
+                    && ident == attr_arg
+                {
+                    return Either::Right(attr);
                 }
                 Either::Left(attr)
             });
