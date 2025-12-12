@@ -490,7 +490,7 @@ where
     /// Sends a single event.
     pub fn send_event(&self, event: event::Cucumber<W>) {
         // Send through normal channel
-        let _event_wrapped = Event::new(event.clone());
+        let event_wrapped = Event::new(event.clone());
         self.event_sender.send_event(event);
         
         // Notify observers if enabled
