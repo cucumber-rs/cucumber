@@ -109,9 +109,9 @@ where
         id = "tags",
         long = "tags",
         short = 't',
-        env = "CUCUMBER_FILTER_TAGS",
         value_name = "tagexpr",
         conflicts_with = "name",
+        env = "CUCUMBER_FILTER_TAGS",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,

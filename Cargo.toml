@@ -104,6 +104,7 @@ tracing-subscriber = { version = "0.3.16", optional = true }
 
 [dev-dependencies]
 rand = "0.9"
+serial_test = "3.0"
 tempfile = "3.2"
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread", "sync", "time"] }
 
