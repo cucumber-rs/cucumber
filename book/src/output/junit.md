@@ -5,7 +5,7 @@ JUnit XML report
 
 This requires `output-junit` feature to be enabled in `Cargo.toml`:
 ```toml
-cucumber = { version = "0.20", features = ["output-junit"] }
+cucumber = { version = "0.22", features = ["output-junit"] }
 ```
 
 And configuring output to [`writer::JUnit`]:
