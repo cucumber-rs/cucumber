@@ -270,6 +270,66 @@ cargo smoke --tags=@hungry
 
 
 
+## CLI Parsing in Tests
+
+By default, [`Cucumber`] automatically parses command-line arguments when `run()` or `run_and_exit()` methods are called without explicitly providing CLI options via `with_cli()`. This automatic parsing happens at execution time (not when `cucumber()` is initially called), and internally calls `clap::Parser::parse()` which reads from `std::env::args()`.
+
+This behavior can interfere with test runners (like `cargo test`) that have their own CLI arguments such as:
+- `--nocapture` for output capture control
+- `--test-threads` for parallelism control  
+- Test filter patterns
+- `--exact` for exact test name matching
+
+The parsing occurs in the execution phase because the `Cucumber` instance is created with `cli: None` by default, which triggers automatic CLI parsing when execution begins
+
+### Avoiding CLI Parsing Conflicts
+
+To prevent automatic CLI argument parsing in test scenarios, explicitly provide CLI options using `with_cli()`:
+
+```rust
+use cucumber::cli;
+
+#[tokio::test]
+async fn my_bdd_test() {
+    // Use Empty for components that don't need CLI args
+    let cli = cli::Opts::<cli::Empty, cli::Empty, cli::Empty, cli::Empty>::default();
+
+    let runner = MyWorld::cucumber()
+        .max_concurrent_scenarios(1)
+        .fail_on_skipped()
+        .with_cli(cli);  // This prevents automatic CLI parsing
+
+    runner.run("tests/features/").await;
+}
+```
+
+The [`cli::Empty`] struct provides empty CLI options when no specific options are needed, avoiding the automatic parsing behavior that would otherwise occur.
+
+### Using Custom CLI Options in Tests
+
+If you need specific CLI options in your tests, you can construct them manually:
+
+```rust
+use cucumber::cli;
+
+#[tokio::test]
+async fn test_with_tags() {
+    let cli = cli::Opts::<_, _, _, cli::Empty>::try_parse_from(&[
+        "test",              // Program name
+        "--tags=@critical",  // Filter by tags
+        "--fail-fast",       // Stop on first failure
+    ])
+    .expect("Invalid CLI arguments");
+
+    MyWorld::cucumber()
+        .with_cli(cli)
+        .run_and_exit("tests/features/")
+        .await;
+}
+
+
+
+
 [`cli::Compose`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Compose.html
 [`cli::Empty`]: https://docs.rs/cucumber/*/cucumber/cli/struct.Empty.html
 [`cucumber`]: https://docs.rs/cucumber
