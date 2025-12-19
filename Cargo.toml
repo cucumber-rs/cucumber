@@ -71,7 +71,7 @@ console = "0.16"
 derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 either = "1.6"
 futures = "0.3.17"
-gherkin = "0.14"
+gherkin = "0.15"
 globwalk = "0.9"
 humantime = "2.1"
 itertools = "0.14"
