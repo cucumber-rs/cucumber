@@ -33,9 +33,9 @@ impl StepExecutor {
     where
         W: World,
     {
-        let mut passed_steps = 0;
+        let mut _passed_steps = 0;
         let mut skipped_steps = 0;
-        let mut failed_steps = 0;
+        let mut _failed_steps = 0;
         let mut step_failed = false;
         let mut last_failure: Option<(Option<regex::CaptureLocations>, Option<step::Location>, event::StepError)> = None;
 
@@ -75,10 +75,10 @@ impl StepExecutor {
                     // This shouldn't happen as run_step returns the final result
                     // But we need to handle it for exhaustive matching
                 }
-                event::Step::Passed { .. } => passed_steps += 1,
+                event::Step::Passed { .. } => _passed_steps += 1,
                 event::Step::Skipped => skipped_steps += 1,
                 event::Step::Failed { captures, location, error, .. } => {
-                    failed_steps += 1;
+                    _failed_steps += 1;
                     step_failed = true;
                     last_failure = Some((captures, location, error));
                 }
@@ -107,7 +107,7 @@ impl StepExecutor {
     /// Runs a single step.
     async fn run_step<W>(
         collection: &step::Collection<W>,
-        id: ScenarioId,
+        _id: ScenarioId,
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
