@@ -277,15 +277,6 @@ pub type AfterHookFn<World> = for<'a> fn(
     Option<&'a mut World>,
 ) -> LocalBoxFuture<'a, ()>;
 
-/// Alias for a failed [`Scenario`].
-///
-/// [`Scenario`]: gherkin::Scenario
-pub(super) type IsFailed = bool;
-
-/// Alias for a retried [`Scenario`].
-///
-/// [`Scenario`]: gherkin::Scenario
-pub(super) type IsRetried = bool;
 
 #[cfg(test)]
 mod tests {
@@ -631,11 +622,11 @@ mod tests {
         // Test that type aliases compile and can be used
         let _which_fn: WhichScenarioFn = |_f, _r, _s| ScenarioType::Serial;
         
-        // Test IsFailed and IsRetried aliases
-        let failed: IsFailed = true;
+        // Test that basic bool types work (IsFailed and IsRetried are defined in supporting_structures)
+        let failed: bool = true;
         assert!(failed);
         
-        let retried: IsRetried = false;
+        let retried: bool = false;
         assert!(!retried);
     }
 
