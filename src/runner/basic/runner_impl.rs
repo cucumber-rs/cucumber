@@ -11,7 +11,6 @@ use crate::{
     Event, Runner, World,
     event,
     parser,
-    future::FutureExt as _,
 };
 
 use super::{

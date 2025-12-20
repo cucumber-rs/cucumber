@@ -1,11 +1,8 @@
 //! Event sending logic for the Basic executor.
 
 use futures::channel::mpsc;
-use std::sync::{Arc, Mutex};
 
 use crate::{Event, World, event, parser};
-use super::super::supporting_structures::ScenarioId;
-use event::source::Source;
 
 /// Event sending functionality for the Executor.
 #[cfg(not(feature = "observability"))]

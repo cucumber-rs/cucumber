@@ -171,7 +171,6 @@ impl<World: crate::World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F
 impl<World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |feature, rule, scenario| {
-            use crate::tag::Ext as _;
             scenario
                 .tags
                 .iter()
@@ -204,7 +203,6 @@ impl<World> Default for Basic<World> {
 impl<World: crate::World> Default for Basic<World> {
     fn default() -> Self {
         let which_scenario: WhichScenarioFn = |feature, rule, scenario| {
-            use crate::tag::Ext as _;
             scenario
                 .tags
                 .iter()

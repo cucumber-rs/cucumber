@@ -4,7 +4,6 @@ use std::{
     ops::ControlFlow,
     panic,
     thread,
-    time::Instant,
 };
 
 use futures::{
@@ -19,7 +18,7 @@ use futures::{
 use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
     Event, World,
-    event::{self, HookType},
+    event,
     feature::Ext as _,
     future::{FutureExt as _, select_with_biased_first},
     parser, step,
@@ -182,16 +181,15 @@ pub(super) async fn execute<W, Before, After>(
             }
 
             // To avoid busy-polling of `Features::get()`, in case there are no
-            // scenarios that are running or scheduled for execution, we spawn a
-            // thread, that sleeps for minimal deadline of all retried
-            // scenarios.
-            // TODO: Replace `thread::spawn` with async runtime agnostic sleep,
-            //       once it's available.
+            // scenarios that are running or scheduled for execution, we sleep
+            // for the minimal deadline of all retried scenarios.
+            // This implementation is runtime-agnostic, using thread::spawn with
+            // oneshot channels to avoid depending on specific async runtimes.
             if let Some(dur) = sleep {
                 let (sender, receiver) = oneshot::channel();
                 drop(thread::spawn(move || {
                     thread::sleep(dur);
-                    sender.send(())
+                    _ = sender.send(());
                 }));
                 _ = receiver.await.ok();
             }

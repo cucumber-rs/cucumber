@@ -14,7 +14,6 @@ use std::{
 use futures::{
     channel::mpsc,
     lock::Mutex,
-    TryStreamExt as _,
 };
 use itertools::Itertools as _;
 

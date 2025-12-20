@@ -20,7 +20,7 @@ impl HookExecutor {
     /// Runs a before hook if present.
     pub(super) async fn run_before_hook<W, Before>(
         hook: Option<&Before>,
-        id: ScenarioId,
+        _id: ScenarioId,
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
@@ -105,7 +105,7 @@ impl HookExecutor {
     /// Runs an after hook if present.
     pub(super) async fn run_after_hook<W, After>(
         hook: Option<&After>,
-        id: ScenarioId,
+        _id: ScenarioId,
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,

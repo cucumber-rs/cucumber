@@ -16,8 +16,6 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::event::Metadata;
 
-use super::emitter::Emitter;
-
 /// Normalization queue for incoming events.
 ///
 /// We use [`LinkedHashMap`] everywhere throughout this module to ensure FIFO
