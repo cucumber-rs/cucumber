@@ -348,16 +348,16 @@ where
     ) {
         let retries = retry_options.map(|opts| opts.retries);
         // Check if this is actually a retry attempt (current > 0)
-        let is_retry = retries.as_ref().is_some_and(|r| r.current > 0);
+        let _is_retry = retries.as_ref().is_some_and(|r| r.current > 0);
         
-        let (meta, scenario_finished, is_failed) = match step_results {
+        let (_meta, scenario_finished, is_failed) = match step_results {
             Ok(meta) => {
                 let finished = meta.scenario_finished.clone();
                 let failed = matches!(finished, event::ScenarioFinished::StepFailed(_, _, _));
                 (meta, finished, failed)
             },
             Err(failure) => {
-                let finished = failure.get_scenario_finished_event();
+                let _finished = failure.get_scenario_finished_event();
                 let failed = true; // ExecutionFailure always indicates failure
                 // Handle execution failure
                 self.handle_execution_failure(
@@ -490,23 +490,68 @@ where
     /// Sends a single event.
     pub fn send_event(&self, event: event::Cucumber<W>) {
         // Send through normal channel
-        let event_wrapped = Event::new(event.clone());
+        let _event_wrapped = Event::new(event.clone());
         self.event_sender.send_event(event);
         
         // Notify observers if enabled
         #[cfg(feature = "observability")]
         {
             if let Ok(mut registry) = self.observers.lock() {
-                // Build context from current scenario information
-                let context = crate::observer::ObservationContext {
-                    scenario_id: None, // TODO: Track current scenario ID
-                    feature_name: String::new(), // TODO: Extract from event
-                    rule_name: None,
-                    scenario_name: String::new(), // TODO: Extract from event
-                    retry_info: None, // TODO: Extract from event
-                    tags: Vec::new(),
-                    timestamp: std::time::Instant::now(),
+                // Build context from current event information
+                let context = match &event {
+                    event::Cucumber::Feature(feature_src, feature_event) => {
+                        let feature_name = feature_src.name.clone();
+                        
+                        // Extract scenario, rule, and retry information from the event
+                        let (scenario_name, rule_name, retry_info, tags) = match feature_event {
+                            event::Feature::Scenario(scenario_src, retryable) => {
+                                (
+                                    scenario_src.name.clone(),
+                                    None,
+                                    Some(retryable.retries),
+                                    scenario_src.tags.iter().map(|t| t.to_string()).collect(),
+                                )
+                            }
+                            event::Feature::Rule(rule_src, rule_event) => {
+                                match rule_event {
+                                    event::Rule::Scenario(scenario_src, retryable) => {
+                                        (
+                                            scenario_src.name.clone(),
+                                            Some(rule_src.name.clone()),
+                                            Some(retryable.retries),
+                                            scenario_src.tags.iter().map(|t| t.to_string()).collect(),
+                                        )
+                                    }
+                                    _ => (String::new(), Some(rule_src.name.clone()), None, Vec::new()),
+                                }
+                            }
+                            _ => (String::new(), None, None, Vec::new()),
+                        };
+                        
+                        crate::observer::ObservationContext {
+                            scenario_id: None, // ScenarioId is not available at this level
+                            feature_name,
+                            rule_name,
+                            scenario_name,
+                            retry_info,
+                            tags,
+                            timestamp: std::time::Instant::now(),
+                        }
+                    }
+                    _ => {
+                        // For non-feature events, provide minimal context
+                        crate::observer::ObservationContext {
+                            scenario_id: None,
+                            feature_name: String::new(),
+                            rule_name: None,
+                            scenario_name: String::new(),
+                            retry_info: None,
+                            tags: Vec::new(),
+                            timestamp: std::time::Instant::now(),
+                        }
+                    }
                 };
+                
                 registry.notify(&event_wrapped, &context);
             }
         }
