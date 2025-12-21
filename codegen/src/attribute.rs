@@ -176,32 +176,8 @@ impl Step {
         &self,
         table_param: Option<&crate::attribute_ext::DataTableParam>,
     ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
-        let (mut func_args, mut addon_parsing) = self.fn_arguments_and_additional_parsing()?;
-        
-        // Add DataTable injection if needed
-        if let Some(param) = table_param {
-            let table_injection = crate::attribute_ext::generate_table_injection(
-                param,
-                &self.func.sig.ident,
-            );
-            
-            // Append table injection to addon_parsing
-            addon_parsing = Some(match addon_parsing {
-                Some(existing) => quote! {
-                    #existing
-                    #table_injection
-                },
-                None => table_injection,
-            });
-            
-            // Add table parameter to function arguments
-            let table_ident = &param.ident;
-            func_args = quote! {
-                #func_args #table_ident,
-            };
-        }
-        
-        Ok((func_args, addon_parsing))
+        // Just use the regular parsing - DataTable is handled in arg_ident_and_parse_code
+        self.fn_arguments_and_additional_parsing()
     }
     
     /// Generates code that prepares function's arguments basing on
@@ -276,48 +252,22 @@ impl Step {
                         );
                     }
                 });
-                // Filter out DataTable parameters from slice parsing
-                let table_param = crate::attribute_ext::detect_table_param(&func);
                 let func_args = func
                     .sig
                     .inputs
                     .iter()
                     .skip(1)
-                    .filter(|arg| {
-                        // Skip DataTable parameters
-                        if let Some(ref table) = table_param {
-                            if let syn::FnArg::Typed(pat_type) = arg {
-                                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                                    return pat_ident.ident != table.ident;
-                                }
-                            }
-                        }
-                        true
-                    })
                     .map(|arg| self.borrow_step_or_slice(arg))
                     .collect::<Result<TokenStream, _>>()?;
 
                 Ok((func_args, addon_parsing))
             } else {
-                // Filter out DataTable parameters from regular parsing
-                let table_param = crate::attribute_ext::detect_table_param(&func);
                 let (idents, parsings): (Vec<_>, Vec<_>) =
                     itertools::process_results(
                         func.sig
                             .inputs
                             .iter()
                             .skip(1)
-                            .filter(|arg| {
-                                // Skip DataTable parameters
-                                if let Some(ref table) = table_param {
-                                    if let syn::FnArg::Typed(pat_type) = arg {
-                                        if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                                            return pat_ident.ident != table.ident;
-                                        }
-                                    }
-                                }
-                                true
-                            })
                             .map(|arg| self.arg_ident_and_parse_code(arg)),
                         |i| i.unzip(),
                     )?;
@@ -340,7 +290,18 @@ impl Step {
                 None,
             ))
         } else {
-            Ok((TokenStream::default(), None))
+            // Check if there's a DataTable parameter even for literal strings
+            let table_param = crate::attribute_ext::detect_table_param(&self.func);
+            if let Some(param) = table_param {
+                let table_injection = crate::attribute_ext::generate_table_injection(
+                    &param,
+                    &self.func.sig.ident,
+                );
+                let table_ident = &param.ident;
+                Ok((quote! { #table_ident, }, Some(table_injection)))
+            } else {
+                Ok((TokenStream::default(), None))
+            }
         }
     }
 
@@ -366,11 +327,39 @@ impl Step {
         let is_ctx_arg =
             self.arg_name_of_step_context.as_ref().map(|i| *i == *ident)
                 == Some(true);
+        
+        // Check if this is a DataTable parameter
+        let is_data_table = crate::attribute_ext::is_data_table_type_from_arg(arg);
 
         let decl = if is_ctx_arg {
             quote! {
                 let #ident =
                     ::std::borrow::Borrow::borrow(&__cucumber_ctx.step);
+            }
+        } else if is_data_table {
+            // Handle DataTable specially - extract from step
+            // Check if it's optional
+            let is_optional = if let syn::FnArg::Typed(pat_type) = arg {
+                crate::attribute_ext::is_option_data_table(&pat_type.ty)
+            } else {
+                false
+            };
+            
+            if is_optional {
+                // Optional DataTable
+                quote! {
+                    let #ident = __cucumber_ctx.step.table.as_ref()
+                        .map(::cucumber::DataTable::from);
+                }
+            } else {
+                // Required DataTable
+                quote! {
+                    let #ident = __cucumber_ctx.step.table.as_ref()
+                        .map(::cucumber::DataTable::from)
+                        .expect(concat!(
+                            "Step requires a DataTable but none was provided in the feature file"
+                        ));
+                }
             }
         } else {
             let syn::Type::Path(ty) = ty else {
@@ -446,6 +435,7 @@ impl Step {
         &self,
         arg: &syn::FnArg,
     ) -> syn::Result<TokenStream> {
+        // Check if this is the step context argument
         if let Some(name) = &self.arg_name_of_step_context {
             let (ident, _) = parse_fn_arg(arg)?;
             if name == ident {
@@ -453,6 +443,12 @@ impl Step {
                     ::std::borrow::Borrow::borrow(&__cucumber_ctx.step),
                 });
             }
+        }
+        
+        // Check if this is a DataTable argument
+        if crate::attribute_ext::is_data_table_type_from_arg(arg) {
+            let (ident, _) = parse_fn_arg(arg)?;
+            return Ok(quote! { #ident, });
         }
 
         Ok(quote! {

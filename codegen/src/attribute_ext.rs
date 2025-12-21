@@ -51,6 +51,15 @@ pub fn detect_table_param(func: &syn::ItemFn) -> Option<DataTableParam> {
         })
 }
 
+/// Checks if a function argument is a DataTable type.
+pub fn is_data_table_type_from_arg(arg: &syn::FnArg) -> bool {
+    if let syn::FnArg::Typed(pat_type) = arg {
+        is_data_table_type(&pat_type.ty)
+    } else {
+        false
+    }
+}
+
 /// Checks if a type is DataTable.
 fn is_data_table_type(ty: &syn::Type) -> bool {
     match ty {
@@ -66,7 +75,7 @@ fn is_data_table_type(ty: &syn::Type) -> bool {
 }
 
 /// Checks if a type is Option<DataTable>.
-fn is_option_data_table(ty: &syn::Type) -> bool {
+pub fn is_option_data_table(ty: &syn::Type) -> bool {
     if let syn::Type::Path(type_path) = ty {
         if let Some(segment) = type_path.path.segments.last() {
             if segment.ident == "Option" {
