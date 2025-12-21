@@ -11,22 +11,22 @@
 //! Extended `#[given]`, `#[when]` and `#[then]` attribute macros with DataTable support.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
-use syn::spanned::Spanned as _;
+use quote::quote;
 
 /// Information about a DataTable parameter in a step function.
 #[derive(Clone, Debug)]
-pub struct DataTableParam {
+pub(crate) struct DataTableParam {
     /// Name of the parameter.
     pub ident: syn::Ident,
     /// Whether it's optional (Option<DataTable>).
     pub is_optional: bool,
     /// Position in the function arguments.
+    #[allow(dead_code)]
     pub position: usize,
 }
 
 /// Detects DataTable parameters in a function signature.
-pub fn detect_table_param(func: &syn::ItemFn) -> Option<DataTableParam> {
+pub(crate) fn detect_table_param(func: &syn::ItemFn) -> Option<DataTableParam> {
     func.sig
         .inputs
         .iter()
@@ -52,7 +52,7 @@ pub fn detect_table_param(func: &syn::ItemFn) -> Option<DataTableParam> {
 }
 
 /// Checks if a function argument is a DataTable type.
-pub fn is_data_table_type_from_arg(arg: &syn::FnArg) -> bool {
+pub(crate) fn is_data_table_type_from_arg(arg: &syn::FnArg) -> bool {
     if let syn::FnArg::Typed(pat_type) = arg {
         is_data_table_type(&pat_type.ty)
     } else {
@@ -75,7 +75,7 @@ fn is_data_table_type(ty: &syn::Type) -> bool {
 }
 
 /// Checks if a type is Option<DataTable>.
-pub fn is_option_data_table(ty: &syn::Type) -> bool {
+pub(crate) fn is_option_data_table(ty: &syn::Type) -> bool {
     if let syn::Type::Path(type_path) = ty {
         if let Some(segment) = type_path.path.segments.last() {
             if segment.ident == "Option" {
@@ -95,7 +95,7 @@ pub fn is_option_data_table(ty: &syn::Type) -> bool {
 }
 
 /// Generates code to inject a DataTable parameter.
-pub fn generate_table_injection(
+pub(crate) fn generate_table_injection(
     table_param: &DataTableParam,
     func_name: &syn::Ident,
 ) -> TokenStream {
@@ -122,69 +122,6 @@ pub fn generate_table_injection(
 }
 
 /// Modifies the function call to include DataTable parameter.
-pub fn modify_function_call(
-    original_call: TokenStream,
-    table_param: Option<&DataTableParam>,
-) -> TokenStream {
-    if let Some(param) = table_param {
-        let ident = &param.ident;
-        // Insert the DataTable parameter in the correct position
-        quote! {
-            #original_call, #ident
-        }
-    } else {
-        original_call
-    }
-}
-
-/// Validates that DataTable parameters are used correctly.
-pub fn validate_table_params(func: &syn::ItemFn) -> syn::Result<()> {
-    let table_params: Vec<_> = func.sig
-        .inputs
-        .iter()
-        .enumerate()
-        .skip(1)
-        .filter_map(|(pos, arg)| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if is_data_table_type(&pat_type.ty) {
-                    return Some((pos, arg));
-                }
-            }
-            None
-        })
-        .collect();
-    
-    if table_params.len() > 1 {
-        return Err(syn::Error::new(
-            table_params[1].1.span(),
-            "Only one DataTable parameter is allowed per step function",
-        ));
-    }
-    
-    // Check that DataTable comes after World and captures but before Step
-    if let Some((pos, param)) = table_params.first() {
-        // Find if there's a step parameter
-        let step_param_pos = func.sig.inputs.iter().position(|arg| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                    return pat_ident.ident == "step";
-                }
-            }
-            false
-        });
-        
-        if let Some(step_pos) = step_param_pos {
-            if *pos > step_pos {
-                return Err(syn::Error::new(
-                    param.span(),
-                    "DataTable parameter must come before the Step parameter",
-                ));
-            }
-        }
-    }
-    
-    Ok(())
-}
 
 #[cfg(test)]
 mod tests {
