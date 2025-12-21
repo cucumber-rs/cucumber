@@ -30,6 +30,7 @@ pub use crate::codegen::Parameter;
 #[doc(inline)]
 pub use crate::{
     cucumber::Cucumber,
+    data_table::DataTable,
     error::{CucumberError, Result},
     event::Event,
     parser::Parser,

@@ -108,8 +108,11 @@ impl Step {
 
         let world = parse_world_from_args(&self.func.sig)?;
         let step_type = self.step_type();
+        
+        // Check for DataTable parameter
+        let table_param = crate::attribute_ext::detect_table_param(&self.func);
         let (func_args, addon_parsing) =
-            self.fn_arguments_and_additional_parsing()?;
+            self.fn_arguments_and_additional_parsing_with_table(table_param.as_ref())?;
 
         let regex = self.gen_regex()?;
 
@@ -168,6 +171,39 @@ impl Step {
         }
     }
 
+    /// Generates code that prepares function's arguments with DataTable support.
+    fn fn_arguments_and_additional_parsing_with_table(
+        &self,
+        table_param: Option<&crate::attribute_ext::DataTableParam>,
+    ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
+        let (mut func_args, mut addon_parsing) = self.fn_arguments_and_additional_parsing()?;
+        
+        // Add DataTable injection if needed
+        if let Some(param) = table_param {
+            let table_injection = crate::attribute_ext::generate_table_injection(
+                param,
+                &self.func.sig.ident,
+            );
+            
+            // Append table injection to addon_parsing
+            addon_parsing = Some(match addon_parsing {
+                Some(existing) => quote! {
+                    #existing
+                    #table_injection
+                },
+                None => table_injection,
+            });
+            
+            // Add table parameter to function arguments
+            let table_ident = &param.ident;
+            func_args = quote! {
+                #func_args #table_ident,
+            };
+        }
+        
+        Ok((func_args, addon_parsing))
+    }
+    
     /// Generates code that prepares function's arguments basing on
     /// [`AttributeArgument`] and additional parsing if it's an
     /// [`AttributeArgument::Regex`].
@@ -240,22 +276,48 @@ impl Step {
                         );
                     }
                 });
+                // Filter out DataTable parameters from slice parsing
+                let table_param = crate::attribute_ext::detect_table_param(&func);
                 let func_args = func
                     .sig
                     .inputs
                     .iter()
                     .skip(1)
+                    .filter(|arg| {
+                        // Skip DataTable parameters
+                        if let Some(ref table) = table_param {
+                            if let syn::FnArg::Typed(pat_type) = arg {
+                                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
+                                    return pat_ident.ident != table.ident;
+                                }
+                            }
+                        }
+                        true
+                    })
                     .map(|arg| self.borrow_step_or_slice(arg))
                     .collect::<Result<TokenStream, _>>()?;
 
                 Ok((func_args, addon_parsing))
             } else {
+                // Filter out DataTable parameters from regular parsing
+                let table_param = crate::attribute_ext::detect_table_param(&func);
                 let (idents, parsings): (Vec<_>, Vec<_>) =
                     itertools::process_results(
                         func.sig
                             .inputs
                             .iter()
                             .skip(1)
+                            .filter(|arg| {
+                                // Skip DataTable parameters
+                                if let Some(ref table) = table_param {
+                                    if let syn::FnArg::Typed(pat_type) = arg {
+                                        if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
+                                            return pat_ident.ident != table.ident;
+                                        }
+                                    }
+                                }
+                                true
+                            })
                             .map(|arg| self.arg_ident_and_parse_code(arg)),
                         |i| i.unzip(),
                     )?;

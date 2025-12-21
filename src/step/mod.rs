@@ -28,6 +28,7 @@ pub mod context;
 pub mod error;
 pub mod location;
 pub mod regex;
+pub mod table;
 
 // Re-export all public items for easy access
 pub use collection::{Collection, WithContext};

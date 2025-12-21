@@ -185,6 +185,7 @@ pub mod runner;
 pub mod step;
 pub mod tag;
 pub mod writer;
+pub mod data_table;
 
 /// Prelude module with commonly used types for external integrations
 pub mod prelude;

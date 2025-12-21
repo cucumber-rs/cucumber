@@ -160,6 +160,7 @@
 )]
 
 mod attribute;
+mod attribute_ext;
 mod parameter;
 mod world;
 
