@@ -174,7 +174,7 @@ impl Step {
     /// Generates code that prepares function's arguments with DataTable support.
     fn fn_arguments_and_additional_parsing_with_table(
         &self,
-        table_param: Option<&crate::attribute_ext::DataTableParam>,
+        _table_param: Option<&crate::attribute_ext::DataTableParam>,
     ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
         // Just use the regular parsing - DataTable is handled in arg_ident_and_parse_code
         self.fn_arguments_and_additional_parsing()
