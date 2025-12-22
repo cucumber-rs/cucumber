@@ -84,12 +84,9 @@ impl Step {
         }?
         .or_else(|| {
             func.sig.inputs.iter().find_map(|arg| {
-                if let Ok((ident, _)) = parse_fn_arg(arg) {
-                    if ident == "step" {
-                        return Some(ident.clone());
-                    }
-                }
-                None
+                parse_fn_arg(arg).ok().and_then(|(ident, _)| {
+                    (ident == "step").then(|| ident.clone())
+                })
             })
         });
 
@@ -324,9 +321,7 @@ impl Step {
     ) -> syn::Result<(&'a syn::Ident, TokenStream)> {
         let (ident, ty) = parse_fn_arg(arg)?;
 
-        let is_ctx_arg =
-            self.arg_name_of_step_context.as_ref().map(|i| *i == *ident)
-                == Some(true);
+        let is_ctx_arg = self.arg_name_of_step_context.as_ref().is_some_and(|i| i == ident);
         
         // Check if this is a DataTable parameter
         let is_data_table = crate::attribute_ext::is_data_table_type_from_arg(arg);
