@@ -147,7 +147,7 @@ fn expand_scenario(
     //       https://github.com/Canop/lazy-regex/issues/10
     #[expect(clippy::unwrap_used, reason = "regex is valid")]
     static TEMPLATE_REGEX: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"<([^>\s]+)>").unwrap());
+        LazyLock::new(|| Regex::new(r"<([^>]+)>").unwrap());
 
     if scenario.examples.is_empty() {
         return vec![Ok(scenario)];
