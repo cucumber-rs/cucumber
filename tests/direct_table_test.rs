@@ -153,7 +153,7 @@ mod tests {
     async fn test_direct_data_table() {
         // Test that DataTable can be created and used directly
         let table = DataTable::from(vec![
-            vec!["product", "price", "stock"],
+            vec!["name", "price", "stock"],
             vec!["apple", "1.50", "100"],
             vec!["banana", "0.75", "200"],
         ]);
