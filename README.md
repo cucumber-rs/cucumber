@@ -83,6 +83,111 @@ For more examples check out the Book ([current][1] | [edge][2]).
 
 
 
+## Working with DataTables
+
+[Cucumber DataTables](https://cucumber.io/docs/gherkin/reference/#data-tables) allow you to pass structured data to your steps. This crate provides rich support for DataTables through the `DataTable` type:
+
+### Direct Parameter Support
+
+You can receive DataTables directly as step parameters:
+
+```rust
+use cucumber::{given, DataTable, World};
+
+#[derive(Debug, Default, World)]
+struct MyWorld {
+    products: Vec<Product>,
+}
+
+#[derive(Debug)]
+struct Product {
+    name: String,
+    price: f64,
+}
+
+#[given("the following products:")]
+fn load_products(world: &mut MyWorld, table: DataTable) {
+    // Access rows with headers
+    for row in table.rows_with_header().skip(1) {
+        world.products.push(Product {
+            name: row["name"].to_string(),
+            price: row["price"].parse().unwrap(),
+        });
+    }
+}
+```
+
+### Optional DataTables
+
+DataTables can also be optional in your steps:
+
+```rust
+#[given("a product")]
+fn create_product(world: &mut MyWorld, table: Option<DataTable>) {
+    if let Some(table) = table {
+        // Use provided data
+        let row = table.rows().nth(1).unwrap();
+        world.products.push(Product {
+            name: row[0].to_string(),
+            price: row[1].parse().unwrap(),
+        });
+    } else {
+        // Use defaults when no table provided
+        world.products.push(Product {
+            name: "Default".to_string(),
+            price: 0.0,
+        });
+    }
+}
+```
+
+### Rich API
+
+The `DataTable` type provides multiple ways to access your data:
+
+```rust
+// Access as rows
+for row in table.rows() {
+    println!("{:?}", row);
+}
+
+// Access with headers as HashMap
+for row in table.rows_with_header().skip(1) {
+    println!("{} costs {}", row["name"], row["price"]);
+}
+
+// Transpose the table
+let transposed = table.transpose();
+
+// Access specific cells
+if let Some(cell) = table.cell(1, 0) {
+    println!("Cell value: {}", cell);
+}
+
+// Get column values
+let names: Vec<String> = table.column(0)
+    .map(|s| s.to_string())
+    .collect();
+```
+
+### Feature File Example
+
+```gherkin
+Feature: Product Management
+
+  Scenario: Loading products
+    Given the following products:
+      | name    | price |
+      | Apple   | 1.20  |
+      | Banana  | 0.50  |
+      | Orange  | 0.80  |
+    When I calculate the total
+    Then the total should be 2.50
+```
+
+
+
+
 ## Cargo features
 
 - `macros` (default): Enables step attributes and auto-wiring.

@@ -142,7 +142,7 @@ impl Default for State {
 ///
 /// This struct provides utilities for managing state transitions and
 /// ensuring proper summary generation timing.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct StateManager {
     /// Current execution state.
     state: State,

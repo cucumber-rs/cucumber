@@ -20,7 +20,6 @@ use crate::{
     parser,
     writer::{
         basic::{coerce_error, trim_path},
-        common::ScenarioContext,
         out::WriteStrExt as _,
     },
 };
@@ -28,7 +27,7 @@ use crate::{
 use super::{
     cli::Cli,
     json_events::{LibTestJsonEvent, SuiteEvent, SuiteResults, TestEvent},
-    utils::{IsBackground, LibtestUtils},
+    utils::LibtestUtils,
     writer::Libtest,
 };
 

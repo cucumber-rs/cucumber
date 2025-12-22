@@ -98,6 +98,7 @@ pub type HandledScenarios = HashMap<
 >;
 
 /// Utility functions for working with [`HandledScenarios`].
+#[derive(Clone, Copy, Debug)]
 pub struct ScenarioTracker;
 
 impl ScenarioTracker {

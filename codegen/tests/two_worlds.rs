@@ -48,7 +48,7 @@ async fn main() {
         .await;
 
     assert_eq!(writer.passed_steps(), 7);
-    assert_eq!(writer.skipped_steps(), 5);
+    assert_eq!(writer.skipped_steps(), 3);
     assert_eq!(writer.failed_steps(), 0);
 
     let writer = SecondWorld::cucumber()

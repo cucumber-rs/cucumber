@@ -145,6 +145,7 @@ impl SummaryFormatter for Styles {
 }
 
 /// Utility functions for formatting summary components.
+#[derive(Clone, Copy, Debug)]
 pub struct SummaryUtils;
 
 impl SummaryUtils {

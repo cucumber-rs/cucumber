@@ -10,13 +10,12 @@
 
 //! Utility functions for the libtest writer.
 
-use std::{fmt::Debug, io, time::{Duration, SystemTime}};
+use std::{io, time::{Duration, SystemTime}};
 
 use either::Either;
 use itertools::Itertools as _;
 
 use crate::{
-    World,
     event::{self, Metadata, Retries},
     writer::basic::trim_path,
 };
@@ -30,6 +29,7 @@ use super::{cli::Cli, writer::Libtest};
 pub type IsBackground = bool;
 
 /// Utility functions for libtest writer operations.
+#[derive(Clone, Copy, Debug)]
 pub struct LibtestUtils;
 
 impl LibtestUtils {
@@ -184,6 +184,7 @@ impl LibtestUtils {
 }
 
 /// Helper functions for working with test timing.
+#[derive(Clone, Copy, Debug)]
 pub struct TimingUtils;
 
 impl TimingUtils {
@@ -208,6 +209,7 @@ impl TimingUtils {
 }
 
 /// Helper functions for working with background steps.
+#[derive(Clone, Copy, Debug)]
 pub struct BackgroundUtils;
 
 impl BackgroundUtils {

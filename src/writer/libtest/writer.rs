@@ -12,7 +12,7 @@
 
 use std::{
     fmt::Debug,
-    io, mem,
+    io,
     time::SystemTime,
 };
 

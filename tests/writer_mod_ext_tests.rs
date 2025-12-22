@@ -217,7 +217,12 @@ fn test_conditional_exports_junit() {
 #[test]
 fn test_conditional_exports_libtest() {
     // Test that Libtest is available when feature is enabled
-    let _: Libtest<std::io::Stdout> = Libtest::stdout();
+    use cucumber::{writer::Normalize, World};
+    
+    #[derive(Debug, Default, World)]
+    struct TestWorld;
+    
+    let _ = Libtest::<TestWorld>::stdout();
 }
 
 // Test edge cases and error conditions
