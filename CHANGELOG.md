@@ -6,6 +6,20 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## main
+
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...main) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/31)
+
+### Fixed
+
+- Incorrectly disallowed spaces inside placeholders for `Examples`. ([#388], [#387])
+
+[#387]: https://github.com/cucumber-rs/cucumber/issues/387
+[#388]: https://github.com/cucumber-rs/cucumber/pull/388
+
+
+
+
 ## [0.22.0] · 2025-12-12
 [0.22.0]: https://github.com/cucumber-rs/cucumber/tree/v0.22.0
 
