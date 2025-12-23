@@ -7,7 +7,7 @@
 [![CI](https://github.com/cucumber-rs/cucumber/actions/workflows/ci.yml/badge.svg?branch=main "CI")](https://github.com/cucumber-rs/cucumber/actions?query=workflow%3ACI+branch%3Amain)
 [![Rust docs](https://docs.rs/cucumber-codegen/badge.svg "Rust docs")](https://docs.rs/cucumber-codegen)
 
-- [Changelog](https://github.com/cucumber-rs/cucumber/blob/v0.22.0/codegen/CHANGELOG.md)
+- [Changelog](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/codegen/CHANGELOG.md)
 
 Code generation for [`cucumber`] tests auto-wiring.
 
@@ -20,8 +20,8 @@ DO NOT use it directly, use [`cucumber`] crate instead.
 
 This project is licensed under either of
 
-* Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/cucumber-rs/cucumber/blob/v0.22.0/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-* MIT license ([LICENSE-MIT](https://github.com/cucumber-rs/cucumber/blob/v0.22.0/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+* Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+* MIT license ([LICENSE-MIT](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 

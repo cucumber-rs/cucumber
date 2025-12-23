@@ -6,9 +6,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## main
+## [0.22.1] · 2025-12-23
+[0.22.1]: https://github.com/cucumber-rs/cucumber/tree/v0.22.1
 
-[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...main) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/31)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...v0.22.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/31)
 
 ### Fixed
 
