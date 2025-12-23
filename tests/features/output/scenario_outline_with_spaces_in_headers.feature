@@ -7,4 +7,4 @@ Feature: Outline
 
     Examples:
       | bar 1 | bar two | bar three |
-      | 0     | 1       | 2         |
+      |   0   |    1    |     2     |

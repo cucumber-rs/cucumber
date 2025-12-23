@@ -142,12 +142,18 @@ fn expand_scenario(
 ) -> Vec<Result<gherkin::Scenario, ExpandExamplesError>> {
     /// [`Regex`] matching placeholders [`Examples`] should expand into.
     ///
+    /// # Format
+    ///
+    /// - Spaces are allowed inside placeholder.
+    /// - Placeholder cannot start or end with a space.
+    ///
     /// [`Examples`]: gherkin::Examples
     // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
     //       https://github.com/Canop/lazy-regex/issues/10
     #[expect(clippy::unwrap_used, reason = "regex is valid")]
-    static TEMPLATE_REGEX: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new("<([^>]+)>").unwrap());
+    static TEMPLATE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"<([^>\s](?:[^>\s]?|[^>\t\n\r\v\f]*[^>\s]))>").unwrap()
+    });
 
     if scenario.examples.is_empty() {
         return vec![Ok(scenario)];
