@@ -39,36 +39,88 @@ impl StepExecutor {
         let mut step_failed = false;
         let mut last_failure: Option<(Option<regex::CaptureLocations>, Option<step::Location>, event::StepError)> = None;
 
-        // Execute all steps in the scenario
+        // Collect all steps to execute (background steps + scenario steps)
+        let mut all_steps = Vec::new();
+        
+        // 1. Add feature-level background steps (if any)
+        if let Some(background) = &feature.background {
+            for step in &background.steps {
+                all_steps.push((step.clone(), true)); // true = background step
+            }
+        }
+        
+        // 2. Add rule-level background steps (if any)
+        if let Some(ref rule) = rule {
+            if let Some(background) = &rule.background {
+                for step in &background.steps {
+                    all_steps.push((step.clone(), true)); // true = background step
+                }
+            }
+        }
+        
+        // 3. Add scenario steps
         for step in &scenario.steps {
+            all_steps.push((step.clone(), false)); // false = regular step
+        }
+
+        // Execute all steps
+        for (step, is_background) in all_steps {
             if step_failed {
                 // Skip remaining steps if one has already failed
                 skipped_steps += 1;
-                Self::emit_skipped_step_event(
+                if is_background {
+                    Self::emit_skipped_background_step_event(
+                        feature.clone(),
+                        rule.clone(),
+                        scenario.clone(),
+                        Source::new(step.clone()),
+                        retries,
+                        &send_event,
+                    );
+                } else {
+                    Self::emit_skipped_step_event(
+                        feature.clone(),
+                        rule.clone(),
+                        scenario.clone(),
+                        Source::new(step.clone()),
+                        retries,
+                        &send_event,
+                    );
+                }
+                continue;
+            }
+
+            let step_result = if is_background {
+                Self::run_background_step(
+                    collection,
+                    id,
                     feature.clone(),
                     rule.clone(),
                     scenario.clone(),
                     Source::new(step.clone()),
+                    world,
                     retries,
-                    &send_event,
-                );
-                continue;
-            }
-
-            let step_result = Self::run_step(
-                collection,
-                id,
-                feature.clone(),
-                rule.clone(),
-                scenario.clone(),
-                Source::new(step.clone()),
-                world,
-                retries,
-                send_event.clone(),
-                #[cfg(feature = "tracing")]
-                waiter,
-            )
-            .await;
+                    send_event.clone(),
+                    #[cfg(feature = "tracing")]
+                    waiter,
+                )
+                .await
+            } else {
+                Self::run_step(
+                    collection,
+                    id,
+                    feature.clone(),
+                    rule.clone(),
+                    scenario.clone(),
+                    Source::new(step.clone()),
+                    world,
+                    retries,
+                    send_event.clone(),
+                    #[cfg(feature = "tracing")]
+                    waiter,
+                )
+                .await
+            };
 
             match step_result {
                 event::Step::Started => {
@@ -107,7 +159,7 @@ impl StepExecutor {
     /// Runs a single step.
     async fn run_step<W>(
         collection: &step::Collection<W>,
-        _id: ScenarioId,
+        id: ScenarioId,
         feature: Source<gherkin::Feature>,
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
@@ -209,6 +261,144 @@ impl StepExecutor {
         send_event(event.value);
 
         step_event
+    }
+
+    /// Runs a single background step.
+    async fn run_background_step<W>(
+        collection: &step::Collection<W>,
+        _id: ScenarioId,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
+        step: Source<gherkin::Step>,
+        world: &mut W,
+        retries: Option<crate::event::Retries>,
+        send_event: impl Fn(event::Cucumber<W>),
+        #[cfg(feature = "tracing")] waiter: Option<&crate::tracing::SpanCloseWaiter>,
+    ) -> event::Step<W>
+    where
+        W: World,
+    {
+        // Send background step started event
+        let event = Event::new(
+            event::Cucumber::scenario(
+                feature.clone(),
+                rule.clone(),
+                scenario.clone(),
+                event::RetryableScenario {
+                    event: event::Scenario::Background(
+                        step.clone(),
+                        event::Step::Started,
+                    ),
+                    retries,
+                },
+            )
+        );
+        send_event(event.value);
+
+        #[cfg(feature = "tracing")]
+        let span = _id.step_span(true); // true for background
+        #[cfg(feature = "tracing")]
+        let _guard = span.enter();
+
+        // Run the actual step (same logic as run_step)
+        let step_fn = collection.find(&*step);
+        let (result, location, step_captures) = match step_fn {
+            Ok(Some((step_fn, captures, loc, ctx))) => {
+                // Extract the actual capture locations for the event
+                let actual_captures = captures.clone();
+
+                let result = AssertUnwindSafe(step_fn(world, ctx))
+                            .catch_unwind()
+                            .await;
+
+                (result, loc, Some(actual_captures))
+            }
+            Ok(None) => {
+                return event::Step::Failed {
+                    captures: None,
+                    location: None,
+                    world: None,
+                    error: event::StepError::NotFound,
+                };
+            }
+            Err(ambiguous_err) => {
+                return event::Step::Failed {
+                    captures: None,
+                    location: None,
+                    world: None,
+                    error: event::StepError::AmbiguousMatch(ambiguous_err),
+                };
+            }
+        };
+
+        #[cfg(feature = "tracing")]
+        {
+            drop(_guard);
+            if let Some(waiter) = waiter {
+                waiter.wait_for_span_close(span.id()).await;
+            }
+        }
+
+        let step_event = match result {
+            Ok(()) => event::Step::Passed {
+                captures: step_captures.unwrap_or_else(|| regex::Regex::new("").unwrap().capture_locations()),
+                location,
+            },
+            Err(err) => {
+                let info = coerce_into_info(err);
+                event::Step::Failed {
+                    captures: step_captures,
+                    location,
+                    world: None,
+                    error: event::StepError::Panic(info),
+                }
+            }
+        };
+
+        // Send background step finished event
+        let event = Event::new(
+            event::Cucumber::scenario(
+                feature,
+                rule,
+                scenario,
+                event::RetryableScenario {
+                    event: event::Scenario::Background(step, step_event.clone()),
+                    retries,
+                },
+            )
+        );
+        send_event(event.value);
+
+        step_event
+    }
+
+    /// Emits a skipped background step event.
+    fn emit_skipped_background_step_event<W>(
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
+        step: Source<gherkin::Step>,
+        retries: Option<crate::event::Retries>,
+        send_event: &impl Fn(event::Cucumber<W>),
+    ) where
+        W: World,
+    {
+        let event = Event::new(
+            event::Cucumber::scenario(
+                feature,
+                rule,
+                scenario,
+                event::RetryableScenario {
+                    event: event::Scenario::Background(
+                        step,
+                        event::Step::Skipped,
+                    ),
+                    retries,
+                },
+            )
+        );
+        send_event(event.value);
     }
 
     /// Emits a skipped step event.
