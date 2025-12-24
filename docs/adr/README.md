@@ -30,6 +30,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0018](0018-panic-payload-extraction.md) | Panic Payload Extraction Enhancement | Accepted | Enhanced error handling to display actual panic messages instead of generic placeholders |
 | [0019](0019-data-table-api.md) | DataTable API and Direct Parameter Support | Accepted | Rich DataTable API with direct parameter injection matching cucumber-js patterns |
 | [0020](0020-rust-190-modernization.md) | Rust 1.90+ Language Modernization | Accepted | Adopt modern Rust idioms including is_some_and and improved error handling patterns |
+| [0021](0021-background-execution-in-rules.md) | Background Execution in Rules | Accepted | Feature-level backgrounds execute for all scenarios including those in rules |
 
 ## ADR Template
 
