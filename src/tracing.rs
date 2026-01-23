@@ -519,8 +519,7 @@ mod suffix {
     //! [`str`]ings appending [`tracing::Event`]s to separate them later.
     //!
     //! Every [`tracing::Event`] ends with:
-    //!
-    //! ([`BEFORE_SCENARIO_ID`][`ScenarioId`][`END`]|[`NO_SCENARIO_ID`][`END`])
+    //! ([`BEFORE_SCENARIO_ID`][`ScenarioId`][`END`]|[`NO_SCENARIO_ID`][`END`]).
     //!
     //! [`ScenarioId`]: super::ScenarioId
 

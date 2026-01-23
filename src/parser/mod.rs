@@ -64,7 +64,7 @@ pub enum Error {
     #[display("Failed to parse feature: {_0}")]
     Parsing(Arc<gherkin::ParseFileError>),
 
-    /// Failed to expand [`Examples`]
+    /// Failed to expand [`Examples`].
     ///
     /// [`Examples`]: gherkin::Examples
     #[display("Failed to expand examples: {_0}")]

@@ -827,14 +827,14 @@ where
 enum LibTestJsonEvent {
     /// Event of test suite.
     Suite {
-        /// [`SuiteEvent`]
+        /// [`SuiteEvent`].
         #[serde(flatten)]
         event: SuiteEvent,
     },
 
     /// Event of the test case.
     Test {
-        /// [`TestEvent`]
+        /// [`TestEvent`].
         #[serde(flatten)]
         event: TestEvent,
     },

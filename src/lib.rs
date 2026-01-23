@@ -38,6 +38,7 @@
     clippy::default_union_representation,
     clippy::derive_partial_eq_without_eq,
     clippy::doc_include_without_cfg,
+    clippy::doc_paragraphs_missing_punctuation,
     clippy::empty_drop,
     clippy::empty_structs_with_brackets,
     clippy::equatable_if_let,
