@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -14,7 +14,7 @@ use std::cmp;
 
 use futures::future;
 
-use crate::{cli, event, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, cli, event, parser, writer};
 
 /// Wrapper for passing events to multiple terminating [`Writer`]s
 /// simultaneously.
@@ -60,12 +60,12 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         future::join(
-            self.left.handle_event(ev.clone(), &cli.left),
-            self.right.handle_event(ev, &cli.right),
+            self.left.handle_event(event.clone(), &cli.left),
+            self.right.handle_event(event, &cli.right),
         )
         .await;
     }

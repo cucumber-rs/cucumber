@@ -8,25 +8,23 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 ```rust
 # extern crate cucumber;
 # extern crate futures;
-# extern crate once_cell;
 # extern crate tokio;
 #
 # use std::{
 #     panic::{self, AssertUnwindSafe},
 #     path::PathBuf,
-#     sync::Arc,
+#     sync::{Arc, LazyLock},
 #     time::Duration,
 # };
 #
 # use cucumber::{
-#     cli, event, gherkin, given, parser, step, then, when, Event, World,
-#     WriterExt as _,
+#     Event, World, WriterExt as _, cli, event, gherkin, given, parser, step, 
+#     then, when,
 # };
 # use futures::{
 #     future::{self, FutureExt as _},
 #     stream::{self, LocalBoxStream, Stream, StreamExt as _, TryStreamExt as _},
 # };
-# use once_cell::sync::Lazy;
 # use tokio::time::sleep;
 #
 # #[derive(Clone, Copy, Debug, Default)]
@@ -135,8 +133,8 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #
 # impl CustomRunner {
 #     fn steps_fns() -> &'static step::Collection<AnimalWorld> {
-#         static STEPS: Lazy<step::Collection<AnimalWorld>> =
-#             Lazy::new(AnimalWorld::collection);
+#         static STEPS: LazyLock<step::Collection<AnimalWorld>> =
+#             LazyLock::new(AnimalWorld::collection);
 #         &STEPS
 #     }
 #
@@ -186,10 +184,10 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #
 #         panic::set_hook(hook);
 #
-#         let scenario = Arc::new(scenario);
+#         let scenario = event::Source::new(scenario);
 #         stream::once(future::ready(event::Scenario::Started))
 #             .chain(stream::iter(steps.into_iter().flat_map(|(step, ev)| {
-#                 let step = Arc::new(step);
+#                 let step = event::Source::new(step);
 #                 [
 #                     event::Scenario::Step(step.clone(), event::Step::Started),
 #                     event::Scenario::Step(step, ev),
@@ -205,7 +203,7 @@ Finally, let's implement a custom [`Writer`] which simply outputs [cucumber even
 #     fn execute_feature(
 #         feature: gherkin::Feature,
 #     ) -> impl Stream<Item = event::Cucumber<AnimalWorld>> {
-#         let feature = Arc::new(feature);
+#         let feature = event::Source::new(feature);
 #         stream::once(future::ready(event::Feature::Started))
 #             .chain(
 #                 stream::iter(feature.scenarios.clone())
@@ -303,8 +301,8 @@ async fn main() {
 # use std::{path::PathBuf, time::Duration};
 #
 # use cucumber::{
-#     cli, event, gherkin, given, parser, then, when, Event, World, 
-#     WriterExt as _,
+#     Event, World, WriterExt as _, cli, event, gherkin, given, parser, 
+#     then, when,
 # };
 # use futures::{future, stream};
 # use tokio::time::sleep;

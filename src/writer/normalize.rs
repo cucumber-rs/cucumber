@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,15 +10,16 @@
 
 //! [`Writer`]-wrapper for outputting events in a normalized readable order.
 
-use std::{future::Future, hash::Hash, mem, sync::Arc};
+use std::{hash::Hash, mem};
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 use either::Either;
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
-    event::{self, Metadata, Retries},
-    parser, writer, Event, World, Writer,
+    Event, World, Writer,
+    event::{self, Metadata, Retries, Source},
+    parser, writer,
 };
 
 /// Wrapper for a [`Writer`] implementation for outputting events corresponding
@@ -53,10 +54,7 @@ pub struct Normalize<World, Writer> {
 // `#[derive(Clone)]`.
 impl<World, Writer: Clone> Clone for Normalize<World, Writer> {
     fn clone(&self) -> Self {
-        Self {
-            writer: self.writer.clone(),
-            queue: self.queue.clone(),
-        }
+        Self { writer: self.writer.clone(), queue: self.queue.clone() }
     }
 }
 
@@ -65,10 +63,7 @@ impl<W, Writer> Normalize<W, Writer> {
     /// and feed them to the given [`Writer`].
     #[must_use]
     pub fn new(writer: Writer) -> Self {
-        Self {
-            writer,
-            queue: CucumberQueue::new(Metadata::new(())),
-        }
+        Self { writer, queue: CucumberQueue::new(Metadata::new(())) }
     }
 
     /// Returns the original [`Writer`], wrapped by this [`Normalized`] one.
@@ -327,7 +322,7 @@ impl<Writer> Normalized for AssertNormalized<Writer> {}
 /// queue for our events. This means by calling [`next()`] we reliably get the
 /// currently outputting item's events. We're doing that until it yields an
 /// event that corresponds to the item being finished, after which we remove the
-/// current item, as all its events have been printed out and we should do it
+/// current item, as all its events have been printed out, and we should do it
 /// all over again with a [`next()`] item.
 ///
 /// [`next()`]: Iterator::next()
@@ -359,7 +354,7 @@ impl<K: Eq + Hash, V> Queue<K, V> {
     /// Marks this [`Queue`] as [`FinishedButNotEmitted`].
     ///
     /// [`FinishedButNotEmitted`]: FinishedState::FinishedButNotEmitted
-    fn finished(&mut self, meta: Metadata) {
+    const fn finished(&mut self, meta: Metadata) {
         self.state = FinishedState::FinishedButNotEmitted(meta);
     }
 
@@ -398,7 +393,7 @@ impl FinishedState {
     /// and makes it [`FinishedAndEmitted`].
     ///
     /// [`FinishedAndEmitted`]: FinishedState::FinishedAndEmitted
-    fn take_to_emit(&mut self) -> Option<Metadata> {
+    const fn take_to_emit(&mut self) -> Option<Metadata> {
         let current = mem::replace(self, Self::FinishedAndEmitted);
         if let Self::FinishedButNotEmitted(meta) = current {
             Some(meta)
@@ -467,13 +462,14 @@ trait Emitter<World> {
 }
 
 /// [`Queue`] of all incoming events.
-type CucumberQueue<World> = Queue<Arc<gherkin::Feature>, FeatureQueue<World>>;
+type CucumberQueue<World> =
+    Queue<Source<gherkin::Feature>, FeatureQueue<World>>;
 
 impl<World> CucumberQueue<World> {
     /// Inserts a new [`Feature`] on [`event::Feature::Started`].
     ///
     /// [`Feature`]: gherkin::Feature
-    fn new_feature(&mut self, feat: Event<Arc<gherkin::Feature>>) {
+    fn new_feature(&mut self, feat: Event<Source<gherkin::Feature>>) {
         let (feat, meta) = feat.split();
         drop(self.fifo.insert(feat, FeatureQueue::new(meta)));
     }
@@ -484,11 +480,11 @@ impl<World> CucumberQueue<World> {
     /// [`Feature`]s holding the output.
     ///
     /// [`Feature`]: gherkin::Feature
-    fn feature_finished(&mut self, feat: Event<&gherkin::Feature>) {
+    fn feature_finished(&mut self, feat: Event<&Source<gherkin::Feature>>) {
         let (feat, meta) = feat.split();
         self.fifo
             .get_mut(feat)
-            .unwrap_or_else(|| panic!("No Feature {}", feat.name))
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feat.name))
             .finished(meta);
     }
 
@@ -497,12 +493,12 @@ impl<World> CucumberQueue<World> {
     /// [`Rule`]: gherkin::Feature
     fn new_rule(
         &mut self,
-        feat: &gherkin::Feature,
-        rule: Event<Arc<gherkin::Rule>>,
+        feat: &Source<gherkin::Feature>,
+        rule: Event<Source<gherkin::Rule>>,
     ) {
         self.fifo
             .get_mut(feat)
-            .unwrap_or_else(|| panic!("No Feature {}", feat.name))
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feat.name))
             .new_rule(rule);
     }
 
@@ -514,40 +510,37 @@ impl<World> CucumberQueue<World> {
     /// [`Rule`]: gherkin::Feature
     fn rule_finished(
         &mut self,
-        feat: &gherkin::Feature,
-        rule: Event<Arc<gherkin::Rule>>,
+        feat: &Source<gherkin::Feature>,
+        rule: Event<Source<gherkin::Rule>>,
     ) {
         self.fifo
             .get_mut(feat)
-            .unwrap_or_else(|| panic!("No Feature {}", feat.name))
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feat.name))
             .rule_finished(rule);
     }
 
     /// Inserts a new [`event::Scenario::Started`].
     fn insert_scenario_event(
         &mut self,
-        feat: &gherkin::Feature,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feat: &Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         event: Event<event::RetryableScenario<World>>,
     ) {
         self.fifo
             .get_mut(feat)
-            .unwrap_or_else(|| panic!("No Feature {}", feat.name))
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feat.name))
             .insert_scenario_event(rule, scenario, event.retries, event);
     }
 }
 
 impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
-    type Current = (Arc<gherkin::Feature>, &'me mut FeatureQueue<World>);
-    type Emitted = Arc<gherkin::Feature>;
+    type Current = (Source<gherkin::Feature>, &'me mut FeatureQueue<World>);
+    type Emitted = Source<gherkin::Feature>;
     type EmittedPath = ();
 
     fn current_item(self) -> Option<Self::Current> {
-        self.fifo
-            .iter_mut()
-            .next()
-            .map(|(f, ev)| (Arc::clone(f), ev))
+        self.fifo.iter_mut().next().map(|(f, ev)| (f.clone(), ev))
     }
 
     async fn emit<W: Writer<World>>(
@@ -560,16 +553,15 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
             if let Some(meta) = events.initial.take() {
                 writer
                     .handle_event(
-                        Ok(meta.wrap(event::Cucumber::feature_started(
-                            Arc::clone(&f),
-                        ))),
+                        Ok(meta
+                            .wrap(event::Cucumber::feature_started(f.clone()))),
                         cli,
                     )
                     .await;
             }
 
             while let Some(scenario_or_rule_to_remove) =
-                events.emit(Arc::clone(&f), writer, cli).await
+                events.emit(f.clone(), writer, cli).await
             {
                 events.remove(&scenario_or_rule_to_remove);
             }
@@ -578,12 +570,12 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
                 writer
                     .handle_event(
                         Ok(meta.wrap(event::Cucumber::feature_finished(
-                            Arc::clone(&f),
+                            f.clone(),
                         ))),
                         cli,
                     )
                     .await;
-                return Some(Arc::clone(&f));
+                return Some(f.clone());
             }
         }
         None
@@ -595,7 +587,7 @@ impl<'me, World> Emitter<World> for &'me mut CucumberQueue<World> {
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 type RuleOrScenario =
-    Either<Arc<gherkin::Rule>, (Arc<gherkin::Scenario>, Option<Retries>)>;
+    Either<Source<gherkin::Rule>, (Source<gherkin::Scenario>, Option<Retries>)>;
 
 /// Either a [`Rule`]'s or a [`Scenario`]'s [`Queue`].
 ///
@@ -610,8 +602,8 @@ type RuleOrScenarioQueue<World> =
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 type NextRuleOrScenario<'events, World> = Either<
-    (Arc<gherkin::Rule>, &'events mut RulesQueue<World>),
-    (Arc<gherkin::Scenario>, &'events mut ScenariosQueue<World>),
+    (Source<gherkin::Rule>, &'events mut RulesQueue<World>),
+    (Source<gherkin::Scenario>, &'events mut ScenariosQueue<World>),
 >;
 
 /// [`Queue`] of all events of a single [`Feature`].
@@ -623,7 +615,7 @@ impl<World> FeatureQueue<World> {
     /// Inserts a new [`Rule`].
     ///
     /// [`Rule`]: gherkin::Rule
-    fn new_rule(&mut self, rule: Event<Arc<gherkin::Rule>>) {
+    fn new_rule(&mut self, rule: Event<Source<gherkin::Rule>>) {
         let (rule, meta) = rule.split();
         drop(
             self.fifo.insert(
@@ -636,7 +628,7 @@ impl<World> FeatureQueue<World> {
     /// Marks a [`Rule`] as finished on [`event::Rule::Finished`].
     ///
     /// [`Rule`]: gherkin::Rule
-    fn rule_finished(&mut self, rule: Event<Arc<gherkin::Rule>>) {
+    fn rule_finished(&mut self, rule: Event<Source<gherkin::Rule>>) {
         let (rule, meta) = rule.split();
         match self.fifo.get_mut(&Either::Left(rule)) {
             Some(Either::Left(ev)) => {
@@ -651,16 +643,16 @@ impl<World> FeatureQueue<World> {
     /// [`Scenario`]: gherkin::Scenario
     fn insert_scenario_event(
         &mut self,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         retries: Option<Retries>,
         ev: Event<event::RetryableScenario<World>>,
     ) {
         if let Some(r) = rule {
             match self
                 .fifo
-                .get_mut(&Either::Left(Arc::clone(&r)))
-                .unwrap_or_else(|| panic!("No Rule {}", r.name))
+                .get_mut(&Either::Left(r.clone()))
+                .unwrap_or_else(|| panic!("no `Rule: {}`", r.name))
             {
                 Either::Left(rules) => rules
                     .fifo
@@ -686,15 +678,15 @@ impl<World> FeatureQueue<World> {
 impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
     type Current = NextRuleOrScenario<'me, World>;
     type Emitted = RuleOrScenario;
-    type EmittedPath = Arc<gherkin::Feature>;
+    type EmittedPath = Source<gherkin::Feature>;
 
     fn current_item(self) -> Option<Self::Current> {
         Some(match self.fifo.iter_mut().next()? {
             (Either::Left(rule), Either::Left(events)) => {
-                Either::Left((Arc::clone(rule), events))
+                Either::Left((rule.clone(), events))
             }
             (Either::Right((scenario, _)), Either::Right(events)) => {
-                Either::Right((Arc::clone(scenario), events))
+                Either::Right((scenario.clone(), events))
             }
             _ => unreachable!(),
         })
@@ -702,17 +694,16 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 
     async fn emit<W: Writer<World>>(
         self,
-        feature: Self::EmittedPath,
+        path: Self::EmittedPath,
         writer: &mut W,
         cli: &W::Cli,
     ) -> Option<Self::Emitted> {
         match self.current_item()? {
-            Either::Left((rule, events)) => events
-                .emit((feature, rule), writer, cli)
-                .await
-                .map(Either::Left),
+            Either::Left((rule, events)) => {
+                events.emit((path, rule), writer, cli).await.map(Either::Left)
+            }
             Either::Right((scenario, events)) => events
-                .emit((feature, None, scenario), writer, cli)
+                .emit((path, None, scenario), writer, cli)
                 .await
                 .map(Either::Right),
         }
@@ -723,18 +714,15 @@ impl<'me, World> Emitter<World> for &'me mut FeatureQueue<World> {
 ///
 /// [`Rule`]: gherkin::Rule
 type RulesQueue<World> =
-    Queue<(Arc<gherkin::Scenario>, Option<Retries>), ScenariosQueue<World>>;
+    Queue<(Source<gherkin::Scenario>, Option<Retries>), ScenariosQueue<World>>;
 
 impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
-    type Current = (Arc<gherkin::Scenario>, &'me mut ScenariosQueue<World>);
-    type Emitted = Arc<gherkin::Rule>;
-    type EmittedPath = (Arc<gherkin::Feature>, Arc<gherkin::Rule>);
+    type Current = (Source<gherkin::Scenario>, &'me mut ScenariosQueue<World>);
+    type Emitted = Source<gherkin::Rule>;
+    type EmittedPath = (Source<gherkin::Feature>, Source<gherkin::Rule>);
 
     fn current_item(self) -> Option<Self::Current> {
-        self.fifo
-            .iter_mut()
-            .next()
-            .map(|((sc, _), ev)| (Arc::clone(sc), ev))
+        self.fifo.iter_mut().next().map(|((sc, _), ev)| (sc.clone(), ev))
     }
 
     async fn emit<W: Writer<World>>(
@@ -747,8 +735,8 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
             writer
                 .handle_event(
                     Ok(meta.wrap(event::Cucumber::rule_started(
-                        Arc::clone(&feature),
-                        Arc::clone(&rule),
+                        feature.clone(),
+                        rule.clone(),
                     ))),
                     cli,
                 )
@@ -758,7 +746,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
         while let Some((scenario, events)) = self.current_item() {
             if let Some(should_be_removed) = events
                 .emit(
-                    (Arc::clone(&feature), Some(Arc::clone(&rule)), scenario),
+                    (feature.clone(), Some(rule.clone()), scenario),
                     writer,
                     cli,
                 )
@@ -775,7 +763,7 @@ impl<'me, World> Emitter<World> for &'me mut RulesQueue<World> {
                 .handle_event(
                     Ok(meta.wrap(event::Cucumber::rule_finished(
                         feature,
-                        Arc::clone(&rule),
+                        rule.clone(),
                     ))),
                     cli,
                 )
@@ -810,11 +798,11 @@ impl<World> ScenariosQueue<World> {
 
 impl<World> Emitter<World> for &mut ScenariosQueue<World> {
     type Current = Event<event::RetryableScenario<World>>;
-    type Emitted = (Arc<gherkin::Scenario>, Option<Retries>);
+    type Emitted = (Source<gherkin::Scenario>, Option<Retries>);
     type EmittedPath = (
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
     );
 
     fn current_item(self) -> Option<Self::Current> {
@@ -833,15 +821,15 @@ impl<World> Emitter<World> for &mut ScenariosQueue<World> {
                     .then(|| ev.retries);
 
             let ev = meta.wrap(event::Cucumber::scenario(
-                Arc::clone(&feature),
+                feature.clone(),
                 rule.clone(),
-                Arc::clone(&scenario),
+                scenario.clone(),
                 ev,
             ));
             writer.handle_event(Ok(ev), cli).await;
 
             if let Some(retries) = should_be_removed {
-                return Some((Arc::clone(&scenario), retries));
+                return Some((scenario.clone(), retries));
             }
         }
         None

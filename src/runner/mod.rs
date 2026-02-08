@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,18 +10,17 @@
 
 //! Tools for executing [`Step`]s.
 //!
-//! [`Step`]: crate::Step
-//!
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference/
 
 pub mod basic;
 
 use futures::Stream;
 
-use crate::{event, parser, Event};
-
 #[doc(inline)]
 pub use self::basic::{Basic, ScenarioType};
+use crate::{Event, event, parser};
+#[cfg(doc)]
+use crate::{Step, event::Source};
 
 /// Executor of [`Parser`] output producing [`Cucumber`] events for [`Writer`].
 ///
@@ -45,13 +44,23 @@ pub use self::basic::{Basic, ScenarioType};
 /// All those rules are considered in a [`Basic`] reference [`Runner`]
 /// implementation.
 ///
+/// # Identity guarantees
+///
+/// Implementations are responsible for the returned [`event`]s to contain
+/// [`Source`]d [`Feature`]s, [`Rule`]s, [`Scenario`]s and [`Step`]s uniquely
+/// identifying the ones from the received [`Feature`]s, without duplicates
+/// (i.e. the same [`Scenario`] pointed by two different [`Source`]s), since a
+/// [`Source`] is solely identified by its pointer, which is considered by
+/// [`Runner`]s operating on them.
+///
+/// This rule is considered in a [`Basic`] reference [`Runner`] implementation.
+///
 /// [`Cucumber`]: event::Cucumber
 /// [`Feature`]: gherkin::Feature
 /// [`Normalized`]: crate::writer::Normalized
 /// [`Parser`]: crate::Parser
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-/// [`Step`]: gherkin::Step
 /// [`Writer`]: crate::Writer
 ///
 /// [happened-before]: https://en.wikipedia.org/wiki/Happened-before

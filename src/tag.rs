@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //

@@ -15,7 +15,7 @@ Using a [regular expression][regex] for a [step] matching function is possible w
 # extern crate cucumber;
 # extern crate tokio;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -76,7 +76,7 @@ For matching a captured value we are not restricted to use only `String`. In fac
 #
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -149,7 +149,7 @@ Alternatively, a [Cucumber Expression][expr] may be used to capture values. This
 #
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -226,7 +226,7 @@ Another useful advantage of using [Cucumber Expressions][expr] is an ability to 
 #
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 use cucumber::Parameter;
 
 # #[derive(Debug, Default)]
@@ -302,7 +302,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: State) {
 #
 # use std::str::FromStr;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 use cucumber::Parameter;
 
 # #[derive(Debug, Default)]

@@ -5,7 +5,7 @@ Cucumber JSON format
 
 This requires `output-json` feature to be enabled in `Cargo.toml`:
 ```toml
-cucumber = { version = "0.20", features = ["output-json"] }
+cucumber = { version = "0.22", features = ["output-json"] }
 ```
 
 And configuring output to [`writer::Json`]:
@@ -14,9 +14,9 @@ And configuring output to [`writer::Json`]:
 # extern crate tokio;
 #
 # use std::{fs, io};
-use cucumber::{writer, World as _};
+use cucumber::{World as _, writer};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]

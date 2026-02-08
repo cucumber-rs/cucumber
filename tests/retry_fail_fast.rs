@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use cucumber::{given, StatsWriter as _, World};
+use cucumber::{StatsWriter as _, World, given};
 
 #[derive(Clone, Copy, Debug, Default, World)]
 struct W;

@@ -22,13 +22,15 @@ At parsing stage `<template>`s are replaced by value from cells, so we may get t
 
 > __NOTE__: `<template>`s are replaced even inside [doc strings] and [data tables].
 
+> __NOTE__: Only the currently executed row of [`Examples`] table is accessible in [`filter_run()`] and other APIs having access to [`gherkin::Scenario::examples::table::rows`] field.  
+
 ```rust
 # extern crate cucumber;
 # extern crate tokio;
 #
 # use std::{collections::HashMap, time::Duration};
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 #[derive(Debug, Default)]
@@ -89,7 +91,10 @@ async fn animal_is_fed(world: &mut AnimalWorld, which: String) {
 
 
 
+[`Examples`]: https://cucumber.io/docs/gherkin/reference#examples
 [`Scenario Outline`]: https://cucumber.io/docs/gherkin/reference#scenario-outline
+[`filter_run()`]: https://docs.rs/cucumber/*/cucumber/struct.Cucumber.html#method.filter_run
+[`gherkin::Scenario::examples::table::rows`]: https://docs.rs/gherkin/*/gherkin/struct.Table.html#structfield.rows
 [data tables]: data_tables.md
 [doc strings]: doc_strings.md
 [scenario]: https://cucumber.io/docs/gherkin/reference#example

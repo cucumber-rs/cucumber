@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -12,29 +12,24 @@
 //!
 //! [1]: https://github.com/cucumber/cucumber-json-schema
 
-use std::{
-    fmt::{self, Debug},
-    io, mem,
-    time::SystemTime,
-};
+use std::{fmt::Debug, io, mem, sync::LazyLock, time::SystemTime};
 
 use base64::Engine as _;
-use derive_more::Display;
+use derive_more::with_trait::Display;
 use inflector::Inflector as _;
 use mime::Mime;
-use once_cell::sync::Lazy;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    cli, event,
+    Event, World, Writer, cli, event,
     feature::ExpandExamplesError,
     parser,
     writer::{
-        self,
+        self, Ext as _,
         basic::{coerce_error, trim_path},
-        discard, Ext as _,
+        discard,
     },
-    Event, World, Writer,
 };
 
 /// [Cucumber JSON format][1] [`Writer`] implementation outputting JSON to an
@@ -144,9 +139,7 @@ impl<Out: io::Write> Json<Out> {
     /// [2]: crate::event::Cucumber
     #[must_use]
     pub fn for_tee(output: Out) -> discard::Arbitrary<discard::Stats<Self>> {
-        Self::raw(output)
-            .discard_stats_writes()
-            .discard_arbitrary_writes()
+        Self::raw(output).discard_stats_writes().discard_arbitrary_writes()
     }
 
     /// Creates a new raw and non-[`Normalized`] [`Json`] [`Writer`] outputting
@@ -161,12 +154,7 @@ impl<Out: io::Write> Json<Out> {
     /// [2]: crate::event::Cucumber
     #[must_use]
     pub const fn raw(output: Out) -> Self {
-        Self {
-            output,
-            features: vec![],
-            started: None,
-            logs: vec![],
-        }
+        Self { output, features: vec![], started: None, logs: vec![] }
     }
 
     /// Handles the given [`event::Scenario`].
@@ -224,7 +212,7 @@ impl<Out: io::Write> Json<Out> {
 
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No `Started` event for `{hook_ty} Hook`")
+                panic!("no `Started` event for `{hook_ty} Hook`")
             });
             meta.at
                 .duration_since(started)
@@ -276,7 +264,8 @@ impl<Out: io::Write> Json<Out> {
     }
 
     /// Handles the given [`event::Step`].
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn handle_step_event<W>(
         &mut self,
         feature: &gherkin::Feature,
@@ -289,13 +278,13 @@ impl<Out: io::Write> Json<Out> {
     ) {
         let mut duration = || {
             let started = self.started.take().unwrap_or_else(|| {
-                panic!("No `Started` event for `Step` '{}'", step.value)
+                panic!("no `Started` event for `Step` '{}'", step.value)
             });
             meta.at
                 .duration_since(started)
                 .unwrap_or_else(|e| {
                     panic!(
-                        "Failed to compute duration between {:?} and \
+                        "failed to compute duration between {:?} and \
                          {started:?}: {e}",
                         meta.at,
                     );
@@ -364,18 +353,14 @@ impl<Out: io::Write> Json<Out> {
         scenario: &gherkin::Scenario,
         ty: &'static str,
     ) -> &mut Element {
-        let f_pos = self
-            .features
-            .iter()
-            .position(|f| f == feature)
-            .unwrap_or_else(|| {
-                self.features.push(Feature::new(feature));
-                self.features.len() - 1
-            });
-        let f = self
-            .features
-            .get_mut(f_pos)
-            .unwrap_or_else(|| unreachable!());
+        let f_pos =
+            self.features.iter().position(|f| f == feature).unwrap_or_else(
+                || {
+                    self.features.push(Feature::new(feature));
+                    self.features.len() - 1
+                },
+            );
+        let f = self.features.get_mut(f_pos).unwrap_or_else(|| unreachable!());
 
         let el_pos = f
             .elements
@@ -430,13 +415,14 @@ impl Base64 {
 /// Data embedded to [Cucumber JSON format][1] output.
 ///
 /// [1]: https://github.com/cucumber/cucumber-json-schema
+#[serde_as]
 #[derive(Clone, Debug, Serialize)]
 pub struct Embedding {
     /// [`base64`] encoded data.
     pub data: Base64,
 
     /// [`Mime`] of this [`Embedding::data`].
-    #[serde(serialize_with = "serialize_display")]
+    #[serde_as(as = "DisplayFromStr")]
     pub mime_type: Mime,
 
     /// Optional name of the [`Embedding`].
@@ -448,7 +434,7 @@ impl Embedding {
     /// Creates [`Embedding`] from the provided [`event::Scenario::Log`].
     fn from_log(msg: impl AsRef<str>) -> Self {
         /// [`Mime`] of the [`event::Scenario::Log`] [`Embedding`].
-        static LOG_MIME: Lazy<Mime> = Lazy::new(|| {
+        static LOG_MIME: LazyLock<Mime> = LazyLock::new(|| {
             "text/x.cucumber.log+plain"
                 .parse()
                 .unwrap_or_else(|_| unreachable!("valid MIME"))
@@ -660,10 +646,7 @@ impl Element {
             tags: scenario
                 .tags
                 .iter()
-                .map(|t| Tag {
-                    name: t.clone(),
-                    line: scenario.position.line,
-                })
+                .map(|t| Tag { name: t.clone(), line: scenario.position.line })
                 .collect(),
             steps: vec![],
         }
@@ -799,27 +782,17 @@ impl Feature {
 }
 
 impl PartialEq<gherkin::Feature> for Feature {
-    fn eq(&self, feature: &gherkin::Feature) -> bool {
+    fn eq(&self, other: &gherkin::Feature) -> bool {
         self.uri
             .as_ref()
             .and_then(|uri| {
-                feature
+                other
                     .path
                     .as_ref()
                     .and_then(|p| p.to_str().map(trim_path))
                     .map(|path| uri == path)
             })
             .unwrap_or_default()
-            && self.name == feature.name
+            && self.name == other.name
     }
-}
-
-/// Helper to use `#[serde(serialize_with = "serialize_display")]` with any type
-/// implementing [`fmt::Display`].
-fn serialize_display<T, S>(display: &T, ser: S) -> Result<S::Ok, S::Error>
-where
-    T: fmt::Display,
-    S: Serializer,
-{
-    format_args!("{display}").serialize(ser)
 }

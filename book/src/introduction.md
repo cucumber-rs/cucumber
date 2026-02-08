@@ -1,12 +1,12 @@
 Introduction
 ============
 
-[Cucumber] is a specification for running tests in a [BDD] (behavior-driven development) style workflow. 
+[Cucumber] is a specification for running tests in a [BDD] (behavior-driven development) style workflow.
 
 It assumes involvement of non-technical members on a project and as such provides a human-readable syntax for the definition of features, via the language [Gherkin]. A typical feature could look something like this:
 ```gherkin
 Feature: Eating too much cucumbers may not be good for you
-    
+
   Scenario: Eating a few isn't a problem
     Given Alice is hungry
     When she eats 3 cucumbers
@@ -23,10 +23,10 @@ These features are agnostic to the implementation, the only requirement is that 
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World as _};
+# use cucumber::{World as _, given, then, when};
 # use tokio::time::sleep;
 #
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World {
 #     user: Option<String>,
 #     capacity: usize,
@@ -35,7 +35,7 @@ These features are agnostic to the implementation, the only requirement is that 
 #[given(expr = "{word} is hungry")] // Cucumber Expression
 async fn someone_is_hungry(w: &mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
-    
+
     w.user = Some(user);
 }
 
@@ -44,7 +44,7 @@ async fn eat_cucumbers(w: &mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
-    
+
     assert!(w.capacity < 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 

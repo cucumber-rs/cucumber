@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -27,12 +27,11 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
+pub use clap::{Args, Parser};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::writer::Coloring;
-
-pub use clap::{Args, Parser};
 
 /// Root CLI (command line interface) of a top-level [`Cucumber`] executor.
 ///
@@ -78,7 +77,7 @@ pub use clap::{Args, Parser};
 /// [`Parser`]: crate::Parser
 /// [`Runner`]: crate::Runner
 /// [`Writer`]: crate::Writer
-#[derive(clap::Parser, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Parser)]
 #[command(
     name = "cucumber",
     about = "Run the tests, pet a dog!",
@@ -112,6 +111,7 @@ where
         short = 't',
         value_name = "tagexpr",
         conflicts_with = "name",
+        env = "CUCUMBER_FILTER_TAGS",
         global = true
     )]
     pub tags_filter: Option<TagOperation>,

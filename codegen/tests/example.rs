@@ -1,6 +1,6 @@
 use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
-use cucumber::{gherkin::Step, given, then, when, World};
+use cucumber::{World, gherkin::Step, given, then, when};
 use futures::FutureExt as _;
 use tempfile::TempDir;
 use tokio::time;
@@ -14,10 +14,7 @@ pub struct MyWorld {
 
 impl MyWorld {
     fn new() -> io::Result<Self> {
-        Ok(Self {
-            foo: 0,
-            dir: TempDir::new()?,
-        })
+        Ok(Self { foo: 0, dir: TempDir::new()? })
     }
 }
 
@@ -106,10 +103,8 @@ async fn main() {
         .fail_on_skipped()
         .run_and_exit("./tests/features");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "1 step failed");

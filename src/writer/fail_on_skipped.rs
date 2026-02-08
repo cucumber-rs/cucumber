@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -14,11 +14,13 @@
 //! [`Skipped`]: event::Step::Skipped
 //! [`Step`]: gherkin::Step
 
-use std::sync::Arc;
+use derive_more::with_trait::Deref;
 
-use derive_more::Deref;
-
-use crate::{event, parser, writer, Event, World, Writer};
+use crate::{
+    Event, World, Writer,
+    event::{self, Source},
+    parser, writer,
+};
 
 /// [`Writer`]-wrapper for transforming [`Skipped`] [`Step`]s into [`Failed`].
 ///
@@ -69,7 +71,7 @@ where
             StepError::NotFound,
         };
 
-        let map_failed = |f: &Arc<_>, r: &Option<_>, sc: &Arc<_>| {
+        let map_failed = |f: &Source<_>, r: &Option<_>, sc: &Source<_>| {
             if (self.should_fail)(f, r.as_deref(), sc) {
                 Step::Failed(None, None, None, NotFound)
             } else {
@@ -77,13 +79,13 @@ where
             }
         };
         let map_failed_bg =
-            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+            |f: Source<_>, r: Option<_>, sc: Source<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
                 let ev = Scenario::Background(st, ev).with_retries(ret);
                 Cucumber::scenario(f, r, sc, ev)
             };
         let map_failed_step =
-            |f: Arc<_>, r: Option<_>, sc: Arc<_>, st: _, ret| {
+            |f: Source<_>, r: Option<_>, sc: Source<_>, st: _, ret| {
                 let ev = map_failed(&f, &r, &sc);
                 let ev = Scenario::Step(st, ev).with_retries(ret);
                 Cucumber::scenario(f, r, sc, ev)
@@ -240,10 +242,7 @@ impl<Writer> FailOnSkipped<Writer> {
             &gherkin::Scenario,
         ) -> bool,
     {
-        FailOnSkipped {
-            writer,
-            should_fail: predicate,
-        }
+        FailOnSkipped { writer, should_fail: predicate }
     }
 
     /// Returns the original [`Writer`], wrapped by this [`FailOnSkipped`] one.

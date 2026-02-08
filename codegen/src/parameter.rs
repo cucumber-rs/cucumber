@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2020-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -73,12 +73,7 @@ impl TryFrom<syn::DeriveInput> for Definition {
             syn::LitStr::value,
         );
 
-        Ok(Self {
-            ident: input.ident,
-            generics: input.generics,
-            regex,
-            name,
-        })
+        Ok(Self { ident: input.ident, generics: input.generics, regex, name })
     }
 }
 

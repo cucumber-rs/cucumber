@@ -13,7 +13,7 @@ Feature: Outline
        | 2   | 4     |
       Step failed:
       Defined: tests/features/output/scenario_outline_table.feature:4:5
-      Matched: tests/output.rs:11:1
+      Matched: tests/output.rs:9:1
       Step panicked. Captured output: assertion failed: `(left == right)`
         left: `0`,
        right: `3`

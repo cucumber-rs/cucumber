@@ -8,7 +8,7 @@ To start, let's create a directory called `tests/` in the root of the project an
 Add this to `Cargo.toml`:
 ```toml
 [dev-dependencies]
-cucumber = "0.20"
+cucumber = "0.22"
 futures = "0.3"
 
 [[test]]
@@ -18,7 +18,7 @@ harness = false  # allows Cucumber to print output instead of libtest
 
 At this point, while it won't do anything, it should successfully run `cargo test --test example` without errors, as long as the `example.rs` file has at least a `main()` function defined.
 
-Now, let's create a directory to store `.feature` files somewhere in the project (in this walkthrough it's `tests/features/book/` directory), and put a `.feature` file there (such as `animal.feature`). It should contain a [Gherkin] spec for the [scenario] we want to test. Here's a very simple example:
+Now, let's create a directory to store `.feature` files somewhere in the project (in this walkthrough it's `tests/features/book/quickstart/` directory), and put a `.feature` file there (such as `simple.feature`). It should contain a [Gherkin] spec for the [scenario] we want to test. Here's a very simple example:
 ```gherkin
 Feature: Animal feature
 
@@ -30,14 +30,14 @@ Feature: Animal feature
 
 To relate the text of the `.feature` file with the actual tests we would need a `World` object, holding a state that is newly created for each [scenario] and is changing as [Cucumber] goes through each [step] of that [scenario].
 
-To enable testing of our `animal.feature`, let's add this code to `example.rs`:
+To enable testing of our `simple.feature`, let's add this code to `example.rs`:
 ```rust
 # extern crate cucumber;
 # extern crate futures;
 #
-use cucumber::{given, World};
+use cucumber::{World, given};
 
-// These `Cat` definitions would normally be inside your project's code, 
+// These `Cat` definitions would normally be inside your project's code,
 // not test code, but we create them here for the show case.
 #[derive(Debug, Default)]
 struct Cat {
@@ -51,7 +51,7 @@ impl Cat {
 }
 
 // `World` is your shared, likely mutable state.
-// Cucumber constructs it via `Default::default()` for each scenario. 
+// Cucumber constructs it via `Default::default()` for each scenario.
 #[derive(Debug, Default, World)]
 pub struct AnimalWorld {
     cat: Cat,
@@ -63,7 +63,7 @@ fn hungry_cat(world: &mut AnimalWorld) {
     world.cat.hungry = true;
 }
 
-// This runs before everything else, so you can setup things here.
+// This runs before everything else, so you can set up things here.
 fn main() {
     // You may choose any executor you like (`tokio`, `async-std`, etc.).
     // You may even have an `async` main, it doesn't matter. The point is that
@@ -88,7 +88,7 @@ fn main() {
 > #
 > #[derive(Debug, World)]
 > // Accepts both sync/async and fallible/infallible functions.
-> #[world(init = Self::new)] 
+> #[world(init = Self::new)]
 > pub struct AnimalWorld {
 >     cat: Cat,
 > }
@@ -103,7 +103,7 @@ fn main() {
 > # fn main() {}
 > ```
 
-If we run this, we should see an output like this:  
+If we run this, we should see an output like this:
 ![record](rec/quickstart_simple_1.gif)
 
 A checkmark `✔` next to the `Given a hungry cat` [step] means that it has been matched, executed and passed.
@@ -124,7 +124,7 @@ We can add a `when` [step] matcher:
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, when, World};
+# use cucumber::{World, given, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -161,7 +161,7 @@ fn feed_cat(world: &mut AnimalWorld) {
 # }
 ```
 
-Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:  
+Once we run the tests again, we see that two lines are green now and the next one is marked as not yet implemented:
 ![record](rec/quickstart_simple_2.gif)
 
 Finally, how do we check our result? We expect that this will cause some change in the cat and that the cat will no longer be hungry since it has been fed. The `then` [step] matcher follows to assert this, as our [feature] says:
@@ -169,7 +169,7 @@ Finally, how do we check our result? We expect that this will cause some change 
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -211,7 +211,7 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 # }
 ```
 
-Once we run the tests, now we see all steps being accounted for and the whole [scenario] passing:  
+Once we run the tests, now we see all steps being accounted for and the whole [scenario] passing:
 ![record](rec/quickstart_simple_3.gif)
 
 > __TIP__: In addition to assertions, we may also return a `Result<()>` from a [step] matching function. Returning `Err` will cause the [step] to fail. This lets using the `?` operator for more concise step implementations just like in [unit tests](https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#tests-and-).
@@ -221,7 +221,7 @@ To assure that assertion is indeed happening, let's reverse it temporarily:
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -261,12 +261,12 @@ fn cat_is_fed(world: &mut AnimalWorld) {
 # }
 ```
 
-And see the test failing:  
+And see the test failing:
 ![record](rec/quickstart_simple_fail.gif)
 
 > __TIP__: By default, unlike [unit tests](https://doc.rust-lang.org/cargo/commands/cargo-test.html#test-options), failed [step]s don't terminate the execution instantly, and the whole test suite is executed regardless of them. Use `--fail-fast` [CLI] option to stop execution on first failure.
 
-What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add an another [scenario] that looks quite similar:
+What if we also want to validate that even if the cat was never hungry to begin with, it won't end up hungry after it was fed? So, we may add another [scenario], that looks quite similar (let's put it into a separate `concurrent.feature`):
 ```gherkin
 Feature: Animal feature
 
@@ -286,7 +286,7 @@ The only thing that is different is the `Given` [step]. But we don't have to wri
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -332,7 +332,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 
 > __NOTE__: We surround the regex with `^..$` to ensure an __exact__ match. This is much more useful when adding more and more [step]s, so they won't accidentally interfere with each other.
 
-[Cucumber] will reuse these [step] matchers:  
+[Cucumber] will reuse these [step] matchers:
 ![record](rec/quickstart_concurrent_sync.gif)
 
 > __NOTE__: Captured values are __bold__ to indicate which part of a [step] is actually captured.
@@ -342,7 +342,7 @@ Alternatively, we also may use [Cucumber Expressions] for the same purpose (less
 # extern crate cucumber;
 # extern crate futures;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 #
 # #[derive(Debug, Default)]
 # struct Cat {
@@ -381,7 +381,7 @@ fn hungry_cat(world: &mut AnimalWorld, state: String) {
 #
 # fn main() {
 #     futures::executor::block_on(AnimalWorld::run(
-#         "tests/features/book/quickstart/simple.feature",
+#         "tests/features/book/quickstart/concurrent.feature",
 #     ));
 # }
 ```
@@ -398,7 +398,7 @@ A contrived example, but it demonstrates that [step]s can be reused as long as t
 Let's switch our runtime to `tokio`:
 ```toml
 [dev-dependencies]
-cucumber = "0.20"
+cucumber = "0.22"
 tokio = { version = "1.10", features = ["macros", "rt-multi-thread", "time"] }
 
 [[test]]
@@ -413,7 +413,7 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 #
 # use std::time::Duration;
 #
-# use cucumber::{given, then, when, World};
+# use cucumber::{World, given, then, when};
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default)]
@@ -432,6 +432,7 @@ And, simply `sleep` on each [step] to test the `async` support (in the real worl
 #     cat: Cat,
 # }
 #
+// Don't forget to additionally `use tokio::time::{sleep, Duration};`.
 #[given(regex = r"^a (hungry|satiated) cat$")]
 async fn hungry_cat(world: &mut AnimalWorld, state: String) {
     sleep(Duration::from_secs(2)).await;

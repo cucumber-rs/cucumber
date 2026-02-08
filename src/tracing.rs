@@ -1,19 +1,21 @@
 //! [`tracing`] integration layer.
 
-use std::{collections::HashMap, fmt, io, iter, sync::Arc};
+use std::{collections::HashMap, fmt, io, iter};
 
+use derive_more::with_trait::Debug;
 use futures::channel::{mpsc, oneshot};
 use itertools::Either;
 use tracing::{
+    Dispatch, Event, Span, Subscriber,
     field::{Field, Visit},
-    span, Dispatch, Event, Span, Subscriber,
+    span,
 };
 use tracing_subscriber::{
     field::RecordFields,
     filter::LevelFilter,
     fmt::{
-        format::{self, Format},
         FmtContext, FormatEvent, FormatFields, MakeWriter,
+        format::{self, Format},
     },
     layer::{self, Layer, Layered, SubscriberExt as _},
     registry::LookupSpan,
@@ -21,12 +23,12 @@ use tracing_subscriber::{
 };
 
 use crate::{
-    event::{self, HookType},
+    Cucumber, Parser, Runner, ScenarioType, World, Writer,
+    event::{self, HookType, Source},
     runner::{
         self,
         basic::{RetryOptions, ScenarioId},
     },
-    Cucumber, Parser, Runner, ScenarioType, World, Writer,
 };
 
 impl<W, P, I, Wr, Cli, WhichSc, Before, After>
@@ -125,14 +127,10 @@ where
         );
         Dispatch::new(configure(layer)).init();
 
-        drop(
-            self.runner
-                .logs_collector
-                .swap(Box::new(Some(Collector::new(
-                    logs_receiver,
-                    span_close_receiver,
-                )))),
-        );
+        drop(self.runner.logs_collector.swap(Box::new(Some(Collector::new(
+            logs_receiver,
+            span_close_receiver,
+        )))));
 
         self
     }
@@ -144,9 +142,9 @@ where
 type Scenarios = HashMap<
     ScenarioId,
     (
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptions>,
     ),
 >;
@@ -217,9 +215,9 @@ impl Collector {
         runnable: impl AsRef<
             [(
                 ScenarioId,
-                Arc<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
+                Source<gherkin::Feature>,
+                Option<Source<gherkin::Rule>>,
+                Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,
             )],
@@ -227,10 +225,8 @@ impl Collector {
     ) {
         for (id, f, r, s, _, ret) in runnable.as_ref() {
             drop(
-                self.scenarios.insert(
-                    *id,
-                    (Arc::clone(f), r.clone(), Arc::clone(s), *ret),
-                ),
+                self.scenarios
+                    .insert(*id, (f.clone(), r.clone(), s.clone(), *ret)),
             );
         }
     }
@@ -255,29 +251,25 @@ impl Collector {
     ) -> Option<Vec<event::Cucumber<W>>> {
         self.notify_about_closing_spans();
 
-        self.logs_receiver
-            .try_next()
-            .ok()
-            .flatten()
-            .map(|(id, msg)| {
-                id.and_then(|k| self.scenarios.get(&k))
-                    .map_or_else(
-                        || Either::Left(self.scenarios.values()),
-                        |p| Either::Right(iter::once(p)),
+        self.logs_receiver.try_next().ok().flatten().map(|(id, msg)| {
+            id.and_then(|k| self.scenarios.get(&k))
+                .map_or_else(
+                    || Either::Left(self.scenarios.values()),
+                    |p| Either::Right(iter::once(p)),
+                )
+                .map(|(f, r, s, opt)| {
+                    event::Cucumber::scenario(
+                        f.clone(),
+                        r.clone(),
+                        s.clone(),
+                        event::RetryableScenario {
+                            event: event::Scenario::Log(msg.clone()),
+                            retries: opt.map(|o| o.retries),
+                        },
                     )
-                    .map(|(f, r, s, opt)| {
-                        event::Cucumber::scenario(
-                            Arc::clone(f),
-                            r.clone(),
-                            Arc::clone(s),
-                            event::RetryableScenario {
-                                event: event::Scenario::Log(msg.clone()),
-                                retries: opt.map(|o| o.retries),
-                            },
-                        )
-                    })
-                    .collect()
-            })
+                })
+                .collect()
+        })
     }
 
     /// Notifies all its subscribers about closing [`Span`]s via [`Callback`]s.
@@ -311,8 +303,10 @@ impl Collector {
     }
 }
 
-// We better keep this here, as it's related to `tracing` capabilities only.
-#[allow(clippy::multiple_inherent_impl)] // intentional
+#[expect( // related to `tracing` capabilities only
+    clippy::multiple_inherent_impl,
+    reason = "related to `tracing` capabilities only"
+)]
 impl ScenarioId {
     /// Name of the [`ScenarioId`] [`Span`] field.
     const SPAN_FIELD_NAME: &'static str = "__cucumber_scenario_id";
@@ -330,7 +324,7 @@ impl ScenarioId {
     /// Creates a new [`Span`] for a running [`Step`].
     ///
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::unused_self)]
+    #[expect(clippy::unused_self, reason = "API uniformity")]
     pub(crate) fn step_span(self, is_background: bool) -> Span {
         // `Level::ERROR` is used to minimize the chance of the user-provided
         // filter to skip it.
@@ -344,7 +338,7 @@ impl ScenarioId {
     /// Creates a new [`Span`] for running a [`Hook`].
     ///
     /// [`Hook`]: event::Hook
-    #[allow(clippy::unused_self)]
+    #[expect(clippy::unused_self, reason = "API uniformity")]
     pub(crate) fn hook_span(self, hook_ty: HookType) -> Span {
         // `Level::ERROR` is used to minimize the chance of the user-provided
         // filter to skip it.
@@ -373,10 +367,7 @@ impl SpanCloseWaiter {
     /// Waits for the [`Span`] being closed.
     pub(crate) async fn wait_for_span_close(&self, id: span::Id) {
         let (sender, receiver) = oneshot::channel();
-        _ = self
-            .wait_span_event_sender
-            .unbounded_send((id, sender))
-            .ok();
+        _ = self.wait_span_event_sender.unbounded_send((id, sender)).ok();
         _ = receiver.await.ok();
     }
 }
@@ -403,13 +394,13 @@ where
 {
     fn on_new_span(
         &self,
-        attr: &span::Attributes<'_>,
+        attrs: &span::Attributes<'_>,
         id: &span::Id,
         ctx: layer::Context<'_, S>,
     ) {
         if let Some(span) = ctx.span(id) {
             let mut visitor = GetScenarioId(None);
-            attr.values().record(&mut visitor);
+            attrs.values().record(&mut visitor);
 
             if let Some(scenario_id) = visitor.0 {
                 let mut ext = span.extensions_mut();
@@ -452,7 +443,7 @@ impl Visit for GetScenarioId {
         }
     }
 
-    fn record_debug(&mut self, _: &Field, _: &dyn fmt::Debug) {}
+    fn record_debug(&mut self, _: &Field, _: &dyn Debug) {}
 }
 
 /// [`FormatFields`] wrapper skipping [`Span`]s with a [`ScenarioId`].
@@ -480,7 +471,7 @@ impl<'w, F: FormatFields<'w>> FormatFields<'w> for SkipScenarioIdSpan<F> {
 struct IsScenarioIdSpan(bool);
 
 impl Visit for IsScenarioIdSpan {
-    fn record_debug(&mut self, field: &Field, _: &dyn fmt::Debug) {
+    fn record_debug(&mut self, field: &Field, _: &dyn Debug) {
         if field.name() == ScenarioId::SPAN_FIELD_NAME {
             self.0 = true;
         }
@@ -528,8 +519,7 @@ mod suffix {
     //! [`str`]ings appending [`tracing::Event`]s to separate them later.
     //!
     //! Every [`tracing::Event`] ends with:
-    //!
-    //! ([`BEFORE_SCENARIO_ID`][`ScenarioId`][`END`]|[`NO_SCENARIO_ID`][`END`])
+    //! ([`BEFORE_SCENARIO_ID`][`ScenarioId`][`END`]|[`NO_SCENARIO_ID`][`END`]).
     //!
     //! [`ScenarioId`]: super::ScenarioId
 

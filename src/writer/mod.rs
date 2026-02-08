@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -28,11 +28,7 @@ pub mod repeat;
 pub mod summarize;
 pub mod tee;
 
-use std::future::Future;
-
 use sealed::sealed;
-
-use crate::{event, parser, Event};
 
 #[cfg(feature = "output-json")]
 #[doc(inline)]
@@ -53,6 +49,7 @@ pub use self::{
     summarize::{Summarizable, Summarize},
     tee::Tee,
 };
+use crate::{Event, event, parser};
 
 /// Writer of [`Cucumber`] events to some output.
 ///
@@ -86,7 +83,7 @@ pub trait Writer<World> {
     /// [`Cucumber`]: crate::event::Cucumber
     fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<World>>>,
+        event: parser::Result<Event<event::Cucumber<World>>>,
         cli: &Self::Cli,
     ) -> impl Future<Output = ()>;
 }
@@ -285,7 +282,7 @@ impl<T> Ext for T {
         FailOnSkipped::from(self)
     }
 
-    fn fail_on_skipped_with<F>(self, f: F) -> FailOnSkipped<Self, F>
+    fn fail_on_skipped_with<F>(self, with: F) -> FailOnSkipped<Self, F>
     where
         F: Fn(
             &gherkin::Feature,
@@ -293,7 +290,7 @@ impl<T> Ext for T {
             &gherkin::Scenario,
         ) -> bool,
     {
-        FailOnSkipped::with(self, f)
+        FailOnSkipped::with(self, with)
     }
 
     fn repeat_skipped<W>(self) -> Repeat<W, Self> {

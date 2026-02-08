@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -14,12 +14,12 @@ use std::{
     any::Any,
     cmp,
     collections::HashMap,
-    fmt, iter, mem,
+    iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::{Duration, Instant},
@@ -27,16 +27,15 @@ use std::{
 
 #[cfg(feature = "tracing")]
 use crossbeam_utils::atomic::AtomicCell;
-use derive_more::{Display, FromStr};
-use drain_filter_polyfill::VecExt;
+use derive_more::with_trait::{Debug, Display, FromStr};
 use futures::{
+    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
+    TryStreamExt as _,
     channel::{mpsc, oneshot},
     future::{self, Either, LocalBoxFuture},
     lock::Mutex,
     pin_mut,
     stream::{self, LocalBoxStream},
-    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
-    TryStreamExt as _,
 };
 use gherkin::tagexpr::TagOperation;
 use itertools::Itertools as _;
@@ -45,16 +44,16 @@ use regex::{CaptureLocations, Regex};
 #[cfg(feature = "tracing")]
 use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
-    event::{self, HookType, Info, Retries},
+    Event, Runner, Step, World,
+    event::{self, HookType, Info, Retries, Source},
     feature::Ext as _,
-    future::{select_with_biased_first, FutureExt as _},
+    future::{FutureExt as _, select_with_biased_first},
     parser, step,
     tag::Ext as _,
-    Event, Runner, Step, World,
 };
 
 /// CLI options of a [`Basic`] [`Runner`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
@@ -127,10 +126,9 @@ impl RetryOptions {
     /// otherwise.
     #[must_use]
     pub fn next_try(self) -> Option<Self> {
-        self.retries.next_try().map(|num| Self {
-            retries: num,
-            after: self.after,
-        })
+        self.retries
+            .next_try()
+            .map(|num| Self { retries: num, after: self.after })
     }
 
     /// Parses [`RetryOptions`] from [`Feature`]'s, [`Rule`]'s, [`Scenario`]'s
@@ -146,26 +144,23 @@ impl RetryOptions {
         scenario: &gherkin::Scenario,
         cli: &Cli,
     ) -> Option<Self> {
-        #[allow(clippy::shadow_unrelated)] // intentional
         let parse_tags = |tags: &[String]| {
             tags.iter().find_map(|tag| {
                 tag.strip_prefix("retry").map(|retries| {
                     let (num, rest) = retries
                         .strip_prefix('(')
                         .and_then(|s| {
-                            s.split_once(')').and_then(|(num, rest)| {
-                                num.parse::<usize>()
-                                    .ok()
-                                    .map(|num| (Some(num), rest))
-                            })
+                            let (num, rest) = s.split_once(')')?;
+                            num.parse::<usize>()
+                                .ok()
+                                .map(|num| (Some(num), rest))
                         })
                         .unwrap_or((None, retries));
 
                     let after = rest.strip_prefix(".after").and_then(|after| {
-                        after.strip_prefix('(').and_then(|after| {
-                            let (dur, _) = after.split_once(')')?;
-                            humantime::parse_duration(dur).ok()
-                        })
+                        let after = after.strip_prefix('(')?;
+                        let (dur, _) = after.split_once(')')?;
+                        humantime::parse_duration(dur).ok()
                     });
 
                     (num, after)
@@ -193,7 +188,7 @@ impl RetryOptions {
 
         apply_cli(
             parse_tags(&scenario.tags)
-                .or_else(|| rule.and_then(|r| parse_tags(&r.tags)))
+                .or_else(|| parse_tags(&rule?.tags))
                 .or_else(|| parse_tags(&feature.tags)),
         )
     }
@@ -238,10 +233,7 @@ pub struct RetryOptionsWithDeadline {
 
 impl From<RetryOptionsWithDeadline> for RetryOptions {
     fn from(v: RetryOptionsWithDeadline) -> Self {
-        Self {
-            retries: v.retries,
-            after: v.after.map(|(at, _)| at),
-        }
+        Self { retries: v.retries, after: v.after.map(|(at, _)| at) }
     }
 }
 
@@ -348,6 +340,7 @@ type IsRetried = bool;
 ///
 /// [1]: Runner#order-guarantees
 /// [`Scenario`]: gherkin::Scenario
+#[derive(Debug)]
 pub struct Basic<
     World,
     F = WhichScenarioFn,
@@ -387,11 +380,13 @@ pub struct Basic<
     /// [`Concurrent`]: ScenarioType::Concurrent
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
+    #[debug(ignore)]
     which_scenario: F,
 
     /// Function determining [`Scenario`]'s [`RetryOptions`].
     ///
     /// [`Scenario`]: gherkin::Scenario
+    #[debug(ignore)]
     retry_options: RetryOptionsFn,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
@@ -400,6 +395,7 @@ pub struct Basic<
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[debug(ignore)]
     before_hook: Option<Before>,
 
     /// Function, executed on each [`Scenario`] after running all [`Step`]s.
@@ -407,6 +403,7 @@ pub struct Basic<
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
+    #[debug(ignore)]
     after_hook: Option<After>,
 
     before_step_hook: Option<BeforeStep>,
@@ -418,6 +415,7 @@ pub struct Basic<
 
     #[cfg(feature = "tracing")]
     /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
+    #[debug(ignore)]
     pub(crate) logs_collector: Arc<AtomicCell<Box<Option<TracingCollector>>>>,
 }
 
@@ -452,21 +450,6 @@ impl<World, F: Clone, B: Clone, A: Clone, BS: Clone, AS: Clone> Clone
             #[cfg(feature = "tracing")]
             logs_collector: Arc::clone(&self.logs_collector),
         }
-    }
-}
-
-// Implemented manually to omit redundant trait bounds on `World` and to omit
-// outputting `F`.
-impl<World, F, B, A, BS, AS> fmt::Debug for Basic<World, F, B, A, BS, AS> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Basic")
-            .field("max_concurrent_scenarios", &self.max_concurrent_scenarios)
-            .field("retries", &self.retries)
-            .field("retry_after", &self.retry_after)
-            .field("retry_filter", &self.retry_filter)
-            .field("steps", &self.steps)
-            .field("fail_fast", &self.fail_fast)
-            .finish_non_exhaustive()
     }
 }
 
@@ -639,6 +622,11 @@ impl<World, Which, Before, After, BeforeStep, AfterStep>
     /// Sets a hook, executed on each [`Scenario`] before running all its
     /// [`Step`]s, including [`Background`] ones.
     ///
+    /// > **NOTE**: Only one [`before`] hook can be registered. If
+    /// >           multiple calls are made, only the last one will be
+    /// >           run.
+    ///
+    /// [`before`]: Self::before()
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
@@ -692,9 +680,14 @@ impl<World, Which, Before, After, BeforeStep, AfterStep>
     /// Sets hook, executed on each [`Scenario`] after running all its
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] ones.
     ///
+    /// > **NOTE**: Only one [`after`] hook can be registered. If
+    /// >           multiple calls are made, only the last one will be
+    /// >           run.
+    ///
     /// Last `World` argument is supplied to the function, in case it was
     /// initialized before by running [`before`] hook or any [`Step`].
     ///
+    /// [`after`]: Self::after()
     /// [`before`]: Self::before()
     /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -1001,15 +994,11 @@ where
 
         stream::select(
             receiver.map(Either::Left),
-            future::join(insert, execute)
-                .into_stream()
-                .map(Either::Right),
+            future::join(insert, execute).into_stream().map(Either::Right),
         )
-        .filter_map(|r| async {
-            match r {
-                Either::Left(ev) => Some(ev),
-                Either::Right(_) => None,
-            }
+        .filter_map(async |r| match r {
+            Either::Left(ev) => Some(ev),
+            Either::Right(_) => None,
         })
         .boxed_local()
     }
@@ -1089,7 +1078,11 @@ async fn insert_features<W, S, F>(
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
 // TODO: Needs refactoring.
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+#[expect(clippy::too_many_lines, reason = "needs refactoring")]
+#[cfg_attr(
+    feature = "tracing",
+    expect(clippy::too_many_arguments, reason = "needs refactoring")
+)]
 async fn execute<W, Before, After, BeforeStep, AfterStep>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
@@ -1164,13 +1157,6 @@ async fn execute<W, Before, After, BeforeStep, AfterStep>(
 
     executor.send_event(event::Cucumber::Started);
 
-    // TODO: Replace with `ControlFlow::map_break()` once stabilized:
-    //       https://github.com/rust-lang/rust/issues/75744
-    let map_break = |cf| match cf {
-        ControlFlow::Continue(cont) => cont,
-        ControlFlow::Break(()) => Some(0),
-    };
-
     #[cfg(feature = "tracing")]
     let waiter = logs_collector
         .as_ref()
@@ -1179,8 +1165,9 @@ async fn execute<W, Before, After, BeforeStep, AfterStep>(
     let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
     let mut run_scenarios = stream::FuturesUnordered::new();
     loop {
-        let (runnable, sleep) =
-            features.get(map_break(started_scenarios)).await;
+        let (runnable, sleep) = features
+            .get(started_scenarios.continue_value().unwrap_or(Some(0)))
+            .await;
         if run_scenarios.is_empty() && runnable.is_empty() {
             if features.is_finished(started_scenarios.is_break()).await {
                 break;
@@ -1214,8 +1201,6 @@ async fn execute<W, Before, After, BeforeStep, AfterStep>(
                     coll.start_scenarios(&runnable);
                 }
                 async {
-                    // Cannot annotate `async` block with `-> !`.
-                    #[allow(clippy::infinite_loop)] // intentional
                     loop {
                         while let Some(logs) = logs_collector
                             .as_mut()
@@ -1257,25 +1242,21 @@ async fn execute<W, Before, After, BeforeStep, AfterStep>(
                 select_with_biased_first(forward_logs, run_scenarios.next())
                     .await
                     .factor_first();
-            if finished_scenario.is_some() {
-                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
-                {
-                    *sc += 1;
-                }
+            if finished_scenario.is_some()
+                && let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+            {
+                *sc += 1;
             }
         }
 
         while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
             storage.finished_receiver.try_next()
         {
-            if let Some(rule) = rule {
-                if let Some(f) = storage.rule_scenario_finished(
-                    Arc::clone(&feat),
-                    rule,
-                    retried,
-                ) {
-                    executor.send_event(f);
-                }
+            if let Some(rule) = rule
+                && let Some(f) =
+                    storage.rule_scenario_finished(feat.clone(), rule, retried)
+            {
+                executor.send_event(f);
             }
             if let Some(f) = storage.feature_scenario_finished(feat, retried) {
                 executor.send_event(f);
@@ -1419,13 +1400,17 @@ where
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     // TODO: Needs refactoring.
-    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "needs refactoring")]
+    #[cfg_attr(
+        feature = "tracing",
+        expect(clippy::too_many_arguments, reason = "needs refactoring")
+    )]
     async fn run_scenario(
         &self,
         id: ScenarioId,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -1434,7 +1419,7 @@ where
         let ok = |e: fn(_) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 let event = e(step).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1442,7 +1427,7 @@ where
         let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
             let (f, r, s) = (&feature, &rule, &scenario);
             move |step, cap, loc| {
-                let (f, r, s) = (Arc::clone(f), r.clone(), Arc::clone(s));
+                let (f, r, s) = (f.clone(), r.clone(), s.clone());
                 let event = e(step, cap, loc).with_retries(retry_num);
                 event::Cucumber::scenario(f, r, s, event)
             }
@@ -1463,9 +1448,9 @@ where
         );
 
         self.send_event(event::Cucumber::scenario(
-            Arc::clone(&feature),
+            feature.clone(),
             rule.clone(),
-            Arc::clone(&scenario),
+            scenario.clone(),
             event::Scenario::Started.with_retries(retry_num),
         ));
 
@@ -1486,7 +1471,7 @@ where
                 let feature_background = feature
                     .background
                     .as_ref()
-                    .map(|b| b.steps.iter().map(|s| Arc::new(s.clone())))
+                    .map(|b| b.steps.iter().map(|s| Source::new(s.clone())))
                     .into_iter()
                     .flatten();
 
@@ -1515,7 +1500,7 @@ where
                         r.background
                             .as_ref()
                             .map(|b| {
-                                b.steps.iter().map(|s| Arc::new(s.clone()))
+                                b.steps.iter().map(|s| Source::new(s.clone()))
                             })
                             .into_iter()
                             .flatten()
@@ -1542,24 +1527,26 @@ where
                     })
                     .await?;
 
-                stream::iter(scenario.steps.iter().map(|s| Arc::new(s.clone())))
-                    .map(Ok)
-                    .try_fold(rule_background, |world, step| {
-                        self.run_step(
-                            world,
-                            feature.clone(),
-                            rule.clone(),
-                            scenario.clone(),
-                            step,
-                            false,
-                            into_step_ev,
-                            id,
-                            #[cfg(feature = "tracing")]
-                            waiter,
-                        )
-                        .map_ok(Some)
-                    })
-                    .await
+                stream::iter(
+                    scenario.steps.iter().map(|s| Source::new(s.clone())),
+                )
+                .map(Ok)
+                .try_fold(rule_background, |world, step| {
+                    self.run_step(
+                        world,
+                        feature.clone(),
+                        rule.clone(),
+                        scenario.clone(),
+                        step,
+                        false,
+                        into_step_ev,
+                        id,
+                        #[cfg(feature = "tracing")]
+                        waiter,
+                    )
+                    .map_ok(Some)
+                })
+                .await
             }
             .await;
 
@@ -1601,9 +1588,9 @@ where
 
             if let Some(exec_error) = result.err() {
                 self.emit_failed_events(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
-                    Arc::clone(&scenario),
+                    scenario.clone(),
                     world.clone(),
                     exec_error,
                     retry_num,
@@ -1611,9 +1598,9 @@ where
             }
 
             self.emit_after_hook_events(
-                Arc::clone(&feature),
+                feature.clone(),
                 rule.clone(),
-                Arc::clone(&scenario),
+                scenario.clone(),
                 world,
                 after_hook_meta,
                 after_hook_error,
@@ -1637,19 +1624,18 @@ where
         }
 
         self.send_event(event::Cucumber::scenario(
-            Arc::clone(&feature),
+            feature.clone(),
             rule.clone(),
-            Arc::clone(&scenario),
+            scenario.clone(),
             event::Scenario::Finished.with_retries(retry_num),
         ));
 
-        let next_try = retries
-            .filter(|_| is_failed)
-            .and_then(RetryOptions::next_try);
+        let next_try =
+            retries.filter(|_| is_failed).and_then(RetryOptions::next_try);
         if let Some(next_try) = next_try {
             self.storage
                 .insert_retried_scenario(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
                     scenario,
                     scenario_ty,
@@ -1677,9 +1663,9 @@ where
     /// [`Hook::Failed`]: event::Hook::Failed
     async fn run_before_hook(
         &self,
-        feature: &Arc<gherkin::Feature>,
-        rule: Option<&Arc<gherkin::Rule>>,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: &Source<gherkin::Feature>,
+        rule: Option<&Source<gherkin::Rule>>,
+        scenario: &Source<gherkin::Scenario>,
         retries: Option<Retries>,
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -1702,14 +1688,14 @@ where
 
         if let Some(hook) = self.before_hook.as_ref() {
             self.send_event(event::Cucumber::scenario(
-                Arc::clone(feature),
+                feature.clone(),
                 rule.cloned(),
-                Arc::clone(scenario),
+                scenario.clone(),
                 event::Scenario::hook_started(HookType::Before)
                     .with_retries(retries),
             ));
 
-            let fut = init_world.and_then(|mut world| async {
+            let fut = init_world.and_then(async |mut world| {
                 let fut = async {
                     (hook)(
                         feature.as_ref(),
@@ -1745,9 +1731,9 @@ where
             match result {
                 Ok(world) => {
                     self.send_event(event::Cucumber::scenario(
-                        Arc::clone(feature),
+                        feature.clone(),
                         rule.cloned(),
-                        Arc::clone(scenario),
+                        scenario.clone(),
                         event::Scenario::hook_passed(HookType::Before)
                             .with_retries(retries),
                     ));
@@ -1778,25 +1764,25 @@ where
     async fn run_step<St, Ps, Sk>(
         &self,
         world_opt: Option<W>,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
-        step: Arc<gherkin::Step>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
+        step: Source<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<W, ExecutionFailure<W>>
     where
-        St: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        St: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
         Ps: FnOnce(
-            Arc<gherkin::Step>,
+            Source<gherkin::Step>,
             CaptureLocations,
             Option<step::Location>,
         ) -> event::Cucumber<W>,
-        Sk: FnOnce(Arc<gherkin::Step>) -> event::Cucumber<W>,
+        Sk: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
     {
-        self.send_event(started(Arc::clone(&step)));
+        self.send_event(started(step.clone()));
 
         let run = async {
             let (step_fn, captures, loc, ctx) =
@@ -1955,9 +1941,9 @@ where
     /// [1]: crate::Runner#order-guarantees
     fn emit_failed_events(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         world: Option<Arc<W>>,
         err: ExecutionFailure<W>,
         retries: Option<Retries>,
@@ -2029,13 +2015,17 @@ where
     ///
     /// Doesn't emit any events, see [`Self::emit_failed_events()`] for more
     /// details.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[cfg_attr(
+        feature = "tracing",
+        expect(clippy::too_many_arguments, reason = "needs refactoring")
+    )]
     async fn run_after_hook(
         &self,
         mut world: Option<W>,
-        feature: &Arc<gherkin::Feature>,
-        rule: Option<&Arc<gherkin::Rule>>,
-        scenario: &Arc<gherkin::Scenario>,
+        feature: &Source<gherkin::Feature>,
+        rule: Option<&Source<gherkin::Rule>>,
+        scenario: &Source<gherkin::Scenario>,
         ev: event::ScenarioFinished,
         scenario_id: ScenarioId,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
@@ -2091,12 +2081,13 @@ where
     ///
     /// See [`Self::emit_failed_events()`] for the explanation why we don't do
     /// that inside [`Self::run_after_hook()`].
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn emit_after_hook_events(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         world: Option<Arc<W>>,
         meta: Option<AfterHookEventsMeta>,
         err: Option<Info>,
@@ -2112,21 +2103,21 @@ where
         if let Some(meta) = meta {
             self.send_event_with_meta(
                 event::Cucumber::scenario(
-                    Arc::clone(&feature),
+                    feature.clone(),
                     rule.clone(),
-                    Arc::clone(&scenario),
+                    scenario.clone(),
                     event::Scenario::hook_started(HookType::After)
                         .with_retries(retries),
                 ),
                 meta.started,
             );
 
-            let ev = if let Some(err) = err {
+            let ev = if let Some(e) = err {
                 event::Cucumber::scenario(
                     feature,
                     rule,
                     scenario,
-                    event::Scenario::hook_failed(HookType::After, world, err)
+                    event::Scenario::hook_failed(HookType::After, world, e)
                         .with_retries(retries),
                 )
             } else {
@@ -2149,8 +2140,8 @@ where
     fn scenario_finished(
         &self,
         id: ScenarioId,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
         is_failed: IsFailed,
         is_retried: IsRetried,
     ) {
@@ -2236,7 +2227,7 @@ struct FinishedRulesAndFeatures {
     ///
     /// [`Feature`]: gherkin::Feature
     /// [`Scenario`]: gherkin::Scenario
-    features_scenarios_count: HashMap<Arc<gherkin::Feature>, usize>,
+    features_scenarios_count: HashMap<Source<gherkin::Feature>, usize>,
 
     /// Number of finished [`Scenario`]s of [`Rule`].
     ///
@@ -2247,7 +2238,7 @@ struct FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     /// [`Scenario`]: gherkin::Scenario
     rule_scenarios_count:
-        HashMap<(Arc<gherkin::Feature>, Arc<gherkin::Rule>), usize>,
+        HashMap<(Source<gherkin::Feature>, Source<gherkin::Rule>), usize>,
 
     /// Receiver for notifying state of [`Scenario`]s completion.
     ///
@@ -2261,8 +2252,8 @@ struct FinishedRulesAndFeatures {
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesSender = mpsc::UnboundedSender<(
     ScenarioId,
-    Arc<gherkin::Feature>,
-    Option<Arc<gherkin::Rule>>,
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
     IsFailed,
     IsRetried,
 )>;
@@ -2273,8 +2264,8 @@ type FinishedFeaturesSender = mpsc::UnboundedSender<(
 /// [`Feature`]: gherkin::Feature
 type FinishedFeaturesReceiver = mpsc::UnboundedReceiver<(
     ScenarioId,
-    Arc<gherkin::Feature>,
-    Option<Arc<gherkin::Rule>>,
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
     IsFailed,
     IsRetried,
 )>;
@@ -2297,8 +2288,8 @@ impl FinishedRulesAndFeatures {
     /// [`Scenario`]: gherkin::Scenario
     fn rule_scenario_finished<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Arc<gherkin::Rule>,
+        feature: Source<gherkin::Feature>,
+        rule: Source<gherkin::Rule>,
         is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
         if is_retried {
@@ -2307,13 +2298,13 @@ impl FinishedRulesAndFeatures {
 
         let finished_scenarios = self
             .rule_scenarios_count
-            .get_mut(&(Arc::clone(&feature), Arc::clone(&rule)))
-            .unwrap_or_else(|| panic!("No Rule {}", rule.name));
+            .get_mut(&(feature.clone(), rule.clone()))
+            .unwrap_or_else(|| panic!("no `Rule: {}`", rule.name));
         *finished_scenarios += 1;
         (rule.scenarios.len() == *finished_scenarios).then(|| {
             _ = self
                 .rule_scenarios_count
-                .remove(&(Arc::clone(&feature), Arc::clone(&rule)));
+                .remove(&(feature.clone(), rule.clone()));
             event::Cucumber::rule_finished(feature, rule)
         })
     }
@@ -2326,7 +2317,7 @@ impl FinishedRulesAndFeatures {
     /// [`Scenario`]: gherkin::Scenario
     fn feature_scenario_finished<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
+        feature: Source<gherkin::Feature>,
         is_retried: bool,
     ) -> Option<event::Cucumber<W>> {
         if is_retried {
@@ -2336,7 +2327,7 @@ impl FinishedRulesAndFeatures {
         let finished_scenarios = self
             .features_scenarios_count
             .get_mut(&feature)
-            .unwrap_or_else(|| panic!("No Feature {}", feature.name));
+            .unwrap_or_else(|| panic!("no `Feature: {}`", feature.name));
         *finished_scenarios += 1;
         let scenarios = feature.count_scenarios();
         (scenarios == *finished_scenarios).then(|| {
@@ -2352,7 +2343,7 @@ impl FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     fn finish_all_rules_and_features<W>(
         &mut self,
-    ) -> impl Iterator<Item = event::Cucumber<W>> + '_ {
+    ) -> impl Iterator<Item = event::Cucumber<W>> {
         self.rule_scenarios_count
             .drain()
             .map(|((feat, rule), _)| event::Cucumber::rule_finished(feat, rule))
@@ -2372,26 +2363,29 @@ impl FinishedRulesAndFeatures {
     /// [`Rule`]: gherkin::Rule
     /// [`Rule::Started`]: event::Rule::Started
     /// [`Scenario`]: gherkin::Scenario
-    fn start_scenarios<W>(
+    fn start_scenarios<W, R>(
         &mut self,
-        runnable: impl AsRef<
+        runnable: R,
+    ) -> impl Iterator<Item = event::Cucumber<W>> + use<W, R>
+    where
+        R: AsRef<
             [(
                 ScenarioId,
-                Arc<gherkin::Feature>,
-                Option<Arc<gherkin::Rule>>,
-                Arc<gherkin::Scenario>,
+                Source<gherkin::Feature>,
+                Option<Source<gherkin::Rule>>,
+                Source<gherkin::Scenario>,
                 ScenarioType,
                 Option<RetryOptions>,
             )],
         >,
-    ) -> impl Iterator<Item = event::Cucumber<W>> {
+    {
         let runnable = runnable.as_ref();
 
         let mut started_features = Vec::new();
-        for feature in runnable.iter().map(|(_, f, ..)| Arc::clone(f)).dedup() {
+        for feature in runnable.iter().map(|(_, f, ..)| f.clone()).dedup() {
             _ = self
                 .features_scenarios_count
-                .entry(Arc::clone(&feature))
+                .entry(feature.clone())
                 .or_insert_with(|| {
                     started_features.push(feature);
                     0
@@ -2402,13 +2396,13 @@ impl FinishedRulesAndFeatures {
         for (feat, rule) in runnable
             .iter()
             .filter_map(|(_, feat, rule, _, _, _)| {
-                rule.clone().map(|r| (Arc::clone(feat), r))
+                rule.clone().map(|r| (feat.clone(), r))
             })
             .dedup()
         {
             _ = self
                 .rule_scenarios_count
-                .entry((Arc::clone(&feat), Arc::clone(&rule)))
+                .entry((feat.clone(), rule.clone()))
                 .or_insert_with(|| {
                     started_rules.push((feat, rule));
                     0
@@ -2433,9 +2427,9 @@ type Scenarios = HashMap<
     ScenarioType,
     Vec<(
         ScenarioId,
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptionsWithDeadline>,
     )>,
 >;
@@ -2445,9 +2439,9 @@ type InsertedScenarios = HashMap<
     ScenarioType,
     Vec<(
         ScenarioId,
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
         Option<RetryOptions>,
     )>,
 >;
@@ -2487,23 +2481,26 @@ impl Features {
             ) -> ScenarioType
             + 'static,
     {
+        let feature = Source::new(feature);
+
         let local = feature
             .scenarios
             .iter()
-            .map(|s| (&feature, None, s))
+            .map(|s| (None, s))
             .chain(feature.rules.iter().flat_map(|r| {
+                let rule = Some(Source::new(r.clone()));
                 r.scenarios
                     .iter()
-                    .map(|s| (&feature, Some(r), s))
+                    .map(|s| (rule.clone(), s))
                     .collect::<Vec<_>>()
             }))
-            .map(|(feat, rule, scenario)| {
-                let retries = retry(feat, rule, scenario, cli);
+            .map(|(rule, scenario)| {
+                let retries = retry(&feature, rule.as_deref(), scenario, cli);
                 (
                     ScenarioId::new(),
-                    Arc::new(feat.clone()),
-                    rule.map(|r| Arc::new(r.clone())),
-                    Arc::new(scenario.clone()),
+                    feature.clone(),
+                    rule,
+                    Source::new(scenario.clone()),
                     retries,
                 )
             })
@@ -2520,9 +2517,9 @@ impl Features {
     /// [`Scenario`]: gherkin::Scenario
     async fn insert_retried_scenario(
         &self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
     ) {
@@ -2544,7 +2541,7 @@ impl Features {
 
         let mut with_retries = HashMap::<_, Vec<_>>::new();
         let mut without_retries: Scenarios = HashMap::new();
-        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+        #[expect(clippy::iter_over_hash_type, reason = "order doesn't matter")]
         for (which, values) in scenarios {
             for (id, f, r, s, ret) in values {
                 match ret {
@@ -2554,7 +2551,7 @@ impl Features {
                         ..
                     })) => {
                         // `Retries::current` is `0`, so this `Scenario` run is
-                        // initial and we don't need to wait for retry delay.
+                        // initial, and we don't need to wait for retry delay.
                         let ret = ret.map(RetryOptions::without_deadline);
                         without_retries
                             .entry(which)
@@ -2574,7 +2571,7 @@ impl Features {
 
         let mut storage = self.scenarios.lock().await;
 
-        #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+        #[expect(clippy::iter_over_hash_type, reason = "order doesn't matter")]
         for (which, values) in with_retries {
             let ty_storage = storage.entry(which).or_default();
             for (id, f, r, s, ret) in values {
@@ -2587,7 +2584,10 @@ impl Features {
             // Scenarios in front.
             // This is done to execute them closely to one another, so the
             // output wouldn't hang on executing other Concurrent Scenarios.
-            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+            #[expect(
+                clippy::iter_over_hash_type,
+                reason = "order doesn't matter"
+            )]
             for (which, mut values) in without_retries {
                 let old = mem::take(storage.entry(which).or_default());
                 values.extend(old);
@@ -2596,7 +2596,10 @@ impl Features {
         } else {
             // If there are no Serial Scenarios, we just extend already existing
             // Concurrent Scenarios.
-            #[allow(clippy::iter_over_hash_type)] // order doesn't matter here
+            #[expect(
+                clippy::iter_over_hash_type,
+                reason = "order doesn't matter"
+            )]
             for (which, values) in without_retries {
                 storage.entry(which).or_default().extend(values);
             }
@@ -2613,9 +2616,9 @@ impl Features {
     ) -> (
         Vec<(
             ScenarioId,
-            Arc<gherkin::Feature>,
-            Option<Arc<gherkin::Rule>>,
-            Arc<gherkin::Scenario>,
+            Source<gherkin::Feature>,
+            Option<Source<gherkin::Rule>>,
+            Source<gherkin::Scenario>,
             ScenarioType,
             Option<RetryOptions>,
         )>,
@@ -2634,12 +2637,10 @@ impl Features {
              ty,
              count: Option<usize>| {
                 let mut i = 0;
-                // TODO: Replace with `drain_filter`, once stabilized.
-                //       https://github.com/rust-lang/rust/issues/43244
-                let drained =
-                    VecExt::drain_filter(storage, |(_, _, _, _, ret)| {
-                        // Because `drain_filter` runs over entire `Vec` on
-                        // `Drop`, we can't just `.take(count)`.
+                let drained = storage
+                    .extract_if(.., |(_, _, _, _, ret)| {
+                        // Because of retries involved, we cannot just specify
+                        // `..count` range to `.extract_if()`.
                         if count.filter(|c| i >= *c).is_some() {
                             return false;
                         }
@@ -2743,7 +2744,7 @@ enum ExecutionFailure<World> {
         /// [`Step`] itself.
         ///
         /// [`Step`]: gherkin::Step
-        step: Arc<gherkin::Step>,
+        step: Source<gherkin::Step>,
 
         /// [`Step`]s [`regex`] [`CaptureLocations`].
         ///
@@ -2792,7 +2793,7 @@ struct AfterHookEventsMeta {
 
 impl<W> ExecutionFailure<W> {
     /// Takes the [`World`] leaving a [`None`] in its place.
-    fn take_world(&mut self) -> Option<W> {
+    const fn take_world(&mut self) -> Option<W> {
         match self {
             Self::BeforeHookPanicked { world, .. }
             | Self::StepSkipped(world)
@@ -2811,9 +2812,9 @@ impl<W> ExecutionFailure<W> {
                 BeforeHookFailed(Arc::clone(panic_info))
             }
             Self::StepSkipped(_) => StepSkipped,
-            Self::StepPanicked {
-                captures, loc, err, ..
-            } => StepFailed(captures.clone(), *loc, err.clone()),
+            Self::StepPanicked { captures, loc, err, .. } => {
+                StepFailed(captures.clone(), *loc, err.clone())
+            }
         }
     }
 }
@@ -2870,40 +2871,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2924,50 +2913,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -2988,50 +2962,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3056,40 +3015,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3114,40 +3061,28 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3231,10 +3166,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3246,10 +3178,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3261,10 +3190,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3276,10 +3202,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3291,10 +3214,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3306,10 +3226,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3321,10 +3238,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3336,10 +3250,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3351,10 +3262,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3389,10 +3297,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3404,10 +3309,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3419,10 +3321,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3434,10 +3333,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3449,10 +3345,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3464,10 +3357,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3479,10 +3369,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3494,10 +3381,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3509,10 +3393,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3602,50 +3483,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3657,10 +3523,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: None,
                 }),
             );
@@ -3672,10 +3535,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3687,10 +3547,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3702,10 +3559,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3717,10 +3571,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3732,10 +3583,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3747,10 +3595,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: None,
                 }),
             );
@@ -3762,10 +3607,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: None,
                 }),
             );
@@ -3777,10 +3619,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 1,
-                    },
+                    retries: Retries { current: 0, left: 1 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3792,10 +3631,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3816,50 +3652,35 @@ Feature: only scenarios
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[0], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[1], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[2], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[3], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
             assert_eq!(
                 RetryOptions::parse_from_tags(&f, None, &f.scenarios[4], &cli),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3871,10 +3692,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 8,
-                    },
+                    retries: Retries { current: 0, left: 8 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3886,10 +3704,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3901,10 +3716,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3916,10 +3728,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -3931,10 +3740,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );
@@ -3946,10 +3752,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 3,
-                    },
+                    retries: Retries { current: 0, left: 3 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3961,10 +3764,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3976,10 +3776,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(5)),
                 }),
             );
@@ -3991,10 +3788,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 7,
-                    },
+                    retries: Retries { current: 0, left: 7 },
                     after: Some(Duration::from_secs(3)),
                 }),
             );
@@ -4006,10 +3800,7 @@ Feature: only scenarios
                     &cli
                 ),
                 Some(RetryOptions {
-                    retries: Retries {
-                        current: 0,
-                        left: 5,
-                    },
+                    retries: Retries { current: 0, left: 5 },
                     after: Some(Duration::from_secs(15)),
                 }),
             );

@@ -1,4 +1,4 @@
-use cucumber::{given, then, when, StatsWriter as _, World};
+use cucumber::{StatsWriter as _, World, given, then, when};
 
 #[given("ok")]
 #[when("ok")]
@@ -19,10 +19,8 @@ struct W;
 
 #[tokio::test]
 async fn fails() {
-    let writer = W::cucumber()
-        .with_default_cli()
-        .run("tests/features/result")
-        .await;
+    let writer =
+        W::cucumber().with_default_cli().run("tests/features/result").await;
 
     assert_eq!(writer.passed_steps(), 3);
     assert_eq!(writer.skipped_steps(), 0);

@@ -1,12 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
-use cucumber::{gherkin::Step, given, writer::summarize::Stats, World as _};
+use cucumber::{World as _, gherkin::Step, given, writer::summarize::Stats};
 use gherkin::tagexpr::TagOperation;
-use once_cell::sync::Lazy;
 use tokio::sync::Mutex;
 
-static SCENARIO_RUNS: Lazy<Mutex<HashMap<Step, usize>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static SCENARIO_RUNS: LazyLock<Mutex<HashMap<Step, usize>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[given(expr = "fail {int} time(s)")]
 async fn fail(_: &mut World, num: usize, step: &Step) {
@@ -35,23 +34,13 @@ async fn correctly() {
 
         assert_eq!(
             *writer.scenarios_stats(),
-            Stats {
-                passed: p_sc,
-                skipped: 0,
-                failed: f_sc,
-                retried: r_sc,
-            },
+            Stats { passed: p_sc, skipped: 0, failed: f_sc, retried: r_sc },
             "Wrong `Stats` for `Scenario`s on `{retries:?}` retries and \
              `{retry_filter:?}` tags",
         );
         assert_eq!(
             *writer.steps_stats(),
-            Stats {
-                passed: p_st,
-                skipped: 0,
-                failed: f_st,
-                retried: r_st,
-            },
+            Stats { passed: p_st, skipped: 0, failed: f_st, retried: r_st },
             "Wrong `Stats` for `Step`s on `{retries:?}` retries and \
              `{retry_filter:?}` tags",
         );
@@ -60,5 +49,5 @@ async fn correctly() {
     }
 }
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World;

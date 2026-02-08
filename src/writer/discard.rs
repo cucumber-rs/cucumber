@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,14 +10,14 @@
 
 //! Wrappers providing no-op implementations.
 
-use derive_more::{Deref, DerefMut};
+use derive_more::with_trait::{Deref, DerefMut};
 
-use crate::{event::Cucumber, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, event::Cucumber, parser, writer};
 
 /// Wrapper providing a no-op [`ArbitraryWriter`] implementation.
 ///
 /// Intended to be used for feeding a non-[`ArbitraryWriter`] [`Writer`] into a
-/// [`writer::Tee`], as the later accepts only [`ArbitraryWriter`]s.
+/// [`writer::Tee`], as the latter accepts only [`ArbitraryWriter`]s.
 ///
 /// [`ArbitraryWriter`]: writer::Arbitrary
 #[derive(Clone, Copy, Debug, Deref, DerefMut)]
@@ -29,10 +29,10 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Arbitrary<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<Cucumber<W>>>,
+        event: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        self.0.handle_event(ev, cli).await;
+        self.0.handle_event(event, cli).await;
     }
 }
 
@@ -114,10 +114,10 @@ impl<W: World, Wr: Writer<W> + ?Sized> Writer<W> for Stats<Wr> {
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<Cucumber<W>>>,
+        event: parser::Result<Event<Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        self.0.handle_event(ev, cli).await;
+        self.0.handle_event(event, cli).await;
     }
 }
 

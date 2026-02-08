@@ -1,15 +1,15 @@
 use std::{fs, io, panic::AssertUnwindSafe, time::Duration};
 
-use cucumber::{given, writer, writer::Coloring, World as _, WriterExt as _};
-use derive_more::Display;
+use cucumber::{World as _, WriterExt as _, given, writer, writer::Coloring};
+use derive_more::with_trait::Display;
 use futures::FutureExt as _;
 use regex::Regex;
 use tokio::{spawn, time};
 use tracing_subscriber::{
+    Layer,
     filter::LevelFilter,
     fmt::format::{DefaultFields, Format},
     layer::SubscriberExt as _,
-    Layer,
 };
 
 #[tokio::main]
@@ -74,5 +74,5 @@ async fn step(_: &mut World, n: usize) {
     tracing::info!("in span: {n:?}");
 }
 
-#[derive(Clone, cucumber::World, Debug, Default, Display)]
+#[derive(Clone, Debug, Default, Display, cucumber::World)]
 struct World;

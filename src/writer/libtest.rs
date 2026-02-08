@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -19,26 +19,24 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use derive_more::From;
+use derive_more::with_trait::From;
 use either::Either;
 use itertools::Itertools as _;
 use serde::Serialize;
 
 use crate::{
-    cli,
+    Event, World, Writer, WriterExt as _, cli,
     event::{self, Retries},
     parser,
     writer::{
-        self,
+        self, Arbitrary, Normalize, Summarize,
         basic::{coerce_error, trim_path},
         out::WriteStrExt as _,
-        Arbitrary, Normalize, Summarize,
     },
-    Event, World, Writer, WriterExt as _,
 };
 
 /// CLI options of a [`Libtest`] [`Writer`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Formatting of the output.
@@ -61,7 +59,7 @@ pub struct Cli {
 
 /// Output formats.
 ///
-/// Currently supports only JSON.
+/// Currently, supports only JSON.
 #[derive(Clone, Copy, Debug)]
 pub enum Format {
     /// [`libtest`][1]'s JSON format.
@@ -394,18 +392,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                 self.started_at = Some(meta.at);
                 Vec::new()
             }
-            Ok((
-                Cucumber::ParsingFinished {
-                    steps,
-                    parser_errors,
-                    ..
-                },
-                _,
-            )) => {
-                vec![SuiteEvent::Started {
-                    test_count: steps + parser_errors,
-                }
-                .into()]
+            Ok((Cucumber::ParsingFinished { steps, parser_errors, .. }, _)) => {
+                vec![
+                    SuiteEvent::Started { test_count: steps + parser_errors }
+                        .into(),
+                ]
             }
             Ok((Cucumber::Finished, meta)) => {
                 let exec_time = self
@@ -521,7 +512,10 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             // the standard library’s `print!()` macro.
             // This is the same as `tracing_subscriber::fmt::TestWriter` does
             // (check its documentation for details).
-            #[allow(clippy::print_stdout)] // intentional
+            #[expect( // intentional
+                clippy::print_stdout,
+                reason = "supporting `libtest` output capturing properly"
+            )]
             Scenario::Log(msg) => {
                 print!("{msg}");
                 vec![]
@@ -530,7 +524,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Hook`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn expand_hook_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -576,7 +571,8 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
     }
 
     /// Converts the provided [`event::Step`] into [`LibTestJsonEvent`]s.
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     fn expand_step_event(
         &mut self,
         feature: &gherkin::Feature,
@@ -727,26 +723,23 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             Either::Right((step, is_bg)) => format!(
                 "{}: {} {}{}",
                 step.position.line,
-                is_bg
-                    .then(|| feature
+                if is_bg {
+                    feature
                         .background
                         .as_ref()
-                        .map_or("Background", |bg| bg.keyword.as_str()))
-                    .unwrap_or_default(),
+                        .map_or("Background", |bg| bg.keyword.as_str())
+                } else {
+                    ""
+                },
                 step.keyword,
                 step.value,
             ),
         };
 
-        [
-            Some(feature_name),
-            rule_name,
-            Some(scenario_name),
-            Some(step_name),
-        ]
-        .into_iter()
-        .flatten()
-        .join("::")
+        [Some(feature_name), rule_name, Some(scenario_name), Some(step_name)]
+            .into_iter()
+            .flatten()
+            .join("::")
     }
 
     /// Saves [`Step`] starting [`SystemTime`].
@@ -764,12 +757,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         meta: event::Metadata,
         cli: &Cli,
     ) -> Option<Duration> {
-        self.step_started_at.take().and_then(|started| {
-            meta.at
-                .duration_since(started)
-                .ok()
-                .filter(|_| cli.report_time.is_some())
-        })
+        let started = self.step_started_at.take()?;
+        meta.at
+            .duration_since(started)
+            .ok()
+            .filter(|_| cli.report_time.is_some())
     }
 }
 
@@ -835,14 +827,14 @@ where
 enum LibTestJsonEvent {
     /// Event of test suite.
     Suite {
-        /// [`SuiteEvent`]
+        /// [`SuiteEvent`].
         #[serde(flatten)]
         event: SuiteEvent,
     },
 
     /// Event of the test case.
     Test {
-        /// [`TestEvent`]
+        /// [`TestEvent`].
         #[serde(flatten)]
         event: TestEvent,
     },
@@ -943,7 +935,7 @@ impl TestEvent {
     }
 
     /// Creates a new [`TestEvent::Timeout`].
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "API uniformity")]
     fn timeout(name: String, exec_time: Option<Duration>) -> Self {
         Self::Timeout(TestEventInner::new(name).with_exec_time(exec_time))
     }
@@ -993,12 +985,7 @@ struct TestEventInner {
 impl TestEventInner {
     /// Creates a new [`TestEventInner`].
     const fn new(name: String) -> Self {
-        Self {
-            name,
-            stdout: None,
-            stderr: None,
-            exec_time: None,
-        }
+        Self { name, stdout: None, stderr: None, exec_time: None }
     }
 
     /// Adds a [`TestEventInner::exec_time`].

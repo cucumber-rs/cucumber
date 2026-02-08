@@ -11,7 +11,11 @@ absolute-paths-allowed-crates = [
     "tracing_subscriber",
 ]
 
+allow-expect-in-tests = true
+
 doc-valid-idents = ["JUnit"]
+
+ignore-interior-mutability = ["cucumber::step::HashableRegex"]
 
 standard-macro-braces = [
     { name = "assert", brace = "(" },

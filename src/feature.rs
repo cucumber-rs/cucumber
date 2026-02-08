@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -13,11 +13,10 @@
 use std::{
     iter, mem,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
-use derive_more::{Display, Error};
-use lazy_regex::regex;
-use once_cell::sync::Lazy;
+use derive_more::with_trait::{Display, Error};
 use regex::Regex;
 use sealed::sealed;
 
@@ -143,8 +142,18 @@ fn expand_scenario(
 ) -> Vec<Result<gherkin::Scenario, ExpandExamplesError>> {
     /// [`Regex`] matching placeholders [`Examples`] should expand into.
     ///
+    /// # Format
+    ///
+    /// - Spaces are allowed inside placeholder.
+    /// - Placeholder cannot start or end with a space.
+    ///
     /// [`Examples`]: gherkin::Examples
-    static TEMPLATE_REGEX: &Lazy<Regex> = regex!(r"<([^>\s]+)>");
+    // TODO: Switch back to `lazy-regex::regex!()` once it migrates to `std`:
+    //       https://github.com/Canop/lazy-regex/issues/10
+    #[expect(clippy::unwrap_used, reason = "regex is valid")]
+    static TEMPLATE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"<([^>\s](?:[^>\s]?|[^>\t\n\r\v\f]*[^>\s]))>").unwrap()
+    });
 
     if scenario.examples.is_empty() {
         return vec![Ok(scenario)];
@@ -154,26 +163,26 @@ fn expand_scenario(
         .examples
         .iter()
         .filter_map(|ex| {
-            ex.table
-                .as_ref()?
-                .rows
-                .split_first()
-                .map(|(h, v)| (h, v, ex))
+            ex.table.as_ref()?.rows.split_first().map(|(h, v)| (h, v, ex))
         })
         .flat_map(|(header, vals, example)| {
             vals.iter()
                 .map(|v| header.iter().zip(v))
                 .enumerate()
-                .zip(iter::repeat((example.position, example.tags.iter())))
+                .zip(iter::repeat(example))
         })
-        .map(|((id, row), (position, tags))| {
+        .map(|((id, row), example)| {
+            let (position, tags) = (example.position, example.tags.iter());
+
             let replace_templates = |str: &str, pos| {
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
                     .replace_all(str, |cap: &regex::Captures<'_>| {
-                        // PANIC: Unwrapping is OK here as `TEMPLATE_REGEX`
-                        //        contains this capture group.
-                        #[allow(clippy::unwrap_used)] // intentional
+                        #[expect( // intentional
+                            clippy::unwrap_used,
+                            reason = "`TEMPLATE_REGEX` contains this capture \
+                                      group"
+                        )]
                         let name = cap.get(1).unwrap().as_str();
 
                         row.clone()
@@ -196,8 +205,8 @@ fn expand_scenario(
 
             let mut expanded = scenario.clone();
 
-            // This is done to differentiate `Hash`es of
-            // scenario outlines with the same examples.
+            // This is done to differentiate `Hash`es of `Scenario Outline`s
+            // with the same `Examples`.
             expanded.position = position;
             expanded.position.line += id + 2;
 
@@ -216,6 +225,15 @@ fn expand_scenario(
                 }
             }
 
+            let mut expanded_example = example.clone();
+            if let Some(table) = &mut expanded_example.table {
+                table.rows.resize(2, Vec::new());
+                if let Some(r) = table.rows.get_mut(1) {
+                    *r = row.map(|(_, v)| v.clone()).collect();
+                }
+            }
+            expanded.examples = vec![expanded_example];
+
             Ok(expanded)
         })
         .collect()
@@ -226,11 +244,10 @@ fn expand_scenario(
 /// [1]: https://cucumber.io/docs/gherkin/reference#scenario-outline
 #[derive(Clone, Debug, Display, Error)]
 #[display(
-    fmt = "Failed to resolve <{}> at {}:{}:{}",
-    name,
-    "path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default()",
-    "pos.line",
-    "pos.col"
+    "Failed to resolve <{name}> at {}:{}:{}",
+    path.as_deref().and_then(Path::to_str).map(trim_path).unwrap_or_default(),
+    pos.line,
+    pos.col,
 )]
 pub struct ExpandExamplesError {
     /// Position of the unknown template.

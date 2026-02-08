@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,18 +10,17 @@
 
 //! [`Writer`]-wrapper for collecting a summary of execution.
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap};
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 use itertools::Itertools as _;
 
 use crate::{
+    Event, World, Writer,
     cli::Colored,
-    event,
-    event::Retries,
+    event::{self, Retries, Source},
     parser,
     writer::{self, out::Styles},
-    Event, World, Writer,
 };
 
 /// Execution statistics.
@@ -185,9 +184,9 @@ pub struct Summarize<Writer> {
 /// [`Scenario`]: gherkin::Scenario
 type HandledScenarios = HashMap<
     (
-        Arc<gherkin::Feature>,
-        Option<Arc<gherkin::Rule>>,
-        Arc<gherkin::Scenario>,
+        Source<gherkin::Feature>,
+        Option<Source<gherkin::Rule>>,
+        Source<gherkin::Scenario>,
     ),
     Indicator,
 >;
@@ -202,7 +201,7 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
@@ -212,7 +211,7 @@ where
         // This is done to avoid miscalculations if this `Writer` happens to be
         // wrapped by a `writer::Repeat` or similar.
         if matches!(self.state, State::InProgress) {
-            match ev.as_deref() {
+            match event.as_deref() {
                 Err(_) => self.parsing_errors += 1,
                 Ok(Cucumber::Feature(feat, ev)) => match ev {
                     Feature::Started => self.features += 1,
@@ -221,17 +220,17 @@ where
                     }
                     Feature::Rule(rule, Rule::Scenario(sc, ev)) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
-                            Some(Arc::clone(rule)),
-                            Arc::clone(sc),
+                            feat.clone(),
+                            Some(rule.clone()),
+                            sc.clone(),
                             ev,
                         );
                     }
                     Feature::Scenario(sc, ev) => {
                         self.handle_scenario(
-                            Arc::clone(feat),
+                            feat.clone(),
                             None,
-                            Arc::clone(sc),
+                            sc.clone(),
                             ev,
                         );
                     }
@@ -241,10 +240,10 @@ where
                     self.state = State::FinishedButNotOutput;
                 }
                 Ok(Cucumber::Started | Cucumber::ParsingFinished { .. }) => {}
-            };
+            }
         }
 
-        self.writer.handle_event(ev, cli).await;
+        self.writer.handle_event(event, cli).await;
 
         if matches!(self.state, State::FinishedButNotOutput) {
             self.state = State::FinishedAndOutput;
@@ -310,18 +309,8 @@ impl<Writer> From<Writer> for Summarize<Writer> {
             writer,
             features: 0,
             rules: 0,
-            scenarios: Stats {
-                passed: 0,
-                skipped: 0,
-                failed: 0,
-                retried: 0,
-            },
-            steps: Stats {
-                passed: 0,
-                skipped: 0,
-                failed: 0,
-                retried: 0,
-            },
+            scenarios: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
+            steps: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
             parsing_errors: 0,
             failed_hooks: 0,
             state: State::InProgress,
@@ -336,16 +325,16 @@ impl<Writer> Summarize<Writer> {
     /// [`Step`]: gherkin::Step
     fn handle_step<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         step: &gherkin::Step,
         ev: &event::Step<W>,
         retries: Option<Retries>,
     ) {
         use self::{
-            event::Step,
             Indicator::{Failed, Retried, Skipped},
+            event::Step,
         };
 
         match ev {
@@ -398,9 +387,9 @@ impl<Writer> Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     fn handle_scenario<W>(
         &mut self,
-        feature: Arc<gherkin::Feature>,
-        rule: Option<Arc<gherkin::Rule>>,
-        scenario: Arc<gherkin::Scenario>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,
     ) {
         use event::{Hook, Scenario};
@@ -550,17 +539,21 @@ pub trait Summarizable {}
 
 impl<T: writer::NonTransforming> Summarizable for T {}
 
-// We better keep this here, as it's related to summarization only.
-#[allow(clippy::multiple_inherent_impl)] // intentional
+#[expect( // related to summarization only
+    clippy::multiple_inherent_impl,
+    reason = "related to summarization only"
+)]
 impl Styles {
     /// Generates a formatted summary [`String`].
     #[must_use]
     pub fn summary<W>(&self, summary: &Summarize<W>) -> String {
         let features = self.maybe_plural("feature", summary.features);
 
-        let rules = (summary.rules > 0)
-            .then(|| format!("{}\n", self.maybe_plural("rule", summary.rules)))
-            .unwrap_or_default();
+        let rules = if summary.rules > 0 {
+            format!("{}\n", self.maybe_plural("rule", summary.rules))
+        } else {
+            String::new()
+        };
 
         let scenarios =
             self.maybe_plural("scenario", summary.scenarios.total());
@@ -569,23 +562,23 @@ impl Styles {
         let steps = self.maybe_plural("step", summary.steps.total());
         let steps_stats = self.format_stats(summary.steps);
 
-        let parsing_errors = (summary.parsing_errors > 0)
-            .then(|| {
-                self.err(
-                    self.maybe_plural("parsing error", summary.parsing_errors),
-                )
-            })
-            .unwrap_or_default();
+        let parsing_errors = if summary.parsing_errors > 0 {
+            self.err(self.maybe_plural("parsing error", summary.parsing_errors))
+        } else {
+            "".into()
+        };
 
-        let hook_errors = (summary.failed_hooks > 0)
-            .then(|| {
-                self.err(self.maybe_plural("hook error", summary.failed_hooks))
-            })
-            .unwrap_or_default();
+        let hook_errors = if summary.failed_hooks > 0 {
+            self.err(self.maybe_plural("hook error", summary.failed_hooks))
+        } else {
+            "".into()
+        };
 
-        let comma = (!parsing_errors.is_empty() && !hook_errors.is_empty())
-            .then(|| self.err(", "))
-            .unwrap_or_default();
+        let comma = if !parsing_errors.is_empty() && !hook_errors.is_empty() {
+            self.err(", ")
+        } else {
+            "".into()
+        };
 
         format!(
             "{summary}\n{features}\n{rules}{scenarios}{scenarios_stats}\n\
@@ -600,21 +593,21 @@ impl Styles {
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
         let mut formatted = [
-            (stats.passed > 0)
-                .then(|| self.bold(self.ok(format!("{} passed", stats.passed))))
-                .unwrap_or_default(),
-            (stats.skipped > 0)
-                .then(|| {
-                    self.bold(
-                        self.skipped(format!("{} skipped", stats.skipped)),
-                    )
-                })
-                .unwrap_or_default(),
-            (stats.failed > 0)
-                .then(|| {
-                    self.bold(self.err(format!("{} failed", stats.failed)))
-                })
-                .unwrap_or_default(),
+            if stats.passed > 0 {
+                self.bold(self.ok(format!("{} passed", stats.passed)))
+            } else {
+                "".into()
+            },
+            if stats.skipped > 0 {
+                self.bold(self.skipped(format!("{} skipped", stats.skipped)))
+            } else {
+                "".into()
+            },
+            if stats.failed > 0 {
+                self.bold(self.err(format!("{} failed", stats.failed)))
+            } else {
+                "".into()
+            },
         ]
         .into_iter()
         .filter(|s| !s.is_empty())
@@ -628,15 +621,15 @@ impl Styles {
             ))));
         }
 
-        (!formatted.is_empty())
-            .then(|| {
-                self.bold(format!(
-                    " {}{formatted}{}",
-                    self.bold("("),
-                    self.bold(")"),
-                ))
-            })
-            .unwrap_or_default()
+        if formatted.is_empty() {
+            "".into()
+        } else {
+            self.bold(format!(
+                " {}{formatted}{}",
+                self.bold("("),
+                self.bold(")"),
+            ))
+        }
     }
 
     /// Adds `s` to `singular` if the given `num` is not `1`.
@@ -648,7 +641,7 @@ impl Styles {
         self.bold(format!(
             "{num} {}{}",
             singular.into(),
-            (num != 1).then_some("s").unwrap_or_default(),
+            if num == 1 { "" } else { "s" },
         ))
     }
 }

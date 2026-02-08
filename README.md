@@ -2,15 +2,15 @@ Cucumber testing framework for Rust
 ===================================
 
 [![crates.io](https://img.shields.io/crates/v/cucumber.svg?maxAge=2592000 "crates.io")](https://crates.io/crates/cucumber)
-[![Rust 1.75+](https://img.shields.io/badge/rustc-1.75+-lightgray.svg "Rust 1.75")](https://blog.rust-lang.org/2023/12/28/Rust-1.75.0.html)
-[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden")](https://github.com/rust-secure-code/safety-dance)  
-[![CI](https://github.com/cucumber-rs/cucumber/workflows/CI/badge.svg?branch=main "CI")](https://github.com/cucumber-rs/cucumber/actions?query=workflow%3ACI+branch%3Amain)
+[![Rust 1.88+](https://img.shields.io/badge/rustc-1.88+-lightgray.svg "Rust 1.88+")](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0)
+[![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden")](https://github.com/rust-secure-code/safety-dance)\
+[![CI](https://github.com/cucumber-rs/cucumber/actions/workflows/ci.yml/badge.svg?branch=main "CI")](https://github.com/cucumber-rs/cucumber/actions?query=workflow%3ACI+branch%3Amain)
 [![Rust docs](https://docs.rs/cucumber/badge.svg "Rust docs")](https://docs.rs/cucumber)
 
 An implementation of the [Cucumber] testing framework for Rust. Fully native, no external test runners or dependencies.
 
 - Book ([current][1] | [edge][2])
-- [Changelog](https://github.com/cucumber-rs/cucumber/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/CHANGELOG.md)
 
 
 
@@ -20,7 +20,7 @@ An implementation of the [Cucumber] testing framework for Rust. Fully native, no
 Describe testing scenarios in `.feature` files:
 ```gherkin
 Feature: Eating too much cucumbers may not be good for you
-    
+
   Scenario: Eating a few isn't a problem
     Given Alice is hungry
     When she eats 3 cucumbers
@@ -31,10 +31,10 @@ Implement `World` trait and describe steps:
 ```rust
 use std::time::Duration;
 
-use cucumber::{given, then, when, World as _};
+use cucumber::{World as _, given, then, when};
 use tokio::time::sleep;
 
-#[derive(cucumber::World, Debug, Default)]
+#[derive(Debug, Default, cucumber::World)]
 struct World {
     user: Option<String>,
     capacity: usize,
@@ -43,7 +43,7 @@ struct World {
 #[given(expr = "{word} is hungry")] // Cucumber Expression
 async fn someone_is_hungry(w: &mut World, user: String) {
     sleep(Duration::from_secs(2)).await;
-    
+
     w.user = Some(user);
 }
 
@@ -52,7 +52,7 @@ async fn eat_cucumbers(w: &mut World, count: usize) {
     sleep(Duration::from_secs(2)).await;
 
     w.capacity += count;
-    
+
     assert!(w.capacity < 4, "{} exploded!", w.user.as_ref().unwrap());
 }
 
@@ -113,8 +113,8 @@ The full gamut of Cucumber's [Gherkin] language is implemented by the [`gherkin`
 
 This project is licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/cucumber-rs/cucumber/blob/main/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
- * MIT license ([LICENSE-MIT](https://github.com/cucumber-rs/cucumber/blob/main/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+ * Apache License, Version 2.0 ([LICENSE-APACHE](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+ * MIT license ([LICENSE-MIT](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 

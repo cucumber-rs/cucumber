@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -19,15 +19,13 @@ use junit_report::{
 };
 
 use crate::{
-    event, parser,
+    Event, World, Writer, event, parser,
     writer::{
-        self,
-        basic::{coerce_error, trim_path, Coloring},
+        self, Ext as _, Verbosity,
+        basic::{Coloring, coerce_error, trim_path},
         discard,
         out::WritableString,
-        Ext as _, Verbosity,
     },
-    Event, World, Writer,
 };
 
 /// Advice phrase to use in panic messages of incorrect [events][1] ordering.
@@ -36,7 +34,7 @@ use crate::{
 const WRAP_ADVICE: &str = "Consider wrapping `Writer` into `writer::Normalize`";
 
 /// CLI options of a [`JUnit`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of JUnit XML report output.
@@ -112,14 +110,14 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
-        opts: &Self::Cli,
+        event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature, Rule};
 
-        self.apply_cli(*opts);
+        self.apply_cli(*cli);
 
-        match ev.map(Event::split) {
+        match event.map(Event::split) {
             Err(err) => self.handle_error(&err),
             Ok((Cucumber::Started | Cucumber::ParsingFinished { .. }, _)) => {}
             Ok((Cucumber::Feature(feat, ev), meta)) => match ev {
@@ -148,7 +146,7 @@ where
                 Feature::Finished => {
                     let suite = self.suit.take().unwrap_or_else(|| {
                         panic!(
-                            "No `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
+                            "no `TestSuit` for `Feature` \"{}\"\n{WRAP_ADVICE}",
                             feat.name,
                         )
                     });
@@ -158,7 +156,7 @@ where
             Ok((Cucumber::Finished, _)) => {
                 self.report
                     .write_xml(&mut self.output)
-                    .unwrap_or_else(|e| panic!("Failed to write XML: {e}"));
+                    .unwrap_or_else(|e| panic!("failed to write XML: {e}"));
             }
         }
     }
@@ -219,12 +217,12 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     }
 
     /// Applies the given [`Cli`] options to this [`JUnit`] [`Writer`].
-    pub fn apply_cli(&mut self, cli: Cli) {
+    pub const fn apply_cli(&mut self, cli: Cli) {
         match cli.verbose {
             None => {}
             Some(0) => self.verbosity = Verbosity::Default,
             _ => self.verbosity = Verbosity::ShowWorld,
-        };
+        }
     }
 
     /// Handles the given [`parser::Error`].
@@ -303,7 +301,7 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
                     .as_mut()
                     .unwrap_or_else(|| {
                         panic!(
-                            "No `TestSuit` for `Scenario` \"{}\"\n\
+                            "no `TestSuit` for `Scenario` \"{}\"\n\
                              {WRAP_ADVICE}",
                             sc.name,
                         )
@@ -339,15 +337,14 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             })
             .unwrap_or_else(|| {
                 panic!(
-                    "No events for `Scenario` \"{}\"\n{WRAP_ADVICE}",
+                    "no events for `Scenario` \"{}\"\n{WRAP_ADVICE}",
                     sc.name,
                 )
             });
 
         let case_name = format!(
             "{}Scenario: {}: {}{}:{}",
-            rule.map(|r| format!("Rule: {}: ", r.name))
-                .unwrap_or_default(),
+            rule.map(|r| format!("Rule: {}: ", r.name)).unwrap_or_default(),
             sc.name,
             feat.path
                 .as_ref()
@@ -429,21 +426,21 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
     ) -> Duration {
         let started_at = self.scenario_started_at.take().unwrap_or_else(|| {
             panic!(
-                "No `Started` event for `Scenario` \"{}\"\n{WRAP_ADVICE}",
+                "no `Started` event for `Scenario` \"{}\"\n{WRAP_ADVICE}",
                 sc.name,
             )
         });
         Duration::try_from(ended.duration_since(started_at).unwrap_or_else(
             |e| {
                 panic!(
-                    "Failed to compute duration between {ended:?} and \
+                    "failed to compute duration between {ended:?} and \
                      {started_at:?}: {e}",
                 )
             },
         ))
         .unwrap_or_else(|e| {
             panic!(
-                "Cannot covert `std::time::Duration` to `time::Duration`: {e}",
+                "cannot covert `std::time::Duration` to `time::Duration`: {e}",
             )
         })
     }

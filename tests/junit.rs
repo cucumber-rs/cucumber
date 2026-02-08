@@ -1,14 +1,14 @@
 use std::{fs, io::Read as _};
 
-use cucumber::{given, then, when, writer, World as _};
+use cucumber::{World as _, given, then, when, writer};
 use futures::FutureExt as _;
 use regex::RegexBuilder;
 use tempfile::NamedTempFile;
 use tracing_subscriber::{
+    Layer as _,
     filter::LevelFilter,
     fmt::format::{DefaultFields, Format},
     layer::SubscriberExt as _,
-    Layer as _,
 };
 
 #[given(regex = r"(\d+) secs?")]
@@ -70,5 +70,5 @@ async fn output() {
     );
 }
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World(usize);

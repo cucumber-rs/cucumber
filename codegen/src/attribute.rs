@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2020-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -84,10 +84,10 @@ impl Step {
         }?
         .or_else(|| {
             func.sig.inputs.iter().find_map(|arg| {
-                if let Ok((ident, _)) = parse_fn_arg(arg) {
-                    if ident == "step" {
-                        return Some(ident.clone());
-                    }
+                if let Ok((ident, _)) = parse_fn_arg(arg)
+                    && ident == "step"
+                {
+                    return Some(ident.clone());
                 }
                 None
             })
@@ -112,6 +112,9 @@ impl Step {
             self.fn_arguments_and_additional_parsing()?;
 
         let regex = self.gen_regex()?;
+        let allow_trivial_regex_attr =
+            matches!(self.attr_arg, AttributeArgument::Literal(_))
+                .then(|| quote! { #[allow(clippy::trivial_regex)] });
 
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
         let unwrapping = (!self.returns_unit())
@@ -135,9 +138,10 @@ impl Step {
                         column: ::std::column!(),
                     },
                     regex: || {
-                        static LAZY: ::cucumber::codegen::Lazy<
+                        #allow_trivial_regex_attr
+                        static LAZY: ::std::sync::LazyLock<
                             ::cucumber::codegen::Regex
-                        > = ::cucumber::codegen::Lazy::new(|| { #regex });
+                        > = ::std::sync::LazyLock::new(|| { #regex });
                         LAZY.clone()
                     },
                     func: |__cucumber_world, __cucumber_ctx| {
@@ -250,8 +254,6 @@ impl Step {
 
                 Ok((func_args, addon_parsing))
             } else {
-                // false positive: impl of `FnOnce` is not general enough
-                #[allow(clippy::redundant_closure_for_method_calls)]
                 let (idents, parsings): (Vec<_>, Vec<_>) =
                     itertools::process_results(
                         func.sig
@@ -304,8 +306,7 @@ impl Step {
         let (ident, ty) = parse_fn_arg(arg)?;
 
         let is_ctx_arg =
-            self.arg_name_of_step_context.as_ref().map(|i| *i == *ident)
-                == Some(true);
+            self.arg_name_of_step_context.as_ref().is_some_and(|i| i == ident);
 
         let decl = if is_ctx_arg {
             quote! {
@@ -751,9 +752,7 @@ fn remove_all_attrs_if_needed<'a>(
 ) -> (Vec<&'a syn::FnArg>, Vec<syn::Attribute>) {
     let has_other_step_arguments = func.attrs.iter().any(|attr| {
         attr.meta.path().segments.last().is_some_and(|segment| {
-            ["given", "when", "then"]
-                .iter()
-                .any(|step| segment.ident == step)
+            ["given", "when", "then"].iter().any(|step| segment.ident == step)
         })
     });
 
@@ -798,10 +797,10 @@ fn remove_attr(attr_arg: &str, arg: &mut syn::FnArg) -> Option<syn::Attribute> {
 
         let (mut other, mut removed): (Vec<_>, Vec<_>) =
             attrs.into_iter().partition_map(|attr| {
-                if let Some(ident) = attr.meta.path().get_ident() {
-                    if ident == attr_arg {
-                        return Either::Right(attr);
-                    }
+                if let Some(ident) = attr.meta.path().get_ident()
+                    && ident == attr_arg
+                {
+                    return Either::Right(attr);
                 }
                 Either::Left(attr)
             });
@@ -826,7 +825,7 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
             return Err(syn::Error::new(
                 arg.span(),
                 "expected regular argument, found `self`",
-            ))
+            ));
         }
     };
 
@@ -840,31 +839,21 @@ fn parse_fn_arg(arg: &syn::FnArg) -> syn::Result<(&syn::Ident, &syn::Type)> {
 /// Parses type of a first slice element of the given function signature.
 fn find_first_slice(sig: &syn::Signature) -> Option<&syn::TypePath> {
     sig.inputs.iter().find_map(|arg| {
-        match arg {
-            syn::FnArg::Typed(typed_arg) => Some(typed_arg),
-            syn::FnArg::Receiver(_) => None,
+        let typed_arg = match arg {
+            syn::FnArg::Typed(typed_arg) => typed_arg,
+            syn::FnArg::Receiver(_) => return None,
+        };
+        let syn::Type::Reference(ty_ref) = typed_arg.ty.as_ref() else {
+            return None;
+        };
+        let syn::Type::Slice(slice) = ty_ref.elem.as_ref() else {
+            return None;
+        };
+        if let syn::Type::Path(ty) = slice.elem.as_ref() {
+            Some(ty)
+        } else {
+            None
         }
-        .and_then(|typed_arg| {
-            if let syn::Type::Reference(r) = typed_arg.ty.as_ref() {
-                Some(r)
-            } else {
-                None
-            }
-            .and_then(|ty_ref| {
-                if let syn::Type::Slice(s) = ty_ref.elem.as_ref() {
-                    Some(s)
-                } else {
-                    None
-                }
-                .and_then(|slice| {
-                    if let syn::Type::Path(ty) = slice.elem.as_ref() {
-                        Some(ty)
-                    } else {
-                        None
-                    }
-                })
-            })
-        })
     })
 }
 

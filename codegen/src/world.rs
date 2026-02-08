@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2020-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -80,7 +80,7 @@ impl Definition {
     const STEPS: &'static [&'static str] = &["given", "when", "then"];
 
     /// Assertion to ensure, that [`Self::STEPS`] has exactly 3 step types.
-    #[allow(clippy::manual_assert)] // `assert_eq!` isn't const yet
+    #[expect(clippy::manual_assert, reason = "`assert_eq!` isn't const yet")]
     const EXACTLY_3_STEPS: () = if Self::STEPS.len() != 3 {
         panic!("expected exactly 3 step names");
     };
@@ -191,7 +191,7 @@ impl Definition {
     /// Generates [`syn::Ident`]s of generic types for private trait impl.
     ///
     /// [`syn::Ident`]: struct@syn::Ident
-    fn step_types(&self) -> impl Iterator<Item = syn::Ident> + '_ {
+    fn step_types(&self) -> impl Iterator<Item = syn::Ident> {
         Self::STEPS.iter().map(|step| {
             format_ident!("Cucumber{}{}", to_pascal_case(step), self.ident)
         })

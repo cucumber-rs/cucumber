@@ -6,10 +6,47 @@ All user visible changes to `cucumber-codegen` crate will be documented in this 
 
 
 
-## [0.21.1] · 2024-06-16
-[0.21.1]: /../../tree/v0.21.1/codegen
+## [0.22.1] · 2025-12-23
+[0.22.1]: https://github.com/cucumber-rs/cucumber/tree/v0.22.1/codegen
 
-[Milestone](/../../milestone/29)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/31)
+
+### Version bump only
+
+See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0.22.1/CHANGELOG.md).
+
+
+
+
+## [0.22.0] · 2025-12-12
+[0.22.0]: https://github.com/cucumber-rs/cucumber/tree/v0.22.0/codegen
+
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/28)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.88 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [0c7dfc3c], [a4cbd3d2])
+
+### Fixed
+
+- `clippy::trivial_regex` lint triggering on `#[given]`/`#[when]`/`#[then]` steps without regular expression. ([81acba84], [#384])
+
+[#384]: https://github.com/cucumber-rs/cucumber/pull/384
+[0c7dfc3c]: https://github.com/cucumber-rs/cucumber/commit/0c7dfc3c80f0f58ce9a52f252485d1d14e6eb0ed
+[4010c1ad]: https://github.com/cucumber-rs/cucumber/commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
+[81acba84]: https://github.com/cucumber-rs/cucumber/commit/81acba84697a5b04c45e2c5d5446f1ffbe289632
+[9705253b]: https://github.com/cucumber-rs/cucumber/commit/9705253bda5caadfe3eea91f50420222158dd944
+[a4cbd3d2]: https://github.com/cucumber-rs/cucumber/commit/a4cbd3d282fe8e01f05609eabea6410c0e2b46a3
+[b46930c3]: https://github.com/cucumber-rs/cucumber/commit/b46930c32ef5ae490df8063905144a45de27eda1
+[f1307038]: https://github.com/cucumber-rs/cucumber/commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
+
+
+
+
+## [0.21.1] · 2024-06-16
+[0.21.1]: https://github.com/cucumber-rs/cucumber/tree/v0.21.1/codegen
+
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/29)
 
 ### Version bump only
 
@@ -19,23 +56,23 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.21.0] · 2024-04-22
-[0.21.0]: /../../tree/v0.21.0/codegen
+[0.21.0]: https://github.com/cucumber-rs/cucumber/tree/v0.21.0/codegen
 
-[Milestone](/../../milestone/26)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/26)
 
 ### BC Breaks
 
 - Bumped up [MSRV] to 1.75 for using `async fn` in traits. ([#324])
 
-[#324]: /../../pull/324
+[#324]: https://github.com/cucumber-rs/cucumber/pull/324
 
 
 
 
 ## [0.20.2] · 2023-12-04
-[0.20.2]: /../../tree/v0.20.2/codegen
+[0.20.2]: https://github.com/cucumber-rs/cucumber/tree/v0.20.2/codegen
 
-[Milestone](/../../milestone/27)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/27)
 
 ### Version bump only
 
@@ -45,9 +82,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.20.1] · 2023-10-16
-[0.20.1]: /../../tree/v0.20.1/codegen
+[0.20.1]: https://github.com/cucumber-rs/cucumber/tree/v0.20.1/codegen
 
-[Milestone](/../../milestone/25)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/25)
 
 ### Version bump only
 
@@ -57,9 +94,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.20.0] · 2023-07-10
-[0.20.0]: /../../tree/v0.20.0/codegen
+[0.20.0]: https://github.com/cucumber-rs/cucumber/tree/v0.20.0/codegen
 
-[Milestone](/../../milestone/24)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/24)
 
 ### BC Breaks
 
@@ -69,16 +106,16 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 - Switched to 2.0 version of [`syn`]. ([#266])
 
-[#266]: /../../pull/266
-[#288]: /../../pull/288
+[#266]: https://github.com/cucumber-rs/cucumber/pull/266
+[#288]: https://github.com/cucumber-rs/cucumber/pull/288
 
 
 
 
 ## [0.19.1] · 2022-12-29
-[0.19.1]: /../../tree/v0.19.1/codegen
+[0.19.1]: https://github.com/cucumber-rs/cucumber/tree/v0.19.1/codegen
 
-[Milestone](/../../milestone/23)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/23)
 
 ### Version bump only
 
@@ -88,9 +125,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.19.0] · 2022-12-07
-[0.19.0]: /../../tree/v0.19.0/codegen
+[0.19.0]: https://github.com/cucumber-rs/cucumber/tree/v0.19.0/codegen
 
-[Milestone](/../../milestone/22)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/22)
 
 ### Version bump only
 
@@ -100,9 +137,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.18.0] · 2022-12-07
-[0.18.0]: /../../tree/v0.18.0/codegen
+[0.18.0]: https://github.com/cucumber-rs/cucumber/tree/v0.18.0/codegen
 
-[Milestone](/../../milestone/21)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/21)
 
 ### Version bump only
 
@@ -112,9 +149,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.17.0] · 2022-11-23
-[0.17.0]: /../../tree/v0.17.0/codegen
+[0.17.0]: https://github.com/cucumber-rs/cucumber/tree/v0.17.0/codegen
 
-[Milestone](/../../milestone/20)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/20)
 
 ### Version bump only
 
@@ -124,23 +161,23 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.16.0] · 2022-11-09
-[0.16.0]: /../../tree/v0.16.0/codegen
+[0.16.0]: https://github.com/cucumber-rs/cucumber/tree/v0.16.0/codegen
 
-[Milestone](/../../milestone/19)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/19)
 
 ### BC Breaks
 
 - Bumped up [MSRV] to 1.65 for using `let`-`else` statements. ([7f52d4a5])
 
-[7f52d4a5]: /../../commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
+[7f52d4a5]: https://github.com/cucumber-rs/cucumber/commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
 
 
 
 
 ## [0.15.3] · 2022-11-01
-[0.15.3]: /../../tree/v0.15.3/codegen
+[0.15.3]: https://github.com/cucumber-rs/cucumber/tree/v0.15.3/codegen
 
-[Milestone](/../../milestone/18)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/18)
 
 ### Version bump only
 
@@ -150,9 +187,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.15.2] · 2022-10-25
-[0.15.2]: /../../tree/v0.15.2/codegen
+[0.15.2]: https://github.com/cucumber-rs/cucumber/tree/v0.15.2/codegen
 
-[Milestone](/../../milestone/17)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/17)
 
 ### Version bump only
 
@@ -162,9 +199,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.15.1] · 2022-10-12
-[0.15.1]: /../../tree/v0.15.1/codegen
+[0.15.1]: https://github.com/cucumber-rs/cucumber/tree/v0.15.1/codegen
 
-[Milestone](/../../milestone/16)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/16)
 
 ### Version bump only
 
@@ -174,9 +211,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.15.0] · 2022-10-05
-[0.15.0]: /../../tree/v0.15.0/codegen
+[0.15.0]: https://github.com/cucumber-rs/cucumber/tree/v0.15.0/codegen
 
-[Milestone](/../../milestone/15)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/15)
 
 ### Version bump only
 
@@ -186,21 +223,21 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.14.2] · 2022-09-19
-[0.14.2]: /../../tree/v0.14.2/codegen
+[0.14.2]: https://github.com/cucumber-rs/cucumber/tree/v0.14.2/codegen
 
 ### Fixed
 
 - `#[derive(World)]` macro being unhygienic regarding custom `Result` types. ([186af8b1])
 
-[186af8b1]: /../../commit/186af8b1de37275b308897e2e30d6982830b0278
+[186af8b1]: https://github.com/cucumber-rs/cucumber/commit/186af8b1de37275b308897e2e30d6982830b0278
 
 
 
 
 ## [0.14.1] · 2022-09-12
-[0.14.1]: /../../tree/v0.14.1/codegen
+[0.14.1]: https://github.com/cucumber-rs/cucumber/tree/v0.14.1/codegen
 
-[Milestone](/../../milestone/14)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/14)
 
 ### Version bump only
 
@@ -210,28 +247,28 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.14.0] · 2022-09-08
-[0.14.0]: /../../tree/v0.14.0/codegen
+[0.14.0]: https://github.com/cucumber-rs/cucumber/tree/v0.14.0/codegen
 
-[Milestone](/../../milestone/13)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/13)
 
 ### BC Breaks
 
 - Bumped up [MSRV] to 1.62 for more clever support of [Cargo feature]s and simplified codegen. ([fbd08ec2], [cf055ac0], [8ad5cc86])
 - Replaced `#[derive(WorldInit)]` with `#[derive(World)]` to remove the need of manual `World` trait implementation. ([#219], [#217])
 
-[#217]: /../../issues/217
-[#219]: /../../pull/219
-[8ad5cc86]: /../../commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
-[cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
-[fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
+[#217]: https://github.com/cucumber-rs/cucumber/issues/217
+[#219]: https://github.com/cucumber-rs/cucumber/pull/219
+[8ad5cc86]: https://github.com/cucumber-rs/cucumber/commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
+[cf055ac0]: https://github.com/cucumber-rs/cucumber/commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
+[fbd08ec2]: https://github.com/cucumber-rs/cucumber/commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
 
 
 
 
 ## [0.13.0] · 2022-03-29
-[0.13.0]: /../../tree/v0.13.0/codegen
+[0.13.0]: https://github.com/cucumber-rs/cucumber/tree/v0.13.0/codegen
 
-[Milestone](/../../milestone/12)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/12)
 
 ### Version bump only
 
@@ -241,9 +278,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.12.2] · 2022-03-28
-[0.12.2]: /../../tree/v0.12.2/codegen
+[0.12.2]: https://github.com/cucumber-rs/cucumber/tree/v0.12.2/codegen
 
-[Milestone](/../../milestone/10)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/10)
 
 ### Version bump only
 
@@ -253,9 +290,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.12.1] · 2022-03-09
-[0.12.1]: /../../tree/v0.12.1/codegen
+[0.12.1]: https://github.com/cucumber-rs/cucumber/tree/v0.12.1/codegen
 
-[Milestone](/../../milestone/11)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/11)
 
 ### Security updated
 
@@ -267,23 +304,23 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.12.0] · 2022-02-10
-[0.12.0]: /../../tree/v0.12.0/codegen
+[0.12.0]: https://github.com/cucumber-rs/cucumber/tree/v0.12.0/codegen
 
-[Milestone](/../../milestone/9)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/9)
 
 ### Added
 
 - Support for multiple capturing groups in `Parameter` regex (previously was forbidden). ([#204])
 
-[#204]: /../../pull/204
+[#204]: https://github.com/cucumber-rs/cucumber/pull/204
 
 
 
 
 ## [0.11.3] · 2022-01-31
-[0.11.3]: /../../tree/v0.11.3/codegen
+[0.11.3]: https://github.com/cucumber-rs/cucumber/tree/v0.11.3/codegen
 
-[Milestone](/../../milestone/8)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/8)
 
 ### Version bump only
 
@@ -293,9 +330,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.11.2] · 2022-01-19
-[0.11.2]: /../../tree/v0.11.2/codegen
+[0.11.2]: https://github.com/cucumber-rs/cucumber/tree/v0.11.2/codegen
 
-[Milestone](/../../milestone/7)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/7)
 
 ### Version bump only
 
@@ -305,9 +342,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.11.1] · 2022-01-07
-[0.11.1]: /../../tree/v0.11.1/codegen
+[0.11.1]: https://github.com/cucumber-rs/cucumber/tree/v0.11.1/codegen
 
-[Milestone](/../../milestone/6)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/6)
 
 ### Version bump only
 
@@ -317,9 +354,9 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.11.0] · 2022-01-03
-[0.11.0]: /../../tree/v0.11.0/codegen
+[0.11.0]: https://github.com/cucumber-rs/cucumber/tree/v0.11.0/codegen
 
-[Milestone](/../../milestone/3)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/3)
 
 ### BC Breaks
 
@@ -331,32 +368,32 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 - `expr = ...` argument to `#[given(...)]`, `#[when(...)]` and `#[then(...)]` attributes allowing [Cucumber Expressions]. ([#157])
 - `#[derive(Parameter)]` attribute macro for implementing custom parameters of [Cucumber Expressions]. ([#168])
 
-[#151]: /../../pull/151
-[#157]: /../../pull/157
-[#168]: /../../pull/168
-[cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
+[#151]: https://github.com/cucumber-rs/cucumber/pull/151
+[#157]: https://github.com/cucumber-rs/cucumber/pull/157
+[#168]: https://github.com/cucumber-rs/cucumber/pull/168
+[cef3d480]: https://github.com/cucumber-rs/cucumber/commit/cef3d480579190425461ddb04a1248675248351e
 
 
 
 
 ## [0.10.2] · 2021-11-03
-[0.10.2]: /../../tree/v0.10.2/codegen
+[0.10.2]: https://github.com/cucumber-rs/cucumber/tree/v0.10.2/codegen
 
-[Milestone](/../../milestone/5)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/5)
 
 ### Added
 
 - World's type name to the generated `WorldInit` machinery to omit conflicts for different types in the same module. ([#150])
 
-[#150]: /../../pull/150
+[#150]: https://github.com/cucumber-rs/cucumber/pull/150
 
 
 
 
 ## [0.10.1] · 2021-10-29
-[0.10.1]: /../../tree/v0.10.1/codegen
+[0.10.1]: https://github.com/cucumber-rs/cucumber/tree/v0.10.1/codegen
 
-[Milestone](/../../milestone/4)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/4)
 
 ### Version bump only
 
@@ -366,31 +403,31 @@ See `cucumber` crate [changelog](https://github.com/cucumber-rs/cucumber/blob/v0
 
 
 ## [0.10.0] · 2021-10-26
-[0.10.0]: /../../tree/v0.10.0/codegen
+[0.10.0]: https://github.com/cucumber-rs/cucumber/tree/v0.10.0/codegen
 
-[Milestone](/../../milestone/2)
+[Milestone](https://github.com/cucumber-rs/cucumber/milestone/2)
 
 ### BC Breaks
 
 - Renamed crate to `cucumber-codegen`.
 - Replaced `#[given(step)]`, `#[when(step)]` and `#[then(step)]` function argument attributes with a single `#[step]`. ([#128])
 
-[#128]: /../../pull/128
+[#128]: https://github.com/cucumber-rs/cucumber/pull/128
 
 
 
 
 ## [0.1.0] · 2021-01-18
-[0.1.0]: /../../tree/v0.8.0/codegen
+[0.1.0]: https://github.com/cucumber-rs/cucumber/tree/v0.8.0/codegen
 
 ### Added
 
 - Attribute macros: ([#81])
-    - [`given`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.given.html); 
+    - [`given`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.given.html);
     - [`when`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.when.html);
     - [`then`](https://docs.rs/cucumber_rust_codegen/0.1.0/cucumber_rust_codegen/attr.then.html).
 
-[#81]: /../../pull/81
+[#81]: https://github.com/cucumber-rs/cucumber/pull/81
 
 
 

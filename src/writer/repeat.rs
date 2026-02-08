@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -12,9 +12,9 @@
 
 use std::mem;
 
-use derive_more::Deref;
+use derive_more::with_trait::Deref;
 
-use crate::{event, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, event, parser, writer};
 
 /// Alias for a [`fn`] predicate deciding whether an event should be
 /// re-outputted or not.
@@ -145,11 +145,7 @@ impl<W, Wr, F> Repeat<W, Wr, F> {
     /// output in case the given `filter` predicated returns `true`.
     #[must_use]
     pub const fn new(writer: Wr, filter: F) -> Self {
-        Self {
-            writer,
-            filter,
-            events: Vec::new(),
-        }
+        Self { writer, filter, events: Vec::new() }
     }
 }
 

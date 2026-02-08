@@ -5,15 +5,15 @@ IntelliJ Rust (`libtest`) integration
 
 Example below is set up to output with the default [`writer::Basic`] if there is no `--format=json` option, or with [`writer::Libtest`] otherwise.
 ```toml
-cucumber = { version = "0.20", features = ["libtest"] }
+cucumber = { version = "0.22", features = ["libtest"] }
 ```
 ```rust
 # extern crate cucumber;
 # extern crate tokio;
 #
-use cucumber::{writer, World as _};
+use cucumber::{World as _, writer};
 
-# #[derive(cucumber::World, Debug, Default)]
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
 #
 # #[tokio::main]

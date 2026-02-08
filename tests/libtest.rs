@@ -1,6 +1,6 @@
 use std::{fs, io::Read as _};
 
-use cucumber::{cli, given, then, when, writer, World as _, WriterExt as _};
+use cucumber::{World as _, WriterExt as _, cli, given, then, when, writer};
 use regex::Regex;
 use tempfile::NamedTempFile;
 
@@ -32,7 +32,7 @@ async fn output() {
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
     let non_deterministic = Regex::new(
-        "\":\\d+\\.\\d+\
+        "\":[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?\
          |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
          |\\s?\n",
     )
@@ -69,7 +69,7 @@ async fn output_report_time() {
     // Required to strip out non-deterministic parts of output, so we could
     // compare them well.
     let non_deterministic = Regex::new(
-        "\":\\d+\\.\\d+\
+        "\":[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?\
          |([^\"\\n\\s]*)[/\\\\]([A-z1-9-_]*)\\.(feature|rs)(:\\d+:\\d+)?\
          |\\s?\n",
     )
@@ -85,5 +85,5 @@ async fn output_report_time() {
     );
 }
 
-#[derive(Clone, Copy, cucumber::World, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World(usize);

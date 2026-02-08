@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,7 +10,7 @@
 
 //! Passing events to one of two [`Writer`]s based on a predicate.
 
-use crate::{cli, event, parser, writer, Event, World, Writer};
+use crate::{Event, World, Writer, cli, event, parser, writer};
 
 /// Wrapper for passing events to one of two [`Writer`]s based on a predicate.
 #[derive(Clone, Copy, Debug)]
@@ -34,11 +34,7 @@ impl<L, R, F> Or<L, R, F> {
     /// otherwise the `right` [`Writer`] is used on [`false`].
     #[must_use]
     pub const fn new(left: L, right: R, predicate: F) -> Self {
-        Self {
-            left,
-            right,
-            predicate,
-        }
+        Self { left, right, predicate }
     }
 
     /// Returns the left [`Writer`] of this [`Or`] one.
@@ -69,13 +65,13 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
+        event: parser::Result<Event<event::Cucumber<W>>>,
         cli: &Self::Cli,
     ) {
-        if (self.predicate)(&ev, cli) {
-            self.left.handle_event(ev, &cli.left).await;
+        if (self.predicate)(&event, cli) {
+            self.left.handle_event(event, &cli.left).await;
         } else {
-            self.right.handle_event(ev, &cli.right).await;
+            self.right.handle_event(event, &cli.right).await;
         }
     }
 }

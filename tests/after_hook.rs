@@ -5,8 +5,8 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{given, then, when, Parameter, World as _};
-use derive_more::{Deref, FromStr};
+use cucumber::{Parameter, World as _, given, then, when};
+use derive_more::with_trait::{Deref, FromStr};
 use futures::FutureExt as _;
 use tokio::time;
 
@@ -44,9 +44,9 @@ async fn fires_each_time() {
             if w.is_some() {
                 let after =
                     NUMBER_OF_AFTER_WORLDS.fetch_add(1, Ordering::SeqCst);
-                assert_ne!(after, 8, "Too much after `World`s!");
+                assert_ne!(after, 8, "too much after `World`s!");
             } else {
-                panic!("No `World` received");
+                panic!("no `World` received");
             }
 
             future::ready(()).boxed()
@@ -56,10 +56,8 @@ async fn fires_each_time() {
         .max_concurrent_scenarios(1)
         .run_and_exit("tests/features/wait");
 
-    let err = AssertUnwindSafe(res)
-        .catch_unwind()
-        .await
-        .expect_err("should err");
+    let err =
+        AssertUnwindSafe(res).catch_unwind().await.expect_err("should err");
     let err = err.downcast_ref::<String>().unwrap();
 
     assert_eq!(err, "4 steps failed, 1 parsing error, 8 hook errors");
@@ -85,7 +83,7 @@ async fn step(world: &mut World, secs: CustomU64) {
 #[param(regex = "\\d+", name = "u64")]
 struct CustomU64(u64);
 
-#[derive(Clone, Copy, cucumber::World, Debug)]
+#[derive(Clone, Copy, Debug, cucumber::World)]
 #[world(init = Self::new)]
 struct World(usize);
 

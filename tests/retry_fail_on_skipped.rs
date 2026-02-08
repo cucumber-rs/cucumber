@@ -1,8 +1,8 @@
 use std::io;
 
-use cucumber::{writer, StatsWriter as _, World as _, WriterExt as _};
+use cucumber::{StatsWriter as _, World as _, WriterExt as _, writer};
 
-#[derive(cucumber::World, Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, cucumber::World)]
 struct World;
 
 #[tokio::test]

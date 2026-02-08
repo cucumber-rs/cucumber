@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -12,26 +12,20 @@
 //!
 //! [Cucumber]: https://cucumber.io
 
-use std::{
-    borrow::Cow,
-    fmt::{self, Debug},
-    marker::PhantomData,
-    mem,
-    path::Path,
-    time::Duration,
-};
+use std::{borrow::Cow, marker::PhantomData, mem, path::Path, time::Duration};
 
-use futures::{future::LocalBoxFuture, StreamExt as _};
+use derive_more::with_trait::Debug;
+use futures::{StreamExt as _, future::LocalBoxFuture};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
 use crate::{
+    Event, Parser, Runner, ScenarioType, Step, World, Writer, WriterExt as _,
     cli, event, parser,
     runner::{self, basic::RetryOptions},
     step,
     tag::Ext as _,
-    writer, Event, Parser, Runner, ScenarioType, Step, World, Writer,
-    WriterExt as _,
+    writer,
 };
 
 /// Top-level [Cucumber] executor.
@@ -40,7 +34,7 @@ use crate::{
 /// [`World::run()`] or [`World::cucumber()`] on your [`World`] deriver to get
 /// [Cucumber] up and running.
 ///
-/// Otherwise use [`Cucumber::new()`] to get the default [Cucumber] executor,
+/// Otherwise, use [`Cucumber::new()`] to get the default [Cucumber] executor,
 /// provide [`Step`]s with [`World::collection()`] or by hand with
 /// [`Cucumber::given()`], [`Cucumber::when()`] and [`Cucumber::then()`].
 ///
@@ -50,6 +44,7 @@ use crate::{
 /// [`Cucumber::with_writer()`] to construct your dream [Cucumber] executor!
 ///
 /// [Cucumber]: https://cucumber.io
+#[derive(Debug)]
 pub struct Cucumber<W, P, I, R, Wr, Cli = cli::Empty>
 where
     W: World,
@@ -77,9 +72,11 @@ where
     cli: Option<cli::Opts<P::Cli, R::Cli, Wr::Cli, Cli>>,
 
     /// Type of the [`World`] this [`Cucumber`] run on.
+    #[debug(ignore)]
     _world: PhantomData<W>,
 
     /// Type of the input consumed by [`Cucumber::parser`].
+    #[debug(ignore)]
     _parser_input: PhantomData<I>,
 }
 
@@ -572,8 +569,8 @@ where
     /// [`cli::Opts`].
     ///
     /// > ⚠️ __WARNING__: Any CLI options of [`Parser`], [`Runner`], [`Writer`]
-    ///                   or custom ones should not overlap, otherwise
-    ///                   [`cli::Opts`] will fail to parse on startup.
+    /// >                 or custom ones should not overlap, otherwise
+    /// >                 [`cli::Opts`] will fail to parse on startup.
     ///
     /// # Example
     ///
@@ -634,12 +631,7 @@ where
     where
         CustomCli: clap::Args,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            ..
-        } = self;
+        let Self { parser, runner, writer, .. } = self;
         Cucumber {
             parser,
             runner,
@@ -750,12 +742,7 @@ where
             )
         };
 
-        let Self {
-            parser,
-            runner,
-            mut writer,
-            ..
-        } = self;
+        let Self { parser, runner, mut writer, .. } = self;
 
         let features = parser.parse(input, parser_cli);
 
@@ -811,27 +798,6 @@ where
             _world: PhantomData,
             _parser_input: PhantomData,
         }
-    }
-}
-
-impl<W, P, I, R, Wr, Cli> Debug for Cucumber<W, P, I, R, Wr, Cli>
-where
-    W: World,
-    P: Debug + Parser<I>,
-    <P as Parser<I>>::Cli: Debug,
-    R: Debug + Runner<W>,
-    <R as Runner<W>>::Cli: Debug,
-    Wr: Debug + Writer<W>,
-    <Wr as Writer<W>>::Cli: Debug,
-    Cli: clap::Args + Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Cucumber")
-            .field("parser", &self.parser)
-            .field("runner", &self.runner)
-            .field("writer", &self.writer)
-            .field("cli", &self.cli)
-            .finish()
     }
 }
 
@@ -1034,13 +1000,7 @@ where
             ) -> ScenarioType
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.which_scenario(func),
@@ -1072,6 +1032,10 @@ where
     /// Sets a hook, executed on each [`Scenario`] before running all its
     /// [`Step`]s, including [`Background`] ones.
     ///
+    /// > **NOTE**: Only one [`before`] hook can be registered. If multiple
+    /// >           calls are made, only the last one will be run.
+    ///
+    /// [`before`]: Self::before()
     /// [`Background`]: gherkin::Background
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
@@ -1089,13 +1053,7 @@ where
             ) -> LocalBoxFuture<'a, ()>
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.before(func),
@@ -1109,9 +1067,13 @@ where
     /// Sets a hook, executed on each [`Scenario`] after running all its
     /// [`Step`]s, even after [`Skipped`] of [`Failed`] [`Step`]s.
     ///
+    /// > **NOTE**: Only one [`after`] hook can be registered. If multiple
+    /// >           calls are made, only the last one will be run.
+    ///
     /// Last `World` argument is supplied to the function, in case it was
     /// initialized before by running [`before`] hook or any [`Step`].
     ///
+    /// [`after`]: Self::after()
     /// [`before`]: Self::before()
     /// [`Failed`]: event::Step::Failed
     /// [`Scenario`]: gherkin::Scenario
@@ -1132,13 +1094,7 @@ where
             ) -> LocalBoxFuture<'a, ()>
             + 'static,
     {
-        let Self {
-            parser,
-            runner,
-            writer,
-            cli,
-            ..
-        } = self;
+        let Self { parser, runner, writer, cli, .. } = self;
         Cucumber {
             parser,
             runner: runner.after(func),
@@ -1362,7 +1318,7 @@ where
             if failed_steps > 0 {
                 msg.push(format!(
                     "{failed_steps} step{} failed",
-                    (failed_steps > 1).then_some("s").unwrap_or_default(),
+                    if failed_steps > 1 { "s" } else { "" },
                 ));
             }
 
@@ -1370,7 +1326,7 @@ where
             if parsing_errors > 0 {
                 msg.push(format!(
                     "{parsing_errors} parsing error{}",
-                    (parsing_errors > 1).then_some("s").unwrap_or_default(),
+                    if parsing_errors > 1 { "s" } else { "" },
                 ));
             }
 
@@ -1378,7 +1334,7 @@ where
             if hook_errors > 0 {
                 msg.push(format!(
                     "{hook_errors} hook error{}",
-                    (hook_errors > 1).then_some("s").unwrap_or_default(),
+                    if hook_errors > 1 { "s" } else { "" },
                 ));
             }
 

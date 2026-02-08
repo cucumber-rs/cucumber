@@ -16,14 +16,14 @@ Scenario hooks
 # extern crate tokio;
 #
 # use std::time::Duration;
-# 
+#
 # use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
-# 
-# #[derive(cucumber::World, Debug, Default)]
+#
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
-# 
+#
 # fn main() {
 World::cucumber()
     .before(|_feature, _rule, _scenario, _world| {
@@ -35,7 +35,10 @@ World::cucumber()
 
 > __NOTE__: [`Before` hook] is enabled globally for all the executed [scenario]s. No exception is possible.
 
-> __WARNING__: __Think twice before using [`Before` hook]!__  
+> __NOTE__: __Only one [`Before` hook] can be registered!__
+> If multiple `.before()` calls are made, only the last one will be run.
+
+> __WARNING__: __Think twice before using [`Before` hook]!__
 > Whatever happens in a [`Before` hook] is invisible to people reading `.feature`s. You should consider using a [`Background`] keyword as a more explicit alternative, especially if the setup should be readable by non-technical people. Only use a [`Before` hook] for low-level logic such as starting a browser or deleting data from a database.
 
 
@@ -51,14 +54,14 @@ World::cucumber()
 # extern crate tokio;
 #
 # use std::time::Duration;
-# 
+#
 # use cucumber::World as _;
 # use futures::FutureExt as _;
 # use tokio::time;
-# 
-# #[derive(cucumber::World, Debug, Default)]
+#
+# #[derive(Debug, Default, cucumber::World)]
 # struct World;
-# 
+#
 # fn main() {
 World::cucumber()
     .after(|_feature, _rule, _scenario, _ev, _world| {
@@ -70,7 +73,10 @@ World::cucumber()
 
 > __NOTE__: [`After` hook] is enabled globally for all the executed [scenario]s. No exception is possible.
 
-> __TIP__: [`After` hook] receives an [`event::ScenarioFinished`] as one of its arguments, which indicates why the [scenario] has finished (passed, failed or skipped). This information, for example, may be used to decide whether some external resources (like files) should be cleaned up if the [scenario] passes, or leaved "as is" if it fails, so helping to "freeze" the failure conditions for better investigation. 
+> __NOTE__: __Only one [`After` hook] can be registered!__
+> If multiple `.after()` calls are made, only the last one will be run.
+
+> __TIP__: [`After` hook] receives an [`event::ScenarioFinished`] as one of its arguments, which indicates why the [scenario] has finished (passed, failed or skipped). This information, for example, may be used to decide whether some external resources (like files) should be cleaned up if the [scenario] passes, or leaved "as is" if it fails, so helping to "freeze" the failure conditions for better investigation.
 
 
 

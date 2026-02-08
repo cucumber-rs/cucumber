@@ -1,6 +1,6 @@
 use std::{convert::Infallible, str::FromStr};
 
-use cucumber::{given, Parameter, StatsWriter as _, World};
+use cucumber::{Parameter, StatsWriter as _, World, given};
 
 #[derive(Debug, Parameter, PartialEq)]
 #[param(name = "param", regex = "'([^']*)'|(\\d+)")]

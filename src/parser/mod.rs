@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -16,13 +16,12 @@ pub mod basic;
 
 use std::sync::Arc;
 
-use derive_more::{Display, Error};
+use derive_more::with_trait::{Display, Error as StdError};
 use futures::Stream;
-
-use crate::feature::ExpandExamplesError;
 
 #[doc(inline)]
 pub use self::basic::Basic;
+use crate::feature::ExpandExamplesError;
 
 /// Source of parsed [`Feature`]s.
 ///
@@ -53,22 +52,22 @@ pub trait Parser<I> {
 /// Result of parsing [Gherkin] files.
 ///
 /// [Gherkin]: https://cucumber.io/docs/gherkin/reference
-#[allow(clippy::absolute_paths)] // intentional
+#[expect(clippy::absolute_paths, reason = "one liner")]
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// [`Parser`] error.
-#[derive(Clone, Debug, Display, Error)]
+#[derive(Clone, Debug, Display, StdError)]
 pub enum Error {
     /// Failed to parse a [`Feature`].
     ///
     /// [`Feature`]: gherkin::Feature
-    #[display(fmt = "Failed to parse feature: {}", _0)]
+    #[display("Failed to parse feature: {_0}")]
     Parsing(Arc<gherkin::ParseFileError>),
 
-    /// Failed to expand [`Examples`]
+    /// Failed to expand [`Examples`].
     ///
     /// [`Examples`]: gherkin::Examples
-    #[display(fmt = "Failed to expand examples: {}", _0)]
+    #[display("Failed to expand examples: {_0}")]
     ExampleExpansion(Arc<ExpandExamplesError>),
 }
 

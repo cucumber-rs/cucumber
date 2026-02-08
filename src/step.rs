@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -21,7 +21,7 @@ use std::{
     iter,
 };
 
-use derive_more::{Deref, DerefMut, Display, Error};
+use derive_more::with_trait::{Debug, Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use itertools::Itertools as _;
@@ -33,62 +33,43 @@ pub type Step<World> =
 
 /// Alias for a [`Step`] with [`regex::CaptureLocations`], [`Location`] and
 /// [`Context`] returned by [`Collection::find()`].
-pub type WithContext<'me, World> = (
-    &'me Step<World>,
-    regex::CaptureLocations,
-    Option<Location>,
-    Context,
-);
+pub type WithContext<'me, World> =
+    (&'me Step<World>, regex::CaptureLocations, Option<Location>, Context);
 
 /// Collection of [`Step`]s.
 ///
 /// Every [`Step`] has to match with exactly 1 [`Regex`].
+#[derive(Debug)]
 pub struct Collection<World> {
     /// Collection of [Given] [`Step`]s.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference#given
+    #[debug("{:?}",
+        given.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [When] [`Step`]s.
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference#when
+    #[debug("{:?}",
+        when.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
 
     /// Collection of [Then] [`Step`]s.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference#then
+    #[debug("{:?}",
+        then.iter()
+            .map(|(re, step)| (re, format!("{step:p}")))
+            .collect::<HashMap<_, _>>(),
+    )]
     then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
-}
-
-impl<World> fmt::Debug for Collection<World> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Collection")
-            .field(
-                "given",
-                &self
-                    .given
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .field(
-                "when",
-                &self
-                    .when
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .field(
-                "then",
-                &self
-                    .then
-                    .iter()
-                    .map(|(re, step)| (re, format!("{step:p}")))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .finish()
-    }
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -202,13 +183,14 @@ impl<World> Collection<World> {
                             .map(|(re, loc, ..)| (re.clone(), *loc))
                             .sorted()
                             .collect(),
-                    })
+                    });
                 }
             };
 
-        // PANIC: Slicing is OK here, as all indices are obtained from the
-        //        source string.
-        #[allow(clippy::string_slice)] // intentional
+        #[expect( // intentional
+            clippy::string_slice,
+            reason = "all indices are obtained from the source string"
+        )]
         let matches = names
             .map(|opt| opt.map(str::to_owned))
             .zip(iter::once(whole_match.as_str().to_owned()).chain(
@@ -225,10 +207,7 @@ impl<World> Collection<World> {
             step_fn,
             captures,
             *loc,
-            Context {
-                step: step.clone(),
-                matches,
-            },
+            Context { step: step.clone(), matches },
         )))
     }
 }
@@ -258,7 +237,7 @@ pub struct AmbiguousMatchError {
     pub possible_matches: Vec<(HashableRegex, Option<Location>)>,
 }
 
-impl fmt::Display for AmbiguousMatchError {
+impl Display for AmbiguousMatchError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Possible matches:")?;
         for (reg, loc_opt) in &self.possible_matches {
@@ -273,7 +252,7 @@ impl fmt::Display for AmbiguousMatchError {
 
 /// Location of a [`Step`] [`fn`] automatically filled by a proc macro.
 #[derive(Clone, Copy, Debug, Display, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[display(fmt = "{}:{}:{}", path, line, column)]
+#[display("{path}:{line}:{column}")]
 pub struct Location {
     /// Path to the file where [`Step`] [`fn`] is located.
     pub path: &'static str,

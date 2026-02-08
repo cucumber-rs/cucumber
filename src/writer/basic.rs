@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -16,28 +16,27 @@ use std::{
     fmt::{Debug, Display},
     io,
     str::FromStr,
+    sync::LazyLock,
 };
 
-use derive_more::{Deref, DerefMut};
+use derive_more::with_trait::{Deref, DerefMut};
 use itertools::Itertools as _;
-use once_cell::sync::Lazy;
 use regex::CaptureLocations;
 use smart_default::SmartDefault;
 
 use crate::{
+    Event, World, Writer,
     cli::Colored,
     event::{self, Info, Retries},
     parser, step,
     writer::{
-        self,
+        self, Ext as _, Verbosity,
         out::{Styles, WriteStrExt as _},
-        Ext as _, Verbosity,
     },
-    Event, World, Writer,
 };
 
 /// CLI options of a [`Basic`] [`Writer`].
-#[derive(clap::Args, Clone, Copy, Debug, SmartDefault)]
+#[derive(Clone, Copy, Debug, SmartDefault, clap::Args)]
 #[group(skip)]
 pub struct Cli {
     /// Verbosity of an output.
@@ -140,14 +139,14 @@ where
 
     async fn handle_event(
         &mut self,
-        ev: parser::Result<Event<event::Cucumber<W>>>,
-        opts: &Self::Cli,
+        event: parser::Result<Event<event::Cucumber<W>>>,
+        cli: &Self::Cli,
     ) {
         use event::{Cucumber, Feature};
 
-        self.apply_cli(*opts);
+        self.apply_cli(*cli);
 
-        match ev.map(Event::into_inner) {
+        match event.map(Event::into_inner) {
             Err(err) => self.parsing_failed(&err),
             Ok(
                 Cucumber::Started
@@ -226,10 +225,7 @@ impl<Out: io::Write> Basic<Out> {
             re_output_after_clear: String::new(),
             verbosity: verbosity.into(),
         };
-        basic.apply_cli(Cli {
-            verbose: u8::from(basic.verbosity) + 1,
-            color,
-        });
+        basic.apply_cli(Cli { verbose: u8::from(basic.verbosity) + 1, color });
         basic
     }
 
@@ -240,7 +236,7 @@ impl<Out: io::Write> Basic<Out> {
             1 => self.verbosity = Verbosity::Default,
             2 => self.verbosity = Verbosity::ShowWorld,
             _ => self.verbosity = Verbosity::ShowWorldAndDocString,
-        };
+        }
         self.styles.apply_coloring(cli.color);
     }
 
@@ -263,7 +259,7 @@ impl<Out: io::Write> Basic<Out> {
         error: impl Display,
     ) -> io::Result<()> {
         self.output
-            .write_line(&self.styles.err(format!("Failed to parse: {error}")))
+            .write_line(self.styles.err(format!("Failed to parse: {error}")))
     }
 
     /// Outputs the [started] [`Feature`].
@@ -275,7 +271,7 @@ impl<Out: io::Write> Basic<Out> {
         feature: &gherkin::Feature,
     ) -> io::Result<()> {
         let out = format!("{}: {}", feature.keyword, feature.name);
-        self.output.write_line(&self.styles.ok(out))
+        self.output.write_line(self.styles.ok(out))
     }
 
     /// Outputs the [`Rule`]'s [started]/[scenario]/[finished] event.
@@ -321,7 +317,7 @@ impl<Out: io::Write> Basic<Out> {
             indent = " ".repeat(self.indent)
         );
         self.indent += 2;
-        self.output.write_line(&self.styles.ok(out))
+        self.output.write_line(self.styles.ok(out))
     }
 
     /// Outputs the [`Scenario`]'s [started]/[background]/[step] event.
@@ -404,7 +400,7 @@ impl<Out: io::Write> Basic<Out> {
             }
         };
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{indent}✘  Scenario's {which} hook failed {}:{}:{}\n\
              {indent}   Captured output: {}{}",
             feat.path
@@ -448,7 +444,7 @@ impl<Out: io::Write> Basic<Out> {
                 retries.current,
                 retries.left + retries.current,
             );
-            self.output.write_line(&self.styles.retry(out))
+            self.output.write_line(self.styles.retry(out))
         } else {
             let out = format!(
                 "{}{}: {}",
@@ -456,7 +452,7 @@ impl<Out: io::Write> Basic<Out> {
                 scenario.keyword,
                 scenario.name,
             );
-            self.output.write_line(&self.styles.ok(out))
+            self.output.write_line(self.styles.ok(out))
         }
     }
 
@@ -598,7 +594,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         );
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{indent}{step_keyword}{step_value}{doc_str}{step_table}",
             indent = " ".repeat(self.indent.saturating_sub(3)),
         )))
@@ -614,7 +610,7 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
-        self.output.write_line(&self.styles.skipped(format!(
+        self.output.write_line(self.styles.skipped(format!(
             "{indent}?  {}{}{}{}\n\
              {indent}   Step skipped: {}:{}:{}",
             step.keyword,
@@ -646,7 +642,8 @@ impl<Out: io::Write> Basic<Out> {
     ///
     /// [failed]: event::Step::Failed
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     pub(crate) fn step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -730,7 +727,7 @@ impl<Out: io::Write> Basic<Out> {
         ));
 
         self.output
-            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+            .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 
     /// Outputs the [`Background`] [`Step`]'s
@@ -877,7 +874,7 @@ impl<Out: io::Write> Basic<Out> {
                 .unwrap_or_default(),
         );
 
-        self.output.write_line(&style(format!(
+        self.output.write_line(style(format!(
             "{step_keyword}{step_value}{doc_str}{step_table}",
         )))
     }
@@ -893,7 +890,7 @@ impl<Out: io::Write> Basic<Out> {
         step: &gherkin::Step,
     ) -> io::Result<()> {
         self.clear_last_lines_if_term_present()?;
-        self.output.write_line(&self.styles.skipped(format!(
+        self.output.write_line(self.styles.skipped(format!(
             "{indent}?> {}{}{}{}\n\
              {indent}   Background step failed: {}:{}:{}",
             step.keyword,
@@ -926,7 +923,8 @@ impl<Out: io::Write> Basic<Out> {
     /// [failed]: event::Step::Failed
     /// [`Background`]: gherkin::Background
     /// [`Step`]: gherkin::Step
-    #[allow(clippy::too_many_arguments)] // TODO: Needs refactoring.
+    // TODO: Needs refactoring.
+    #[expect(clippy::too_many_arguments, reason = "needs refactoring")]
     pub(crate) fn bg_step_failed<W: Debug>(
         &mut self,
         feat: &gherkin::Feature,
@@ -1009,7 +1007,7 @@ impl<Out: io::Write> Basic<Out> {
         ));
 
         self.output
-            .write_line(&format!("{step_keyword}{step_value}{diagnostics}"))
+            .write_line(format!("{step_keyword}{step_value}{diagnostics}"))
     }
 }
 
@@ -1018,9 +1016,10 @@ impl<Out: io::Write> Basic<Out> {
 /// [`catch_unwind()`]: std::panic::catch_unwind()
 #[must_use]
 pub(crate) fn coerce_error(err: &Info) -> Cow<'static, str> {
-    err.downcast_ref::<String>()
+    (**err)
+        .downcast_ref::<String>()
         .map(|s| s.clone().into())
-        .or_else(|| err.downcast_ref::<&str>().map(|s| s.to_owned().into()))
+        .or_else(|| (**err).downcast_ref::<&str>().map(|s| s.to_owned().into()))
         .unwrap_or_else(|| "(Could not resolve panic payload)".into())
 }
 
@@ -1032,9 +1031,7 @@ fn format_str_with_indent(str: impl AsRef<str>, indent: usize) -> String {
         .lines()
         .map(|line| format!("{}{line}", " ".repeat(indent)))
         .join("\n");
-    (!str.is_empty())
-        .then(|| format!("\n{str}"))
-        .unwrap_or_default()
+    if str.is_empty() { String::new() } else { format!("\n{str}") }
 }
 
 /// Formats the given [`gherkin::Table`] and adds `indent`s to each line to
@@ -1046,8 +1043,6 @@ fn format_table(table: &gherkin::Table, indent: usize) -> String {
         .rows
         .iter()
         .fold(None, |mut acc: Option<Vec<_>>, row| {
-            // False Positive: Due to mut borrowing.
-            #[allow(clippy::option_if_let_else)] // false positive
             if let Some(existing_len) = acc.as_mut() {
                 for (cell, max_len) in row.iter().zip(existing_len) {
                     *max_len = cmp::max(*max_len, cell.len());
@@ -1094,15 +1089,15 @@ where
     D: for<'a> Fn(&'a str) -> Cow<'a, str>,
     A: for<'a> Fn(&'a str) -> Cow<'a, str>,
 {
-    // PANIC: Slicing is OK here, as all indices are obtained from the source
-    //        string.
-    #![allow(clippy::string_slice)] // intentional
+    #![expect( // intentional
+        clippy::string_slice,
+        reason = "all indices are obtained from the source string"
+    )]
 
     let value = value.as_ref();
 
-    let (mut formatted, end) = (1..captures.len())
-        .filter_map(|group| captures.get(group))
-        .fold(
+    let (mut formatted, end) =
+        (1..captures.len()).filter_map(|group| captures.get(group)).fold(
             (String::with_capacity(value.len()), 0),
             |(mut str, old), (start, end)| {
                 // Ignore nested groups.
@@ -1123,7 +1118,7 @@ where
 /// Trims start of the path if it matches the current project directory.
 pub(crate) fn trim_path(path: &str) -> &str {
     /// Path of the current project directory.
-    static CURRENT_DIR: Lazy<String> = Lazy::new(|| {
+    static CURRENT_DIR: LazyLock<String> = LazyLock::new(|| {
         env::var("CARGO_WORKSPACE_DIR")
             .or_else(|_| env::var("CARGO_MANIFEST_DIR"))
             .unwrap_or_else(|_| {

@@ -6,24 +6,85 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## [0.21.1] · 2024-06-16
-[0.21.1]: /../../tree/v0.21.1
+## [0.22.1] · 2025-12-23
+[0.22.1]: https://github.com/cucumber-rs/cucumber/tree/v0.22.1
 
-[Diff](/../../compare/v0.21.0...v0.21.1) | [Milestone](/../../milestone/29)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...v0.22.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/31)
+
+### Fixed
+
+- Incorrectly disallowed spaces inside placeholders for `Examples`. ([#388], [#387])
+
+[#387]: https://github.com/cucumber-rs/cucumber/issues/387
+[#388]: https://github.com/cucumber-rs/cucumber/pull/388
+
+
+
+
+## [0.22.0] · 2025-12-12
+[0.22.0]: https://github.com/cucumber-rs/cucumber/tree/v0.22.0
+
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.21.1...v0.22.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/28)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.88 to get rid of `once_cell` crate, for `#[expect]` attribute usage, and because of migration to 2024 edition. ([4010c1ad], [f1307038], [b46930c3], [9705253b], [0c7dfc3c], [a4cbd3d2])
+- Replaced `Arc` with `PartialEq`/`Hash` pointer-optimized `Source` in `event`s: ([#352])
+    - `Source<gherkin::Feature>` in `event::Cucumber::Feature`.
+    - `Source<gherkin::Rule>` in `event::Feature::Rule`.
+    - `Source<gherkin::Scenario>` in `event::Feature::Scenario` and `event::Rule::Scenario`.
+    - `Source<gherkin::Step>` in `event::Scenario::Background` and `event::Scenario::Step`.
+- Made non-`const` the following constructor functions for input type polymorphism: ([#352])
+    - `event::Cucumber::feature_started()` and `event::Cucumber::feature_finished()`.
+    - `event::Cucumber::rule_started()` and `event::Cucumber::rule_finished()`.
+    - `event::Scenario::step_started()`, `event::Scenario::step_passed()` and `event::Scenario::step_skipped()`.
+    - `event::Scenario::background_step_started()`, `event::Scenario::background_step_passed()` and `event::Scenario::background_step_skipped()`.
+- Kept only currently executed row of `Examples` table in expanded `Scenario Outline`s. ([#371], [#369])
+
+### Added
+
+- `CUCUMBER_FILTER_TAGS` environment variable support. ([#372])
+
+### Fixed
+
+- Performance degradation on large `.feature` files. ([#352], [#331])
+- `clippy::trivial_regex` lint triggering on `#[given]`/`#[when]`/`#[then]` steps without regular expression. ([81acba84], [#384])
+
+[#331]: https://github.com/cucumber-rs/cucumber/issues/331
+[#352]: https://github.com/cucumber-rs/cucumber/pull/352
+[#369]: https://github.com/cucumber-rs/cucumber/issues/369
+[#371]: https://github.com/cucumber-rs/cucumber/pull/371
+[#372]: https://github.com/cucumber-rs/cucumber/pull/372
+[#384]: https://github.com/cucumber-rs/cucumber/issues/384
+[0c7dfc3c]: https://github.com/cucumber-rs/cucumber/commit/0c7dfc3c80f0f58ce9a52f252485d1d14e6eb0ed
+[4010c1ad]: https://github.com/cucumber-rs/cucumber/commit/4010c1ad6a53d6b7f0b28cefea73c8c13e880e9f
+[81acba84]: https://github.com/cucumber-rs/cucumber/commit/81acba84697a5b04c45e2c5d5446f1ffbe289632
+[9705253b]: https://github.com/cucumber-rs/cucumber/commit/9705253bda5caadfe3eea91f50420222158dd944
+[a4cbd3d2]: https://github.com/cucumber-rs/cucumber/commit/a4cbd3d282fe8e01f05609eabea6410c0e2b46a3
+[b46930c3]: https://github.com/cucumber-rs/cucumber/commit/b46930c32ef5ae490df8063905144a45de27eda1
+[f1307038]: https://github.com/cucumber-rs/cucumber/commit/f1307038cb6b1e38c1cc259a0e09fb583033d0cf
+
+
+
+
+## [0.21.1] · 2024-06-16
+[0.21.1]: https://github.com/cucumber-rs/cucumber/tree/v0.21.1
+
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.21.0...v0.21.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/29)
 
 ### Fixed
 
 - Wrong case of statuses reported in `writer::Json`. ([#335])
 
-[#335]: /../../pull/335
+[#335]: https://github.com/cucumber-rs/cucumber/pull/335
 
 
 
 
 ## [0.21.0] · 2024-04-22
-[0.21.0]: /../../tree/v0.21.0
+[0.21.0]: https://github.com/cucumber-rs/cucumber/tree/v0.21.0
 
-[Diff](/../../compare/v0.20.2...v0.21.0) | [Milestone](/../../milestone/26)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.20.2...v0.21.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/26)
 
 ### BC Breaks
 
@@ -34,49 +95,49 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Possible truncation of long output messages. ([#333], [#332])
 
-[#324]: /../../pull/324
-[#332]: /../../issues/332
-[#333]: /../../pull/333
+[#324]: https://github.com/cucumber-rs/cucumber/pull/324
+[#332]: https://github.com/cucumber-rs/cucumber/issues/332
+[#333]: https://github.com/cucumber-rs/cucumber/pull/333
 
 
 
 
 ## [0.20.2] · 2023-12-04
-[0.20.2]: /../../tree/v0.20.2
+[0.20.2]: https://github.com/cucumber-rs/cucumber/tree/v0.20.2
 
-[Diff](/../../compare/v0.20.1...v0.20.2) | [Milestone](/../../milestone/27)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.20.1...v0.20.2) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/27)
 
 ### Fixed
 
 - Ignored verbosity when printing `World` on hook/background step failure. ([#313])
 
-[#313]: /../../pull/313
+[#313]: https://github.com/cucumber-rs/cucumber/pull/313
 
 
 
 
 ## [0.20.1] · 2023-10-16
-[0.20.1]: /../../tree/v0.20.1
+[0.20.1]: https://github.com/cucumber-rs/cucumber/tree/v0.20.1
 
-[Diff](/../../compare/v0.20.0...v0.20.1) | [Milestone](/../../milestone/25)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.20.0...v0.20.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/25)
 
 ### Fixed
 
 - Incorrect terminal width detection when its height is low. ([#298])
 - Incorrect terminal lines clearing in interactive mode. ([#300], [#302], [#299])
 
-[#298]: /../../pull/298
-[#299]: /../../issues/299
-[#300]: /../../pull/300
-[#302]: /../../pull/302
+[#298]: https://github.com/cucumber-rs/cucumber/pull/298
+[#299]: https://github.com/cucumber-rs/cucumber/issues/299
+[#300]: https://github.com/cucumber-rs/cucumber/pull/300
+[#302]: https://github.com/cucumber-rs/cucumber/pull/302
 
 
 
 
 ## [0.20.0] · 2023-07-10
-[0.20.0]: /../../tree/v0.20.0
+[0.20.0]: https://github.com/cucumber-rs/cucumber/tree/v0.20.0
 
-[Diff](/../../compare/v0.19.1...v0.20.0) | [Milestone](/../../milestone/24)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.19.1...v0.20.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/24)
 
 ### BC Breaks
 
@@ -94,36 +155,36 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Clearing lines that are wrapped because of terminal width. ([#272], [#273])
 
-[#213]: /../../issues/213
-[#258]: /../../pull/258
-[#261]: /../../pull/261
-[#264]: /../../issues/264
-[#265]: /../../pull/265
-[#272]: /../../discussions/272
-[#273]: /../../pull/273
-[#288]: /../../pull/288
+[#213]: https://github.com/cucumber-rs/cucumber/issues/213
+[#258]: https://github.com/cucumber-rs/cucumber/pull/258
+[#261]: https://github.com/cucumber-rs/cucumber/pull/261
+[#264]: https://github.com/cucumber-rs/cucumber/issues/264
+[#265]: https://github.com/cucumber-rs/cucumber/pull/265
+[#272]: https://github.com/cucumber-rs/cucumber/discussions/272
+[#273]: https://github.com/cucumber-rs/cucumber/pull/273
+[#288]: https://github.com/cucumber-rs/cucumber/pull/288
 
 
 
 
 ## [0.19.1] · 2022-12-29
-[0.19.1]: /../../tree/v0.19.1
+[0.19.1]: https://github.com/cucumber-rs/cucumber/tree/v0.19.1
 
-[Diff](/../../compare/v0.19.0...v0.19.1) | [Milestone](/../../milestone/23)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.19.0...v0.19.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/23)
 
 ### Fixed
 
 - Using autodetect for colors on `color=always|never` CLI options. ([#253])
 
-[#253]: /../../pull/253
+[#253]: https://github.com/cucumber-rs/cucumber/pull/253
 
 
 
 
 ## [0.19.0] · 2022-12-16
-[0.19.0]: /../../tree/v0.19.0
+[0.19.0]: https://github.com/cucumber-rs/cucumber/tree/v0.19.0
 
-[Diff](/../../compare/v0.18.0...v0.19.0) | [Milestone](/../../milestone/22)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.18.0...v0.19.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/22)
 
 ### BC Breaks
 
@@ -147,17 +208,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `@serial` `Scenario`s continue running after failure when `--fail-fast()` CLI option is specified. ([#252])
 
-[#251]: /../../pull/251
-[#252]: /../../pull/252
-[56456e66]: /../../commit/56456e666be41b4190f62fecaf727042ed69c15a
+[#251]: https://github.com/cucumber-rs/cucumber/pull/251
+[#252]: https://github.com/cucumber-rs/cucumber/pull/252
+[56456e66]: https://github.com/cucumber-rs/cucumber/commit/56456e666be41b4190f62fecaf727042ed69c15a
 
 
 
 
 ## [0.18.0] · 2022-12-07
-[0.18.0]: /../../tree/v0.18.0
+[0.18.0]: https://github.com/cucumber-rs/cucumber/tree/v0.18.0
 
-[Diff](/../../compare/v0.17.0...v0.18.0) | [Milestone](/../../milestone/21)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.17.0...v0.18.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/21)
 
 ### BC Breaks
 
@@ -167,16 +228,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Not panicking on `fail_on_skipped()` with retries. ([#250], [#249])
 
-[#249]: /../../issues/249
-[#250]: /../../pull/250
+[#249]: https://github.com/cucumber-rs/cucumber/issues/249
+[#250]: https://github.com/cucumber-rs/cucumber/pull/250
 
 
 
 
 ## [0.17.0] · 2022-11-23
-[0.17.0]: /../../tree/v0.17.0
+[0.17.0]: https://github.com/cucumber-rs/cucumber/tree/v0.17.0
 
-[Diff](/../../compare/v0.16.0...v0.17.0) | [Milestone](/../../milestone/20)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.16.0...v0.17.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/20)
 
 ### BC Breaks
 
@@ -186,17 +247,17 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Uncaught panics of user code, when they happen before first poll of the returned `Future`s. ([#246])
 
-[#245]: /../../discussions/245
-[#246]: /../../pull/246
+[#245]: https://github.com/cucumber-rs/cucumber/discussions/245
+[#246]: https://github.com/cucumber-rs/cucumber/pull/246
 [0170-1]: https://docs.rs/cucumber/0.17.0/cucumber/struct.Cucumber.html#method.after
 
 
 
 
 ## [0.16.0] · 2022-11-09
-[0.16.0]: /../../tree/v0.16.0
+[0.16.0]: https://github.com/cucumber-rs/cucumber/tree/v0.16.0
 
-[Diff](/../../compare/v0.15.3...v0.16.0) | [Milestone](/../../milestone/19)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.15.3...v0.16.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/19)
 
 ### BC Breaks
 
@@ -210,31 +271,31 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `--fail-fast` CLI option causing execution to hang. ([#242], [#241])
 
-[#241]: /../../issues/241
-[#242]: /../../pull/242
-[7f52d4a5]: /../../commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
+[#241]: https://github.com/cucumber-rs/cucumber/issues/241
+[#242]: https://github.com/cucumber-rs/cucumber/pull/242
+[7f52d4a5]: https://github.com/cucumber-rs/cucumber/commit/7f52d4a5faa3b69bec6c7fb765b50455cf7802aa
 
 
 
 
 ## [0.15.3] · 2022-11-01
-[0.15.3]: /../../tree/v0.15.3
+[0.15.3]: https://github.com/cucumber-rs/cucumber/tree/v0.15.3
 
-[Diff](/../../compare/v0.15.2...v0.15.3) | [Milestone](/../../milestone/18)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.15.2...v0.15.3) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/18)
 
 ### Added
 
 - `Clone` implementations to all public types where possible. ([#238])
 
-[#238]: /../../pull/238
+[#238]: https://github.com/cucumber-rs/cucumber/pull/238
 
 
 
 
 ## [0.15.2] · 2022-10-25
-[0.15.2]: /../../tree/v0.15.2
+[0.15.2]: https://github.com/cucumber-rs/cucumber/tree/v0.15.2
 
-[Diff](/../../compare/v0.15.1...v0.15.2) | [Milestone](/../../milestone/17)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.15.1...v0.15.2) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/17)
 
 ### Changed
 
@@ -245,8 +306,8 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Parsing error on a `Feature` having comment and tag simultaneously. ([4cad49f8], [cucumber-rs/gherkin#37], [cucumber-rs/gherkin#35])
 - `@retry`, `@serial` and `@allow.skipped` tags semantics inheritance. ([#237])
 
-[#237]: /../../pull/237
-[4cad49f8]: /../../commit/4cad49f8d8f5d0458dcb538aa044a5fff1e6fa10
+[#237]: https://github.com/cucumber-rs/cucumber/pull/237
+[4cad49f8]: https://github.com/cucumber-rs/cucumber/commit/4cad49f8d8f5d0458dcb538aa044a5fff1e6fa10
 [cucumber-rs/gherkin#35]: https://github.com/cucumber-rs/gherkin/issues/35
 [cucumber-rs/gherkin#37]: https://github.com/cucumber-rs/gherkin/pull/37
 
@@ -254,53 +315,53 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.15.1] · 2022-10-12
-[0.15.1]: /../../tree/v0.15.1
+[0.15.1]: https://github.com/cucumber-rs/cucumber/tree/v0.15.1
 
-[Diff](/../../compare/v0.15.0...v0.15.1) | [Milestone](/../../milestone/16)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.15.0...v0.15.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/16)
 
 ### Fixed
 
 - Conflicting [`Id`][0151-1]s of CLI options. ([#232], [#231])
 
-[#231]: /../../issues/231
-[#232]: /../../pull/232
+[#231]: https://github.com/cucumber-rs/cucumber/issues/231
+[#232]: https://github.com/cucumber-rs/cucumber/pull/232
 [0151-1]: https://docs.rs/clap/latest/clap/struct.Id.html
 
 
 
 
 ## [0.15.0] · 2022-10-05
-[0.15.0]: /../../tree/v0.15.0
+[0.15.0]: https://github.com/cucumber-rs/cucumber/tree/v0.15.0
 
-[Diff](/../../compare/v0.14.2...v0.15.0) | [Milestone](/../../milestone/15)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.14.2...v0.15.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/15)
 
 ### BC Breaks
 
 - Upgraded [`clap`] crate to 4.0 version. ([#230])
 
-[#230]: /../../pull/230
+[#230]: https://github.com/cucumber-rs/cucumber/pull/230
 
 
 
 
 ## [0.14.2] · 2022-09-19
-[0.14.2]: /../../tree/v0.14.2
+[0.14.2]: https://github.com/cucumber-rs/cucumber/tree/v0.14.2
 
-[Diff](/../../compare/v0.14.1...v0.14.2)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.14.1...v0.14.2)
 
 ### Fixed
 
 - `#[derive(World)]` macro being unhygienic regarding custom `Result` types. ([186af8b1])
 
-[186af8b1]: /../../commit/186af8b1de37275b308897e2e30d6982830b0278
+[186af8b1]: https://github.com/cucumber-rs/cucumber/commit/186af8b1de37275b308897e2e30d6982830b0278
 
 
 
 
 ## [0.14.1] · 2022-09-12
-[0.14.1]: /../../tree/v0.14.1
+[0.14.1]: https://github.com/cucumber-rs/cucumber/tree/v0.14.1
 
-[Diff](/../../compare/v0.14.0...v0.14.1) | [Milestone](/../../milestone/14)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.14.0...v0.14.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/14)
 
 ### Changed
 
@@ -314,18 +375,18 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - `junit-report` crate to 0.8 version to fix [RUSTSEC-2022-0048]. ([#229], [#226])
 
-[#226]: /../../issues/226
-[#229]: /../../pull/229
-[ad0bb22f]: /../../commit/ad0bb22f9234099985cb1966f92ccefbc97060fb
+[#226]: https://github.com/cucumber-rs/cucumber/issues/226
+[#229]: https://github.com/cucumber-rs/cucumber/pull/229
+[ad0bb22f]: https://github.com/cucumber-rs/cucumber/commit/ad0bb22f9234099985cb1966f92ccefbc97060fb
 [RUSTSEC-2022-0048]: https://rustsec.org/advisories/RUSTSEC-2022-0048.html
 
 
 
 
 ## [0.14.0] · 2022-09-08
-[0.14.0]: /../../tree/v0.14.0
+[0.14.0]: https://github.com/cucumber-rs/cucumber/tree/v0.14.0
 
-[Diff](/../../compare/v0.13.0...v0.14.0) | [Milestone](/../../milestone/13)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.13.0...v0.14.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/13)
 
 ### BC Breaks
 
@@ -354,56 +415,56 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Provided default CLI options are now global (allowed to be specified after custom subcommands). ([#216], [#215])
 - Stripped `CARGO_MANIFEST_DIR` from output paths whenever is possible. ([#221])
 
-[#212]: /../../issues/212
-[#215]: /../../issues/215
-[#216]: /../../pull/216
-[#217]: /../../issues/217
-[#219]: /../../pull/219
-[#220]: /../../pull/220
-[#221]: /../../pull/221
-[#223]: /../../pull/223
-[8ad5cc86]: /../../commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
-[cf055ac0]: /../../commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
-[fbd08ec2]: /../../commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
+[#212]: https://github.com/cucumber-rs/cucumber/issues/212
+[#215]: https://github.com/cucumber-rs/cucumber/issues/215
+[#216]: https://github.com/cucumber-rs/cucumber/pull/216
+[#217]: https://github.com/cucumber-rs/cucumber/issues/217
+[#219]: https://github.com/cucumber-rs/cucumber/pull/219
+[#220]: https://github.com/cucumber-rs/cucumber/pull/220
+[#221]: https://github.com/cucumber-rs/cucumber/pull/221
+[#223]: https://github.com/cucumber-rs/cucumber/pull/223
+[8ad5cc86]: https://github.com/cucumber-rs/cucumber/commit/8ad5cc866bb9d6b49470790e3b0dd40690f63a09
+[cf055ac0]: https://github.com/cucumber-rs/cucumber/commit/cf055ac06c7b72f572882ce15d6a60da92ad60a0
+[fbd08ec2]: https://github.com/cucumber-rs/cucumber/commit/fbd08ec24dbd036c89f5f0af4d936b616790a166
 [0140-1]: book/src/output/intellij.md
 
 
 
 
 ## [0.13.0] · 2022-03-29
-[0.13.0]: /../../tree/v0.13.0
+[0.13.0]: https://github.com/cucumber-rs/cucumber/tree/v0.13.0
 
-[Diff](/../../compare/v0.12.2...v0.13.0) | [Milestone](/../../milestone/12)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.12.2...v0.13.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/12)
 
 ### BC Breaks
 
 - Upgraded [`gherkin`] crate to 0.12 version. ([#211])
 
-[#211]: /../../pull/211
+[#211]: https://github.com/cucumber-rs/cucumber/pull/211
 
 
 
 
 ## [0.12.2] · 2022-03-28
-[0.12.2]: /../../tree/v0.12.2
+[0.12.2]: https://github.com/cucumber-rs/cucumber/tree/v0.12.2
 
-[Diff](/../../compare/v0.12.1...v0.12.2) | [Milestone](/../../milestone/10)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.12.1...v0.12.2) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/10)
 
 ### Changed
 
 - [`Cucumber::after`][0122-1] now gets the `World` instance even if some `Step` or a `Hook` before it has failed. ([#209], [#207])
 
-[#207]: /../../issues/207
-[#209]: /../../pull/209
+[#207]: https://github.com/cucumber-rs/cucumber/issues/207
+[#209]: https://github.com/cucumber-rs/cucumber/pull/209
 [0122-1]: https://docs.rs/cucumber/0.12.2/cucumber/struct.Cucumber.html#method.after
 
 
 
 
 ## [0.12.1] · 2022-03-09
-[0.12.1]: /../../tree/v0.12.1
+[0.12.1]: https://github.com/cucumber-rs/cucumber/tree/v0.12.1
 
-[Diff](/../../compare/v0.12.0...v0.12.1) | [Milestone](/../../milestone/11)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.12.0...v0.12.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/11)
 
 ### Security updated
 
@@ -415,9 +476,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.12.0] · 2022-02-10
-[0.12.0]: /../../tree/v0.12.0
+[0.12.0]: https://github.com/cucumber-rs/cucumber/tree/v0.12.0
 
-[Diff](/../../compare/v0.11.3...v0.12.0) | [Milestone](/../../milestone/9)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.11.3...v0.12.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/9)
 
 ### BC Breaks
 
@@ -432,47 +493,47 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Book examples failing on Windows. ([#202], [#200])
 - `{string}` parameter in [Cucumber Expressions] returning its enclosing quotes. ([cucumber-rs/cucumber-expressions#7])
 
-[#200]: /../../issues/200
-[#202]: /../../pull/202
-[#204]: /../../pull/204
+[#200]: https://github.com/cucumber-rs/cucumber/issues/200
+[#202]: https://github.com/cucumber-rs/cucumber/pull/202
+[#204]: https://github.com/cucumber-rs/cucumber/pull/204
 [cucumber-rs/cucumber-expressions#7]: https://github.com/cucumber-rs/cucumber-expressions/issues/7
 
 
 
 
 ## [0.11.3] · 2022-01-31
-[0.11.3]: /../../tree/v0.11.3
+[0.11.3]: https://github.com/cucumber-rs/cucumber/tree/v0.11.3
 
-[Diff](/../../compare/v0.11.2...v0.11.3) | [Milestone](/../../milestone/8)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.11.2...v0.11.3) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/8)
 
 ### Fixed
 
 - `parser::Basic` skipping files named `.feature`. ([#201])
 
-[#201]: /../../pull/201
+[#201]: https://github.com/cucumber-rs/cucumber/pull/201
 
 
 
 
 ## [0.11.2] · 2022-01-19
-[0.11.2]: /../../tree/v0.11.2
+[0.11.2]: https://github.com/cucumber-rs/cucumber/tree/v0.11.2
 
-[Diff](/../../compare/v0.11.1...v0.11.2) | [Milestone](/../../milestone/7)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.11.1...v0.11.2) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/7)
 
 ### Fixed
 
 - Skipped `Background` steps not failing in `writer::FailOnSkipped`. ([#199], [#198])
 
-[#198]: /../../issues/198
-[#199]: /../../pull/199
+[#198]: https://github.com/cucumber-rs/cucumber/issues/198
+[#199]: https://github.com/cucumber-rs/cucumber/pull/199
 
 
 
 
 ## [0.11.1] · 2022-01-07
-[0.11.1]: /../../tree/v0.11.1
+[0.11.1]: https://github.com/cucumber-rs/cucumber/tree/v0.11.1
 
-[Diff](/../../compare/v0.11.0...v0.11.1) | [Milestone](/../../milestone/6)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.11.0...v0.11.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/6)
 
 ### Added
 
@@ -482,16 +543,16 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 - Optimized `runner::Basic` to not wait the whole batch to complete before executing next `Scenario`s. ([#195])
 
-[#195]: /../../pull/195
-[#196]: /../../pull/196
+[#195]: https://github.com/cucumber-rs/cucumber/pull/195
+[#196]: https://github.com/cucumber-rs/cucumber/pull/196
 
 
 
 
 ## [0.11.0] · 2022-01-03
-[0.11.0]: /../../tree/v0.11.0
+[0.11.0]: https://github.com/cucumber-rs/cucumber/tree/v0.11.0
 
-[Diff](/../../compare/v0.10.2...v0.11.0) | [Milestone](/../../milestone/3)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.10.2...v0.11.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/3)
 
 ### BC Breaks
 
@@ -533,29 +594,29 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Docstring and name expansion in `Scenario Outline`. ([#178], [#172])
 - `writer::Summarized` ignoring `Coloring` options. ([#189], [#186])
 
-[#147]: /../../pull/147
-[#151]: /../../pull/151
-[#155]: /../../issues/155
-[#157]: /../../pull/157
-[#159]: /../../pull/159
-[#160]: /../../pull/160
-[#162]: /../../pull/162
-[#163]: /../../pull/163
-[#164]: /../../issues/164
-[#165]: /../../pull/165
-[#166]: /../../pull/166
-[#168]: /../../pull/168
-[#172]: /../../issues/172
-[#178]: /../../pull/178
-[#181]: /../../pull/181
-[#182]: /../../pull/182
-[#186]: /../../issues/186
-[#188]: /../../pull/188
-[#189]: /../../pull/189
-[#192]: /../../issues/192
-[#193]: /../../pull/193
-[cef3d480]: /../../commit/cef3d480579190425461ddb04a1248675248351e
-[e2a41ab0]: /../../commit/e2a41ab0a4398fe26075f0b066cc67e6e8a19e6c
+[#147]: https://github.com/cucumber-rs/cucumber/pull/147
+[#151]: https://github.com/cucumber-rs/cucumber/pull/151
+[#155]: https://github.com/cucumber-rs/cucumber/issues/155
+[#157]: https://github.com/cucumber-rs/cucumber/pull/157
+[#159]: https://github.com/cucumber-rs/cucumber/pull/159
+[#160]: https://github.com/cucumber-rs/cucumber/pull/160
+[#162]: https://github.com/cucumber-rs/cucumber/pull/162
+[#163]: https://github.com/cucumber-rs/cucumber/pull/163
+[#164]: https://github.com/cucumber-rs/cucumber/issues/164
+[#165]: https://github.com/cucumber-rs/cucumber/pull/165
+[#166]: https://github.com/cucumber-rs/cucumber/pull/166
+[#168]: https://github.com/cucumber-rs/cucumber/pull/168
+[#172]: https://github.com/cucumber-rs/cucumber/issues/172
+[#178]: https://github.com/cucumber-rs/cucumber/pull/178
+[#181]: https://github.com/cucumber-rs/cucumber/pull/181
+[#182]: https://github.com/cucumber-rs/cucumber/pull/182
+[#186]: https://github.com/cucumber-rs/cucumber/issues/186
+[#188]: https://github.com/cucumber-rs/cucumber/pull/188
+[#189]: https://github.com/cucumber-rs/cucumber/pull/189
+[#192]: https://github.com/cucumber-rs/cucumber/issues/192
+[#193]: https://github.com/cucumber-rs/cucumber/pull/193
+[cef3d480]: https://github.com/cucumber-rs/cucumber/commit/cef3d480579190425461ddb04a1248675248351e
+[e2a41ab0]: https://github.com/cucumber-rs/cucumber/commit/e2a41ab0a4398fe26075f0b066cc67e6e8a19e6c
 [0110-1]: https://llg.cubic.org/docs/junit
 [0110-2]: https://github.com/cucumber/cucumber-json-schema
 
@@ -563,37 +624,37 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.10.2] · 2021-11-03
-[0.10.2]: /../../tree/v0.10.2
+[0.10.2]: https://github.com/cucumber-rs/cucumber/tree/v0.10.2
 
-[Diff](/../../compare/v0.10.1...v0.10.2) | [Milestone](/../../milestone/5)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.10.1...v0.10.2) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/5)
 
 ### Fixed
 
 - Multiple `WorldInit` derivers conflicting implementations in a single module. ([#150])
 
-[#150]: /../../pull/150
+[#150]: https://github.com/cucumber-rs/cucumber/pull/150
 
 
 
 
 ## [0.10.1] · 2021-10-29
-[0.10.1]: /../../tree/v0.10.1
+[0.10.1]: https://github.com/cucumber-rs/cucumber/tree/v0.10.1
 
-[Diff](/../../compare/v0.10.0...v0.10.1) | [Milestone](/../../milestone/4)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.10.0...v0.10.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/4)
 
 ### Fixed
 
 - Console output hanging because of executing wrong `Concurrent` `Scenario`s. ([#146])
 
-[#146]: /../../pull/146
+[#146]: https://github.com/cucumber-rs/cucumber/pull/146
 
 
 
 
 ## [0.10.0] · 2021-10-26
-[0.10.0]: /../../tree/v0.10.0
+[0.10.0]: https://github.com/cucumber-rs/cucumber/tree/v0.10.0
 
-[Diff](/../../compare/v0.9.0...v0.10.0) | [Milestone](/../../milestone/2)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.9.0...v0.10.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/2)
 
 ### BC Breaks
 
@@ -615,21 +676,21 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Error on a step matching multiple step functions ([#143]).
 - `timestamps` Cargo feature that enables collecting of timestamps for all the happened events during tests execution (useful for `Writer`s which format requires them) ([#145]).
 
-[#128]: /../../pull/128
-[#136]: /../../pull/136
-[#137]: /../../pull/137
-[#142]: /../../pull/142
-[#143]: /../../pull/143
-[#144]: /../../pull/144
-[#145]: /../../pull/145
+[#128]: https://github.com/cucumber-rs/cucumber/pull/128
+[#136]: https://github.com/cucumber-rs/cucumber/pull/136
+[#137]: https://github.com/cucumber-rs/cucumber/pull/137
+[#142]: https://github.com/cucumber-rs/cucumber/pull/142
+[#143]: https://github.com/cucumber-rs/cucumber/pull/143
+[#144]: https://github.com/cucumber-rs/cucumber/pull/144
+[#145]: https://github.com/cucumber-rs/cucumber/pull/145
 
 
 
 
 ## [0.9.0] · 2021-07-19
-[0.9.0]: /../../tree/v0.9.0
+[0.9.0]: https://github.com/cucumber-rs/cucumber/tree/v0.9.0
 
-[Diff](/../../compare/v0.8.4...v0.9.0)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.8.4...v0.9.0)
 
 ### BC Breaks
 
@@ -648,9 +709,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.8.4] · 2021-02-18
-[0.8.4]: /../../tree/v0.8.4
+[0.8.4]: https://github.com/cucumber-rs/cucumber/tree/v0.8.4
 
-[Diff](/../../compare/v0.8.3...v0.8.4)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.8.3...v0.8.4)
 
 ### Added
 
@@ -661,9 +722,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.8.3] · 2021-02-09
-[0.8.3]: /../../tree/v0.8.3
+[0.8.3]: https://github.com/cucumber-rs/cucumber/tree/v0.8.3
 
-[Diff](/../../compare/v0.8.2...v0.8.3)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.8.2...v0.8.3)
 
 ### Changed
 
@@ -673,9 +734,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.8.2] · 2021-01-30
-[0.8.2]: /../../tree/v0.8.2
+[0.8.2]: https://github.com/cucumber-rs/cucumber/tree/v0.8.2
 
-[Diff](/../../compare/v0.8.1...v0.8.2)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.8.1...v0.8.2)
 
 ### Added
 
@@ -686,9 +747,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.8.1] · 2021-01-30
-[0.8.1]: /../../tree/v0.8.1
+[0.8.1]: https://github.com/cucumber-rs/cucumber/tree/v0.8.1
 
-[Diff](/../../compare/v0.8.0...v0.8.1)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.8.0...v0.8.1)
 
 ### Added
 
@@ -698,9 +759,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.8.0] · 2021-01-18
-[0.8.0]: /../../tree/v0.8.0
+[0.8.0]: https://github.com/cucumber-rs/cucumber/tree/v0.8.0
 
-[Diff](/../../compare/v0.7.3...v0.8.0)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.7.3...v0.8.0)
 
 ### Added
 
@@ -715,31 +776,31 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 - Filtering of tests by tag. ([#67])
 - Removed unnecessary dependent traits from `World` trait.
 
-[#67]: /../../issues/67
-[#81]: /../../pull/81
-[#91]: /../../issues/91
+[#67]: https://github.com/cucumber-rs/cucumber/issues/67
+[#81]: https://github.com/cucumber-rs/cucumber/pull/81
+[#91]: https://github.com/cucumber-rs/cucumber/issues/91
 
 
 
 
 ## [0.7.3] · 2020-09-20
-[0.7.3]: /../../tree/v0.7.3
+[0.7.3]: https://github.com/cucumber-rs/cucumber/tree/v0.7.3
 
-[Diff](/../../compare/v0.7.2...v0.7.3)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.7.2...v0.7.3)
 
 ### Fixed
 
 - Fix missing `mut` in `t!` macro for regexes — thanks [@stefanpieck](https://github.com/stefanpieck)! ([#68])
 
-[#68]: /../../issues/68
+[#68]: https://github.com/cucumber-rs/cucumber/issues/68
 
 
 
 
 ## [0.7.2] · 2020-09-14
-[0.7.2]: /../../tree/v0.7.2
+[0.7.2]: https://github.com/cucumber-rs/cucumber/tree/v0.7.2
 
-[Diff](/../../compare/v0.7.1...v0.7.2)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.7.1...v0.7.2)
 
 ### Added
 
@@ -749,9 +810,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.7.1] · 2020-09-09
-[0.7.1]: /../../tree/v0.7.1
+[0.7.1]: https://github.com/cucumber-rs/cucumber/tree/v0.7.1
 
-[Diff](/../../compare/v0.7.0...v0.7.1)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.7.0...v0.7.1)
 
 ### Fixed
 
@@ -761,9 +822,9 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 ## [0.7.0] · 2020-09-07
-[0.7.0]: /../../tree/v0.7.0
+[0.7.0]: https://github.com/cucumber-rs/cucumber/tree/v0.7.0
 
-[Diff](/../../compare/v0.6.8...v0.7.0)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.6.8...v0.7.0)
 
 ### BC Breaks
 

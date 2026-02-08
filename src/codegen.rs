@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -10,20 +10,18 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::{convert::Infallible, future::Future};
-
-use futures::future;
-
-use crate::{step, Step, World};
+use std::convert::Infallible;
 
 pub use anyhow;
 pub use cucumber_expressions::{
-    expand::parameters::Provider as ParametersProvider, Expression, Spanned,
+    Expression, Spanned, expand::parameters::Provider as ParametersProvider,
 };
+use futures::future;
 pub use futures::future::LocalBoxFuture;
 pub use inventory::{self, collect, submit};
-pub use once_cell::sync::Lazy;
 pub use regex::Regex;
+
+use crate::{Step, World, step};
 
 /// [`World`] extension allowing to register steps in [`inventory`].
 pub trait WorldInventory: World {
@@ -43,7 +41,7 @@ pub trait WorldInventory: World {
     type Then: inventory::Collect + StepConstructor<Self>;
 }
 
-/// Alias for a [`fn`] returning a [`Lazy`] [`Regex`].
+/// Alias for a [`fn`] returning a [`Regex`].
 pub type LazyRegex = fn() -> Regex;
 
 /// Trait for registering a [`Step`] with [`given`], [`when`] and [`then`]

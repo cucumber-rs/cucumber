@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024  Brendan Molloy <brendan@bbqsrc.net>,
+// Copyright (c) 2018-2026  Brendan Molloy <brendan@bbqsrc.net>,
 //                          Ilya Solovyiov <ilya.solovyiov@gmail.com>,
 //                          Kai Ren <tyranron@gmail.com>
 //
@@ -17,22 +17,21 @@ use std::{
     vec,
 };
 
-use derive_more::{Display, Error};
+use derive_more::with_trait::{Display, Error};
 use futures::stream;
 use gherkin::GherkinEnv;
 use globwalk::{GlobWalker, GlobWalkerBuilder};
 use itertools::Itertools as _;
 
+use super::{Error as ParseError, Parser};
 use crate::feature::Ext as _;
 
-use super::{Error as ParseError, Parser};
-
 /// CLI options of a [`Basic`] [`Parser`].
-#[derive(clap::Args, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
 pub struct Cli {
-    /// Glob pattern to look for feature files with. By default, looks for
-    /// `*.feature`s in the path configured tests runner.
+    /// Glob pattern to look for feature files with. If not specified, looks for
+    /// `*.feature` files in the path configured in the test runner.
     #[arg(
         id = "input",
         long = "input",
@@ -61,7 +60,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
     type Output =
         stream::Iter<vec::IntoIter<Result<gherkin::Feature, ParseError>>>;
 
-    fn parse(self, path: I, cli: Self::Cli) -> Self::Output {
+    fn parse(self, input: I, cli: Self::Cli) -> Self::Output {
         let walk = |walker: GlobWalker| {
             walker
                 .filter_map(Result::ok)
@@ -78,11 +77,10 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         };
 
         let get_features_path = || {
-            let path = path.as_ref();
+            let path = input.as_ref();
             path.canonicalize()
                 .or_else(|_| {
-                    let mut buf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                    buf.push(
+                    let buf = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
                         path.strip_prefix("/")
                             .or_else(|_| path.strip_prefix("./"))
                             .unwrap_or(path),
@@ -98,7 +96,7 @@ impl<I: AsRef<Path>> Parser<I> for Basic {
         let features = || {
             let features = if let Some(walker) = cli.features {
                 walk(globwalk::glob(walker.0).unwrap_or_else(|e| {
-                    unreachable!("Invalid glob pattern: {e}")
+                    unreachable!("invalid glob pattern: {e}")
                 }))
             } else {
                 let feats_path = match get_features_path() {
@@ -165,7 +163,7 @@ impl Basic {
 
 /// Error of [`gherkin`] not supporting keywords in some language.
 #[derive(Clone, Debug, Display, Error)]
-#[display(fmt = "Language {} isn't supported", _0)]
+#[display("Language {_0} isn't supported")]
 pub struct UnsupportedLanguageError(
     #[error(not(source))] pub Cow<'static, str>,
 );
