@@ -909,8 +909,8 @@ where
     }
 }
 
-impl<W, I, P, Wr, F, B, A, Cli>
-    Cucumber<W, P, I, runner::Basic<W, F, B, A>, Wr, Cli>
+impl<W, I, P, Wr, F, B, A, BS, AS, Cli>
+    Cucumber<W, P, I, runner::Basic<W, F, B, A, BS, AS>, Wr, Cli>
 where
     W: World,
     P: Parser<I>,
@@ -934,6 +934,23 @@ where
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
             &'a event::ScenarioFinished,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>
+        + 'static,
+    BS: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>
+        + 'static,
+    AS: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a event::Step<W>,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
@@ -1008,7 +1025,7 @@ where
     pub fn which_scenario<Which>(
         self,
         func: Which,
-    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, Which, B, A, BS, AS>, Wr, Cli>
     where
         Which: Fn(
                 &gherkin::Feature,
@@ -1062,7 +1079,7 @@ where
     pub fn before<Before>(
         self,
         func: Before,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, Before, A, BS, AS>, Wr, Cli>
     where
         Before: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1104,7 +1121,7 @@ where
     pub fn after<After>(
         self,
         func: After,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After>, Wr, Cli>
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, After, BS, AS>, Wr, Cli>
     where
         After: for<'a> Fn(
                 &'a gherkin::Feature,
@@ -1125,6 +1142,87 @@ where
         Cucumber {
             parser,
             runner: runner.after(func),
+            writer,
+            cli,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Sets a hook, executed before running each [`Step`] of a [`Scenario`], including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn before_step<BeforeStep>(
+        self,
+        func: BeforeStep,
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, A, BeforeStep, AS>, Wr, Cli>
+    where
+        BeforeStep: for<'a> Fn(
+                &'a gherkin::Feature,
+                Option<&'a gherkin::Rule>,
+                &'a gherkin::Scenario,
+                &'a gherkin::Step,
+                &'a mut W,
+            ) -> LocalBoxFuture<'a, ()>
+            + 'static,
+    {
+        let Self {
+            parser,
+            runner,
+            writer,
+            cli,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.before_step(func),
+            writer,
+            cli,
+            _world: PhantomData,
+            _parser_input: PhantomData,
+        }
+    }
+
+    /// Sets a hook, executed after running each [`Step`] or a [`Scenario`],
+    /// even after [`Skipped`] of [`Failed`] [`Step`]s.
+    ///
+    /// Last `World` argument is supplied to the function, in case it was
+    /// initialized before by running [`before`] hook or any [`Step`].
+    ///
+    /// [`before`]: Self::before()
+    /// [`Failed`]: event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn after_step<AfterStep>(
+        self,
+        func: AfterStep,
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, A, BS, AfterStep>, Wr, Cli>
+    where
+        AfterStep: for<'a> Fn(
+                &'a gherkin::Feature,
+                Option<&'a gherkin::Rule>,
+                &'a gherkin::Scenario,
+                &'a gherkin::Step,
+                &'a event::Step<W>,
+                Option<&'a mut W>,
+            ) -> LocalBoxFuture<'a, ()>
+            + 'static,
+    {
+        let Self {
+            parser,
+            runner,
+            writer,
+            cli,
+            ..
+        } = self;
+        Cucumber {
+            parser,
+            runner: runner.after_step(func),
             writer,
             cli,
             _world: PhantomData,

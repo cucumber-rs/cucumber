@@ -439,6 +439,7 @@ pub enum HookType {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     After,
+    // TODO: BeforeStep and AfterStep
 }
 
 #[allow(clippy::use_debug)] // intentional
