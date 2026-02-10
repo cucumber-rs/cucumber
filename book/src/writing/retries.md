@@ -1,7 +1,7 @@
 Retrying failed scenarios
 =========================
 
-Often, it's nearly impossible to create fully-deterministic test case, especially when you are relying on environments like external services, browsers, file system, networking etc. That's why there is an ability to retry failed [scenario]s. 
+Often, it's nearly impossible to create fully-deterministic test case, especially when you are relying on environments like external services, browsers, file system, networking etc. That's why there is an ability to retry failed [scenario]s.
 
 > __WARNING__: Although this feature is supported, we highly recommend to use it as the _last resort only_. First, consider implementing in-[step] retries with your own needs (like [exponential backoff]). Other ways of dealing with flaky tests include, but not limited to: reducing number of concurrently executed scenarios (maybe even using `@serial` [tag]), mocking external environment, [controlling time in tests] or even [simulation testing]. It's always better to move towards tests determinism, rather than trying to tame their flakiness.
 
@@ -20,7 +20,7 @@ Feature: Heads and tails
     Given a coin
     When I flip the coin
     Then I see tails
-      
+
   # Attempts a single retry in 1 second.
   @retry.after(1s)
   Scenario: Heads
@@ -50,7 +50,7 @@ Feature: Heads and tails
 # use std::time::Duration;
 #
 # use cucumber::{World, given, then, when};
-# use rand::Rng as _;
+# use rand::RngExt as _;
 # use tokio::time::sleep;
 #
 # #[derive(Debug, Default, World)]
@@ -67,7 +67,7 @@ async fn coin(_: &mut FlipWorld) {
 async fn flip(world: &mut FlipWorld) {
     sleep(Duration::from_secs(2)).await;
 
-    world.flipped = match rand::thread_rng().gen_range(0.0..1.0) {
+    world.flipped = match rand::rng().random_range(0.0..1.0) {
         p if p < 0.2 => "edge",
         p if p < 0.5 => "heads",
         _ => "tails",
@@ -98,7 +98,7 @@ async fn never_lands(_: &mut FlipWorld) {
 ```
 ![record](../rec/writing_retries.gif)
 
-> __NOTE__: On failure, the whole [scenario] is re-executed with a new fresh [`World`] instance. 
+> __NOTE__: On failure, the whole [scenario] is re-executed with a new fresh [`World`] instance.
 
 
 
@@ -112,7 +112,7 @@ The following [CLI option]s are related to the [scenario] retries:
 
 --retry-after <duration>
     Delay between each scenario retry attempt.
-    
+
     Duration is represented in a human-readable format like `12min5s`.
     Supported suffixes:
     - `nsec`, `ns` — nanoseconds.
