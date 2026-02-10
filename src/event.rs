@@ -444,6 +444,7 @@ pub enum HookType {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     After,
+    // TODO: BeforeStep and AfterStep
 }
 
 /// Event of running [`Before`] or [`After`] hook.
