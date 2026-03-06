@@ -251,7 +251,7 @@ impl Collector {
     ) -> Option<Vec<event::Cucumber<W>>> {
         self.notify_about_closing_spans();
 
-        self.logs_receiver.try_next().ok().flatten().map(|(id, msg)| {
+        self.logs_receiver.try_recv().ok().map(|(id, msg)| {
             id.and_then(|k| self.scenarios.get(&k))
                 .map_or_else(
                     || Either::Left(self.scenarios.values()),
@@ -274,11 +274,10 @@ impl Collector {
 
     /// Notifies all its subscribers about closing [`Span`]s via [`Callback`]s.
     fn notify_about_closing_spans(&mut self) {
-        if let Some(id) = self.span_close_receiver.try_next().ok().flatten() {
+        if let Ok(id) = self.span_close_receiver.try_recv() {
             self.span_events.entry(id).or_default().1 = true;
         }
-        while let Some((id, callback)) =
-            self.wait_span_event_receiver.try_next().ok().flatten()
+        while let Ok((id, callback)) = self.wait_span_event_receiver.try_recv()
         {
             self.span_events
                 .entry(id)

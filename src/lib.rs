@@ -77,6 +77,7 @@
     clippy::needless_collect,
     clippy::needless_pass_by_ref_mut,
     clippy::needless_raw_strings,
+    clippy::needless_type_cast,
     clippy::non_zero_suggestions,
     clippy::nonstandard_macro_braces,
     clippy::option_if_let_else,

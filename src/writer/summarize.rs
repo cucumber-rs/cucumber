@@ -320,6 +320,35 @@ impl<Writer> From<Writer> for Summarize<Writer> {
 }
 
 impl<Writer> Summarize<Writer> {
+    /// Wraps the given [`Writer`] into a new [`Summarize`]d one.
+    #[must_use]
+    pub fn new(writer: Writer) -> Self {
+        Self::from(writer)
+    }
+
+    /// Returns the original [`Writer`], wrapped by this [`Summarize`]d one.
+    #[must_use]
+    pub const fn inner_writer(&self) -> &Writer {
+        &self.writer
+    }
+
+    /// Returns collected [`Scenario`]s [`Stats`] of this [`Summarize`]d
+    /// [`Writer`].
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    #[must_use]
+    pub const fn scenarios_stats(&self) -> &Stats {
+        &self.scenarios
+    }
+
+    /// Returns collected [`Step`]s [`Stats`] of this [`Summarize`]d [`Writer`].
+    ///
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub const fn steps_stats(&self) -> &Stats {
+        &self.steps
+    }
+
     /// Keeps track of [`Step`]'s [`Stats`].
     ///
     /// [`Step`]: gherkin::Step
@@ -442,37 +471,6 @@ impl<Writer> Summarize<Writer> {
                 }
             }
         }
-    }
-}
-
-impl<Writer> Summarize<Writer> {
-    /// Wraps the given [`Writer`] into a new [`Summarize`]d one.
-    #[must_use]
-    pub fn new(writer: Writer) -> Self {
-        Self::from(writer)
-    }
-
-    /// Returns the original [`Writer`], wrapped by this [`Summarize`]d one.
-    #[must_use]
-    pub const fn inner_writer(&self) -> &Writer {
-        &self.writer
-    }
-
-    /// Returns collected [`Scenario`]s [`Stats`] of this [`Summarize`]d
-    /// [`Writer`].
-    ///
-    /// [`Scenario`]: gherkin::Scenario
-    #[must_use]
-    pub const fn scenarios_stats(&self) -> &Stats {
-        &self.scenarios
-    }
-
-    /// Returns collected [`Step`]s [`Stats`] of this [`Summarize`]d [`Writer`].
-    ///
-    /// [`Step`]: gherkin::Step
-    #[must_use]
-    pub const fn steps_stats(&self) -> &Stats {
-        &self.steps
     }
 }
 

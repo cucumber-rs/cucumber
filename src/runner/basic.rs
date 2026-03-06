@@ -1034,8 +1034,8 @@ async fn execute<W, Before, After>(
             }
         }
 
-        while let Ok(Some((id, feat, rule, scenario_failed, retried))) =
-            storage.finished_receiver.try_next()
+        while let Ok((id, feat, rule, scenario_failed, retried)) =
+            storage.finished_receiver.try_recv()
         {
             if let Some(rule) = rule
                 && let Some(f) =
@@ -2305,6 +2305,7 @@ impl Features {
     /// all retried [`Scenario`]s.
     ///
     /// [`Scenario`]: gherkin::Scenario
+    #[expect(clippy::significant_drop_tightening, reason = "false positive")]
     async fn get(
         &self,
         max_concurrent_scenarios: Option<usize>,
