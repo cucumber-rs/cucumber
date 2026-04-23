@@ -40,15 +40,16 @@ where
     Wr: Writer<W>,
     Cli: clap::Args,
 {
-    /// Initializes a global [`tracing::Subscriber`] with a default
-    /// [`fmt::Layer`] and [`LevelFilter::INFO`].
+    /// Initializes a global [`tracing::Subscriber`] for this [`Cucumber`] with
+    /// a default [`fmt::Layer`] and [`LevelFilter::INFO`].
     ///
     /// [`fmt::Layer`]: tracing_subscriber::fmt::Layer
     #[must_use]
     pub fn init_tracing(self) -> Self {
         self.configure_and_init_tracing(
-            format::DefaultFields::new(),
-            Format::default(),
+            tracing_subscriber::fmt::layer()
+                .fmt_fields(format::DefaultFields::new())
+                .event_format(Format::default()),
             |layer| {
                 tracing_subscriber::registry()
                     .with(LevelFilter::INFO.and_then(layer))
@@ -56,8 +57,9 @@ where
         )
     }
 
-    /// Configures a [`fmt::Layer`], additionally wraps it (for example, into a
-    /// [`LevelFilter`]), and initializes as a global [`tracing::Subscriber`].
+    /// Configures the provided [`fmt::Layer`] for this [`Cucumber`] and allows
+    /// to additionally wrap it (for example, into a [`LevelFilter`]) before
+    /// initializing it as a global [`tracing::Subscriber`].
     ///
     /// # Example
     ///
@@ -65,7 +67,7 @@ where
     /// # use cucumber::{Cucumber, World as _};
     /// # use tracing_subscriber::{
     /// #     filter::LevelFilter,
-    /// #     fmt::format::{self, Format},
+    /// #     fmt::{self, format::{self, Format}},
     /// #     layer::SubscriberExt,
     /// #     Layer,
     /// # };
@@ -76,11 +78,12 @@ where
     /// # let _ = async {
     /// World::cucumber()
     ///     .configure_and_init_tracing(
-    ///         format::DefaultFields::new(),
-    ///         Format::default(),
-    ///         |fmt_layer| {
+    ///         fmt::layer()
+    ///             .fmt_fields(format::DefaultFields::new())
+    ///             .event_format(Format::default()),
+    ///         |layer| {
     ///             tracing_subscriber::registry()
-    ///                 .with(LevelFilter::INFO.and_then(fmt_layer))
+    ///                 .with(LevelFilter::INFO.and_then(layer))
     ///         },
     ///     )
     ///     .run_and_exit("./tests/features/doctests.feature")
@@ -92,8 +95,7 @@ where
     #[must_use]
     pub fn configure_and_init_tracing<Event, Fields, Sub, Conf, Out>(
         self,
-        fmt_fields: Fields,
-        event_format: Event,
+        fmt_layer: tracing_subscriber::fmt::Layer<Sub, Fields, Event>,
         configure: Conf,
     ) -> Self
     where
@@ -120,9 +122,9 @@ where
         let (span_close_sender, span_close_receiver) = mpsc::unbounded();
 
         let layer = RecordScenarioId::new(span_close_sender).and_then(
-            tracing_subscriber::fmt::layer()
-                .fmt_fields(SkipScenarioIdSpan(fmt_fields))
-                .event_format(AppendScenarioMsg(event_format))
+            fmt_layer
+                .map_fmt_fields(SkipScenarioIdSpan)
+                .map_event_format(AppendScenarioMsg)
                 .with_writer(CollectorWriter::new(logs_sender)),
         );
         Dispatch::new(configure(layer)).init();
