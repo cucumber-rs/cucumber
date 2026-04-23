@@ -370,7 +370,7 @@ impl<Writer> Summarize<Writer> {
             Step::Started => {}
             Step::Passed(..) => {
                 self.steps.passed += 1;
-                if scenario.steps.last().filter(|s| *s == step).is_some() {
+                if scenario.steps.last().as_ref().is_some_and(|s| *s == step) {
                     _ = self
                         .handled_scenarios
                         .remove(&(feature, rule, scenario));
@@ -384,12 +384,9 @@ impl<Writer> Summarize<Writer> {
                     .insert((feature, rule, scenario), Skipped);
             }
             Step::Failed(_, _, _, err) => {
-                if retries
-                    .filter(|r| {
-                        r.left > 0 && !matches!(err, event::StepError::NotFound)
-                    })
-                    .is_some()
-                {
+                if retries.as_ref().is_some_and(|r| {
+                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                }) {
                     self.steps.retried += 1;
 
                     let inserted_before = self
