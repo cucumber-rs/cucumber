@@ -6,6 +6,26 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## master
+
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...v0.22.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/30)
+
+### BC Breaks
+
+- Fixed precedence of operations in tag expressions to align with upstream. ([gherkin#52], [gherkin#51])
+
+### Changed
+
+- Upgraded [`gherkin`] crate to 0.16 version. ([todo])
+- Allowed `And`-like and `But`-like keywords at the beginning of `Scenario`, automatically considering them as `Given`-type steps. ([gherkin#53])
+
+[gherkin#51]: https://github.com/cucumber-rs/gherkin/issues/51
+[gherkin#52]: https://github.com/cucumber-rs/gherkin/pull/52
+[gherkin#53]: https://github.com/cucumber-rs/gherkin/pull/53
+
+
+
+
 ## [0.22.1] · 2025-12-23
 [0.22.1]: https://github.com/cucumber-rs/cucumber/tree/v0.22.1
 
