@@ -95,7 +95,7 @@ serde_json = { version = "1.0.18", optional = true }
 serde_with = { version = "3.0", features = ["macros"], default-features = false, optional = true }
 
 # "output-junit" feature dependencies.
-junit-report = { version = "0.8", optional = true }
+junit-report = { version = "0.9", optional = true }
 
 # "tracing" feature dependencies.
 crossbeam-utils = { version = "0.8.14", optional = true }
