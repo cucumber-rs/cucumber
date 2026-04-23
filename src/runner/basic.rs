@@ -2337,7 +2337,7 @@ impl Features {
                     .extract_if(.., |(_, _, _, _, ret)| {
                         // Because of retries involved, we cannot just specify
                         // `..count` range to `.extract_if()`.
-                        if count.filter(|c| i >= *c).is_some() {
+                        if count.as_ref().is_some_and(|c| i >= *c) {
                             return false;
                         }
 

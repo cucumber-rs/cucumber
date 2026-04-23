@@ -393,7 +393,7 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.left > 0).is_some() {
+            if retries.as_ref().is_some_and(|r| r.left > 0) {
                 self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
@@ -558,8 +558,8 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.current > 0).is_some()
-                && scenario.steps.last().filter(|st| *st != step).is_some()
+            if retries.as_ref().is_some_and(|r| r.current > 0)
+                && scenario.steps.last().as_ref().is_some_and(|st| *st != step)
             {
                 self.styles.retry(s)
             } else {
@@ -657,12 +657,9 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries
-                .filter(|r| {
-                    r.left > 0 && !matches!(err, event::StepError::NotFound)
-                })
-                .is_some()
-            {
+            if retries.as_ref().is_some_and(|r| {
+                r.left > 0 && !matches!(err, event::StepError::NotFound)
+            }) {
                 self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
@@ -836,8 +833,8 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries.filter(|r| r.current > 0).is_some()
-                && scenario.steps.last().filter(|st| *st != step).is_some()
+            if retries.as_ref().is_some_and(|r| r.current > 0)
+                && scenario.steps.last().as_ref().is_some_and(|st| *st != step)
             {
                 self.styles.retry(s)
             } else {
@@ -938,12 +935,9 @@ impl<Out: io::Write> Basic<Out> {
         self.clear_last_lines_if_term_present()?;
 
         let style = |s| {
-            if retries
-                .filter(|r| {
-                    r.left > 0 && !matches!(err, event::StepError::NotFound)
-                })
-                .is_some()
-            {
+            if retries.as_ref().is_some_and(|r| {
+                r.left > 0 && !matches!(err, event::StepError::NotFound)
+            }) {
                 self.styles.bright().retry(s)
             } else {
                 self.styles.err(s)
