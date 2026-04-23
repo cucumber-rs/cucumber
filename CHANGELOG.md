@@ -6,9 +6,10 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
-## master
+## [0.23.0] · 2026-04-23
+[0.23.0]: https://github.com/cucumber-rs/cucumber/tree/v0.23.0
 
-[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.0...v0.22.1) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/30)
+[Diff](https://github.com/cucumber-rs/cucumber/compare/v0.22.1...v0.23.0) | [Milestone](https://github.com/cucumber-rs/cucumber/milestone/30)
 
 ### BC Breaks
 
@@ -16,12 +17,13 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 ### Changed
 
-- Upgraded [`gherkin`] crate to 0.16 version. ([todo])
+- Upgraded [`gherkin`] crate to 0.16 version. ([0d544772])
 - Allowed `And`-like and `But`-like keywords at the beginning of `Scenario`, automatically considering them as `Given`-type steps. ([gherkin#53])
 
 [gherkin#51]: https://github.com/cucumber-rs/gherkin/issues/51
 [gherkin#52]: https://github.com/cucumber-rs/gherkin/pull/52
 [gherkin#53]: https://github.com/cucumber-rs/gherkin/pull/53
+[0d544772]: https://github.com/cucumber-rs/cucumber/commit/0d5447723a6158c19dbdde43481edf2b57e1be32
 
 
 
