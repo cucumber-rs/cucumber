@@ -296,6 +296,31 @@ pub type AfterHookFn<World> = for<'a> fn(
     Option<&'a mut World>,
 ) -> LocalBoxFuture<'a, ()>;
 
+/// Alias for [`fn`] executed before running each [`Step`] of a [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+pub type BeforeStepHookFn<World> = for<'a> fn(
+    &'a gherkin::Feature,
+    Option<&'a gherkin::Rule>,
+    &'a gherkin::Scenario,
+    &'a gherkin::Step,
+    &'a mut World,
+) -> LocalBoxFuture<'a, ()>;
+
+/// Alias for [`fn`] executed after running each [`Step`] of a [`Scenario`].
+///
+/// [`Scenario`]: gherkin::Scenario
+/// [`Step`]: gherkin::Step
+pub type AfterStepHookFn<World> = for<'a> fn(
+    &'a gherkin::Feature,
+    Option<&'a gherkin::Rule>,
+    &'a gherkin::Scenario,
+    &'a gherkin::Step,
+    &'a event::Step<World>,
+    Option<&'a mut World>,
+) -> LocalBoxFuture<'a, ()>;
+
 /// Alias for a failed [`Scenario`].
 ///
 /// [`Scenario`]: gherkin::Scenario
@@ -321,6 +346,8 @@ pub struct Basic<
     F = WhichScenarioFn,
     Before = BeforeHookFn<World>,
     After = AfterHookFn<World>,
+    BeforeStep = BeforeStepHookFn<World>,
+    AfterStep = AfterStepHookFn<World>,
 > {
     /// Optional number of concurrently executed [`Scenario`]s.
     ///
@@ -379,6 +406,10 @@ pub struct Basic<
     #[debug(ignore)]
     after_hook: Option<After>,
 
+    before_step_hook: Option<BeforeStep>,
+
+    after_step_hook: Option<AfterStep>,
+
     /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
 
@@ -399,7 +430,9 @@ const _: () = {
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
 // `#[derive(Clone)]`.
-impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
+impl<World, F: Clone, B: Clone, A: Clone, BS: Clone, AS: Clone> Clone
+    for Basic<World, F, B, A, BS, AS>
+{
     fn clone(&self) -> Self {
         Self {
             max_concurrent_scenarios: self.max_concurrent_scenarios,
@@ -411,6 +444,8 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             retry_options: Arc::clone(&self.retry_options),
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
+            before_step_hook: self.before_step_hook.clone(),
+            after_step_hook: self.after_step_hook.clone(),
             fail_fast: self.fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector: Arc::clone(&self.logs_collector),
@@ -440,6 +475,8 @@ impl<World> Default for Basic<World> {
             retry_options: Arc::new(RetryOptions::parse_from_tags),
             before_hook: None,
             after_hook: None,
+            before_step_hook: None,
+            after_step_hook: None,
             fail_fast: false,
             #[cfg(feature = "tracing")]
             logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
@@ -447,7 +484,9 @@ impl<World> Default for Basic<World> {
     }
 }
 
-impl<World, Which, Before, After> Basic<World, Which, Before, After> {
+impl<World, Which, Before, After, BeforeStep, AfterStep>
+    Basic<World, Which, Before, After, BeforeStep, AfterStep>
+{
     /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
     /// will be limited.
     ///
@@ -516,7 +555,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Serial`]: ScenarioType::Serial
     /// [`Scenario`]: gherkin::Scenario
     #[must_use]
-    pub fn which_scenario<F>(self, func: F) -> Basic<World, F, Before, After>
+    pub fn which_scenario<F>(
+        self,
+        func: F,
+    ) -> Basic<World, F, Before, After, BeforeStep, AfterStep>
     where
         F: Fn(
                 &gherkin::Feature,
@@ -534,6 +576,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -549,6 +593,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -585,7 +631,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Scenario`]: gherkin::Scenario
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn before<Func>(self, func: Func) -> Basic<World, Which, Func, After>
+    pub fn before<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Func, After, BeforeStep, AfterStep>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -603,6 +652,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             which_scenario,
             retry_options,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -618,6 +669,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook: Some(func),
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -641,7 +694,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// [`Skipped`]: event::Step::Skipped
     /// [`Step`]: gherkin::Step
     #[must_use]
-    pub fn after<Func>(self, func: Func) -> Basic<World, Which, Before, Func>
+    pub fn after<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Before, Func, BeforeStep, AfterStep>
     where
         Func: for<'a> Fn(
             &'a gherkin::Feature,
@@ -660,6 +716,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             which_scenario,
             retry_options,
             before_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -675,6 +733,120 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             after_hook: Some(func),
+            before_step_hook,
+            after_step_hook,
+            fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+        }
+    }
+
+    /// Sets a hook, executed before running each [`Step`] of a [`Scenario`], including [`Background`] ones.
+    ///
+    /// [`Background`]: gherkin::Background
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn before_step<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Before, After, Func, AfterStep>
+    where
+        Func: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a mut World,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            before_hook,
+            after_hook,
+            after_step_hook,
+            fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            before_hook,
+            after_hook,
+            before_step_hook: Some(func),
+            after_step_hook,
+            fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+        }
+    }
+
+    /// Sets hook, executed after running each [`Step`] of a [`Scenario`], even after [`Skipped`] of [`Failed`] ones.
+    ///
+    /// Last `World` argument is supplied to the function, in case it was
+    /// initialized before by running [`before`] hook or any [`Step`].
+    ///
+    /// [`before`]: Self::before()
+    /// [`Failed`]: event::Step::Failed
+    /// [`Scenario`]: gherkin::Scenario
+    /// [`Skipped`]: event::Step::Skipped
+    /// [`Step`]: gherkin::Step
+    #[must_use]
+    pub fn after_step<Func>(
+        self,
+        func: Func,
+    ) -> Basic<World, Which, Before, After, BeforeStep, Func>
+    where
+        Func: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a event::Step<World>,
+            Option<&'a mut World>,
+        ) -> LocalBoxFuture<'a, ()>,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            before_hook,
+            after_hook,
+            before_step_hook,
+            fail_fast,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+            ..
+        } = self;
+        Basic {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            before_hook,
+            after_hook,
+            before_step_hook,
+            after_step_hook: Some(func),
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -718,7 +890,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     }
 }
 
-impl<W, Which, Before, After> Runner<W> for Basic<W, Which, Before, After>
+impl<W, Which, Before, After, BeforeStep, AfterStep> Runner<W>
+    for Basic<W, Which, Before, After, BeforeStep, AfterStep>
 where
     W: World,
     Which: Fn(
@@ -739,6 +912,23 @@ where
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
             &'a event::ScenarioFinished,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>
+        + 'static,
+    BeforeStep: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>
+        + 'static,
+    AfterStep: for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a event::Step<W>,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>
         + 'static,
@@ -764,6 +954,8 @@ where
             retry_options,
             before_hook,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             ..
         } = self;
@@ -793,6 +985,8 @@ where
             sender,
             before_hook,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             fail_fast,
             #[cfg(feature = "tracing")]
             logs_collector,
@@ -889,7 +1083,7 @@ async fn insert_features<W, S, F>(
     feature = "tracing",
     expect(clippy::too_many_arguments, reason = "needs refactoring")
 )]
-async fn execute<W, Before, After>(
+async fn execute<W, Before, After, BeforeStep, AfterStep>(
     features: Features,
     max_concurrent_scenarios: Option<usize>,
     collection: step::Collection<W>,
@@ -898,6 +1092,8 @@ async fn execute<W, Before, After>(
     >,
     before_hook: Option<Before>,
     after_hook: Option<After>,
+    before_step_hook: Option<BeforeStep>,
+    after_step_hook: Option<AfterStep>,
     fail_fast: bool,
     #[cfg(feature = "tracing")] mut logs_collector: Option<TracingCollector>,
 ) where
@@ -915,6 +1111,23 @@ async fn execute<W, Before, After>(
             Option<&'a gherkin::Rule>,
             &'a gherkin::Scenario,
             &'a event::ScenarioFinished,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>,
+    BeforeStep: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    AfterStep: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a event::Step<W>,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>,
 {
@@ -935,6 +1148,8 @@ async fn execute<W, Before, After>(
         collection,
         before_hook,
         after_hook,
+        before_step_hook,
+        after_step_hook,
         event_sender,
         finished_sender,
         features.clone(),
@@ -1073,7 +1288,7 @@ async fn execute<W, Before, After>(
 /// Runs [`Scenario`]s and notifies about their state of completion.
 ///
 /// [`Scenario`]: gherkin::Scenario
-struct Executor<W, Before, After> {
+struct Executor<W, Before, After, BeforeStep, AfterStep> {
     /// [`Step`]s [`Collection`].
     ///
     /// [`Collection`]: step::Collection
@@ -1093,6 +1308,9 @@ struct Executor<W, Before, After> {
     /// [`Step`]: gherkin::Step
     after_hook: Option<After>,
 
+    before_step_hook: Option<BeforeStep>,
+    after_step_hook: Option<AfterStep>,
+
     /// Sender for [`Scenario`] [events][1].
     ///
     /// [`Scenario`]: gherkin::Scenario
@@ -1111,7 +1329,8 @@ struct Executor<W, Before, After> {
     storage: Features,
 }
 
-impl<W: World, Before, After> Executor<W, Before, After>
+impl<W: World, Before, After, BeforeStep, AfterStep>
+    Executor<W, Before, After, BeforeStep, AfterStep>
 where
     Before: 'static
         + for<'a> Fn(
@@ -1128,12 +1347,31 @@ where
             &'a event::ScenarioFinished,
             Option<&'a mut W>,
         ) -> LocalBoxFuture<'a, ()>,
+    BeforeStep: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    AfterStep: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a gherkin::Step,
+            &'a event::Step<W>,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>,
 {
     /// Creates a new [`Executor`].
     const fn new(
         collection: step::Collection<W>,
         before_hook: Option<Before>,
         after_hook: Option<After>,
+        before_step_hook: Option<BeforeStep>,
+        after_step_hook: Option<AfterStep>,
         event_sender: mpsc::UnboundedSender<
             parser::Result<Event<event::Cucumber<W>>>,
         >,
@@ -1144,6 +1382,8 @@ where
             collection,
             before_hook,
             after_hook,
+            before_step_hook,
+            after_step_hook,
             event_sender,
             finished_sender,
             storage,
@@ -1240,6 +1480,9 @@ where
                     .try_fold(before_hook, |world, bg_step| {
                         self.run_step(
                             world,
+                            feature.clone(),
+                            rule.clone(),
+                            scenario.clone(),
                             bg_step,
                             true,
                             into_bg_step_ev,
@@ -1270,6 +1513,9 @@ where
                     .try_fold(feature_background, |world, bg_step| {
                         self.run_step(
                             world,
+                            feature.clone(),
+                            rule.clone(),
+                            scenario.clone(),
                             bg_step,
                             true,
                             into_bg_step_ev,
@@ -1288,6 +1534,9 @@ where
                 .try_fold(rule_background, |world, step| {
                     self.run_step(
                         world,
+                        feature.clone(),
+                        rule.clone(),
+                        scenario.clone(),
                         step,
                         false,
                         into_step_ev,
@@ -1515,6 +1764,9 @@ where
     async fn run_step<St, Ps, Sk>(
         &self,
         world_opt: Option<W>,
+        feature: Source<gherkin::Feature>,
+        rule: Option<Source<gherkin::Rule>>,
+        scenario: Source<gherkin::Scenario>,
         step: Source<gherkin::Step>,
         is_background: bool,
         (started, passed, skipped): (St, Ps, Sk),
@@ -1565,6 +1817,17 @@ where
                 }
             };
 
+            if let Some(before_step_hook) = self.before_step_hook.as_ref() {
+                before_step_hook(
+                    &feature,
+                    rule.as_deref(),
+                    &scenario,
+                    &step,
+                    &mut world,
+                )
+                .await;
+            }
+
             match AssertUnwindSafe(async { step_fn(&mut world, ctx).await })
                 .catch_unwind()
                 .await
@@ -1594,15 +1857,57 @@ where
         let _: ScenarioId = scenario_id;
 
         match result {
-            Ok((Some(captures), loc, Some(world))) => {
-                self.send_event(passed(step, captures, loc));
+            Ok((Some(captures), loc, Some(mut world))) => {
+                self.send_event(passed(
+                    step.clone(),
+                    captures.clone(),
+                    loc.clone(),
+                ));
+                if let Some(after_step_hook) = &self.after_step_hook {
+                    after_step_hook(
+                        &feature,
+                        rule.as_deref(),
+                        &scenario,
+                        &step,
+                        &event::Step::Passed(captures, loc),
+                        Some(&mut world),
+                    )
+                    .await;
+                }
                 Ok(world)
             }
-            Ok((_, _, world)) => {
-                self.send_event(skipped(step));
+            Ok((_, _, mut world)) => {
+                self.send_event(skipped(step.clone()));
+                if let Some(after_step_hook) = &self.after_step_hook {
+                    after_step_hook(
+                        &feature,
+                        rule.as_deref(),
+                        &scenario,
+                        &step,
+                        &event::Step::Skipped,
+                        world.as_mut(),
+                    )
+                    .await;
+                }
                 Err(ExecutionFailure::StepSkipped(world))
             }
-            Err((err, captures, loc, world)) => {
+            Err((err, captures, loc, mut world)) => {
+                if let Some(after_step_hook) = &self.after_step_hook {
+                    after_step_hook(
+                        &feature,
+                        rule.as_deref(),
+                        &scenario,
+                        &step,
+                        &event::Step::Failed(
+                            captures.clone(),
+                            loc.clone(),
+                            None,
+                            err.clone(),
+                        ),
+                        world.as_mut(),
+                    )
+                    .await;
+                }
                 Err(ExecutionFailure::StepPanicked {
                     world,
                     step,
