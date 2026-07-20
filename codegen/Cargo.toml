@@ -27,7 +27,7 @@ itertools = "0.15"
 proc-macro2 = "1.0.28"
 quote = "1.0.9"
 regex = "1.5.5"
-syn = { version = "2.0", features = ["derive", "extra-traits", "full"] }
+syn = { version = "3.0", features = ["derive", "extra-traits", "full"] }
 synthez = "0.4"
 
 [dev-dependencies]
