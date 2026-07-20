@@ -28,7 +28,7 @@ proc-macro2 = "1.0.28"
 quote = "1.0.9"
 regex = "1.5.5"
 syn = { version = "2.0", features = ["derive", "extra-traits", "full"] }
-synthez = "0.4"
+synthez = "0.5"
 
 [dev-dependencies]
 cucumber = { path = "..", features = ["libtest", "macros"] }
