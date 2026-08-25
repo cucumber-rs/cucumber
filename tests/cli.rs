@@ -30,6 +30,31 @@ fn invalid_step(_world: &mut World) {
     assert!(false);
 }
 
+#[test]
+fn parses_shard() {
+    let shard = "2/3".parse::<cli::Shard>().expect("invalid shard");
+
+    assert_eq!(shard.index(), 2);
+    assert_eq!(shard.total(), 3);
+}
+
+#[test]
+fn rejects_invalid_shards() {
+    for shard in ["", "1", "1/", "/1", "0/1", "1/0", "2/1", "1/2/3"] {
+        assert!(
+            shard.parse::<cli::Shard>().is_err(),
+            "accepted invalid shard: {shard}",
+        );
+        assert!(
+            cli::Opts::<cli::Empty, cli::Empty, cli::Empty>::try_parse_from([
+                "test", "--shard", shard,
+            ])
+            .is_err(),
+            "CLI accepted invalid shard: {shard}",
+        );
+    }
+}
+
 // This test uses a subcommand with the global option `--tags` to filter on two
 // failing tests and verifies that the error output contains 2 failing steps.
 #[tokio::test]

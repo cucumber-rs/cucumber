@@ -5,6 +5,19 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## Unreleased
+
+### BC Breaks
+
+- Added a `shard` field to the public `cli::Opts` struct.
+
+### Added
+
+- Added scenario sharding across independent test runs with the
+  `--shard INDEX/TOTAL` CLI option.
+
+
+
 
 ## [0.23.0] · 2026-04-23
 [0.23.0]: https://github.com/cucumber-rs/cucumber/tree/v0.23.0

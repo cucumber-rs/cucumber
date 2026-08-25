@@ -27,6 +27,9 @@ Options:
 
           [env: CUCUMBER_FILTER_TAGS=]
 
+      --shard <INDEX/TOTAL>
+          Runs only the selected shard of filtered scenarios
+
   -i, --input <glob>
           Glob pattern to look for feature files with. If not specified, looks for `*.feature` files in the path configured in the test runner
 

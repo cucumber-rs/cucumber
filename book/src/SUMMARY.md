@@ -16,6 +16,7 @@
     - [Retrying failed scenarios](writing/retries.md)
     - [Modules organization](writing/modules.md)
 - [CLI (command-line interface)](cli.md)
+- [Sharding](sharding.md)
 - [Output](output/index.md)
     - [Terminal](output/terminal.md)
     - [JUnit XML report](output/junit.md)
