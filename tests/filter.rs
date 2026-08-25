@@ -1,8 +1,10 @@
-use std::{fmt, io};
+use std::{cell::RefCell, collections::HashSet, fmt, io, rc::Rc};
 
 use cucumber::{
-    StatsWriter, World as _, WriterExt as _, given, then, when, writer,
+    StatsWriter, World as _, WriterExt as _, cli, cli::Parser as _, given,
+    parser, runner, then, when, writer,
 };
+use futures::FutureExt as _;
 
 #[given(regex = r"(\d+) < 10")]
 #[when(regex = r"(\d+) < 10")]
@@ -38,6 +40,88 @@ async fn by_examples() {
     if writer.execution_has_failed() {
         panic!("some steps failed:\n{output}");
     }
+}
+
+#[tokio::test]
+async fn shard_is_applied_after_programmatic_filter() {
+    let cli = cli::Opts::<
+        parser::basic::Cli,
+        runner::basic::Cli,
+        writer::basic::Cli,
+    >::try_parse_from(["test", "--shard", "2/2"])
+    .expect("invalid command line");
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let seen_by_hook = Rc::clone(&seen);
+    let mut output = Output::default();
+
+    World::cucumber()
+        .with_writer(writer::Basic::new(
+            &mut output,
+            writer::Coloring::Never,
+            0,
+        ))
+        .before(move |_, _, scenario, _| {
+            seen_by_hook.borrow_mut().push(scenario.name.clone());
+            async {}.boxed_local()
+        })
+        .with_cli(cli)
+        .filter_run("tests/features/filter/sharding.feature", |_, _, sc| {
+            !sc.tags.iter().any(|tag| tag == "drop")
+        })
+        .await;
+
+    assert_eq!(*seen.borrow(), ["outline scenario 3", "first rule scenario"],);
+}
+
+async fn scenarios_in_shard(shard: Option<&str>) -> Vec<String> {
+    let mut args = vec!["test", "--tags", "@keep"];
+    if let Some(shard) = shard {
+        args.extend(["--shard", shard]);
+    }
+    let cli = cli::Opts::<
+        parser::basic::Cli,
+        runner::basic::Cli,
+        writer::basic::Cli,
+    >::try_parse_from(args)
+    .expect("invalid command line");
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let seen_by_hook = Rc::clone(&seen);
+    let mut output = Output::default();
+
+    World::cucumber()
+        .with_writer(writer::Basic::new(
+            &mut output,
+            writer::Coloring::Never,
+            0,
+        ))
+        .before(move |_, _, scenario, _| {
+            seen_by_hook.borrow_mut().push(scenario.name.clone());
+            async {}.boxed_local()
+        })
+        .with_cli(cli)
+        .run("tests/features/filter/sharding.feature")
+        .await;
+
+    let scenarios = seen.borrow().clone();
+    scenarios
+}
+
+#[tokio::test]
+async fn shards_partition_cli_filtered_scenarios() {
+    let all = scenarios_in_shard(None).await;
+
+    assert_eq!(scenarios_in_shard(Some("1/1")).await, all);
+    assert!(scenarios_in_shard(Some("6/6")).await.is_empty());
+
+    let first = scenarios_in_shard(Some("1/2")).await;
+    let second = scenarios_in_shard(Some("2/2")).await;
+    let first_set = first.iter().collect::<HashSet<_>>();
+    let second_set = second.iter().collect::<HashSet<_>>();
+    let union = first_set.union(&second_set).copied().collect::<HashSet<_>>();
+    let expected = all.iter().collect::<HashSet<_>>();
+
+    assert!(first_set.is_disjoint(&second_set));
+    assert_eq!(union, expected);
 }
 
 #[derive(Clone, Copy, Debug, Default, cucumber::World)]

@@ -713,34 +713,47 @@ where
         let cli::Opts {
             re_filter,
             tags_filter,
+            shard,
             parser: parser_cli,
             runner: runner_cli,
             writer: writer_cli,
             ..
         } = self.cli.unwrap_or_else(cli::Opts::<_, _, _, _>::parsed);
 
-        let filter = move |feat: &gherkin::Feature,
-                           rule: Option<&gherkin::Rule>,
-                           scenario: &gherkin::Scenario| {
-            re_filter.as_ref().map_or_else(
-                || {
-                    tags_filter.as_ref().map_or_else(
-                        || filter(feat, rule, scenario),
-                        |tags| {
-                            // The order `Feature` -> `Rule` -> `Scenario`
-                            // matters here.
-                            tags.eval(
-                                feat.tags
-                                    .iter()
-                                    .chain(rule.iter().flat_map(|r| &r.tags))
-                                    .chain(scenario.tags.iter()),
-                            )
-                        },
-                    )
-                },
-                |re| re.is_match(&scenario.name),
-            )
-        };
+        let mut scenario_index = 0;
+        let mut filter =
+            move |feat: &gherkin::Feature,
+                  rule: Option<&gherkin::Rule>,
+                  scenario: &gherkin::Scenario| {
+                let matches = re_filter.as_ref().map_or_else(
+                    || {
+                        tags_filter.as_ref().map_or_else(
+                            || filter(feat, rule, scenario),
+                            |tags| {
+                                // The order `Feature` -> `Rule` -> `Scenario`
+                                // matters here.
+                                tags.eval(
+                                    feat.tags
+                                        .iter()
+                                        .chain(
+                                            rule.iter().flat_map(|r| &r.tags),
+                                        )
+                                        .chain(scenario.tags.iter()),
+                                )
+                            },
+                        )
+                    },
+                    |re| re.is_match(&scenario.name),
+                );
+                if !matches {
+                    return false;
+                }
+
+                let should_run =
+                    shard.is_none_or(|s| s.contains(scenario_index));
+                scenario_index += 1;
+                should_run
+            };
 
         let Self { parser, runner, mut writer, .. } = self;
 

@@ -91,6 +91,7 @@ let cli = cli::Opts::<_, _, writer::basic::Cli>::parsed();
 let cli = cli::Opts {
     re_filter: cli.re_filter,
     tags_filter: cli.tags_filter,
+    shard: cli.shard,
     parser: cli.parser,
     runner: cli.runner,
     // Replicate CLI arguments for every `writer::Basic`.

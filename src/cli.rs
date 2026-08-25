@@ -27,7 +27,10 @@
 //! [`Writer`]: crate::Writer
 //! [1]: https://cucumber.io/docs/cucumber/api#tag-expressions
 
+use std::{num::NonZeroUsize, str::FromStr};
+
 pub use clap::{Args, Parser};
+use derive_more::with_trait::{Display, Error};
 use gherkin::tagexpr::TagOperation;
 use regex::Regex;
 
@@ -116,6 +119,10 @@ where
     )]
     pub tags_filter: Option<TagOperation>,
 
+    /// Runs only the selected shard of filtered scenarios.
+    #[arg(long, value_name = "INDEX/TOTAL", global = true)]
+    pub shard: Option<Shard>,
+
     /// [`Parser`] CLI options.
     ///
     /// [`Parser`]: crate::Parser
@@ -137,6 +144,68 @@ where
     /// Additional custom CLI options.
     #[command(flatten)]
     pub custom: Custom,
+}
+
+/// A one-based shard index and the total number of shards.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Shard {
+    /// One-based index of this shard.
+    index: NonZeroUsize,
+
+    /// Total number of shards.
+    total: NonZeroUsize,
+}
+
+impl Shard {
+    /// Returns the one-based index of this shard.
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.index.get()
+    }
+
+    /// Returns the total number of shards.
+    #[must_use]
+    pub const fn total(self) -> usize {
+        self.total.get()
+    }
+
+    /// Indicates whether the zero-based scenario index belongs to this shard.
+    pub(crate) const fn contains(self, scenario: usize) -> bool {
+        scenario % self.total() == self.index() - 1
+    }
+}
+
+impl FromStr for Shard {
+    type Err = ShardParseError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let (index, total) =
+            value.split_once('/').ok_or(ShardParseError::InvalidFormat)?;
+        let index = index
+            .parse::<NonZeroUsize>()
+            .map_err(|_err| ShardParseError::InvalidFormat)?;
+        let total = total
+            .parse::<NonZeroUsize>()
+            .map_err(|_err| ShardParseError::InvalidFormat)?;
+
+        if index > total {
+            return Err(ShardParseError::IndexExceedsTotal);
+        }
+
+        Ok(Self { index, total })
+    }
+}
+
+/// Error parsing a [`Shard`] from a string.
+#[derive(Clone, Copy, Debug, Display, Eq, Error, PartialEq)]
+pub enum ShardParseError {
+    /// The value is not in `INDEX/TOTAL` format with nonzero integers.
+    #[display("expected nonzero integers in INDEX/TOTAL format")]
+    InvalidFormat,
+
+    /// The shard index is greater than the total number of shards.
+    #[display("shard INDEX must not exceed TOTAL")]
+    IndexExceedsTotal,
 }
 
 impl<Parser, Runner, Writer, Custom> Opts<Parser, Runner, Writer, Custom>
