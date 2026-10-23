@@ -101,6 +101,19 @@ enum Indicator {
     Retried,
 }
 
+/// Path identifying a [`Scenario`] in a [`Summarize`]d run: its [`Feature`] and
+/// optional [`Rule`] included, to avoid collisions between identical looking
+/// [`Scenario`]s.
+///
+/// [`Feature`]: gherkin::Feature
+/// [`Rule`]: gherkin::Rule
+/// [`Scenario`]: gherkin::Scenario
+type ScenarioPath = (
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
+    Source<gherkin::Scenario>,
+);
+
 /// Possible states of a [`Summarize`] [`Writer`].
 #[derive(Clone, Copy, Debug)]
 enum State {
@@ -166,6 +179,11 @@ pub struct Summarize<Writer> {
     /// [`Scenario`]: gherkin::Scenario
     failed_hooks: usize,
 
+    /// [`Scenario`]s that finished as failed, in order of their completion.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    failed_scenarios: Vec<ScenarioPath>,
+
     /// Current [`State`] of this [`Writer`].
     state: State,
 
@@ -182,14 +200,7 @@ pub struct Summarize<Writer> {
 /// [`Feature`]: gherkin::Feature
 /// [`Rule`]: gherkin::Rule
 /// [`Scenario`]: gherkin::Scenario
-type HandledScenarios = HashMap<
-    (
-        Source<gherkin::Feature>,
-        Option<Source<gherkin::Rule>>,
-        Source<gherkin::Scenario>,
-    ),
-    Indicator,
->;
+type HandledScenarios = HashMap<ScenarioPath, Indicator>;
 
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
@@ -313,6 +324,7 @@ impl<Writer> From<Writer> for Summarize<Writer> {
             steps: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
             parsing_errors: 0,
             failed_hooks: 0,
+            failed_scenarios: Vec::new(),
             state: State::InProgress,
             handled_scenarios: HashMap::new(),
         }
@@ -439,6 +451,9 @@ impl<Writer> Summarize<Writer> {
                     Some(Indicator::Skipped) => {
                         self.scenarios.skipped -= 1;
                         self.scenarios.failed += 1;
+                        _ = self
+                            .handled_scenarios
+                            .insert(path, Indicator::Failed);
                     }
                     None => {
                         self.scenarios.failed += 1;
@@ -462,9 +477,14 @@ impl<Writer> Summarize<Writer> {
                     .get(&path)
                     .is_some_and(|ind| matches!(ind, Indicator::Retried));
 
-                if !is_retried && self.handled_scenarios.remove(&path).is_none()
-                {
-                    self.scenarios.passed += 1;
+                if !is_retried {
+                    match self.handled_scenarios.remove(&path) {
+                        None => self.scenarios.passed += 1,
+                        Some(Indicator::Failed) => {
+                            self.failed_scenarios.push(path);
+                        }
+                        Some(Indicator::Skipped | Indicator::Retried) => {}
+                    }
                 }
             }
         }
@@ -569,6 +589,8 @@ impl Styles {
             "".into()
         };
 
+        let failed_scenarios = self.failed_scenarios_list(summary);
+
         let comma = if !parsing_errors.is_empty() && !hook_errors.is_empty() {
             self.err(", ")
         } else {
@@ -577,11 +599,41 @@ impl Styles {
 
         format!(
             "{summary}\n{features}\n{rules}{scenarios}{scenarios_stats}\n\
-             {steps}{steps_stats}\n{parsing_errors}{comma}{hook_errors}",
+             {steps}{steps_stats}\n{failed_scenarios}\
+             {parsing_errors}{comma}{hook_errors}",
             summary = self.bold(self.header("[Summary]")),
         )
         .trim_end_matches('\n')
         .to_owned()
+    }
+
+    /// Formats the list of failed [`Scenario`]s of the given [`Summarize`]d
+    /// [`Writer`], one per line, or an empty [`String`] if none has failed.
+    ///
+    /// [`Scenario`]: gherkin::Scenario
+    fn failed_scenarios_list<W>(&self, summary: &Summarize<W>) -> String {
+        if summary.failed_scenarios.is_empty() {
+            return String::new();
+        }
+
+        let list = summary
+            .failed_scenarios
+            .iter()
+            .map(|(feat, rule, sc)| {
+                let location = feat.path.as_ref().map_or_else(
+                    || format!("line {}", sc.position.line),
+                    |p| format!("{}:{}", p.display(), sc.position.line),
+                );
+                let names = [Some(&feat.name), rule.as_ref().map(|r| &r.name)]
+                    .into_iter()
+                    .flatten()
+                    .chain([&sc.name])
+                    .join(" › ");
+                format!("  {location}: {names}")
+            })
+            .join("\n");
+
+        format!("{}\n{}\n", self.bold(self.err("Failed scenarios:")), list)
     }
 
     /// Formats [`Stats`] for a terminal output.
