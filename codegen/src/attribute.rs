@@ -18,13 +18,32 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use regex::Regex;
 use syn::{
-    parse::{Parse, ParseStream},
+    parse::{Parse, ParseStream, Parser as _},
     parse_quote,
     spanned::Spanned as _,
 };
 
 /// Names of default [`Parameter`]s.
 const DEFAULT_PARAMETERS: [&str; 5] = ["int", "float", "word", "string", ""];
+/// Additional built-in parameter aliases in cucumber-expressions 20.1.0.
+const JS_PARAMETERS: [&str; 6] = ["double", "bigdecimal", "byte", "short", "long", "biginteger"];
+
+fn default_parameter(name: &str, javascript: bool) -> bool {
+    DEFAULT_PARAMETERS.contains(&name) || (javascript && JS_PARAMETERS.contains(&name))
+}
+
+/// Matchers pinned to the JavaScript 20.1.0 built-in vocabulary. Rust's regex
+/// Unicode digit/whitespace classes differ, so spell the JavaScript sets out.
+fn javascript_parameter(name: &str) -> Option<&'static str> {
+    match name {
+        "int" | "byte" | "short" | "long" | "biginteger" => Some(r"-?[0-9]+"),
+        "float" | "double" | "bigdecimal" => Some(r"[-+]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:E[+-]?[0-9]+)?"),
+        "word" => Some(r"[^\t\n\x0b\x0c\r \u{00a0}\u{1680}\u{2000}-\u{200a}\u{2028}\u{2029}\u{202f}\u{205f}\u{3000}\u{feff}]+"),
+        "string" => Some(r#""([^"\\]*(?:\\[^\n\r\u{2028}\u{2029}][^"\\]*)*)"|'([^'\\]*(?:\\[^\n\r\u{2028}\u{2029}][^'\\]*)*)'"#),
+        "" => Some(r"[^\n\r\u{2028}\u{2029}]*"),
+        _ => None,
+    }
+}
 
 /// Generates code of `#[given]`, `#[when]` and `#[then]` attribute macros
 /// expansion.
@@ -46,6 +65,9 @@ struct Step {
     /// Argument of the attribute.
     attr_arg: AttributeArgument,
 
+    /// Explicit eager owned argument conversion at callback construction.
+    prepare_before_timeout: bool,
+
     /// Function the attribute is applied to.
     func: syn::ItemFn,
 
@@ -63,7 +85,20 @@ impl Step {
         attr: TokenStream,
         body: TokenStream,
     ) -> syn::Result<Self> {
-        let attr_arg = syn::parse2::<AttributeArgument>(attr)?;
+        let (attr_arg, prepare_before_timeout) = (|input: ParseStream<'_>| {
+            let argument = input.parse::<AttributeArgument>()?;
+            let mut eager = false;
+            if !input.is_empty() {
+                input.parse::<syn::Token![,]>()?;
+                let flag = input.parse::<syn::Ident>()?;
+                if flag != "prepare_before_timeout" {
+                    return Err(syn::Error::new(flag.span(), "expected `prepare_before_timeout`"));
+                }
+                eager = true;
+                if input.peek(syn::Token![,]) { input.parse::<syn::Token![,]>()?; }
+            }
+            Ok((argument, eager))
+        }).parse2(attr)?;
         let mut func = syn::parse2::<syn::ItemFn>(body)?;
 
         let step_arg_name = {
@@ -96,6 +131,7 @@ impl Step {
         Ok(Self {
             attr_name,
             attr_arg,
+            prepare_before_timeout,
             func,
             arg_name_of_step_context: step_arg_name,
         })
@@ -111,7 +147,35 @@ impl Step {
         let (func_args, addon_parsing) =
             self.fn_arguments_and_additional_parsing()?;
 
+        // The explicit JavaScript policy also admits the same parameter-name
+        // vocabulary as cucumber-expressions 20.1.0. Native derive/expr remain
+        // permissive; this check changes only expr_js registration.
+        if let AttributeArgument::ExpressionJs(expression) = &self.attr_arg {
+            let source = expression.value();
+            let parsed = Expression::parse(&source).map_err(|error|
+                syn::Error::new(expression.span(), error.to_string()))?;
+            for item in &parsed.0 {
+                if let SingleExpression::Parameter(parameter) = item {
+                    let name = parameter.input.fragment();
+                    if name.chars().any(|character| "[]()$.|?*+".contains(character)) {
+                        return Err(syn::Error::new(expression.span(), format!(
+                            "invalid JavaScript parameter name `{name}`: cucumber-expressions 20.1.0 forbids [ ] ( ) $ . | ? * +"
+                        )));
+                    }
+                }
+            }
+        }
         let regex = self.gen_regex()?;
+        let options = if let AttributeArgument::ExpressionJs(expression) = &self.attr_arg {
+            let value = expression.value();
+            let parameters = Parameters::new(&value, &self.func,
+                self.arg_name_of_step_context.as_ref(), true)?;
+            let custom = parameters.0.iter().filter_map(|parameter| {
+                let name = parameter.param.input.fragment();
+                (!default_parameter(name, true)).then(|| ((*name).to_owned(), parameter.ty.clone()))
+            }).collect::<Vec<_>>();
+            crate::expression_metadata::options(expression, javascript_parameter, &custom)?
+        } else { quote! { ::cucumber::step::DefinitionOptions::new() } };
         let allow_trivial_regex_attr =
             matches!(self.attr_arg, AttributeArgument::Literal(_))
                 .then(|| quote! { #[allow(clippy::trivial_regex)] });
@@ -119,6 +183,50 @@ impl Step {
         let awaiting = func.sig.asyncness.map(|_| quote! { .await });
         let unwrapping = (!self.returns_unit())
             .then(|| quote! { .unwrap_or_else(|e| panic!("{}", e)) });
+
+        let step_function = syn::Ident::new("__cucumber_step_function", proc_macro2::Span::mixed_site());
+        let string_transform = if let AttributeArgument::ExpressionJs(expression) = &self.attr_arg {
+            let expression_value = expression.value();
+            let parsed = Expression::parse(&expression_value).map_err(|error|
+                syn::Error::new(expression.span(), error.to_string()))?;
+            let prefixes = parsed.0.iter().filter_map(|item| match item {
+                SingleExpression::Parameter(parameter) if *parameter.input.fragment() == "string" => Some(format!("__{}_", parameter.id)),
+                _ => None,
+            }).collect::<Vec<_>>();
+            quote! {
+                let mut __cucumber_ctx = __cucumber_ctx;
+                for (name, value) in &mut __cucumber_ctx.matches {
+                    if false #( || name.as_ref().is_some_and(|name| name.starts_with(#prefixes)) )* {
+                        *value = value.replace("\\\"", "\"").replace("\\'", "'");
+                    }
+                }
+            }
+        } else { TokenStream::new() };
+
+        let callback = if self.prepare_before_timeout {
+            let (owned, borrowed) = self.eager_argument_preparation()?;
+            quote! {
+                let #step_function = #func_name;
+                #string_transform
+                #owned
+                let f = async move {
+                    #borrowed
+                    let _ = #step_function(__cucumber_world, #func_args) #awaiting #unwrapping;
+                };
+                ::std::boxed::Box::pin(f)
+            }
+        } else {
+            // Preserve the original lazy macro expansion, including conversion.
+            quote! {
+                let f = async move {
+                    let #step_function = #func_name;
+                    #string_transform
+                    #addon_parsing
+                    let _ = #step_function(__cucumber_world, #func_args) #awaiting #unwrapping;
+                };
+                ::std::boxed::Box::pin(f)
+            }
+        };
 
         Ok(quote! {
             #func
@@ -132,6 +240,11 @@ impl Step {
                     <#world as ::cucumber::codegen::WorldInventory>::#step_type;
 
                 StepAlias {
+                    options: || {
+                        static LAZY: ::std::sync::LazyLock<::cucumber::step::DefinitionOptions> =
+                            ::std::sync::LazyLock::new(|| { #options });
+                        LAZY.clone()
+                    },
                     loc: ::cucumber::step::Location {
                         path: ::std::file!(),
                         line: ::std::line!(),
@@ -145,13 +258,7 @@ impl Step {
                         LAZY.clone()
                     },
                     func: |__cucumber_world, __cucumber_ctx| {
-                        let f = async move {
-                            #addon_parsing
-                            let _ = #func_name(__cucumber_world, #func_args)
-                                #awaiting
-                                #unwrapping;
-                        };
-                        ::std::boxed::Box::pin(f)
+                        #callback
                     },
                 }
             });
@@ -180,7 +287,7 @@ impl Step {
     ) -> syn::Result<(TokenStream, Option<TokenStream>)> {
         let is_regex_or_expr = matches!(
             self.attr_arg,
-            AttributeArgument::Regex(_) | AttributeArgument::Expression(_),
+            AttributeArgument::Regex(_) | AttributeArgument::Expression(_) | AttributeArgument::ExpressionJs(_),
         );
         let func = &self.func;
 
@@ -284,6 +391,30 @@ impl Step {
         } else {
             Ok((TokenStream::default(), None))
         }
+    }
+
+    /// Separates owned preparation from bindings borrowing the returned future's
+    /// Context/vector. Never capture a reference into a value moved into it.
+    fn eager_argument_preparation(&self) -> syn::Result<(TokenStream, TokenStream)> {
+        if matches!(self.attr_arg, AttributeArgument::Literal(_)) {
+            return Ok((TokenStream::new(), TokenStream::new()));
+        }
+        if find_first_slice(&self.func.sig).is_some() {
+            let (_, parsing) = self.fn_arguments_and_additional_parsing()?;
+            return Ok((quote! { #parsing }, TokenStream::new()));
+        }
+        let mut owned = Vec::new();
+        let mut borrowed = Vec::new();
+        for arg in self.func.sig.inputs.iter().skip(1) {
+            let (ident, parsing) = self.arg_ident_and_parse_code(arg)?;
+            if self.arg_name_of_step_context.as_ref().is_some_and(|step| step == ident) {
+                borrowed.push(parsing);
+            } else { owned.push(parsing); }
+        }
+        Ok((quote! {
+            let mut __cucumber_iter = __cucumber_ctx.matches.iter().skip(1);
+            #( #owned )*
+        }, quote! { #( #borrowed )* }))
     }
 
     /// Composes a name of the `cucumber::codegen::WorldInventory` associated
@@ -428,9 +559,8 @@ impl Step {
 
                 Ok(quote! { ::cucumber::codegen::Regex::new(#re).unwrap() })
             }
-            AttributeArgument::Expression(expr) => {
-                self.gen_expression_regex(expr)
-            }
+            AttributeArgument::Expression(expr) => self.gen_expression_regex(expr, false),
+            AttributeArgument::ExpressionJs(expr) => self.gen_expression_regex(expr, true),
         }
     }
 
@@ -443,12 +573,14 @@ impl Step {
     fn gen_expression_regex(
         &self,
         expr: &syn::LitStr,
+        javascript: bool,
     ) -> syn::Result<TokenStream> {
         let expr = expr.value();
         let params = Parameters::new(
             &expr,
             &self.func,
             self.arg_name_of_step_context.as_ref(),
+            javascript,
         )?;
 
         let provider_impl =
@@ -491,7 +623,7 @@ struct ParameterProvider<'p> {
 }
 
 /// Collection of [`ParameterProvider`]s.
-struct Parameters<'p>(Vec<ParameterProvider<'p>>);
+struct Parameters<'p>(Vec<ParameterProvider<'p>>, bool);
 
 impl<'p> Parameters<'p> {
     /// Creates new [`Parameters`].
@@ -506,6 +638,7 @@ impl<'p> Parameters<'p> {
         expr: &'p str,
         func: &syn::ItemFn,
         step: Option<&syn::Ident>,
+        javascript: bool,
     ) -> syn::Result<Self> {
         let expr = Expression::parse(expr).map_err(|e| {
             syn::Error::new(
@@ -540,7 +673,7 @@ impl<'p> Parameters<'p> {
             })
             .zip(param_tys.into_iter().map(Some).chain(iter::repeat(None)))
             .filter_map(|(ast, param_ty)| {
-                if DEFAULT_PARAMETERS.iter().any(|s| s == &**ast) {
+                if default_parameter(ast.input.fragment(), javascript) {
                     // If parameter is default, it's OK if there is no type
                     // corresponding to it, as we know its regex.
                     param_ty
@@ -562,7 +695,7 @@ impl<'p> Parameters<'p> {
                 }
             })
             .collect::<syn::Result<Vec<_>>>()
-            .map(Self)
+            .map(|parameters| Self(parameters, javascript))
     }
 
     /// Generates code asserting that all the corresponding
@@ -586,7 +719,7 @@ impl<'p> Parameters<'p> {
                 let name = par.param.input.fragment();
                 let ty = &par.ty;
 
-                if DEFAULT_PARAMETERS.contains(name) {
+                if default_parameter(name, self.1) {
                     // We do use here custom machinery, rather than using
                     // existing one from `const_assertions` crate, for the
                     // purpose of better errors reporting when the assertion
@@ -668,9 +801,14 @@ impl<'p> Parameters<'p> {
             .iter()
             .filter_map(|par| {
                 let name = par.param.input.fragment();
-                (!DEFAULT_PARAMETERS.contains(name)).then_some((*name, &par.ty))
+                (!default_parameter(name, self.1)).then_some((*name, &par.ty))
             })
             .unzip();
+
+        let (builtin_names, builtin_patterns): (Vec<_>, Vec<_>) = if self.1 {
+            DEFAULT_PARAMETERS.iter().chain(JS_PARAMETERS.iter())
+                .map(|name| (*name, javascript_parameter(name).expect("known JavaScript parameter"))).unzip()
+        } else { (Vec::new(), Vec::new()) };
 
         quote! {
             #[automatically_derived]
@@ -684,6 +822,9 @@ impl<'p> Parameters<'p> {
                     &self,
                     input: &::cucumber::codegen::Spanned<'s>,
                 ) -> ::std::option::Option<Self::Value> {
+                    #( if *input.fragment() == #builtin_names {
+                        ::std::option::Option::Some(#builtin_patterns)
+                    } else )*
                     #( if *input.fragment() == #custom_par {
                         ::std::option::Option::Some(
                             <#custom_par_ty as ::cucumber::Parameter>::REGEX,
@@ -708,6 +849,9 @@ enum AttributeArgument {
 
     /// `#[step(expr = "cucumber-expression")]` case.
     Expression(syn::LitStr),
+
+    /// Explicit cucumber-expressions 20.1.0 JavaScript parameter semantics.
+    ExpressionJs(syn::LitStr),
 }
 
 impl Parse for AttributeArgument {
@@ -729,15 +873,18 @@ impl Parse for AttributeArgument {
                 Some(i) if i == "expr" => Ok(Self::Expression(
                     to_string_literal(to_literal(arg.value)?)?,
                 )),
+                Some(i) if i == "expr_js" => Ok(Self::ExpressionJs(
+                    to_string_literal(to_literal(arg.value)?)?,
+                )),
                 _ => Err(syn::Error::new(
                     arg.span(),
-                    "expected `regex` or `expr` argument",
+                    "expected `regex`, `expr` or `expr_js` argument",
                 )),
             },
 
             syn::Meta::List(_) | syn::Meta::Path(_) => Err(syn::Error::new(
                 arg.span(),
-                "expected string literal, `regex` or `expr` argument",
+                "expected string literal, `regex`, `expr` or `expr_js` argument",
             )),
         }
     }

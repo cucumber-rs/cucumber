@@ -1,0 +1,63 @@
+{
+  "package": "@cucumber/cucumber",
+  "version": "13.3.0",
+  "license": "MIT",
+  "tag": "https://github.com/cucumber/cucumber-js/tree/v13.3.0",
+  "lock_entry": {
+    "version": "13.3.0",
+    "resolved": "https://registry.npmjs.org/@cucumber/cucumber/-/cucumber-13.3.0.tgz",
+    "integrity": "sha512-6OSoj/SQogJwEjoNrPZ5gtyTDwbmtCDuzJ/hc81nOVhwEBAO6ypgdWd+qCScOdyZxgtQvUWG534LBWb5h9/Y8Q==",
+    "license": "MIT",
+    "dependencies": {
+      "@cucumber/ci-environment": "15.0.0",
+      "@cucumber/cucumber-expressions": "20.1.0",
+      "@cucumber/gherkin": "42.0.1",
+      "@cucumber/gherkin-streams": "7.0.1",
+      "@cucumber/gherkin-utils": "12.0.2",
+      "@cucumber/html-formatter": "24.2.0",
+      "@cucumber/junit-xml-formatter": "0.15.0",
+      "@cucumber/message-streams": "5.0.1",
+      "@cucumber/messages": "34.2.1",
+      "@cucumber/pretty-formatter": "4.1.0",
+      "@cucumber/tag-expressions": "11.0.1",
+      "assertion-error-formatter": "^3.0.0",
+      "cli-table3": "0.6.5",
+      "commander": "^15.0.0",
+      "debug": "^4.3.4",
+      "error-stack-parser": "^2.1.4",
+      "figures": "^6.0.0",
+      "has-ansi": "^6.0.0",
+      "indent-string": "^5.0.0",
+      "is-installed-globally": "^1.0.0",
+      "knuth-shuffle-seeded": "^1.0.6",
+      "lodash.merge": "^4.6.2",
+      "lodash.mergewith": "^4.6.2",
+      "luxon": "3.7.2",
+      "read-package-up": "^12.0.0",
+      "semver": "7.8.5",
+      "string-argv": "0.3.2",
+      "supports-color": "^11.0.0",
+      "type-fest": "^5.0.0",
+      "util-arity": "^1.1.0",
+      "yaml": "^2.2.2",
+      "yup": "1.7.1"
+    },
+    "bin": {
+      "cucumber-js": "bin/cucumber.js"
+    },
+    "engines": {
+      "node": "22 || 24 || >=26"
+    },
+    "funding": {
+      "url": "https://opencollective.com/cucumber"
+    }
+  },
+  "sha256": {
+    "lib/formatter/rerun_formatter.js": "00a5336bb013522253a928ab009752b2583ee31193404eaebb3e69bcca8f3aab",
+    "lib/formatter/helpers/event_data_collector.js": "1f4deb20c5779a3f4e0f73b86970109c66806df2369f7b3853de916718ed0282",
+    "lib/formatter/helpers/gherkin_document_parser.js": "b73a90f675ead1e0c3f073fdba9580b02ea71488bcfd5576dadcf3d6d14fb8e4",
+    "LICENSE": "75f1b216a5b3cc0cdc1172b701b358cb47e35a3a1db7cfb8ef5d46267d901658"
+  },
+  "preparation": "npm install --ignore-scripts --no-audit --no-fund --prefix tests/interop/rerun",
+  "execution": "only imported by oracle.mjs from the completed Phase44 BDD harness"
+}

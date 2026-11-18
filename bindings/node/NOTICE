@@ -1,0 +1,27 @@
+GQAdonis Cucumber fork: local native Node/TypeScript SDK
+
+This adapter links the shared cucumber-sdk and existing Rust Cucumber/Gherkin
+implementation. It is not an official upstream package or endorsement.
+
+Cucumber Rust core:
+Copyright (c) 2018-2026 Brendan Molloy, Ilya Solovyiov, Kai Ren.
+https://github.com/cucumber-rs/cucumber
+MIT OR Apache-2.0; full license texts accompany this package.
+
+Gherkin Rust parser:
+Copyright (c) 2018-2026 Brendan Molloy.
+https://github.com/cucumber-rs/gherkin
+MIT OR Apache-2.0; retained license texts are in licenses/.
+
+Gherkin grammar:
+Copyright (c) 2017 Cucumber Ltd, Gaspar Nagy, Björn Rasmusson,
+Peter Sergeant, and contributors.
+MIT; retained license text is in licenses/LICENSE-GHERKIN.
+
+NAPI-RS provides Node-API transport. This package's independent Cargo manifest
+pins napi 3.16.2, napi-derive 3.7.0 and napi-build 2.6.0.
+https://github.com/napi-rs/napi-rs
+
+This source notice is not a complete resolved transitive dependency inventory.
+Final native artifact dependency licensing is a packaging/review requirement
+before any public distribution; registry publication is not authorized.

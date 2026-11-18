@@ -1,0 +1,49 @@
+[package]
+name = "gherkin"
+version = "0.16.0"
+edition = "2018"
+rust-version = "1.88"
+description = """\
+    Pure Rust implementation of Gherkin language (`.feature` file) for \
+    Cucumber testing framework.\
+    """
+license = "MIT OR Apache-2.0"
+authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
+documentation = "https://docs.rs/gherkin"
+homepage = "https://github.com/cucumber-rs/gherkin"
+repository = "https://github.com/cucumber-rs/gherkin"
+readme = "README.md"
+categories = ["compilers", "parser-implementations"]
+keywords = ["gherkin", "cucumber", "cucumber-gherkin", "testing", "bdd"]
+include = ["/src/", "/build.rs", "/LICENSE-*", "/README.md", "/CHANGELOG.md"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["parser"]
+# Enables ability to parse AST.
+parser = ["dep:typed-builder"]
+
+[dependencies]
+peg = "0.6.3"
+textwrap = "0.16"
+thiserror = "2.0"
+
+# "parser" feature dependencies.
+typed-builder = { version = "0.23", optional = true }
+
+# "serde" feature enables ability to serialize/deserialize AST.
+serde = { version = "1.0.103", features = ["derive"], optional = true }
+
+# "juniper" feature enables ability to use AST as GraphQL types.
+juniper = { version = "0.17", default-features = false, optional = true }
+
+[build-dependencies]
+heck = "0.5"
+quote = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+syn = "2.0"
+

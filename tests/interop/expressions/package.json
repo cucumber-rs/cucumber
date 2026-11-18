@@ -1,0 +1,9 @@
+{
+  "name": "cucumber-expression-compatibility-oracle",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cucumber/cucumber-expressions": "20.1.0",
+    "@cucumber/tag-expressions": "11.0.1"
+  }
+}

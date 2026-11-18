@@ -13,6 +13,10 @@
 //!
 //! [`Step`]: gherkin::Step
 
+mod options;
+
+pub use options::DefinitionOptions;
+
 use std::{
     cmp::Ordering,
     collections::HashMap,
@@ -36,40 +40,68 @@ pub type Step<World> =
 pub type WithContext<'me, World> =
     (&'me Step<World>, regex::CaptureLocations, Option<Location>, Context);
 
+/// Policy for resolving a step definition from a Gherkin step.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum Matching {
+    /// Search only definitions registered under the step's keyword type.
+    ///
+    /// This is the backwards-compatible default.
+    #[default]
+    KeywordSpecific,
+
+    /// Search all Given, When and Then definitions, regardless of keyword.
+    ///
+    /// Like Cucumber.js, multiple matching definitions are ambiguous even when
+    /// registered under different keywords. This enables matching compatibility,
+    /// not complete Cucumber.js runtime compatibility.
+    KeywordIndependent,
+}
+
+struct Registration<W> {
+    function: Step<W>,
+    options: DefinitionOptions,
+}
+impl<W> Clone for Registration<W> {
+    fn clone(&self) -> Self { Self { function: self.function, options: self.options.clone() } }
+}
+
 /// Collection of [`Step`]s.
 ///
 /// Every [`Step`] has to match with exactly 1 [`Regex`].
 #[derive(Debug)]
 pub struct Collection<World> {
+    /// Policy used by [`Self::find()`].
+    matching: Matching,
+
     /// Collection of [Given] [`Step`]s.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     #[debug("{:?}",
         given.iter()
-            .map(|(re, step)| (re, format!("{step:p}")))
+            .map(|(re, step)| (re, format!("{:p}", step.function)))
             .collect::<HashMap<_, _>>(),
     )]
-    given: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    given: HashMap<(HashableRegex, Option<Location>), Registration<World>>,
 
     /// Collection of [When] [`Step`]s.
     ///
     /// [When]: https://cucumber.io/docs/gherkin/reference#when
     #[debug("{:?}",
         when.iter()
-            .map(|(re, step)| (re, format!("{step:p}")))
+            .map(|(re, step)| (re, format!("{:p}", step.function)))
             .collect::<HashMap<_, _>>(),
     )]
-    when: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    when: HashMap<(HashableRegex, Option<Location>), Registration<World>>,
 
     /// Collection of [Then] [`Step`]s.
     ///
     /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     #[debug("{:?}",
         then.iter()
-            .map(|(re, step)| (re, format!("{step:p}")))
+            .map(|(re, step)| (re, format!("{:p}", step.function)))
             .collect::<HashMap<_, _>>(),
     )]
-    then: HashMap<(HashableRegex, Option<Location>), Step<World>>,
+    then: HashMap<(HashableRegex, Option<Location>), Registration<World>>,
 }
 
 // Implemented manually to omit redundant `World: Clone` trait bound, imposed by
@@ -77,6 +109,7 @@ pub struct Collection<World> {
 impl<World> Clone for Collection<World> {
     fn clone(&self) -> Self {
         Self {
+            matching: self.matching,
             given: self.given.clone(),
             when: self.when.clone(),
             then: self.then.clone(),
@@ -89,6 +122,7 @@ impl<World> Clone for Collection<World> {
 impl<World> Default for Collection<World> {
     fn default() -> Self {
         Self {
+            matching: Matching::default(),
             given: HashMap::new(),
             when: HashMap::new(),
             then: HashMap::new(),
@@ -103,17 +137,49 @@ impl<World> Collection<World> {
         Self::default()
     }
 
+    /// Selects how [`Self::find()`] searches registered definitions.
+    #[must_use]
+    pub fn matching(mut self, matching: Matching) -> Self {
+        self.matching = matching;
+        self
+    }
+
+    /// Captures the actual final registrations and matching policy for reporting.
+    ///
+    /// Duplicate map keys have already been replaced by the collection's normal
+    /// insertion semantics. No handler is executed and no source is inferred.
+    #[must_use]
+    pub fn support_code(&self) -> crate::support_code::Snapshot {
+        crate::support_code::Snapshot::new(self.matching,
+            [(StepType::Given, &self.given), (StepType::When, &self.when),
+                (StepType::Then, &self.then)].into_iter().flat_map(|(keyword, collection)| {
+                    collection.iter().map(move |((regex, location), registration)|
+                        (keyword, regex.0.clone(), *location, registration.options.expression.clone(),
+                            registration.options.regular_expression.clone()))
+                }))
+    }
+
     /// Adds a [Given] [`Step`] matching the given `regex`.
     ///
     /// [Given]: https://cucumber.io/docs/gherkin/reference#given
     #[must_use]
     pub fn given(
-        mut self,
+        self,
         loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        _ = self.given.insert((regex.into(), loc), step);
+        self.given_with_options(loc, regex, step, DefinitionOptions::default())
+    }
+
+    /// Inserts a Given registration with explicit options.
+    ///
+    /// Replacing the same regex/location key replaces both handler and options.
+    #[must_use]
+    pub fn given_with_options(mut self, loc: Option<Location>, regex: Regex,
+        step: Step<World>, options: DefinitionOptions) -> Self
+    {
+        drop(self.given.insert((regex.into(), loc), Registration { function: step, options }));
         self
     }
 
@@ -122,12 +188,22 @@ impl<World> Collection<World> {
     /// [When]: https://cucumber.io/docs/gherkin/reference#when
     #[must_use]
     pub fn when(
-        mut self,
+        self,
         loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        _ = self.when.insert((regex.into(), loc), step);
+        self.when_with_options(loc, regex, step, DefinitionOptions::default())
+    }
+
+    /// Inserts a When registration with explicit options.
+    ///
+    /// Replacing the same regex/location key replaces both handler and options.
+    #[must_use]
+    pub fn when_with_options(mut self, loc: Option<Location>, regex: Regex,
+        step: Step<World>, options: DefinitionOptions) -> Self
+    {
+        drop(self.when.insert((regex.into(), loc), Registration { function: step, options }));
         self
     }
 
@@ -136,12 +212,22 @@ impl<World> Collection<World> {
     /// [Then]: https://cucumber.io/docs/gherkin/reference#then
     #[must_use]
     pub fn then(
-        mut self,
+        self,
         loc: Option<Location>,
         regex: Regex,
         step: Step<World>,
     ) -> Self {
-        _ = self.then.insert((regex.into(), loc), step);
+        self.then_with_options(loc, regex, step, DefinitionOptions::default())
+    }
+
+    /// Inserts a Then registration with explicit options.
+    ///
+    /// Replacing the same regex/location key replaces both handler and options.
+    #[must_use]
+    pub fn then_with_options(mut self, loc: Option<Location>, regex: Regex,
+        step: Step<World>, options: DefinitionOptions) -> Self
+    {
+        drop(self.then.insert((regex.into(), loc), Registration { function: step, options }));
         self
     }
 
@@ -155,14 +241,35 @@ impl<World> Collection<World> {
         &self,
         step: &gherkin::Step,
     ) -> Result<Option<WithContext<'_, World>>, AmbiguousMatchError> {
-        let collection = match step.ty {
-            StepType::Given => &self.given,
-            StepType::When => &self.when,
-            StepType::Then => &self.then,
+        self.find_with_options(step).map(|matched| matched.map(|(context, _)| context))
+    }
+
+    /// Resolves one registration and its options in the same matching pass.
+    ///
+    /// # Errors
+    /// Returns the same ambiguity error as [`Self::find`].
+    pub fn find_with_options(&self, step: &gherkin::Step)
+        -> Result<Option<(WithContext<'_, World>, &DefinitionOptions)>, AmbiguousMatchError>
+    {
+        let collections = match self.matching {
+            Matching::KeywordSpecific => [
+                Some(match step.ty {
+                    StepType::Given => &self.given,
+                    StepType::When => &self.when,
+                    StepType::Then => &self.then,
+                }),
+                None,
+                None,
+            ],
+            Matching::KeywordIndependent => {
+                [Some(&self.given), Some(&self.when), Some(&self.then)]
+            }
         };
 
-        let mut captures = collection
-            .iter()
+        let mut captures = collections
+            .into_iter()
+            .flatten()
+            .flat_map(|collection| collection.iter())
             .filter_map(|((re, loc), step_fn)| {
                 let mut captures = re.capture_locations();
                 let names = re.capture_names();
@@ -203,12 +310,12 @@ impl<World> Collection<World> {
             ))
             .collect();
 
-        Ok(Some((
-            step_fn,
+        Ok(Some(((
+            &step_fn.function,
             captures,
             *loc,
             Context { step: step.clone(), matches },
-        )))
+        ), &step_fn.options)))
     }
 }
 

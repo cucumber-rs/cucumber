@@ -1,0 +1,30 @@
+[package]
+name = "cucumber-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+publish = false
+description = "Native source compilation and lossless rerun SDK for the GQAdonis Cucumber fork"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/GQAdonis/cucumber"
+readme = "README.md"
+
+[workspace]
+
+[lib]
+name = "cucumber_sdk"
+path = "src/lib.rs"
+
+[dependencies]
+cucumber = { path = "..", default-features = false, features = ["output-messages"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["arbitrary_precision", "raw_value"] }
+
+[dev-dependencies]
+cucumber = { path = "..", features = ["macros", "output-messages"] }
+futures = "0.3.32"
+serde_json = { version = "1.0", features = ["arbitrary_precision", "raw_value"] }
+
+[[test]]
+name = "language_sdk"
+harness = false

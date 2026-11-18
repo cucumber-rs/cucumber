@@ -1,0 +1,26 @@
+(1:1)FeatureLine:/Markdown document without "# Feature:" header/
+(2:1)Empty://
+(3:1)Empty://
+(4:1)Empty://
+(5:1)Empty://
+(6:1)Empty://
+(7:1)Empty://
+(8:1)Empty://
+(9:1)Empty://
+(10:1)Empty://
+(11:1)Empty://
+(12:3)ScenarioLine:()Scenario/Something about math/
+(13:3)StepLine:(Context)Given /step one/
+(14:3)StepLine:(Action)When /step two/
+(15:3)StepLine:(Outcome)Then /step three/
+(16:1)Empty://
+(17:3)ScenarioLine:()Scenario/Something about gravity/
+(18:4)StepLine:(Context)Given /step one/
+(19:4)StepLine:(Action)When /step two/
+(20:4)StepLine:(Outcome)Then /step three/
+(21:1)Empty://
+(22:1)Empty://
+(23:1)Empty://
+(24:1)Empty://
+(25:1)Empty://
+EOF

@@ -70,6 +70,18 @@ where
         self.0.retried_steps()
     }
 
+    fn pending_steps(&self) -> usize {
+        self.0.pending_steps()
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.0.pending_hooks()
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.0.pending_failures()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.0.parsing_errors()
     }
@@ -158,6 +170,18 @@ where
     }
 
     /// Always returns `0`.
+    fn pending_steps(&self) -> usize {
+        0
+    }
+
+    fn pending_hooks(&self) -> usize {
+        0
+    }
+
+    fn pending_failures(&self) -> usize {
+        0
+    }
+
     fn parsing_errors(&self) -> usize {
         0
     }

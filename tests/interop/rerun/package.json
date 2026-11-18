@@ -1,0 +1,6 @@
+{
+  "name": "cucumber-rs-pinned-rerun-oracle",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@cucumber/cucumber": "13.3.0" }
+}

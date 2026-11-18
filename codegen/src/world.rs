@@ -165,6 +165,9 @@ impl Definition {
 
                         #[doc(hidden)]
                         #world_vis func: ::cucumber::Step<#world>,
+
+                        #[doc(hidden)]
+                        #world_vis options: fn() -> ::cucumber::step::DefinitionOptions,
                     }
 
                     #[automatically_derived]
@@ -178,6 +181,10 @@ impl Definition {
                             ::cucumber::Step<#world>,
                         ) {
                             (self.loc, self.regex, self.func)
+                        }
+
+                        fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                            (self.options)()
                         }
                     }
 

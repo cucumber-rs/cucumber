@@ -21,10 +21,13 @@ pub mod json;
 pub mod junit;
 #[cfg(feature = "libtest")]
 pub mod libtest;
+#[cfg(feature = "output-messages")]
+pub mod messages;
 pub mod normalize;
 pub mod or;
 pub mod out;
 pub mod repeat;
+pub mod run_hooks;
 pub mod summarize;
 pub mod tee;
 
@@ -39,6 +42,9 @@ pub use self::junit::JUnit;
 #[cfg(feature = "libtest")]
 #[doc(inline)]
 pub use self::libtest::Libtest;
+#[cfg(feature = "output-messages")]
+#[doc(inline)]
+pub use self::messages::Messages;
 #[doc(inline)]
 pub use self::{
     basic::{Basic, Coloring},
@@ -46,6 +52,7 @@ pub use self::{
     normalize::{AssertNormalized, Normalize, Normalized},
     or::Or,
     repeat::Repeat,
+    run_hooks::RunHooks,
     summarize::{Summarizable, Summarize},
     tee::Tee,
 };
@@ -142,12 +149,25 @@ pub trait Stats<World>: Writer<World> {
     #[must_use]
     fn hook_errors(&self) -> usize;
 
+    /// Returns the number of actual pending steps, excluding retried attempts where supported.
+    #[must_use]
+    fn pending_steps(&self) -> usize { 0 }
+
+    /// Returns the number of actual pending scenario hook stages.
+    #[must_use]
+    fn pending_hooks(&self) -> usize { 0 }
+
+    /// Returns terminal scenarios failing specifically because pending is strict.
+    #[must_use]
+    fn pending_failures(&self) -> usize { 0 }
+
     /// Indicates whether there were failures/errors during execution.
     #[must_use]
     fn execution_has_failed(&self) -> bool {
         self.failed_steps() > 0
             || self.parsing_errors() > 0
             || self.hook_errors() > 0
+            || self.pending_failures() > 0
     }
 }
 

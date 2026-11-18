@@ -13,6 +13,7 @@
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference
 
 pub mod basic;
+pub mod source;
 
 use std::sync::Arc;
 
@@ -20,7 +21,7 @@ use derive_more::with_trait::{Display, Error as StdError};
 use futures::Stream;
 
 #[doc(inline)]
-pub use self::basic::Basic;
+pub use self::{basic::{Basic, DialectCatalog, SourceFormat, SourcePaths}, source::{EmptyDocumentSnapshot, ScenarioOrigin, SourceOriginError, SourceSnapshot, SourceStore}};
 use crate::feature::ExpandExamplesError;
 
 /// Source of parsed [`Feature`]s.

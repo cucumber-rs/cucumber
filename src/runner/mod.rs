@@ -13,11 +13,33 @@
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference/
 
 pub mod basic;
+pub mod assignment;
+#[doc(inline)]
+pub use assignment::{AssignmentPolicy, AssignmentCase, AssignmentAdmission, AssignmentWait, AssignmentWarning, AssignmentDecisionKind, AssignmentDecision, AssignmentStore};
+pub mod scheduling;
+#[doc(inline)]
+pub use scheduling::{ScenarioOrder, SchedulingOptions, OrderingRecord, OrderingStore};
+pub mod hooks;
+pub mod retry_policy;
+
+#[doc(inline)]
+pub use self::retry_policy::{RetryPolicy, RetryPolicyError};
+mod outcomes;
+pub mod scenario_hooks;
+pub mod step_hooks;
+pub mod run_hooks;
+pub mod timeout;
+
+#[doc(inline)]
+pub use self::timeout::{CallbackConstruction, TimeoutPolicy, TimeoutClock, ThreadTimer, TimeoutError, Timeouts};
+
+#[doc(inline)]
+pub use self::run_hooks::{RunHooks, RunHookScope, RunHookKind, RunHookDefinition, RunHookRecord, RunHookSkip, RunHookStore};
 
 use futures::Stream;
 
 #[doc(inline)]
-pub use self::basic::{Basic, ScenarioType};
+pub use self::{basic::{BackgroundSemantics, Basic, ScenarioType}, hooks::Hooks, step_hooks::{StepHooks, StepHookScope, StepHookKind, StepHookDefinition, StepHookRecord, StepHookStore, StepBodyOutcome}};
 use crate::{Event, event, parser};
 #[cfg(doc)]
 use crate::{Step, event::Source};
@@ -81,6 +103,19 @@ pub trait Runner<World> {
         Item = parser::Result<Event<event::Cucumber<World>>>,
     >;
 
+    /// Accepts an optional handoff for actual step-definition metadata.
+    ///
+    /// Existing custom runners remain source-compatible and may ignore it.
+    /// Supporting runners publish their final collection before producing events;
+    /// reporters distinguish an absent snapshot from an empty collection.
+    #[must_use]
+    fn with_support_code_store(self, _store: crate::support_code::Store) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into
     /// a [`Stream`] of executed [`Cucumber`] events.
     ///
@@ -90,3 +125,6 @@ pub trait Runner<World> {
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static;
 }
+
+#[doc(inline)]
+pub use self::scenario_hooks::{EmptyScenarioHooks,ScenarioHookKind,ScenarioHookDefinition,ScenarioHookAttempt,ScenarioHookPlan,ScenarioHookFailure,ScenarioHookStatus,ScenarioHookResult,ScenarioHookScope,ScenarioHookSkipReason,ScenarioHookDisposition,ScenarioHookRecord,ScenarioHookInitialization,ScenarioHookStore};

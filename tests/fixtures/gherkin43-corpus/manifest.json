@@ -1,0 +1,1758 @@
+{
+  "repository": "cucumber/gherkin",
+  "tag": "v43.0.0",
+  "commit": "3d70e2bb4e0f16a568ee539a5ce0b03fb247a777",
+  "scope": "testdata/{good,bad}/*.feature and corresponding AST/Pickle/error expectations; Markdown excluded",
+  "files": [
+    {
+      "path": "testdata/bad/backslash_at_end_of_line_in_datatable.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "671402836bc0b693957a3caf3b124860daab115d",
+      "size": 77,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/671402836bc0b693957a3caf3b124860daab115d",
+      "sha256": "4da09fd9a3131e261ee0b1ab70a9a533e99556f5759a551d2a6156a835a4f52b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/backslash_at_end_of_line_in_datatable.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5a8e4216b52754bba1d112e5d266f6fc6a666eac",
+      "size": 191,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/5a8e4216b52754bba1d112e5d266f6fc6a666eac",
+      "sha256": "516c0acb3fe10ce6fa4814f5c9a489983ab989da5dd2b5d5d0ac5e0e54e82640",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/file_ends_with_open_docstring.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0be1f7b10aba48625c911b8468a8ba7999e3270b",
+      "size": 72,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0be1f7b10aba48625c911b8468a8ba7999e3270b",
+      "sha256": "40c6c699ea9ad8762435f429ba04b5d23cf029b879d19d59c1528e74a637c7f2",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/file_ends_with_open_docstring.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4ed66e0ee165fddc66e4ea761ee735a8f02c6961",
+      "size": 193,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4ed66e0ee165fddc66e4ea761ee735a8f02c6961",
+      "sha256": "22bde2433bcb98c9d48fbc9cb35bac4d8dbe06cd252fb4f3960b50a878d02038",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/inconsistent_cell_count.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "721369cacbb473df1edb4e458f30da85243fb4c6",
+      "size": 263,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/721369cacbb473df1edb4e458f30da85243fb4c6",
+      "sha256": "35a18d3027b9ec01235eb17d770ae635de091ece5b8ef17dc82b7598621dcafe",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/inconsistent_cell_count.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c2af058175974ce93d88b4ddf1b312c6859babc",
+      "size": 356,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/5c2af058175974ce93d88b4ddf1b312c6859babc",
+      "sha256": "42fd199970057f37a328773ad624030864940788a7fc34cd39d415a01ca16386",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/invalid_language.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c8d8925011465ae36a6db8f425de10257daec17",
+      "size": 87,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6c8d8925011465ae36a6db8f425de10257daec17",
+      "sha256": "8e1021b4a97abe4aa0ee7a7629eb0b01dc0da29075178ce9c6c0fad9d1ae0b34",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/invalid_language.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "afa064b5781d478f2e0068b9750dee8b1786f32d",
+      "size": 161,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/afa064b5781d478f2e0068b9750dee8b1786f32d",
+      "sha256": "598ff183e89294e96577b6490dd8932796ecda34a2537a2f99855f55c820e0f3",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/multiple_parser_errors.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2d10f4f88e3d37fd6a8d1a9ee6f7a36e091e4ed5",
+      "size": 130,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2d10f4f88e3d37fd6a8d1a9ee6f7a36e091e4ed5",
+      "sha256": "fc3027afea451b267f12e8c2533430c2d6ec78836a2c67eb23f8e6465f5900bc",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/multiple_parser_errors.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65618068d770a532b679d4fb7e25743e5885825e",
+      "size": 523,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/65618068d770a532b679d4fb7e25743e5885825e",
+      "sha256": "151af84bf3b9c19d2b2c60702f27a53ad3776c367caf0d18099f58f0adb34037",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/not_gherkin.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1999ac293827229e6cc480356be9e9169da31fb4",
+      "size": 13,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1999ac293827229e6cc480356be9e9169da31fb4",
+      "sha256": "c6cf2009caee8254249e89d745f1e66a724af00ccca74a926a64d65ecce2c179",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/not_gherkin.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1a8bd5b3a250f785b6f3263984abb63b07d64ebc",
+      "size": 211,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1a8bd5b3a250f785b6f3263984abb63b07d64ebc",
+      "sha256": "7fb9b4f393bc36cc48b29a400149d3af5e3bdae3fb1d8d9e0f5617141a5aa115",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/repeated_step_docstring.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "991dec86599fd336be37d56637aa01b7031857d7",
+      "size": 131,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/991dec86599fd336be37d56637aa01b7031857d7",
+      "sha256": "7955752b8a9ab29dc5ff3b48d8ccaa01a5f1198471178a6f6c326b762ffea1c7",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/repeated_step_docstring.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "791e1ebfee1c83fe439aca219c18c8d87c0a6fa3",
+      "size": 767,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/791e1ebfee1c83fe439aca219c18c8d87c0a6fa3",
+      "sha256": "36b24644e17e4cf2e51f721b7f176107f80223ca51f2de30310facbedceff425",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/single_parser_error.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3308ca821fd76b69a196774f3980c6aabfc25fd9",
+      "size": 100,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/3308ca821fd76b69a196774f3980c6aabfc25fd9",
+      "sha256": "0d6d48a8faa139b6e38948b53bdd5015b4f45705aca4bb1d15f07a4365f01e72",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/single_parser_error.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "091e71ebca1b203dbc17a79b8355ae359004d5da",
+      "size": 225,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/091e71ebca1b203dbc17a79b8355ae359004d5da",
+      "sha256": "d809f90ddac1db753288680a569f1cd04fecb4e36561c92a4670e61a0d36bb70",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unexpected_end_of_file.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ddfbafe105662b2f09708689c81ac81c0a475d8e",
+      "size": 22,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/ddfbafe105662b2f09708689c81ac81c0a475d8e",
+      "sha256": "6dd3f1bea6e0d64957eaf8e254dfe153bde1b5e20d26cf9f71b630d59c4fc83e",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unexpected_end_of_file.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8139af422932ecf5e8bc99a27464af6519fd6a8",
+      "size": 196,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a8139af422932ecf5e8bc99a27464af6519fd6a8",
+      "sha256": "24cb86a98126d5ab3245b836de4264a69ed351a0287d536fa2435e42992b3cf1",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unexpected_eof.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a374ecf71dbd14b0947a955a9f452668b10b98f3",
+      "size": 101,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a374ecf71dbd14b0947a955a9f452668b10b98f3",
+      "sha256": "e93410c543faab4415cdf5816b7e81a59c1f4de681c7153deab85bb4c0d087ab",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unexpected_eof.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "72ead0f1e9f3fb3f30bebd000adcc902edd8ccf8",
+      "size": 188,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/72ead0f1e9f3fb3f30bebd000adcc902edd8ccf8",
+      "sha256": "b34bbf63962b81dc9d389cfc6788ac60971ab3971d27dacb9bc2411a3fa23ece",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unfinished_datatable.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0b48841c03d2fbb085ec02ef878d3586e9bea87",
+      "size": 75,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b0b48841c03d2fbb085ec02ef878d3586e9bea87",
+      "sha256": "5b1c1f67238fa67e7e221776daa4401b8a7ff1da2e296651ca9d487d04d4af99",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/unfinished_datatable.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d200fefc8238fc342f056ede773826c4d7c503b3",
+      "size": 174,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d200fefc8238fc342f056ede773826c4d7c503b3",
+      "sha256": "28231fcb36e18a3e9d1d2cff97cafc46919b84a6f4fc2e9db866782e7ec382aa",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/whitespace_in_tags.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b9abcc7b64e8e85da44a2c89ac22b89721691f7e",
+      "size": 85,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b9abcc7b64e8e85da44a2c89ac22b89721691f7e",
+      "sha256": "ba88dde726139fd188b56263be3c9d43c462d49f14180b5ecdfe2744662d002b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/bad/whitespace_in_tags.feature.errors.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a0b77e864e81a424a3925704c53a4d54f9f509ba",
+      "size": 164,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a0b77e864e81a424a3925704c53a4d54f9f509ba",
+      "sha256": "9072f90057892fd77d50cfbf168a6e488f84b9f95e9a9e636ef3814fb817e5ad",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/background.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "150e18c37c8e111ef0969cfe6e01f03cf6151f5c",
+      "size": 207,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/150e18c37c8e111ef0969cfe6e01f03cf6151f5c",
+      "sha256": "0624034cc1c1d9015a32d7e741ff1bb438de193b7e2646facdff563d8ede880b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/background.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "489b570782608cfa718a439d6df92c43704911d5",
+      "size": 1021,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/489b570782608cfa718a439d6df92c43704911d5",
+      "sha256": "b12e6ff0728b8951abff818920f60c0025d78c00ed25664035a055e0abf6149e",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/background.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9476ae81948c4ed16367e06e562b70cc3938f56b",
+      "size": 684,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/9476ae81948c4ed16367e06e562b70cc3938f56b",
+      "sha256": "436cca7e084d5d25b721c53ae5abe2b90ec64b48ccf9785b0ea831f4fbf82d72",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/complex_background.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fde7c94d9b18d26db0e65bbb1ad6591ba40d4799",
+      "size": 467,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/fde7c94d9b18d26db0e65bbb1ad6591ba40d4799",
+      "sha256": "3228151bc4c3c2309b63d012ed77cd41b02732a67e64ded126c244628c08e8f5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/complex_background.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c8d7f74593997a34da045347fbeb74908285234",
+      "size": 2179,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1c8d7f74593997a34da045347fbeb74908285234",
+      "sha256": "a207a4bb053aa1b700608a6bf53de6d53f1653bc238a8ea1781623ccdc7b21e2",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/complex_background.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c2967a6ca98a8a1525e3f794d8f50c51f0bf9e3",
+      "size": 1592,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2c2967a6ca98a8a1525e3f794d8f50c51f0bf9e3",
+      "sha256": "64d815833325e10e61ca29f5b734506fd6053a9b3d40c0cb33585cc06d09bc4d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/conjunctions.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "083f65282be3231e230c5e7480d4a776b33ae659",
+      "size": 502,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/083f65282be3231e230c5e7480d4a776b33ae659",
+      "sha256": "6721b810cabfcc94bcb4c986e5923b7d9f479aa9e099998267eae53b345c6da2",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/conjunctions.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f59bf875ae5240a325efdca0ba34a62c488b34e3",
+      "size": 2425,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f59bf875ae5240a325efdca0ba34a62c488b34e3",
+      "sha256": "d0aa73ecc502a2840c2d142c159d9524d706d5ff9316906ed4d53659e9b27290",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/conjunctions.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b241868fe4ea2a1c9e82f0b40ae97a89cd6ad87d",
+      "size": 1536,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b241868fe4ea2a1c9e82f0b40ae97a89cd6ad87d",
+      "sha256": "302ba93fd0e76044e3cfb6320c9c0a295de66853fa782f8b11cb5b338f9581c2",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "78a651e3f404d61c39b8dd1947d675d0425c9526",
+      "size": 544,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/78a651e3f404d61c39b8dd1947d675d0425c9526",
+      "sha256": "593b2c819b64913619a2fb65c9d2a615b51b22e17ff1b8212b27b0ed3731d5e0",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "797a67282c7cc09bf1f5ca9a27e495fada32a1ec",
+      "size": 3192,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/797a67282c7cc09bf1f5ca9a27e495fada32a1ec",
+      "sha256": "0d6679aae369d752e1bcbfb96a97007dcbbe0a1fd716db7a01d71615b024a937",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e5c210bc0cad839570809e9e2eb968667103538",
+      "size": 1404,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6e5c210bc0cad839570809e9e2eb968667103538",
+      "sha256": "d6025a3b523bad125387560647f9490d4a31da0416a2b8d862b95b66185257ad",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables_with_new_lines.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4f5e8485b3b2b12dd3ce4bdeb0a63901637b731a",
+      "size": 246,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4f5e8485b3b2b12dd3ce4bdeb0a63901637b731a",
+      "sha256": "7800f015ae52d254160b5c403c62ab473862fb032583eb22c451e0cb9f21f9b4",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables_with_new_lines.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a8824d75c0b881ff00e6bbf4f849ffc1e431d38",
+      "size": 1035,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/7a8824d75c0b881ff00e6bbf4f849ffc1e431d38",
+      "sha256": "2ed297ff3de1368f790995859153215dfc667f4f7b086970492bd582c72e6209",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/datatables_with_new_lines.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3af926370cea5a2fee36c43629c7db3666e701a6",
+      "size": 567,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/3af926370cea5a2fee36c43629c7db3666e701a6",
+      "sha256": "d4c70018d09aa9063d984d6ddefdd407c13e5b04ac937e97c64a2696e7a2956b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/description.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions.crlf.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0487648cdd163f70238646604adf0b8a53ce734d",
+      "size": 1138,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0487648cdd163f70238646604adf0b8a53ce734d",
+      "sha256": "9c259e65d7dd7f63e7383e75ec39820e843814f9dcf1f5ea51c2e1111f184715",
+      "checkout_eol": "crlf per upstream testdata/.gitattributes"
+    },
+    {
+      "path": "testdata/good/descriptions.crlf.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bddac12f9d0284ecabbf7eeaf5d9ec55731651a0",
+      "size": 3448,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/bddac12f9d0284ecabbf7eeaf5d9ec55731651a0",
+      "sha256": "1b38d20f1d3889aca00de838935089954f48bf56936e76a5c78aef8f9088222e",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions.crlf.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "25cbd647cf03ace5c40e8ab7c534763cf6541aca",
+      "size": 2180,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/25cbd647cf03ace5c40e8ab7c534763cf6541aca",
+      "sha256": "51c82f4e117ecb12bec7ea2c05dd6c64a1f3b2388c9bc1243c0abb659e5705f0",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0487648cdd163f70238646604adf0b8a53ce734d",
+      "size": 1138,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0487648cdd163f70238646604adf0b8a53ce734d",
+      "sha256": "ccd68237b8aaa192b35795e10c747119202a9c59fda34ea2bac8404002909d5b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95f9ae6a923d4ff7328a4dfc8921f66a7d122909",
+      "size": 3443,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/95f9ae6a923d4ff7328a4dfc8921f66a7d122909",
+      "sha256": "7e8c883c3f6ef17cae1e63f9f47f6714411323fd5bec4063c93900ef2d257825",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7aed059765af393d0bbf59511c5c0c013f6a4f92",
+      "size": 2140,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/7aed059765af393d0bbf59511c5c0c013f6a4f92",
+      "sha256": "48f225315118e85cd8122fca59c53ee185619b4d7947cbab37abc5e2be90c609",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions_with_comments.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1f57afe03d7049124eb43ba29da1b5cadacca961",
+      "size": 1297,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1f57afe03d7049124eb43ba29da1b5cadacca961",
+      "sha256": "a49bcfd19b02ada5e2153498a20d6d4d91e148377e7ab9aefda741ee057a2686",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions_with_comments.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a9084f12d87a5ed4fb5dfa938883d41b61acd0c",
+      "size": 4072,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4a9084f12d87a5ed4fb5dfa938883d41b61acd0c",
+      "sha256": "c55cd10689dc6a2ed918164f37e436a766a38ab7cbbc992ab565e81fe82cf786",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/descriptions_with_comments.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bf38608f87fa23324d807946512af2f3917529f9",
+      "size": 1971,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/bf38608f87fa23324d807946512af2f3917529f9",
+      "sha256": "3937337f70d9cd01d83e500b842f15642346e05e5432f390753afb706f583950",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/docstrings.crlf.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13897651d18e248ece74f4cb9da3678c0bdb2bfe",
+      "size": 983,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/13897651d18e248ece74f4cb9da3678c0bdb2bfe",
+      "sha256": "39a61861b77283d0575286a1a1e2f4218e6094be0b7b8a451e9fd8dbf4cf6da7",
+      "checkout_eol": "crlf per upstream testdata/.gitattributes"
+    },
+    {
+      "path": "testdata/good/docstrings.crlf.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aed9978418aa32d3fd3f857021c9467a17e1712d",
+      "size": 2417,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/aed9978418aa32d3fd3f857021c9467a17e1712d",
+      "sha256": "7eebbf373eaafdc50f9f0d51b4f79ecc5f5ef96fff12abda249cd0f2edb18c4c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/docstrings.crlf.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d23f07d24d71b7540a6b339ba7106d7972510e40",
+      "size": 1554,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d23f07d24d71b7540a6b339ba7106d7972510e40",
+      "sha256": "6349b2fddf2d7ab3d8fdee3a14cf3625e1bdbd9c09eba15fbc96044ab0dd2564",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/docstrings.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13897651d18e248ece74f4cb9da3678c0bdb2bfe",
+      "size": 983,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/13897651d18e248ece74f4cb9da3678c0bdb2bfe",
+      "sha256": "decebbc3249c1961502bdfb2edd4bb354acf0347f604a752f1b4800abc6a752f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bcfa0382943ae77ffad155d7fb9de2611c70d8f2",
+      "size": 2412,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/bcfa0382943ae77ffad155d7fb9de2611c70d8f2",
+      "sha256": "5c3e76ea0adce9d47a6f71bf15cd19b54c96a0a8fbbc321d96cb77f3d95abd0c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1e1d1871359c80c1eb4b03bf483be4ba36379fed",
+      "size": 1549,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1e1d1871359c80c1eb4b03bf483be4ba36379fed",
+      "sha256": "14eade31cdd90299c13c9a02732374f516422c037b98e8db5d4e368a6099bf60",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/empty.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/empty.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "854936d8863c77062ad001868aead26d06021eac",
+      "size": 75,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/854936d8863c77062ad001868aead26d06021eac",
+      "sha256": "a3b21b429128a20cbc06c7451bf235865362cc805316cf9b59abaaffbb24e89f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/empty.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/escaped_pipes.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "489a145d709f64fdb46b9490a92e354c3a45b3bc",
+      "size": 341,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/489a145d709f64fdb46b9490a92e354c3a45b3bc",
+      "sha256": "d72d3bfa4a4b100ceefe3d28020bd640486d7981681f2cc8ac756033313a6c9c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/escaped_pipes.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "036070f5bef5604939174e66ae922f07629a7843",
+      "size": 1491,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/036070f5bef5604939174e66ae922f07629a7843",
+      "sha256": "8e3a5e571877668734c715fbce3972bd734dfd595dd182ad1f4e834533017882",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/escaped_pipes.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b07c90e3ee4ac855d585ed115caeeec2a5cbad8d",
+      "size": 597,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b07c90e3ee4ac855d585ed115caeeec2a5cbad8d",
+      "sha256": "35cb4361659a47d950a7ebf57746ccb7619f802c15801aaa47346212188d750c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_token_multiple.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0471b7f4d75e1e9a88d5d89a624d332cc2ff13e9",
+      "size": 169,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0471b7f4d75e1e9a88d5d89a624d332cc2ff13e9",
+      "sha256": "aeab657de727282bdf52f290faf206f5b103a78372aae3183f30b11e010050ac",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_token_multiple.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e63e8f81918dd69e262c5e0852330386e874b7c",
+      "size": 884,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2e63e8f81918dd69e262c5e0852330386e874b7c",
+      "sha256": "50d032e3dab9cc1d2cd2e3d0daf47130db9f41d2a9ce82caebfd3e269537034b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_token_multiple.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f9f5ba56d961fd9587d79bf75f4b6102c2eb256c",
+      "size": 285,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f9f5ba56d961fd9587d79bf75f4b6102c2eb256c",
+      "sha256": "4fd1b0111f6b42a953b3a7c51133946f858aeb6777043a3337b75f3ac1eb26f3",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_tokens_everywhere.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "edeefd076020ee8261c60a0be6de04c6dad5b233",
+      "size": 313,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/edeefd076020ee8261c60a0be6de04c6dad5b233",
+      "sha256": "938c3bff904d126cf038a6a14d091f0472ed1215b08bd5db74a64cc006b90daf",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_tokens_everywhere.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "83a1f0becc47b309de66c36d5d45ae79f8d641cb",
+      "size": 1945,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/83a1f0becc47b309de66c36d5d45ae79f8d641cb",
+      "sha256": "7c13d3f51b12aa4da3745b10d8af62d0e2df9ce4042dabb9cbe2272895336b20",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/example_tokens_everywhere.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "09a9d68b27eb391049177f3140f9dfa979664389",
+      "size": 888,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/09a9d68b27eb391049177f3140f9dfa979664389",
+      "sha256": "14879dda9893d30265a20ae89f5955b9263faf7f7998fb1a7c654d8c618b83cd",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/extra_table_content.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4c0e8b2232299e469995e6f7daded1ed2869a574",
+      "size": 360,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4c0e8b2232299e469995e6f7daded1ed2869a574",
+      "sha256": "53d8991ab73ac99aa6382993da27615f4e0b7362560eed8f7174a5cba556fcfe",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/extra_table_content.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "39ff30692ea4027991ffc82f1921291325af1aa6",
+      "size": 1194,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/39ff30692ea4027991ffc82f1921291325af1aa6",
+      "sha256": "ff0a1c282e35f0b2bc35eca25a6f39ca5bf4c01d160d7be37ce3e8cafba73642",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/extra_table_content.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e96d364a1d4de702f33f654dfe6b91b49b6499e4",
+      "size": 391,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e96d364a1d4de702f33f654dfe6b91b49b6499e4",
+      "sha256": "a4e2dda80b8b3eba276ec335e7e0f678f948d4e5831963153f97b4a2f9fc2ce2",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_emoji.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96c03ba97a80f0dca7b5775ab991a946277c2c49",
+      "size": 61,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/96c03ba97a80f0dca7b5775ab991a946277c2c49",
+      "sha256": "f0e2776a784db701d68b14e55688d2364ed56c48ebe2c0814b372841ced1e8f9",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_emoji.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "449d188a6d0a54623d422f48ee4a025bb6e50d50",
+      "size": 458,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/449d188a6d0a54623d422f48ee4a025bb6e50d50",
+      "sha256": "44438217d479da0f323211c63001c6ce40c6355b1a28158e163e279f48148e79",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_emoji.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b62ca43cd6f7f751b8c308424d2ab3525f9774a0",
+      "size": 229,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b62ca43cd6f7f751b8c308424d2ab3525f9774a0",
+      "sha256": "b36b45fc50d835dd6dd3df0b690bb73d2bd5a92903a33145e3897c279d0cde84",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_fr.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ddeafa4cb507973268dc2e3fa3f261325273d71b",
+      "size": 1892,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/ddeafa4cb507973268dc2e3fa3f261325273d71b",
+      "sha256": "7fd64dbb8854653903da26b4181cdf1489660c157fcca0dda5351ec7e09f1902",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_fr.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c75f83b7e6d3c5cab8930318e8a178aa3e65cee9",
+      "size": 6923,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c75f83b7e6d3c5cab8930318e8a178aa3e65cee9",
+      "sha256": "b4e6a6942e541b364905980a92f023dff87961a73e9087778323790ffdb9f10f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_fr.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cdcb326fb7bbe487d075491694c1a9023f298974",
+      "size": 5299,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/cdcb326fb7bbe487d075491694c1a9023f298974",
+      "sha256": "6feaba57e2d573826033ec2d47e5de6e82eaff4f14c1139617866b45911f3934",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_no.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "243a219ba7dc6b677e4936d2f179889ca878aba1",
+      "size": 186,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/243a219ba7dc6b677e4936d2f179889ca878aba1",
+      "sha256": "0f6f02ae6f1910db37c6acb0c8921030e177b857e1a7fdddc5d99d9accd1279f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_no.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ad2a1b39a0ddb45d7bf7c5a3d73e985ad334cb7",
+      "size": 753,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/7ad2a1b39a0ddb45d7bf7c5a3d73e985ad334cb7",
+      "sha256": "b1e8c9f0b2ba6eec3d44abcac74ab82f29c27c975c25e9b1eb3f9c2b17f99ce9",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/i18n_no.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3a1a15eca1d176fea10afec8f82ca8a688f80cd",
+      "size": 438,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a3a1a15eca1d176fea10afec8f82ca8a688f80cd",
+      "sha256": "49ff23705ac2322ed0f4c0fbe0a61c35c0c0b8ac46d2fbee6b693f060058960d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_1.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "766d29d50b467bc5a44d9a0557e12d3ae5db7475",
+      "size": 107,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/766d29d50b467bc5a44d9a0557e12d3ae5db7475",
+      "sha256": "364e6b9d652039b418ea8fe860bd1d76e1543cf6bdd778bf7222185b443314c8",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_1.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8e73966c27840ad6ebe83fa2e5e73a1a24a926b",
+      "size": 636,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b8e73966c27840ad6ebe83fa2e5e73a1a24a926b",
+      "sha256": "b891d004fec21dafd495a7a94dcde6c29b5ed460d9014c67ddcb7b433a01cfb5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_1.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "acb4825277252049f50ae2b762aa9882319673e7",
+      "size": 256,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/acb4825277252049f50ae2b762aa9882319673e7",
+      "sha256": "7006ad9565c18ac2cae0ccad12204e5fce58d4c06c8708bcdf50b2477a8e4457",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_2.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c4941ae3493a2b4f4b48bc25a560cd21a08cbee9",
+      "size": 141,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c4941ae3493a2b4f4b48bc25a560cd21a08cbee9",
+      "sha256": "76c82d1b65e99f07be7044d1548dec6fe140500e4bde8f89737b748e7f0cc3c8",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_2.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2aa558a60f49ac0f796e92f97e2a3d202597e38d",
+      "size": 669,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2aa558a60f49ac0f796e92f97e2a3d202597e38d",
+      "sha256": "aea3ec6dc0c3d0169ca3fd21048a33cadc15c4430853be62e390d4aed54e7976",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_background_2.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "81a507b6c95a4e37eb06ac57e63dbac995eff83f",
+      "size": 256,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/81a507b6c95a4e37eb06ac57e63dbac995eff83f",
+      "sha256": "e4d021dd1ac5fcd3dce40364e400e25c495858e31953743663fc6678d747e6fb",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_1.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8dd71b03b3b1cd4b4650b708e7c62ffa2bc7c0a",
+      "size": 50,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d8dd71b03b3b1cd4b4650b708e7c62ffa2bc7c0a",
+      "sha256": "45d5ade0d50d1d9608382784ce311f3c61472bad49c8ce893728e52aa402aef4",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_1.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c05e265b42fd23d3b897bcff7c2156dd90432d9c",
+      "size": 261,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c05e265b42fd23d3b897bcff7c2156dd90432d9c",
+      "sha256": "82cbc535c23fa1ef4133a802f73f41d9ec76012191f879ed47af99adcad9b4a3",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_1.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_2.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6426c22c5708239fa45050488b39b41526afdf24",
+      "size": 23,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6426c22c5708239fa45050488b39b41526afdf24",
+      "sha256": "8aaf0a758e6e540cf5fb099402fbfe895354fdca97bbcdf024f1c857ca016003",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_2.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "74ae17b0de6f4d97b149f30c08bcb0d2191cb175",
+      "size": 235,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/74ae17b0de6f4d97b149f30c08bcb0d2191cb175",
+      "sha256": "0daf3951f4e07c6954b356517121a1d3bc75c6a6ed75558d89ad448b46b9440f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_2.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_3.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5572bbc76948f9018b298b760b8c3abb6bcd1ea8",
+      "size": 16,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/5572bbc76948f9018b298b760b8c3abb6bcd1ea8",
+      "sha256": "82635352c19f3aa7656f10361e36b7da2b3b245268ccb69a9f981b7361255907",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_3.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc7c279803c58952c15c528ef03fb99b764a0b94",
+      "size": 150,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/dc7c279803c58952c15c528ef03fb99b764a0b94",
+      "sha256": "9b0f7486e698995d62f766cd3f96c254ae3e9b7451f1e982fe7c44f97b2c8f97",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_feature_3.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b88e9bdb554afcbb50df88796cc59fd7f0befbe",
+      "size": 120,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4b88e9bdb554afcbb50df88796cc59fd7f0befbe",
+      "sha256": "022798989ee474cd9a84cb572c8d37ba2622c6fcb7cbd8fca2e7e3eec57605a6",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d42d8edbe66e6390a736b3dcf8acc4f9ce16b25",
+      "size": 645,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/7d42d8edbe66e6390a736b3dcf8acc4f9ce16b25",
+      "sha256": "395d5442957a94886e8274c8792c42aae880acfe07825f8b635c1d6f115a0f20",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "59088a5624869a6f1526defb0f2c170a9e19a5ac",
+      "size": 182,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/59088a5624869a6f1526defb0f2c170a9e19a5ac",
+      "sha256": "65db2380c6c4e524ada850f30d64efa59d5969042ce0cce89cd75d40278e61b8",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario_outline.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "38f842c5817e9f097fe6c0a1f5ebb92c656398fb",
+      "size": 429,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/38f842c5817e9f097fe6c0a1f5ebb92c656398fb",
+      "sha256": "95eb511072a9a1034ed47c1eec87cdc948dd547e65311b883b8c3c82c7b4ff89",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario_outline.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3c5ce21c8c372e0b6b06b0156633bcfbfa832c07",
+      "size": 2170,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/3c5ce21c8c372e0b6b06b0156633bcfbfa832c07",
+      "sha256": "70497e0bd2f44bf39b3becf1ee12af41e40af429ba6d4f215f3eec0a7ef88f6d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/incomplete_scenario_outline.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c205d3263583fc4644be61bc1cdf3b468637ad0e",
+      "size": 750,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c205d3263583fc4644be61bc1cdf3b468637ad0e",
+      "sha256": "8327ff0547c65ca3495b0f580a9663d32c48788d8976f6f5cae3741d54ec6740",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/language.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "564dd42010bac1f1112a4226b16b0123dd44f0c9",
+      "size": 106,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/564dd42010bac1f1112a4226b16b0123dd44f0c9",
+      "sha256": "784e4d5ebc6b6700755af9fd8b4215eb6c0e3c354646abd8d75a0ab096a52c8f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/language.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "03a16c398d02298e2378472b8e963fdf53d69180",
+      "size": 502,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/03a16c398d02298e2378472b8e963fdf53d69180",
+      "sha256": "2f77d51283c0825c44dd460a3cc31fc3f16f3652031c3d605966b8cd41197fcd",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/language.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "83f35e7fdf39e7e7d3b7f34fd9fc30278a2f0173",
+      "size": 245,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/83f35e7fdf39e7e7d3b7f34fd9fc30278a2f0173",
+      "sha256": "252bdf90a8d8a15dad6ece007a96f9b35b62549f43dc2d09d3248a0b442cebc1",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal-example.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c771c40d2cc863341f2ca2f241e8e704ec4c76a",
+      "size": 67,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/8c771c40d2cc863341f2ca2f241e8e704ec4c76a",
+      "sha256": "0b3049b0bfbc3c9e8e124df86ae0cc0de1ba947a217ae66495633f5350b240d7",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal-example.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f5e2c8337d4a643e75292852d0b16159a5264070",
+      "size": 484,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f5e2c8337d4a643e75292852d0b16159a5264070",
+      "sha256": "f952541d16afa9b095a96ddd97b6aec01f8744d3663703713f3d4556ea46b9c9",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal-example.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "609de940fa4f6d48b7e0b71ce598b11a419d8258",
+      "size": 252,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/609de940fa4f6d48b7e0b71ce598b11a419d8258",
+      "sha256": "18595144fea6be5325a2a342f456110556c56c4ba7fe205fe477fa204097bc49",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal.crlf.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0610128e39fd87e611487ab069342d008bda8564",
+      "size": 91,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0610128e39fd87e611487ab069342d008bda8564",
+      "sha256": "8482437643f6743d08a7887d303daa1999d56e27c4b63747ff97fffb9865d357",
+      "checkout_eol": "crlf per upstream testdata/.gitattributes"
+    },
+    {
+      "path": "testdata/good/minimal.crlf.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16e7f0437bfae6d0e618c231cfb8792d878cc255",
+      "size": 505,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/16e7f0437bfae6d0e618c231cfb8792d878cc255",
+      "sha256": "38426980afbcce73d5da859764b5d003059a384cebd14a813f9a88154dd277ef",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal.crlf.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "72455de78c048a1354563afe0b4337f4451a389b",
+      "size": 249,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/72455de78c048a1354563afe0b4337f4451a389b",
+      "sha256": "368dd57f5f35c954404c9a371f06de564ec838a69b789955a615f169af039edd",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9a62d86f80db848b50ec338e04e38811fcbea4a0",
+      "size": 68,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/9a62d86f80db848b50ec338e04e38811fcbea4a0",
+      "sha256": "91c4ccbb5526108a42710ac996cffdc315a95fd4290e2130550bf04dabe93da4",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a203abe75d3df7c3402b316de5e0a144f93e6c6d",
+      "size": 477,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a203abe75d3df7c3402b316de5e0a144f93e6c6d",
+      "sha256": "32801d0e3bf05e00a7f8d652e741a8742563827a1f1719313fab1c16ceba6196",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/minimal.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8ed77e7d3116f547e68d2c41be06fcb967d6eab2",
+      "size": 244,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/8ed77e7d3116f547e68d2c41be06fcb967d6eab2",
+      "sha256": "0119f67b5b0e3ee135d59d424ff10029c8583c813b8bd7b353fe52cd64adc14d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/padded_example.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a4c95c9e5274448bb109aaee80361f4375c925c3",
+      "size": 487,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a4c95c9e5274448bb109aaee80361f4375c925c3",
+      "sha256": "dd612769451f6660e7d9237df4427633c5d0ed00a11e040f32e7517ae174d91c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/padded_example.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "777abc78d82bb0084bc18737ddeb9e30cbd40f5d",
+      "size": 1907,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/777abc78d82bb0084bc18737ddeb9e30cbd40f5d",
+      "sha256": "947cb4fd8c347fe420c3f2caf17f71b1714926b9ef2ae2d8f23807f3c477ece9",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/padded_example.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fdc848592d34e4a00f9ec1eea3e9e8b963f7913",
+      "size": 433,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4fdc848592d34e4a00f9ec1eea3e9e8b963f7913",
+      "sha256": "80854d4d6555262e5a865e39a83e141f7e64e6792567dd4912dde31aa3ecaebb",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/prefixed-keywords.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c1c8e59a100cf38c12f6edd0a5536cdd2342bc9d",
+      "size": 378,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c1c8e59a100cf38c12f6edd0a5536cdd2342bc9d",
+      "sha256": "30b1cd80c698c177f491743f13ae167b09a55c5855b53eeae342c48bc1fc9141",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/prefixed-keywords.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1f349e5cb496dd7a1333a5e40a8773da9a0af809",
+      "size": 1240,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1f349e5cb496dd7a1333a5e40a8773da9a0af809",
+      "sha256": "e42fe66754992af839ca7455caef5ab8156869b0a77f54ac1cb2e94cdae153c5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/prefixed-keywords.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "30a08751278acfa0a774594fd6963bf1b2f71ed1",
+      "size": 583,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/30a08751278acfa0a774594fd6963bf1b2f71ed1",
+      "sha256": "26d42bec5667118cb97e17cab29123ef017c0f88ea02a33ae00069dddb137811",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/readme_example.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4dff21ade12c64cf3486b02ca0fa499f37270b3b",
+      "size": 182,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4dff21ade12c64cf3486b02ca0fa499f37270b3b",
+      "sha256": "0a45eccb5c8a096956e9c23ec192142e0404e836d4da1856981887812168c9dc",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/readme_example.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f8f7973ac2c5a8e332d7a33aa8abe131faeb424b",
+      "size": 1719,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f8f7973ac2c5a8e332d7a33aa8abe131faeb424b",
+      "sha256": "873919cacff5ab42f948c1485bcb4d6b4a3df72dd7fcc63e9b96632af48226f4",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/readme_example.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bff89cd1cd898e63eccd1329fe3796624c3c0d6f",
+      "size": 687,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/bff89cd1cd898e63eccd1329fe3796624c3c0d6f",
+      "sha256": "80fc395da83f38d4a453f2693d8292da031940be6261986d5781f3dc61616f67",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c5c3e7f12321b3aeb2277e7844bd2a0facedb799",
+      "size": 231,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c5c3e7f12321b3aeb2277e7844bd2a0facedb799",
+      "sha256": "396d8b7d208982488b57ff3c58adbbee4eeeef51c0e28db6a294ec778ff73eac",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60fd4903965b59178c73c82dd83d40dc9b285b59",
+      "size": 1441,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/60fd4903965b59178c73c82dd83d40dc9b285b59",
+      "sha256": "1f7b5191c8751faf4ba1a3ac0570fb0d418f61214c874c3b8be3190034d40a43",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11d62f984c858bb436a6e86a2c1924ef852957bb",
+      "size": 636,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/11d62f984c858bb436a6e86a2c1924ef852957bb",
+      "sha256": "708d04c23cbc05bbd0de8265abac5bed05500ca6af731d4c75363e0900bb0f1e",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_with_tag.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f512463c999077b2418ed96b21ebe786b4b2f9f1",
+      "size": 531,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f512463c999077b2418ed96b21ebe786b4b2f9f1",
+      "sha256": "996cf4b89591fd13feaacd3db79298a1e432a8c80972099f21981bb886506ec7",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_with_tag.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b174a8d787da48cd0b101dd1cadef4199be8417d",
+      "size": 2332,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b174a8d787da48cd0b101dd1cadef4199be8417d",
+      "sha256": "310940348fa9d236d479b359832db00239df36e515686bf091ce90c18c7a7256",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_with_tag.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "29c5ed847ed238c1d2378b456d63ffc088fab6e9",
+      "size": 1455,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/29c5ed847ed238c1d2378b456d63ffc088fab6e9",
+      "sha256": "320bed16016f1647c34d53361f989c67517ebd1f8f761b6024a6ffd6b1662a56",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_without_name_and_description.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8da6afac8011a0ac4cd893f3ad771377f91199e6",
+      "size": 45,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/8da6afac8011a0ac4cd893f3ad771377f91199e6",
+      "sha256": "a1a6a12c146e993ba053e856217db9ca9bc449500e1794f30cc3df4566f23926",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_without_name_and_description.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "172f2060b097e2e271870d2f31c786ddb0fccd73",
+      "size": 594,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/172f2060b097e2e271870d2f31c786ddb0fccd73",
+      "sha256": "2f57a1fdc4f3664cede108abbfe1ceeade188900130e6b4e6c630921aeddcf2a",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/rule_without_name_and_description.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b7be3ee6d384b5ef5a07ad8114e8d811c7dd7f4",
+      "size": 248,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6b7be3ee6d384b5ef5a07ad8114e8d811c7dd7f4",
+      "sha256": "5b840ca3e39dbb8c5d7294c80515afd49ff83bf35ab64c1bc421c5ccbca3b59c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5cb1ae9b4edbb61b1d6b6093ee91f4bb489763b7",
+      "size": 138,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/5cb1ae9b4edbb61b1d6b6093ee91f4bb489763b7",
+      "sha256": "e8477cbe3079660c07aa3a58d19119d68a1046420ab8170699622fc2307224f8",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d00760d47f54d7610b4fa28645196a305a1764a6",
+      "size": 842,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d00760d47f54d7610b4fa28645196a305a1764a6",
+      "sha256": "d9d4a7446596b9f9ae9659a052d4485f37e82732bf4aabc6d6d8d992f419701a",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf97c97b80411dd4c2faf0d4b309228230c11ec0",
+      "size": 261,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/cf97c97b80411dd4c2faf0d4b309228230c11ec0",
+      "sha256": "eca75f8c2748d33743eff110177811c467b0ccfe3207fd82ed52705ab6223e8d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_no_newline.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10ed0af49faff35f73039a84787073a1c5f53a71",
+      "size": 131,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/10ed0af49faff35f73039a84787073a1c5f53a71",
+      "sha256": "6865ffce640f47ed52a92b130d004b05ddfdf8a3c6e8db3faaa3652e5e645c9a",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_no_newline.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "581e932a7eb6d4b62ff887930e114a8cda77591d",
+      "size": 861,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/581e932a7eb6d4b62ff887930e114a8cda77591d",
+      "sha256": "5845275406fbf630a2cf148d14b40390e23d7bcf50e648f38588c58a88cb8366",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_no_newline.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8cb83dfc75f112712a969faaf58b81c9a8688aa",
+      "size": 272,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a8cb83dfc75f112712a969faaf58b81c9a8688aa",
+      "sha256": "eb94f0ffad7f88abd5b446848e931e35561575aaa509503842f1fc6714b27852",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_docstring.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfa9eef0a1ed389c85a7994544bed93fac2b74c9",
+      "size": 234,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/cfa9eef0a1ed389c85a7994544bed93fac2b74c9",
+      "sha256": "0b572d4c620242a5b433c786bf508b2fb0c9a9125540ff1c75af859179e86848",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_docstring.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b1440007cee6db88614bd8b56221b73f02ecb70e",
+      "size": 1273,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b1440007cee6db88614bd8b56221b73f02ecb70e",
+      "sha256": "ba105d965b117d107807bfba47613b9bb452134ab2abcd84de96bebae60721a5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_docstring.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "45b3977fc7d779d7c240fc12ee03b41a5a96bf43",
+      "size": 722,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/45b3977fc7d779d7c240fc12ee03b41a5a96bf43",
+      "sha256": "0c9621e160820ad0aa9cfabd821f476bd4a339025347e9c92a06f869ba92c9b7",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_dollar_sign.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4be3fcc658f1665cbd10cffee5e1822015dd1451",
+      "size": 156,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4be3fcc658f1665cbd10cffee5e1822015dd1451",
+      "sha256": "0051cfeb9d131fc5e6768301e8236a9fdadcc48ca7ef529ac291200cf1fa3e99",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_dollar_sign.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c3fc1f4831fac2a82f9978ae13370d53cd9f49c",
+      "size": 904,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6c3fc1f4831fac2a82f9978ae13370d53cd9f49c",
+      "sha256": "7f4b5f9883d0ea104216ae738fc64dd388023f6686319503960047096d9b8b62",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_dollar_sign.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cdce17d4f6642116e2be3d8f831f58075c97eb54",
+      "size": 287,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/cdce17d4f6642116e2be3d8f831f58075c97eb54",
+      "sha256": "d35bee1ced798854ba2061e991ba6f22cfa31168ea4e3d4179a0ae7666349c2b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_trailing_backslash.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1df1a8a9f5d119fddea0d663386eef1c157c1a68",
+      "size": 209,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1df1a8a9f5d119fddea0d663386eef1c157c1a68",
+      "sha256": "991835b8c4f82cd66444120923e7e5ac5eec39b220706c4b88cd679fb53bf9a1",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_trailing_backslash.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8926dea63493636fb98807fcaaa498d34a514309",
+      "size": 1318,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/8926dea63493636fb98807fcaaa498d34a514309",
+      "sha256": "39730b90728a92a5fdcbf95aac402ccf94c35c9d093ec8e7d62944aaf06bf3bf",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outline_with_value_with_trailing_backslash.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2554141939bada87e3f7395bfde8a3f5d037ab7d",
+      "size": 421,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2554141939bada87e3f7395bfde8a3f5d037ab7d",
+      "sha256": "338817215f77f41382897e0f48eecd9e22b3ac59aa0ebcdb273b50791fe9d2cc",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outlines_with_tags.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4dff21ade12c64cf3486b02ca0fa499f37270b3b",
+      "size": 182,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4dff21ade12c64cf3486b02ca0fa499f37270b3b",
+      "sha256": "0a45eccb5c8a096956e9c23ec192142e0404e836d4da1856981887812168c9dc",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outlines_with_tags.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "56fea47ce40f19e919ffbb16695257444294fc5e",
+      "size": 1732,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/56fea47ce40f19e919ffbb16695257444294fc5e",
+      "sha256": "4ef1fef436bd3ab86d82ea9b9a41881d472bfa93d1e89a3c6e8acbea2be3072f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/scenario_outlines_with_tags.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eefe9beec9ee71e0b8ac685745edab617f99c82f",
+      "size": 713,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/eefe9beec9ee71e0b8ac685745edab617f99c82f",
+      "sha256": "391db46d23cdd709de9fe0c790cc58c348f5685ba3c5628ef5626cd744c5d1d3",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/several_examples.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dcd6426db80bec3a0d407e12b9381f765a32a754",
+      "size": 214,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/dcd6426db80bec3a0d407e12b9381f765a32a754",
+      "sha256": "1cfe0b128832ec549fbef32ad2322ccd907b9d96f2ab13e1a72c4831e1a6053b",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/several_examples.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "daf13ae8eaf92672e4df3258b0abfe80bf8c3c1e",
+      "size": 1497,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/daf13ae8eaf92672e4df3258b0abfe80bf8c3c1e",
+      "sha256": "66c521700899330ebaaacba4c1ff9592612546dd67155c3a9ae6d976e82a6c9f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/several_examples.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "73f91fc20ebc4acf4f2023574843153c52fa6084",
+      "size": 786,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/73f91fc20ebc4acf4f2023574843153c52fa6084",
+      "sha256": "48004396aac577d86f538d90433a76df3af1ad2c79ef5452ebc48addebbc80c3",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/spaces_in_language.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5248fd76007c1637b844c981aea9eaaca03653f2",
+      "size": 43,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/5248fd76007c1637b844c981aea9eaaca03653f2",
+      "sha256": "c9f942063408cbde632b86d968e177b5250905979928024f1771a027644ed198",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/spaces_in_language.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "76db4e1bd2beee8d357f584e59267e7a4e39efde",
+      "size": 231,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/76db4e1bd2beee8d357f584e59267e7a4e39efde",
+      "sha256": "714abe9b136851604c46f672493d47f49e6326e1e864933195089402bcc2f868",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/spaces_in_language.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/star-keywords.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9288996f74e3f82afadca04dc36ed9677cb38c8",
+      "size": 229,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d9288996f74e3f82afadca04dc36ed9677cb38c8",
+      "sha256": "3e51b06d6c2d0de5e01325ca2e1a1870453f0cc4dd51f9cf03115be7b4139e3f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/star-keywords.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e9c80d412a70dec0fb5bd208bf3a6ad897678c9",
+      "size": 815,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2e9c80d412a70dec0fb5bd208bf3a6ad897678c9",
+      "sha256": "d96cebeb076b5442e3f40bdd930e29e0ce6787b5e3f96b2f0bf60aedfde5de6a",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/star-keywords.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c93a6549a39a767108552da60a308ece7f45ed70",
+      "size": 399,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c93a6549a39a767108552da60a308ece7f45ed70",
+      "sha256": "f4a6d4ecb6d6e8f96223a8dccce494fc2317ccbc32b5d67d66476551dcc68b50",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/step_with_datatable_and_docstring.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fd9d20053ba38a0da578c2520b21e2fa5594cf9",
+      "size": 351,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1fd9d20053ba38a0da578c2520b21e2fa5594cf9",
+      "sha256": "340563e165b3ffab402c14cc13b2a7063a26506da817639e313c35c582bc6c85",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/step_with_datatable_and_docstring.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c7be56429dbeff00ce7c13c556cf599d12f5547",
+      "size": 1755,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/6c7be56429dbeff00ce7c13c556cf599d12f5547",
+      "sha256": "b3017d34252c1a688078bfd4fc57df0d4ad518c789f2fe86df161f0c30930a40",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/step_with_datatable_and_docstring.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0c32a59f614e9b05289f47aaaedfc6e9799d322a",
+      "size": 985,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0c32a59f614e9b05289f47aaaedfc6e9799d322a",
+      "sha256": "ff3e5ea3f76532dd37d4e4a91ded4953904e9ee782afbaedce14be0b7aa377a9",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tagged_feature_with_scenario_outline.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d46106210e6b1518ad60efbf9bba5aadf068eff6",
+      "size": 114,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/d46106210e6b1518ad60efbf9bba5aadf068eff6",
+      "sha256": "6c50c2f2986047745333fd7c8beb39df2271016e9c22655ea284c0455a883398",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tagged_feature_with_scenario_outline.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "86d5d3f902876f1b53b692fec4271470f6daee2a",
+      "size": 987,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/86d5d3f902876f1b53b692fec4271470f6daee2a",
+      "sha256": "c567c27a7f25ad6622e6f177ce6d256f862bce7b83f5839a6691b18885e79f7e",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tagged_feature_with_scenario_outline.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4942a11242ca73fff32713e97f6ea9b4deb733d0",
+      "size": 594,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4942a11242ca73fff32713e97f6ea9b4deb733d0",
+      "sha256": "5b4ac52da7ca9937f632dad5285c85cba7e5994aa64edd7468d8c860e8ad9d70",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tags.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ce9ec8ecd181888b5f2392b3e050b1164da90baf",
+      "size": 673,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/ce9ec8ecd181888b5f2392b3e050b1164da90baf",
+      "sha256": "ec0aa947a5a7bfe5b78e18ac5afc81d368602a798f587ac8e5dc5cdd1c58ab9c",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tags.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d7548320e27ef5dc046e3b32117a9b47abfc4e7",
+      "size": 3725,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/1d7548320e27ef5dc046e3b32117a9b47abfc4e7",
+      "sha256": "8d464801aeb79aa846dbe63ae4dc71ecd69402d8ee94d519a5dafe6463bf0b8d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/tags.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "18bf1afd9968262ccb1e25b64708b699fa1f2545",
+      "size": 3045,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/18bf1afd9968262ccb1e25b64708b699fa1f2545",
+      "sha256": "d2bc9ad1c0e17396dc49bc5ca7337bb3f1f0ca7d20f77b61a495fc162c2d4cc5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_space.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f55bb905223b6f36b3543e47359779d37da9e33",
+      "size": 153,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/2f55bb905223b6f36b3543e47359779d37da9e33",
+      "sha256": "679ff88c1187e569841f6eec7ced62491adfbdbe74e4837a373ebab6ee6b4f01",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_space.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11187f8490885ec6a528cc352804fc37455d6e6f",
+      "size": 660,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/11187f8490885ec6a528cc352804fc37455d6e6f",
+      "sha256": "115c0245d57353808a1f08a8ed5a16ef9b987ced9b3ab9735ee7e5cae229642d",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_space.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fd2c0cb053d2cbecad063e9d6a0acb9af469b4ca",
+      "size": 272,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/fd2c0cb053d2cbecad063e9d6a0acb9af469b4ca",
+      "sha256": "23b5b9ea56d8a83a07ca027679797d669dad9e08112b7a9781c6177e66eb26ce",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_tab.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9407a2f2a9ddd4d4b78a9b5c778e9cd1243c4fd3",
+      "size": 151,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/9407a2f2a9ddd4d4b78a9b5c778e9cd1243c4fd3",
+      "sha256": "dfe40e18154d6f97be960ec9533bfed9aa2eb95ddd6448d253f9b000722bfc28",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_tab.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5ce9c33486365be827145e4be36f752558dc343",
+      "size": 658,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a5ce9c33486365be827145e4be36f752558dc343",
+      "sha256": "01b5cd6cbc363ac1265671a39af35819ab71151d3209350d5cfc66c09f16c6bb",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/trim_tab.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b22919e14e663959b518de0eb24999b4fff26b4b",
+      "size": 271,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b22919e14e663959b518de0eb24999b4fff26b4b",
+      "sha256": "290344f2fff4d3950e92f7461529d406f89fa83fcbd34076f7625458b0a0d0bd",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/very_long.feature",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48957b3b4b8b838f7cf246fdf021436d711c9280",
+      "size": 43058,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/48957b3b4b8b838f7cf246fdf021436d711c9280",
+      "sha256": "d67c7de109bed1fae62dcb8afe642f08efb7f9ed98d7cd7ede37dd38590335b5",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/very_long.feature.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3016d46cd229b12c9c946b200038779181097162",
+      "size": 255251,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/3016d46cd229b12c9c946b200038779181097162",
+      "sha256": "beb8e031ec6f2a56c1d46d0be9928cc151d411c42c7b3444ff4cd9dad10e142f",
+      "checkout_eol": "unchanged Git blob"
+    },
+    {
+      "path": "testdata/good/very_long.feature.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6e9003341f7b22de2de7dca162f1a3626b41bda",
+      "size": 120461,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e6e9003341f7b22de2de7dca162f1a3626b41bda",
+      "sha256": "cda2d24ce36520504944dd5d7767ffab286791691666341afb26cf91e321d563",
+      "checkout_eol": "unchanged Git blob"
+    }
+  ]
+}

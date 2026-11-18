@@ -1,0 +1,751 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prometheus-ags.dev/schemas/kbd/adopted-contract.v2.schema.json",
+  "title": "KBD adopted completion contract \u2014 version 2 (VLBV)",
+  "description": "Versioned finite completion contract for one useful runnable end-to-end KBD phase. Authored during Spec/Plan, frozen before production implementation, and adopted through the existing canonical writer (prometheus kbd decision record) carrying path + SHA-256 digest + plan revision. Amendments are new canonical decisions with supersedes lineage; stale digests are rejected by the readiness checker (shared/scripts/kbd-phase-readiness-check.sh). Version 2 (VLBV, pack 1.15.0) stores selection rationale, structured oracles and negative controls, real and substituted boundaries, limitations, per-scenario invalidation keys and restoration, the optional stochastic profile, typed boundary-packet commands, calibration identity, method identity and the four closure states. kbd-contract-adopt.sh lints it before recording the adoption decision.",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "kind",
+    "identity",
+    "digestNormalization",
+    "adoptionSource",
+    "decisionOwner",
+    "amendmentPolicy",
+    "releaseClaim",
+    "statusVocabulary",
+    "scenarioMatrix",
+    "functionalScope",
+    "resilienceScope",
+    "exclusions",
+    "requiredSafetyChecks",
+    "budgets",
+    "evidenceInvalidation",
+    "workerRoutes",
+    "boundaryPacket",
+    "status",
+    "calibration",
+    "method",
+    "closure"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "2"
+    },
+    "kind": {
+      "const": "kbd.adopted-contract"
+    },
+    "identity": {
+      "type": "object",
+      "required": [
+        "projectId",
+        "runId",
+        "phaseId",
+        "planRevision",
+        "contractDigest"
+      ],
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "Canonical project UUID from .prometheus/project.json."
+        },
+        "runId": {
+          "type": "string",
+          "description": "Canonical run id from prometheus kbd status."
+        },
+        "phaseId": {
+          "type": "string",
+          "description": "Canonical phase id (kebab-case directory name under .kbd-orchestrator/phases/)."
+        },
+        "planRevision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Stamped by the adoption writer from canonical status at adoption time. Excluded from the digest; the canonical Decision binds plan_revision itself. Traceability metadata, not an equality gate.",
+          "minimum": 0
+        },
+        "contractDigest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stamped by the adoption writer AFTER digest computation. Excluded from the digest input to avoid self-referential recursion.",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "digestNormalization": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "command",
+        "stalenessRule"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "command": {
+          "type": "string",
+          "description": "Exact normalization command used by BOTH writer and checker, e.g. jq -S -c 'del(.identity.contractDigest) | del(.identity.planRevision)'."
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "stalenessRule": {
+          "type": "string",
+          "description": "Deterministic rule deciding REJECT-STALE, e.g. digest mismatch vs latest non-superseded adoption decision for this contract path."
+        }
+      },
+      "additionalProperties": false
+    },
+    "adoptionSource": {
+      "type": "string",
+      "description": "Explicit operator instruction reference. Never inferred from TODOs or reflections."
+    },
+    "decisionOwner": {
+      "type": "string"
+    },
+    "amendmentPolicy": {
+      "type": "string",
+      "description": "Material scope/acceptance changes require explicit operator version-adoption recorded as a new canonical decision with supersedes; suggestions never auto-enter task totals."
+    },
+    "releaseClaim": {
+      "type": "object",
+      "required": [
+        "userOperation",
+        "supportedEnvironments",
+        "currentCapabilities",
+        "explicitUnknowns"
+      ],
+      "properties": {
+        "userOperation": {
+          "type": "string",
+          "description": "The real user operation this phase delivers."
+        },
+        "supportedEnvironments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "currentCapabilities": {
+          "type": "string",
+          "description": "Honest capability statement from code/capability inventory \u2014 never task counts."
+        },
+        "explicitUnknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "statusVocabulary": {
+      "const": [
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "NOT_EXERCISED"
+      ],
+      "description": "Exactly the four VLBV verdicts, in this order."
+    },
+    "scenarioMatrix": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Finite adopted acceptance set. Scenario IDs are stable and frozen before implementation.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "actor",
+          "usefulOutcome",
+          "sourceRequirement",
+          "reasonNow",
+          "likelihood",
+          "mandatory",
+          "ownerTask",
+          "productionEntry",
+          "realCollaborators",
+          "substitutedBoundaries",
+          "oracle",
+          "negativeControl",
+          "fixtures",
+          "evidence",
+          "limitations",
+          "invalidationKeys",
+          "restoration"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerTask": {
+            "type": "string",
+            "description": "Owning task ID(s) from tasks.json, e.g. \"T4+T5+T7\"."
+          },
+          "productionEntry": {
+            "type": "string",
+            "description": "Shipped script/CLI path and exact invocation."
+          },
+          "realCollaborators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "oracle": {
+            "type": "object",
+            "required": [
+              "observation",
+              "expectedTruthSource",
+              "comparator"
+            ],
+            "properties": {
+              "observation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expectedTruthSource": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Independent source of expected truth \u2014 never the system under test (VLBV 06)."
+              },
+              "comparator": {
+                "type": "string",
+                "minLength": 1,
+                "description": "How observation is compared with expected truth. A bare process exit status is rejected by adoption lint."
+              },
+              "tolerance": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "negativeControl": {
+            "type": "object",
+            "required": [
+              "input",
+              "expectedRejection",
+              "commandRef"
+            ],
+            "properties": {
+              "input": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expectedRejection": {
+                "type": "string",
+                "minLength": 1
+              },
+              "commandRef": {
+                "type": "string",
+                "minLength": 1,
+                "description": "id of the boundaryPacket.commands entry (kind negativeControl) that runs it (VLBV 07)."
+              }
+            },
+            "additionalProperties": false
+          },
+          "fixtures": {
+            "type": "string",
+            "description": "Fixture identity: scratch roots, content digests, isolation guarantees."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Required recorded evidence: argv, exit codes, stdout/stderr excerpts, digests."
+          },
+          "classification": {
+            "type": "string",
+            "description": "Optional: marks delivery/packaging-only validation so its failure is never cascaded into product-failure claims."
+          },
+          "actor": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Who needs the behavior (VLBV 01)."
+          },
+          "usefulOutcome": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The observable value delivered (VLBV 01)."
+          },
+          "sourceRequirement": {
+            "type": "string",
+            "pattern": "^(openspec:|speckit:|native:|assumption: ).+",
+            "description": "OpenSpec requirement reference (openspec:<capability>#<requirement>), another backend reference, or an explicit 'assumption: <text>' (VLBV 01)."
+          },
+          "reasonNow": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this scenario matters in this phase (VLBV 01)."
+          },
+          "likelihood": {
+            "type": "string",
+            "description": "Sourced estimate, a qualitative judgment, or the literal UNKNOWN. Never an invented probability."
+          },
+          "mandatory": {
+            "type": "boolean",
+            "description": "A mandatory gate, as opposed to ordinary priority (VLBV 03)."
+          },
+          "scopeRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "functionalScope items (exact text) this scenario covers."
+          },
+          "substitutedBoundaries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Boundaries replaced by a stub or double; their evidence can never be promoted to a real claim (VLBV 08)."
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What this scenario does not establish (VLBV 16)."
+          },
+          "invalidationKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Source/fixture/config/oracle identities whose change makes only this scenario's evidence stale (VLBV 15)."
+          },
+          "restoration": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Restoration and cleanup this scenario requires before closure (VLBV 14)."
+          },
+          "nondeterministic": {
+            "type": "boolean"
+          },
+          "stochastic": {
+            "type": "object",
+            "required": [
+              "samples",
+              "grader",
+              "stoppingRule"
+            ],
+            "properties": {
+              "samples": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "grader": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stoppingRule": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false,
+            "description": "Declared before any result exists (VLBV 21). Required when nondeterministic is true."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "functionalScope": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "required": [
+              "item"
+            ],
+            "properties": {
+              "item": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nonObservable": {
+                "type": "boolean",
+                "description": "true only for scope with no externally observable behavior; adoption lint then accepts it without a scenario."
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "description": "Included value. Every item maps to at least one scenario (scenarioMatrix[].scopeRefs) or is marked nonObservable."
+    },
+    "resilienceScope": {
+      "type": "object",
+      "required": [
+        "policy",
+        "deferredOptional"
+      ],
+      "properties": {
+        "policy": {
+          "type": "string",
+          "description": "Adopted requirements never defer via budget overflow (exhaustion => checkpoint+BLOCKED); only never-adopted optional items may defer."
+        },
+        "deferredOptional": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "requiredSafetyChecks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "scenarioIds"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenarioIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Non-waivable checks, each traced to the scenarios that evidence it (VLBV 03)."
+    },
+    "budgets": {
+      "type": "object",
+      "required": [
+        "timeMinutes",
+        "toolCalls",
+        "repairAttempts",
+        "noProgressLimit",
+        "tokenBudget",
+        "exhaustion"
+      ],
+      "properties": {
+        "timeMinutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "toolCalls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "repairAttempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "noProgressLimit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tokenBudget": {
+          "type": "string",
+          "description": "Measured value or the literal \"UNKNOWN\" with tokenFallback recorded."
+        },
+        "tokenFallback": {
+          "type": "string"
+        },
+        "consumedAtAuthoring": {
+          "type": "object"
+        },
+        "exhaustion": {
+          "type": "string",
+          "description": "checkpoint + BLOCKED; never silent PASS; docs/state may be saved without running product tests."
+        },
+        "extensions": {
+          "type": "array",
+          "description": "Budget extensions. Part of the digest-bound content, so adding one is a material amendment that needs a signed amend-contract manifest once the contract is bound. Prior consumption is preserved; the latest resultingCeilings, when present, replaces additive totals.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timeMinutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "toolCalls": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "repairAttempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "resultingCeilings": {
+                "type": "object"
+              },
+              "scope": {
+                "type": "string"
+              },
+              "approvedAt": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceInvalidation": {
+      "type": "string",
+      "description": "Digest/revision/fixture-keyed invalidation; only affected evidence is invalidated; history preserved; no blanket re-review."
+    },
+    "workerRoutes": {
+      "type": "object",
+      "required": [
+        "agent",
+        "model"
+      ],
+      "properties": {
+        "agent": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "billing": {
+          "type": "string"
+        },
+        "subagents": {
+          "type": "string"
+        },
+        "reviewRoundsMax": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "boundaryPacket": {
+      "type": "object",
+      "required": [
+        "postImplementationOnly",
+        "singleRun",
+        "commands",
+        "expectedEffects",
+        "requiredApprovals",
+        "receipts",
+        "cleanup",
+        "stopConditions"
+      ],
+      "properties": {
+        "postImplementationOnly": {
+          "const": true,
+          "description": "Boundary verification runs only after complete production implementation; no per-task test loops."
+        },
+        "singleRun": {
+          "const": true
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Typed entries, run once, in order (B4 step 3).",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "argv",
+              "kind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "argv": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "kind": {
+                "enum": [
+                  "build",
+                  "run",
+                  "scenario",
+                  "negativeControl"
+                ]
+              },
+              "scenarioIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "cwd": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "expectedEffects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiredApprovals": {
+          "type": "string"
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cleanup": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "runnerOutputGlobs": {
+          "type": "array",
+          "description": "Project-relative globs (* and **) naming runner output (reports, build artifacts). At closure, files under them modified before the B4 authorization event are listed in the closure packet (VLBV CR-33; passive evidence, never a guard).",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "stopConditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "required": [
+        "implementationComplete"
+      ],
+      "properties": {
+        "implementationComplete": {
+          "type": "boolean",
+          "description": "false at adoption; flipping to true is a content change requiring an amendment decision (new digest, supersedes)."
+        }
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "required": [
+        "examplesPath",
+        "sha256"
+      ],
+      "properties": {
+        "examplesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Owner-reviewed calibration examples, identity-bound (VLBV 02)."
+    },
+    "method": {
+      "type": "object",
+      "required": [
+        "name",
+        "packVersion",
+        "referenceSha256"
+      ],
+      "properties": {
+        "name": {
+          "const": "VLBV"
+        },
+        "packVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "referenceSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "openspecVersion": {
+          "type": "string"
+        },
+        "specDeltaDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 over the phase's OpenSpec change deltas at adoption; a later edit makes readiness REJECT-STALE (CR-04)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Procedure identity is part of evidence applicability (VLBV 15)."
+    },
+    "closure": {
+      "type": "object",
+      "required": [
+        "implementationComplete",
+        "behaviorAccepted",
+        "releaseEligible",
+        "releaseAuthorized"
+      ],
+      "properties": {
+        "implementationComplete": {
+          "type": "boolean"
+        },
+        "behaviorAccepted": {
+          "type": "boolean"
+        },
+        "releaseEligible": {
+          "type": "boolean"
+        },
+        "releaseAuthorized": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Four separate states (VLBV 05). All false at adoption except as amended."
+    }
+  },
+  "additionalProperties": false
+}

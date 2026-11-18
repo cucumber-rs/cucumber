@@ -165,6 +165,14 @@ pub struct Summarize<Writer> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     failed_hooks: usize,
+    pending_step_count: usize,
+    pending_hook_count: usize,
+    pending_scenario_count: usize,
+    pending_failure_count: usize,
+    controlled_failures: usize,
+    legacy_failure_seen: bool,
+    controlled: HashMap<ScenarioPath, ControlledAttempt>,
+    controlled_retries: std::collections::HashSet<ScenarioPath>,
 
     /// Current [`State`] of this [`Writer`].
     state: State,
@@ -191,6 +199,13 @@ type HandledScenarios = HashMap<
     Indicator,
 >;
 
+type ScenarioPath = (Source<gherkin::Feature>, Option<Source<gherkin::Rule>>, Source<gherkin::Scenario>);
+#[derive(Clone, Debug, Default)]
+struct ControlledAttempt {
+    passed: usize, skipped: usize, failed: usize, pending: usize,
+    failed_hooks: usize, pending_hooks: usize,
+}
+
 impl<W, Wr> Writer<W> for Summarize<Wr>
 where
     W: World,
@@ -211,6 +226,7 @@ where
         // This is done to avoid miscalculations if this `Writer` happens to be
         // wrapped by a `writer::Repeat` or similar.
         if matches!(self.state, State::InProgress) {
+            let outcome = event.as_ref().ok().and_then(|event| event.outcome);
             match event.as_deref() {
                 Err(_) => self.parsing_errors += 1,
                 Ok(Cucumber::Feature(feat, ev)) => match ev {
@@ -224,6 +240,7 @@ where
                             Some(rule.clone()),
                             sc.clone(),
                             ev,
+                            outcome,
                         );
                     }
                     Feature::Scenario(sc, ev) => {
@@ -232,6 +249,7 @@ where
                             None,
                             sc.clone(),
                             ev,
+                            outcome,
                         );
                     }
                     Feature::Finished | Feature::Rule(..) => {}
@@ -288,6 +306,13 @@ where
         self.steps.retried
     }
 
+    fn pending_steps(&self) -> usize { self.pending_step_count }
+    fn pending_hooks(&self) -> usize { self.pending_hook_count }
+    fn pending_failures(&self) -> usize { self.pending_failure_count }
+    fn execution_has_failed(&self) -> bool {
+        self.parsing_errors > 0 || self.legacy_failure_seen || self.controlled_failures > 0
+    }
+
     fn parsing_errors(&self) -> usize {
         self.parsing_errors
     }
@@ -313,6 +338,9 @@ impl<Writer> From<Writer> for Summarize<Writer> {
             steps: Stats { passed: 0, skipped: 0, failed: 0, retried: 0 },
             parsing_errors: 0,
             failed_hooks: 0,
+            pending_step_count: 0, pending_hook_count: 0, pending_scenario_count: 0,
+            pending_failure_count: 0, controlled_failures: 0, legacy_failure_seen: false,
+            controlled: HashMap::new(), controlled_retries: std::collections::HashSet::new(),
             state: State::InProgress,
             handled_scenarios: HashMap::new(),
         }
@@ -398,6 +426,7 @@ impl<Writer> Summarize<Writer> {
                     }
                 } else {
                     self.steps.failed += 1;
+                    self.legacy_failure_seen = true;
                     self.scenarios.failed += 1;
 
                     _ = self
@@ -405,6 +434,59 @@ impl<Writer> Summarize<Writer> {
                         .insert((feature, rule, scenario), Failed);
                 }
             }
+        }
+    }
+
+    fn handle_controlled<W>(&mut self, path: ScenarioPath,
+        ev: &event::RetryableScenario<W>, outcome: crate::execution::Outcome)
+    {
+        use crate::execution::OutcomeStatus as Status;
+        use event::{Scenario, Step, Hook};
+        match &ev.event {
+            Scenario::Step(_, Step::Passed(..) | Step::Skipped | Step::Failed(..))
+            | Scenario::Background(_, Step::Passed(..) | Step::Skipped | Step::Failed(..)) => {
+                let attempt = self.controlled.entry(path).or_default();
+                match outcome.status {
+                    Status::Passed => attempt.passed += 1,
+                    Status::Skipped => attempt.skipped += 1,
+                    Status::Pending => attempt.pending += 1,
+                    Status::Undefined | Status::Ambiguous | Status::Failed => attempt.failed += 1,
+                }
+            }
+            Scenario::Hook(_, Hook::Passed | Hook::Failed(..)) => {
+                let attempt = self.controlled.entry(path).or_default();
+                match outcome.status {
+                    Status::Pending => attempt.pending_hooks += 1,
+                    Status::Failed | Status::Undefined | Status::Ambiguous => attempt.failed_hooks += 1,
+                    Status::Passed | Status::Skipped => {}
+                }
+            }
+            Scenario::Finished => {
+                let attempt = self.controlled.remove(&path).unwrap_or_default();
+                let retry = outcome.retryable && ev.retries.is_some_and(|retries| retries.left > 0);
+                if retry {
+                    self.steps.retried += attempt.failed;
+                    if self.controlled_retries.insert(path) { self.scenarios.retried += 1; }
+                    return;
+                }
+                self.steps.passed += attempt.passed;
+                self.steps.skipped += attempt.skipped;
+                self.steps.failed += attempt.failed;
+                self.pending_step_count += attempt.pending;
+                self.pending_hook_count += attempt.pending_hooks;
+                self.failed_hooks += attempt.failed_hooks;
+                if outcome.fails_run { self.controlled_failures += 1; }
+                match outcome.status {
+                    Status::Passed => self.scenarios.passed += 1,
+                    Status::Skipped => self.scenarios.skipped += 1,
+                    Status::Pending => {
+                        self.pending_scenario_count += 1;
+                        self.pending_failure_count += usize::from(outcome.fails_run);
+                    }
+                    Status::Undefined | Status::Ambiguous | Status::Failed => self.scenarios.failed += 1,
+                }
+            }
+            _ => {}
         }
     }
 
@@ -417,10 +499,15 @@ impl<Writer> Summarize<Writer> {
         rule: Option<Source<gherkin::Rule>>,
         scenario: Source<gherkin::Scenario>,
         ev: &event::RetryableScenario<W>,
+        outcome: Option<crate::execution::Outcome>,
     ) {
         use event::{Hook, Scenario};
 
         let path = (feature, rule, scenario);
+        if let Some(outcome) = outcome {
+            self.handle_controlled(path, ev, outcome);
+            return;
+        }
 
         let ret = ev.retries;
         match &ev.event {
@@ -448,6 +535,7 @@ impl<Writer> Summarize<Writer> {
                     }
                 }
                 self.failed_hooks += 1;
+                self.legacy_failure_seen = true;
             }
             Scenario::Background(st, ev) | Scenario::Step(st, ev) => {
                 self.handle_step(path.0, path.1, path.2, st.as_ref(), ev, ret);
@@ -551,11 +639,11 @@ impl Styles {
         };
 
         let scenarios =
-            self.maybe_plural("scenario", summary.scenarios.total());
-        let scenarios_stats = self.format_stats(summary.scenarios);
+            self.maybe_plural("scenario", summary.scenarios.total() + summary.pending_scenario_count);
+        let scenarios_stats = self.format_stats_with_pending(summary.scenarios, summary.pending_scenario_count);
 
-        let steps = self.maybe_plural("step", summary.steps.total());
-        let steps_stats = self.format_stats(summary.steps);
+        let steps = self.maybe_plural("step", summary.steps.total() + summary.pending_step_count);
+        let steps_stats = self.format_stats_with_pending(summary.steps, summary.pending_step_count);
 
         let parsing_errors = if summary.parsing_errors > 0 {
             self.err(self.maybe_plural("parsing error", summary.parsing_errors))
@@ -587,7 +675,14 @@ impl Styles {
     /// Formats [`Stats`] for a terminal output.
     #[must_use]
     pub fn format_stats(&self, stats: Stats) -> Cow<'static, str> {
+        self.format_stats_with_pending(stats, 0)
+    }
+
+    fn format_stats_with_pending(&self, stats: Stats, pending: usize) -> Cow<'static, str> {
         let mut formatted = [
+            if pending > 0 {
+                self.bold(self.skipped(format!("{pending} pending")))
+            } else { "".into() },
             if stats.passed > 0 {
                 self.bold(self.ok(format!("{} passed", stats.passed)))
             } else {

@@ -6,6 +6,15 @@ All user visible changes to `cucumber` crate will be documented in this file. Th
 
 
 
+## main — unreleased draft
+
+### Added
+
+- Added opt-in matching, source-aware Messages/AST/Pickles, lifecycle and rerun interoperability foundations.
+- Added separate local native Rust/TypeScript/Python compiler/rerun SDK packages; foreign step execution and registry publication remain outside the delivered boundary.
+
+These changes are proposals on the fork contribution branch, not published releases.
+
 ## [0.23.0] · 2026-04-23
 [0.23.0]: https://github.com/cucumber-rs/cucumber/tree/v0.23.0
 

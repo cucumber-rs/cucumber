@@ -13,7 +13,7 @@
 use std::{
     any::Any,
     cmp,
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     iter, mem,
     ops::ControlFlow,
     panic::{self, AssertUnwindSafe},
@@ -29,8 +29,7 @@ use std::{
 use crossbeam_utils::atomic::AtomicCell;
 use derive_more::with_trait::{Debug, Display, FromStr};
 use futures::{
-    FutureExt as _, Stream, StreamExt as _, TryFutureExt as _,
-    TryStreamExt as _,
+    FutureExt as _, Stream, StreamExt as _,
     channel::{mpsc, oneshot},
     future::{self, Either, LocalBoxFuture},
     lock::Mutex,
@@ -46,6 +45,10 @@ use crate::tracing::{Collector as TracingCollector, SpanCloseWaiter};
 use crate::{
     Event, Runner, Step, World,
     event::{self, HookType, Info, Retries, Source},
+    execution::{
+        ExecutionControl, ExecutionMode, Outcome, OutcomePolicy, OutcomeStatus,
+        WorldContext,
+    },
     feature::Ext as _,
     future::{FutureExt as _, select_with_biased_first},
     parser, step,
@@ -58,7 +61,7 @@ use crate::{
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
-    #[arg(long, short, value_name = "int", global = true)]
+    #[arg(long, short, value_name = "int", global = true, value_parser = positive_concurrency)]
     pub concurrency: Option<usize>,
 
     /// Run tests until the first failure.
@@ -90,6 +93,24 @@ pub struct Cli {
     /// Tag expression to filter retried scenarios.
     #[arg(long, value_name = "tagexpr", global = true)]
     pub retry_tag_filter: Option<TagOperation>,
+}
+
+fn positive_concurrency(value: &str) -> Result<usize, String> {
+    value.parse::<usize>().ok().filter(|n| *n > 0)
+        .ok_or_else(|| "concurrency must be a positive integer".to_owned())
+}
+
+/// Whether backgrounds execute for scenarios without their own steps.
+///
+/// This execution policy is independent of parser syntax/content policies.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum BackgroundSemantics {
+    /// Preserve existing behavior: run backgrounds even for empty scenarios.
+    #[default]
+    Legacy,
+    /// Match official Gherkin 43 Pickles: empty scenarios have no background steps.
+    /// Scenario hooks still run, including on expanded empty outline rows.
+    Gherkin43,
 }
 
 /// Type determining whether [`Scenario`]s should run concurrently or
@@ -382,6 +403,22 @@ pub struct Basic<
     /// Indicates whether execution should be stopped after the first failure.
     fail_fast: bool,
 
+    /// Execution policy for backgrounds belonging to empty scenarios.
+    background_semantics: BackgroundSemantics,
+
+    /// Ordered callbacks around resolved step bodies.
+    step_hooks: super::StepHooks<World>,
+    /// Retained callbacks with native scenario identity.
+    scenario_hooks: Option<super::Hooks<World>>,
+    /// Ordered global setup and cleanup for one executor invocation.
+    run_hooks: super::RunHooks,
+    timeouts: super::Timeouts,
+    outcome_policy: OutcomePolicy,
+    execution_mode: ExecutionMode,
+    scheduling: Option<super::SchedulingOptions>,
+    attachments: Option<crate::attachment::AttachmentStore>,
+    support_code: Option<crate::support_code::Store>,
+
     #[cfg(feature = "tracing")]
     /// [`TracingCollector`] for [`event::Scenario::Log`]s forwarding.
     #[debug(ignore)]
@@ -412,6 +449,16 @@ impl<World, F: Clone, B: Clone, A: Clone> Clone for Basic<World, F, B, A> {
             before_hook: self.before_hook.clone(),
             after_hook: self.after_hook.clone(),
             fail_fast: self.fail_fast,
+            background_semantics: self.background_semantics,
+            step_hooks: self.step_hooks.clone(),
+            scenario_hooks: self.scenario_hooks.clone(),
+            run_hooks: self.run_hooks.clone(),
+            timeouts: self.timeouts.clone(),
+            outcome_policy: self.outcome_policy,
+            execution_mode: self.execution_mode,
+            scheduling: self.scheduling.clone(),
+            attachments: self.attachments.clone(),
+            support_code: self.support_code.clone(),
             #[cfg(feature = "tracing")]
             logs_collector: Arc::clone(&self.logs_collector),
         }
@@ -441,6 +488,16 @@ impl<World> Default for Basic<World> {
             before_hook: None,
             after_hook: None,
             fail_fast: false,
+            background_semantics: BackgroundSemantics::Legacy,
+            step_hooks: super::StepHooks::default(),
+            scenario_hooks: None,
+            run_hooks: super::RunHooks::default(),
+            timeouts: super::Timeouts::default(),
+            outcome_policy: OutcomePolicy::Legacy,
+            execution_mode: ExecutionMode::Run,
+            scheduling: None,
+            attachments: None,
+            support_code: None,
             #[cfg(feature = "tracing")]
             logs_collector: Arc::new(AtomicCell::new(Box::new(None))),
         }
@@ -448,6 +505,27 @@ impl<World> Default for Basic<World> {
 }
 
 impl<World, Which, Before, After> Basic<World, Which, Before, After> {
+    /// Enables authoritative completion semantics explicitly; Legacy is default.
+    #[must_use]
+    pub fn with_outcome_policy(mut self, policy: OutcomePolicy) -> Self {
+        self.outcome_policy = policy;
+        self
+    }
+
+    /// Selects ordinary execution or explicit definition inspection.
+    #[must_use]
+    pub fn with_execution_mode(mut self, mode: ExecutionMode) -> Self {
+        self.execution_mode = mode;
+        self
+    }
+
+    /// Buffers the selected application and schedules its global case plan.
+    #[must_use]
+    pub fn with_scheduling_options(mut self, options: super::SchedulingOptions) -> Self {
+        self.scheduling = Some(options);
+        self
+    }
+
     /// If `max` is [`Some`], then number of concurrently executed [`Scenario`]s
     /// will be limited.
     ///
@@ -457,7 +535,9 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         mut self,
         max: impl Into<Option<usize>>,
     ) -> Self {
-        self.max_concurrent_scenarios = max.into();
+        let max = max.into();
+        assert!(max != Some(0), "concurrency must be a positive integer");
+        self.max_concurrent_scenarios = max;
         self
     }
 
@@ -535,6 +615,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
             ..
@@ -550,6 +640,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
         }
@@ -604,6 +704,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
             ..
@@ -619,6 +729,19 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook: Some(func),
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks: scenario_hooks.map(|mut hooks| {
+                hooks.clear_before();
+                hooks
+            }),
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
         }
@@ -661,6 +784,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             retry_options,
             before_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
             ..
@@ -676,9 +809,139 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
             before_hook,
             after_hook: Some(func),
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks: scenario_hooks.map(|mut hooks| {
+                hooks.clear_after();
+                hooks
+            }),
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
             #[cfg(feature = "tracing")]
             logs_collector,
         }
+    }
+
+    /// Installs ordered scenario hooks, replacing both native hook stages.
+    ///
+    /// Setup executes in registration order; teardown executes in reverse and
+    /// continues after panics. Empty stages preserve lazy World creation.
+    /// See [`super::Hooks`] for reporting and compatibility boundaries.
+    #[must_use]
+    pub fn with_hooks(
+        self,
+        hooks: super::Hooks<World>,
+    ) -> Basic<
+        World,
+        Which,
+        super::hooks::Before<World>,
+        super::hooks::After<World>,
+    >
+    where
+        World: 'static,
+    {
+        let Self {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            fail_fast,
+            background_semantics,
+            step_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+            ..
+        } = self;
+        let (before_hook, after_hook) = (None, None);
+        let scenario_hooks = Some(hooks);
+        Basic {
+            max_concurrent_scenarios,
+            retries,
+            retry_after,
+            retry_filter,
+            steps,
+            which_scenario,
+            retry_options,
+            before_hook,
+            after_hook,
+            fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
+            support_code,
+            #[cfg(feature = "tracing")]
+            logs_collector,
+        }
+    }
+
+    /// Selects background execution for scenarios with no own steps.
+    ///
+    /// [`BackgroundSemantics::Gherkin43`] skips feature and Rule backgrounds
+    /// for empty scenarios only, preserving before/after hooks. Legacy is default.
+    #[must_use]
+    pub fn with_background_semantics(
+        mut self,
+        semantics: BackgroundSemantics,
+    ) -> Self {
+        self.background_semantics = semantics;
+        self
+    }
+
+    /// Configures independent deadlines for actual callback and step-body invocations.
+    /// World initialization is outside these deadlines. Defaults remain unlimited.
+    #[must_use]
+    pub fn with_timeouts(mut self, timeouts: super::Timeouts) -> Self {
+        self.timeouts = timeouts;
+        self
+    }
+
+    /// Installs ordered callbacks around resolved step bodies.
+    /// This replaces only the step-hook registry and retains scenario hooks.
+    #[must_use]
+    pub fn with_step_hooks(mut self, hooks: super::StepHooks<World>) -> Self {
+        self.step_hooks = hooks;
+        self
+    }
+
+    /// Installs callbacks around one complete executor invocation.
+    ///
+    /// Custom writers can observe failures through the registry's shared store.
+    /// [`crate::Cucumber::with_run_hooks`] installs failure statistics automatically.
+    #[must_use]
+    pub fn with_run_hooks(mut self, hooks: super::RunHooks) -> Self {
+        self.run_hooks = hooks;
+        self
+    }
+
+    /// Enables runner-owned attachment scopes with the provided per-run store.
+    #[must_use]
+    pub fn with_attachments(
+        mut self,
+        store: crate::attachment::AttachmentStore,
+    ) -> Self {
+        self.attachments = Some(store);
+        self
     }
 
     /// Sets the given [`Collection`] of [`Step`]s to this [`Runner`].
@@ -687,6 +950,16 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     #[must_use]
     pub fn steps(mut self, steps: step::Collection<World>) -> Self {
         self.steps = steps;
+        self
+    }
+
+    /// Selects the step-definition matching policy.
+    ///
+    /// Configure this after [`Self::steps()`], which replaces the collection
+    /// together with its matching policy.
+    #[must_use]
+    pub fn step_matching(mut self, matching: step::Matching) -> Self {
+        self.steps = mem::take(&mut self.steps).matching(matching);
         self
     }
 
@@ -748,10 +1021,21 @@ where
     type EventStream =
         LocalBoxStream<'static, parser::Result<Event<event::Cucumber<W>>>>;
 
+    fn with_support_code_store(
+        mut self,
+        store: crate::support_code::Store,
+    ) -> Self {
+        self.support_code = Some(store);
+        self
+    }
+
     fn run<S>(self, features: S, mut cli: Cli) -> Self::EventStream
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static,
     {
+        if let Some(store) = &self.support_code {
+            store.publish(self.steps.support_code());
+        }
         #[cfg(feature = "tracing")]
         let logs_collector = *self.logs_collector.swap(Box::new(None));
         let Self {
@@ -765,6 +1049,15 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            attachments,
             ..
         } = self;
 
@@ -772,9 +1065,13 @@ where
         cli.retry_after = cli.retry_after.or(retry_after);
         cli.retry_tag_filter = cli.retry_tag_filter.or(retry_filter);
         let fail_fast = cli.fail_fast || fail_fast;
-        let concurrency = cli.concurrency.or(max_concurrent_scenarios);
+        let concurrency = cli.concurrency
+            .or_else(|| scheduling.as_ref().and_then(|s| s.concurrency))
+            .or(max_concurrent_scenarios);
+        assert!(concurrency != Some(0), "concurrency must be a positive integer");
 
-        let buffer = Features::default();
+        let buffer = Features { ordered: scheduling.is_some(), ..Features::default() };
+        let (parsed_sender, parsed_receiver) = oneshot::channel();
         let (sender, receiver) = mpsc::unbounded();
 
         let insert = insert_features(
@@ -785,7 +1082,7 @@ where
             sender.clone(),
             cli,
             fail_fast,
-        );
+        ).map(move |()| { let _ = parsed_sender.send(()); });
         let execute = execute(
             buffer,
             concurrency,
@@ -794,6 +1091,16 @@ where
             before_hook,
             after_hook,
             fail_fast,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            run_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            scheduling,
+            parsed_receiver,
+            attachments,
             #[cfg(feature = "tracing")]
             logs_collector,
         );
@@ -899,6 +1206,16 @@ async fn execute<W, Before, After>(
     before_hook: Option<Before>,
     after_hook: Option<After>,
     fail_fast: bool,
+    background_semantics: BackgroundSemantics,
+    step_hooks: super::StepHooks<W>,
+    scenario_hooks: Option<super::Hooks<W>>,
+    run_hooks: super::RunHooks,
+    timeouts: super::Timeouts,
+    outcome_policy: OutcomePolicy,
+    execution_mode: ExecutionMode,
+    scheduling: Option<super::SchedulingOptions>,
+    parsed: oneshot::Receiver<()>,
+    attachments: Option<crate::attachment::AttachmentStore>,
     #[cfg(feature = "tracing")] mut logs_collector: Option<TracingCollector>,
 ) where
     W: World,
@@ -926,6 +1243,7 @@ async fn execute<W, Before, After>(
     //    down the line to the Writer, which will print it at a right time.
     // 3. We restore original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
+    if scheduling.is_some() { let _ = parsed.await; }
     let hook = panic::take_hook();
     panic::set_hook(Box::new(|_| {}));
 
@@ -933,6 +1251,13 @@ async fn execute<W, Before, After>(
     let mut storage = FinishedRulesAndFeatures::new(finished_receiver);
     let executor = Executor::new(
         collection,
+        background_semantics,
+        step_hooks,
+        scenario_hooks,
+        timeouts.clone(),
+        outcome_policy,
+        execution_mode,
+        attachments,
         before_hook,
         after_hook,
         event_sender,
@@ -940,124 +1265,155 @@ async fn execute<W, Before, After>(
         features.clone(),
     );
 
+    let run_hook_id = run_hooks.begin_run();
     executor.send_event(event::Cucumber::Started);
+    let setup_passed = if execution_mode == ExecutionMode::DryRun {
+        run_hooks.skip_before(run_hook_id);
+        true
+    } else {
+        run_hooks.run_before(run_hook_id, &timeouts).await
+    };
 
     #[cfg(feature = "tracing")]
     let waiter = logs_collector
         .as_ref()
         .map(TracingCollector::scenario_span_event_waiter);
 
-    let mut started_scenarios = ControlFlow::Continue(max_concurrent_scenarios);
-    let mut run_scenarios = stream::FuturesUnordered::new();
-    loop {
-        let (runnable, sleep) = features
-            .get(started_scenarios.continue_value().unwrap_or(Some(0)))
-            .await;
-        if run_scenarios.is_empty() && runnable.is_empty() {
-            if features.is_finished(started_scenarios.is_break()).await {
-                break;
-            }
-
-            // To avoid busy-polling of `Features::get()`, in case there are no
-            // scenarios that are running or scheduled for execution, we spawn a
-            // thread, that sleeps for minimal deadline of all retried
-            // scenarios.
-            // TODO: Replace `thread::spawn` with async runtime agnostic sleep,
-            //       once it's available.
-            if let Some(dur) = sleep {
-                let (sender, receiver) = oneshot::channel();
-                drop(thread::spawn(move || {
-                    thread::sleep(dur);
-                    sender.send(())
-                }));
-                _ = receiver.await.ok();
-            }
-
-            continue;
-        }
-
-        let started = storage.start_scenarios(&runnable);
-        executor.send_all_events(started);
-
-        {
-            #[cfg(feature = "tracing")]
-            let forward_logs = {
-                if let Some(coll) = logs_collector.as_mut() {
-                    coll.start_scenarios(&runnable);
+    if setup_passed && let Some(options) = scheduling {
+        execute_ordered(&executor, &mut storage, &features, max_concurrent_scenarios,
+            fail_fast, &options,
+            #[cfg(feature = "tracing")] logs_collector.take(),
+        ).await;
+    } else if setup_passed {
+        let mut started_scenarios =
+            ControlFlow::Continue(max_concurrent_scenarios);
+        let mut run_scenarios = stream::FuturesUnordered::new();
+        loop {
+            let (runnable, sleep) = features
+                .get(started_scenarios.continue_value().unwrap_or(Some(0)))
+                .await;
+            if run_scenarios.is_empty() && runnable.is_empty() {
+                if features.is_finished(started_scenarios.is_break()).await {
+                    break;
                 }
-                async {
-                    loop {
-                        while let Some(logs) = logs_collector
-                            .as_mut()
-                            .and_then(TracingCollector::emitted_logs)
-                        {
-                            executor.send_all_events(logs);
+
+                // To avoid busy-polling of `Features::get()`, in case there are no
+                // scenarios that are running or scheduled for execution, we spawn a
+                // thread, that sleeps for minimal deadline of all retried
+                // scenarios.
+                // TODO: Replace `thread::spawn` with async runtime agnostic sleep,
+                //       once it's available.
+                if let Some(dur) = sleep {
+                    let (sender, receiver) = oneshot::channel();
+                    drop(thread::spawn(move || {
+                        thread::sleep(dur);
+                        sender.send(())
+                    }));
+                    _ = receiver.await.ok();
+                }
+
+                continue;
+            }
+
+            let started = storage.start_scenarios(&runnable);
+            executor.send_all_events(started);
+
+            {
+                #[cfg(feature = "tracing")]
+                let forward_logs = {
+                    if let Some(coll) = logs_collector.as_mut() {
+                        coll.start_scenarios(&runnable);
+                    }
+                    async {
+                        loop {
+                            while let Some(logs) = logs_collector
+                                .as_mut()
+                                .and_then(TracingCollector::emitted_logs)
+                            {
+                                executor.send_all_events(logs);
+                            }
+                            future::ready(()).then_yield().await;
                         }
-                        future::ready(()).then_yield().await;
+                    }
+                };
+                #[cfg(feature = "tracing")]
+                pin_mut!(forward_logs);
+                #[cfg(not(feature = "tracing"))]
+                let forward_logs = future::pending();
+
+                if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
+                {
+                    *sc -= runnable.len();
+                }
+
+                for (id, f, r, s, ty, retries) in runnable {
+                    run_scenarios.push(
+                        executor
+                            .run_scenario(
+                                id,
+                                f,
+                                r,
+                                s,
+                                ty,
+                                retries,
+                                RetryDispatch::Queue,
+                                #[cfg(feature = "tracing")]
+                                waiter.as_ref(),
+                            )
+                            .then_yield(),
+                    );
+                }
+
+                let (finished_scenario, _) = select_with_biased_first(
+                    forward_logs,
+                    run_scenarios.next(),
+                )
+                .await
+                .factor_first();
+                if finished_scenario.is_some()
+                    && let ControlFlow::Continue(Some(sc)) =
+                        &mut started_scenarios
+                {
+                    *sc += 1;
+                }
+            }
+
+            while let Ok((id, feat, rule, scenario_failed, retried)) =
+                storage.finished_receiver.try_recv()
+            {
+                if let Some(rule) = rule
+                    && let Some(f) = storage.rule_scenario_finished(
+                        feat.clone(),
+                        rule,
+                        retried,
+                    )
+                {
+                    executor.send_event(f);
+                }
+                if let Some(f) =
+                    storage.feature_scenario_finished(feat, retried)
+                {
+                    executor.send_event(f);
+                }
+                #[cfg(feature = "tracing")]
+                {
+                    if let Some(coll) = logs_collector.as_mut() {
+                        coll.finish_scenario(id);
                     }
                 }
-            };
-            #[cfg(feature = "tracing")]
-            pin_mut!(forward_logs);
-            #[cfg(not(feature = "tracing"))]
-            let forward_logs = future::pending();
+                #[cfg(not(feature = "tracing"))]
+                let _: ScenarioId = id;
 
-            if let ControlFlow::Continue(Some(sc)) = &mut started_scenarios {
-                *sc -= runnable.len();
-            }
-
-            for (id, f, r, s, ty, retries) in runnable {
-                run_scenarios.push(
-                    executor
-                        .run_scenario(
-                            id,
-                            f,
-                            r,
-                            s,
-                            ty,
-                            retries,
-                            #[cfg(feature = "tracing")]
-                            waiter.as_ref(),
-                        )
-                        .then_yield(),
-                );
-            }
-
-            let (finished_scenario, _) =
-                select_with_biased_first(forward_logs, run_scenarios.next())
-                    .await
-                    .factor_first();
-            if finished_scenario.is_some()
-                && let ControlFlow::Continue(Some(sc)) = &mut started_scenarios
-            {
-                *sc += 1;
-            }
-        }
-
-        while let Ok((id, feat, rule, scenario_failed, retried)) =
-            storage.finished_receiver.try_recv()
-        {
-            if let Some(rule) = rule
-                && let Some(f) =
-                    storage.rule_scenario_finished(feat.clone(), rule, retried)
-            {
-                executor.send_event(f);
-            }
-            if let Some(f) = storage.feature_scenario_finished(feat, retried) {
-                executor.send_event(f);
-            }
-            #[cfg(feature = "tracing")]
-            {
-                if let Some(coll) = logs_collector.as_mut() {
-                    coll.finish_scenario(id);
+                if fail_fast && scenario_failed && !retried {
+                    started_scenarios = ControlFlow::Break(());
                 }
             }
-            #[cfg(not(feature = "tracing"))]
-            let _: ScenarioId = id;
-
-            if fail_fast && scenario_failed && !retried {
-                started_scenarios = ControlFlow::Break(());
-            }
+        }
+    } else {
+        // The parser runs concurrently. Let it finish forwarding source errors
+        // and ParsingFinished before closing this run, without scheduling cases.
+        while !features.is_finished(true).await {
+            future::ready(()).then_yield().await;
         }
     }
 
@@ -1065,9 +1421,193 @@ async fn execute<W, Before, After>(
     // be executed.
     executor.send_all_events(storage.finish_all_rules_and_features());
 
+    if execution_mode == ExecutionMode::DryRun {
+        run_hooks.skip_after(run_hook_id);
+        true
+    } else {
+        run_hooks.run_after(run_hook_id, &timeouts).await
+    };
     executor.send_event(event::Cucumber::Finished);
 
     panic::set_hook(hook);
+}
+
+/// Retry placement is private: the legacy queue and an ordered logical slot
+/// share exactly the same attempt lifecycle and outcome reporting.
+#[derive(Clone, Copy)]
+enum RetryDispatch { Queue, ReturnToSlot }
+
+type PlannedCase = (
+    ScenarioId, Source<gherkin::Feature>, Option<Source<gherkin::Rule>>,
+    Source<gherkin::Scenario>, ScenarioType, Option<RetryOptions>,
+);
+
+/// Executes a globally permuted plan, retaining one reservation through retries.
+async fn execute_ordered<W, Before, After>(
+    executor: &Executor<W, Before, After>,
+    storage: &mut FinishedRulesAndFeatures,
+    features: &Features,
+    limit: Option<usize>,
+    fail_fast: bool,
+    options: &super::SchedulingOptions,
+    #[cfg(feature = "tracing")] logs: Option<TracingCollector>,
+) where
+    W: World,
+    Before: 'static + for<'a> Fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a mut W) -> LocalBoxFuture<'a, ()>,
+    After: 'static + for<'a> Fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a event::ScenarioFinished, Option<&'a mut W>) -> LocalBoxFuture<'a, ()>,
+{
+    let mut initial = mem::take(&mut *features.plan.lock().await);
+    options.order(&mut initial);
+    let mut queue = VecDeque::from(initial.into_iter().enumerate().map(|(plan_index, case)| {
+        let identity = super::AssignmentCase {
+            case_id: plan_index as u64, plan_index, feature: case.1.clone(),
+            rule: case.2.clone(), scenario: case.3.clone(), kind: case.4,
+        };
+        (case, identity)
+    }).collect::<Vec<_>>());
+    let assignment = options.assignment.as_ref().map(|policy| (policy, policy.begin()));
+    let mut reservations = Vec::<super::AssignmentCase>::new();
+    let mut revision = 0usize;
+    let mut blocked_revision = None;
+    let mut idle_interventions = 0usize;
+    let mut stopped = false;
+    let mut serial_active = false;
+    #[cfg(feature = "tracing")]
+    let waiter = logs.as_ref().map(TracingCollector::scenario_span_event_waiter);
+    #[cfg(feature = "tracing")]
+    let logs = std::rc::Rc::new(std::cell::RefCell::new(logs));
+    let mut running = stream::FuturesUnordered::<LocalBoxFuture<'_, u64>>::new();
+
+    loop {
+        // Drain every attempt, including retries while its logical slot remains
+        // occupied. This also closes trace registrations promptly during delays.
+        while let Ok((id, feature, rule, failed, retried)) = storage.finished_receiver.try_recv() {
+            if let Some(rule) = rule
+                && let Some(event) = storage.rule_scenario_finished(feature.clone(), rule, retried) {
+                executor.send_event(event);
+            }
+            if let Some(event) = storage.feature_scenario_finished(feature, retried) { executor.send_event(event); }
+            #[cfg(feature = "tracing")]
+            if let Some(collector) = logs.borrow_mut().as_mut() { collector.finish_scenario(id); }
+            #[cfg(not(feature = "tracing"))]
+            let _ = id;
+            if fail_fast && failed && !retried { stopped = true; }
+        }
+        while !stopped && !serial_active && running.len() < limit.unwrap_or(usize::MAX) {
+            let Some((_, next)) = queue.front() else { break; };
+            // Retry/trace notices do not change the assigned logical set. A
+            // blocked snapshot must not re-evaluate or grow records on those notices.
+            if blocked_revision == Some(revision) { break; }
+            let serial_front = next.kind == ScenarioType::Serial;
+            if serial_front && !reservations.is_empty() {
+                if let Some((policy, run_id)) = assignment { policy.waiting(run_id, super::AssignmentWait::SerialBarrier, &reservations); }
+                blocked_revision = Some(revision);
+                break;
+            }
+            let accessible = if serial_front { 1 } else {
+                queue.iter().take_while(|(_, case)| case.kind != ScenarioType::Serial).count()
+            };
+            let mut reason = super::AssignmentAdmission::Eligible;
+            let selected = if let Some((policy, run_id)) = assignment {
+                let eligible = queue.iter().take(accessible).position(|(_, candidate)| policy.evaluate(run_id, candidate, &reservations));
+                if let Some(index) = eligible { index }
+                else if reservations.is_empty() {
+                    idle_interventions += 1;
+                    reason = super::AssignmentAdmission::IdleFallback;
+                    0
+                } else {
+                    policy.waiting(run_id, super::AssignmentWait::NoEligible, &reservations);
+                    blocked_revision = Some(revision);
+                    break;
+                }
+            } else { 0 };
+            let (case, identity) = queue.remove(selected).expect("selected queue entry exists");
+            let case_id = identity.case_id;
+            serial_active = identity.kind == ScenarioType::Serial;
+            reservations.push(identity.clone());
+            revision += 1;
+            if let Some((policy, run_id)) = assignment { policy.admitted(run_id, &identity, reason); }
+            executor.send_all_events(storage.start_scenarios([case.clone()]));
+            #[cfg(feature = "tracing")]
+            let attempt_logs = logs.clone();
+            #[cfg(feature = "tracing")]
+            let attempt_waiter = waiter.as_ref();
+            running.push(async move {
+                let (mut id, feature, rule, scenario, ty, mut retries) = case;
+                loop {
+                    #[cfg(feature = "tracing")]
+                    if let Some(collector) = attempt_logs.borrow_mut().as_mut() {
+                        collector.start_scenarios([(id, feature.clone(), rule.clone(), scenario.clone(), ty, retries)]);
+                    }
+                    let next = executor.run_scenario(id, feature.clone(), rule.clone(), scenario.clone(), ty, retries,
+                        RetryDispatch::ReturnToSlot,
+                        #[cfg(feature = "tracing")] attempt_waiter,
+                    ).await;
+                    let Some(next) = next else { break; };
+                    if let Some(delay) = next.after { options.delay(delay).await; }
+                    // Yield even for an immediate retry, permitting the dispatcher
+                    // to consume the previous attempt's finish and trace records.
+                    future::ready(()).then_yield().await;
+                    id = ScenarioId::new();
+                    retries = Some(next);
+                }
+                case_id
+            }.boxed_local());
+        }
+        if running.is_empty() { break; }
+
+        // Notifications wake the scheduler even while all slots await a retry
+        // delay. No polling of a potentially unfinished parser is necessary.
+        let progress_result = {
+        let progress = async {
+            let completed = running.next();
+            let notice = storage.finished_receiver.next();
+            pin_mut!(completed, notice);
+            match future::select(completed, notice).await {
+                Either::Left((completed, _)) => Either::Left(completed),
+                Either::Right((notice, _)) => Either::Right(notice),
+            }
+        };
+        #[cfg(feature = "tracing")]
+        let forward = async {
+            loop {
+                while let Some(events) = logs.borrow_mut().as_mut().and_then(TracingCollector::emitted_logs) {
+                    executor.send_all_events(events);
+                }
+                future::ready(()).then_yield().await;
+            }
+        };
+        #[cfg(not(feature = "tracing"))]
+        let forward = future::pending::<()>();
+        pin_mut!(progress, forward);
+        let result = match select_with_biased_first(forward, progress).await {
+            Either::Right((result, _)) => result,
+            Either::Left(_) => unreachable!("log forwarding does not complete"),
+        };
+        result
+        };
+        match progress_result {
+        Either::Left(Some(case_id)) => {
+            let index = reservations.iter().position(|case| case.case_id == case_id).expect("completed logical reservation exists");
+            let released = reservations.remove(index);
+            if released.kind == ScenarioType::Serial { serial_active = false; }
+            revision += 1;
+            if let Some((policy, run_id)) = assignment { policy.released(run_id, case_id); }
+        }
+        Either::Right(Some((id, feature, rule, failed, retried))) => {
+            if let Some(rule) = rule
+                && let Some(event) = storage.rule_scenario_finished(feature.clone(), rule, retried) { executor.send_event(event); }
+            if let Some(event) = storage.feature_scenario_finished(feature, retried) { executor.send_event(event); }
+            #[cfg(feature = "tracing")]
+            if let Some(collector) = logs.borrow_mut().as_mut() { collector.finish_scenario(id); }
+            #[cfg(not(feature = "tracing"))]
+            let _ = id;
+            if fail_fast && failed && !retried { stopped = true; }
+        }
+        Either::Left(None) | Either::Right(None) => break,
+        }
+    }
+    if let Some((policy, run_id)) = assignment { policy.finish(run_id, idle_interventions); }
 }
 
 /// Runs [`Scenario`]s and notifies about their state of completion.
@@ -1078,6 +1618,17 @@ struct Executor<W, Before, After> {
     ///
     /// [`Collection`]: step::Collection
     collection: step::Collection<W>,
+
+    /// Background policy inherited from the configured runner.
+    background_semantics: BackgroundSemantics,
+
+    /// Ordered callbacks around resolved step bodies.
+    step_hooks: super::StepHooks<W>,
+    scenario_hooks: Option<super::Hooks<W>>,
+    timeouts: super::Timeouts,
+    outcome_policy: OutcomePolicy,
+    execution_mode: ExecutionMode,
+    attachments: Option<crate::attachment::AttachmentStore>,
 
     /// Function, executed on each [`Scenario`] before running all [`Step`]s,
     /// including [`Background`] ones.
@@ -1132,6 +1683,13 @@ where
     /// Creates a new [`Executor`].
     const fn new(
         collection: step::Collection<W>,
+        background_semantics: BackgroundSemantics,
+        step_hooks: super::StepHooks<W>,
+        scenario_hooks: Option<super::Hooks<W>>,
+        timeouts: super::Timeouts,
+        outcome_policy: OutcomePolicy,
+        execution_mode: ExecutionMode,
+        attachments: Option<crate::attachment::AttachmentStore>,
         before_hook: Option<Before>,
         after_hook: Option<After>,
         event_sender: mpsc::UnboundedSender<
@@ -1142,6 +1700,13 @@ where
     ) -> Self {
         Self {
             collection,
+            background_semantics,
+            step_hooks,
+            scenario_hooks,
+            timeouts,
+            outcome_policy,
+            execution_mode,
+            attachments,
             before_hook,
             after_hook,
             event_sender,
@@ -1173,39 +1738,54 @@ where
         scenario: Source<gherkin::Scenario>,
         scenario_ty: ScenarioType,
         retries: Option<RetryOptions>,
+        retry_dispatch: RetryDispatch,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
-    ) {
+    ) -> Option<RetryOptions> {
         let retry_num = retries.map(|r| r.retries);
-        let ok = |e: fn(_) -> event::Scenario<W>| {
-            let (f, r, s) = (&feature, &rule, &scenario);
-            move |step| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                let event = e(step).with_retries(retry_num);
-                event::Cucumber::scenario(f, r, s, event)
-            }
-        };
-        let ok_capt = |e: fn(_, _, _) -> event::Scenario<W>| {
-            let (f, r, s) = (&feature, &rule, &scenario);
-            move |step, cap, loc| {
-                let (f, r, s) = (f.clone(), r.clone(), s.clone());
-                let event = e(step, cap, loc).with_retries(retry_num);
-                event::Cucumber::scenario(f, r, s, event)
-            }
-        };
+        let attachment_context = self.attachments.as_ref().map_or_else(
+            crate::attachment::AttachmentContext::default,
+            |store| {
+                store.context(
+                    &feature,
+                    rule.as_deref(),
+                    &scenario,
+                    retry_num.map_or(0, |retry| retry.current),
+                )
+            },
+        );
 
-        let compose = |started, passed, skipped| {
-            (ok(started), ok_capt(passed), ok(skipped))
+        let has_steps = !scenario.steps.is_empty()
+            || (self.background_semantics == BackgroundSemantics::Legacy
+                && (feature
+                    .background
+                    .as_ref()
+                    .is_some_and(|b| !b.steps.is_empty())
+                    || rule
+                        .as_ref()
+                        .and_then(|r| r.background.as_ref())
+                        .is_some_and(|b| !b.steps.is_empty())));
+        let hook_attempt = super::ScenarioHookAttempt {
+            feature: feature.clone(),
+            rule: rule.clone(),
+            scenario: scenario.clone(),
+            scenario_id: id,
+            attempt: retry_num.map_or(0, |r| r.current),
+            retries_remaining: retry_num.map_or(0, |r| r.left),
+            has_steps,
         };
-        let into_bg_step_ev = compose(
-            event::Scenario::background_step_started,
-            event::Scenario::background_step_passed,
-            event::Scenario::background_step_skipped,
-        );
-        let into_step_ev = compose(
-            event::Scenario::step_started,
-            event::Scenario::step_passed,
-            event::Scenario::step_skipped,
-        );
+        if let Some(hooks) = &self.scenario_hooks {
+            hooks.begin_attempt(hook_attempt.clone());
+        }
+
+        let execution = if self.outcome_policy == OutcomePolicy::Legacy
+            && self.execution_mode == ExecutionMode::Run
+        {
+            ExecutionControl::default()
+        } else {
+            ExecutionControl::enabled()
+        };
+        let runtime_context =
+            WorldContext::new(attachment_context.clone(), execution);
 
         self.send_event(event::Cucumber::scenario(
             feature.clone(),
@@ -1215,139 +1795,161 @@ where
         ));
 
         let is_failed = async {
-            let mut result = async {
-                let before_hook = self
-                    .run_before_hook(
-                        &feature,
-                        rule.as_ref(),
-                        &scenario,
-                        retry_num,
-                        id,
-                        #[cfg(feature = "tracing")]
-                        waiter,
-                    )
-                    .await?;
-
-                let feature_background = feature
-                    .background
-                    .as_ref()
-                    .map(|b| b.steps.iter().map(|s| Source::new(s.clone())))
-                    .into_iter()
-                    .flatten();
-
-                let feature_background = stream::iter(feature_background)
-                    .map(Ok)
-                    .try_fold(before_hook, |world, bg_step| {
-                        self.run_step(
-                            world,
-                            bg_step,
-                            true,
-                            into_bg_step_ev,
-                            id,
-                            #[cfg(feature = "tracing")]
-                            waiter,
-                        )
-                        .map_ok(Some)
-                    })
-                    .await?;
-
-                let rule_background = rule
-                    .as_ref()
-                    .map(|r| {
-                        r.background
-                            .as_ref()
-                            .map(|b| {
-                                b.steps.iter().map(|s| Source::new(s.clone()))
-                            })
-                            .into_iter()
-                            .flatten()
-                    })
-                    .into_iter()
-                    .flatten();
-
-                let rule_background = stream::iter(rule_background)
-                    .map(Ok)
-                    .try_fold(feature_background, |world, bg_step| {
-                        self.run_step(
-                            world,
-                            bg_step,
-                            true,
-                            into_bg_step_ev,
-                            id,
-                            #[cfg(feature = "tracing")]
-                            waiter,
-                        )
-                        .map_ok(Some)
-                    })
-                    .await?;
-
-                stream::iter(
-                    scenario.steps.iter().map(|s| Source::new(s.clone())),
+            let mut deferred = Vec::new();
+            let mut status = if self.execution_mode == ExecutionMode::DryRun {
+                OutcomeStatus::Skipped
+            } else {
+                OutcomeStatus::Passed
+            };
+            let mut body_snapshot = event::ScenarioFinished::StepPassed;
+            let mut world = match self
+                .run_before_hook(
+                    &feature,
+                    rule.as_ref(),
+                    &scenario,
+                    retry_num,
+                    id,
+                    &attachment_context,
+                    &hook_attempt,
+                    &runtime_context,
+                    #[cfg(feature = "tracing")]
+                    waiter,
                 )
-                .map(Ok)
-                .try_fold(rule_background, |world, step| {
-                    self.run_step(
+                .await
+            {
+                Ok(world) => world,
+                Err(mut error) => {
+                    status = error.status();
+                    body_snapshot = error.get_scenario_finished_event();
+                    let world = error.take_world();
+                    deferred.push(DeferredEvent::Failure(error));
+                    world
+                }
+            };
+            let backgrounds = self.background_semantics
+                == BackgroundSemantics::Legacy
+                || !scenario.steps.is_empty();
+            let feature_steps = feature
+                .background
+                .as_ref()
+                .filter(|_| backgrounds)
+                .into_iter()
+                .flat_map(|b| b.steps.iter())
+                .map(|step| (Source::new(step.clone()), true));
+            let rule_steps = rule
+                .as_ref()
+                .and_then(|r| r.background.as_ref())
+                .filter(|_| backgrounds)
+                .into_iter()
+                .flat_map(|b| b.steps.iter())
+                .map(|step| (Source::new(step.clone()), true));
+            let own_steps = scenario
+                .steps
+                .iter()
+                .map(|step| (Source::new(step.clone()), false));
+            for (step, is_background) in
+                feature_steps.chain(rule_steps).chain(own_steps)
+            {
+                if self.execution_mode == ExecutionMode::Run
+                    && self.outcome_policy == OutcomePolicy::Legacy
+                    && status != OutcomeStatus::Passed
+                {
+                    break;
+                }
+                let mode = if self.execution_mode == ExecutionMode::DryRun {
+                    StepMode::LookupOnly
+                } else if status == OutcomeStatus::Passed {
+                    StepMode::Execute
+                } else if status == OutcomeStatus::Skipped {
+                    StepMode::ExplicitSkip
+                } else {
+                    StepMode::LookupOnly
+                };
+                match self
+                    .run_step(
                         world,
                         step,
-                        false,
-                        into_step_ev,
-                        id,
+                        is_background,
+                        mode,
+                        &hook_attempt,
+                        retry_num,
+                        &attachment_context,
+                        &runtime_context,
+                        &mut deferred,
                         #[cfg(feature = "tracing")]
                         waiter,
                     )
-                    .map_ok(Some)
-                })
-                .await
-            }
-            .await;
-
-            let (world, scenario_finished_ev) = match &mut result {
-                Ok(world) => {
-                    (world.take(), event::ScenarioFinished::StepPassed)
+                    .await
+                {
+                    Ok(value) => world = Some(value),
+                    Err(mut error) => {
+                        world = error.take_world();
+                        let next = error.status();
+                        if next > status {
+                            status = next;
+                            body_snapshot = error.get_scenario_finished_event();
+                        }
+                        if !matches!(
+                            error,
+                            ExecutionFailure::StepSkipped { .. }
+                        ) {
+                            deferred.push(DeferredEvent::Failure(error));
+                        }
+                    }
                 }
-                Err(exec_err) => (
-                    exec_err.take_world(),
-                    exec_err.get_scenario_finished_event(),
-                ),
-            };
-
+            }
+            let body_outcome =
+                self.execution_mode.outcome(self.outcome_policy, status);
             let (world, after_hook_meta, after_hook_error) = self
                 .run_after_hook(
                     world,
                     &feature,
                     rule.as_ref(),
                     &scenario,
-                    scenario_finished_ev,
+                    body_snapshot,
                     id,
+                    &attachment_context,
+                    &hook_attempt,
+                    &runtime_context,
+                    body_outcome,
                     #[cfg(feature = "tracing")]
                     waiter,
                 )
                 .await
                 .map_or_else(
-                    |(w, meta, info)| (w.map(Arc::new), Some(meta), Some(info)),
-                    |(w, meta)| (w.map(Arc::new), meta, None),
+                    |(world, meta, error)| {
+                        (world.map(Arc::new), Some(meta), Some(error))
+                    },
+                    |(world, meta)| (world.map(Arc::new), meta, None),
                 );
-
-            let scenario_failed = match &result {
-                Ok(_) | Err(ExecutionFailure::StepSkipped(_)) => false,
-                Err(
-                    ExecutionFailure::BeforeHookPanicked { .. }
-                    | ExecutionFailure::StepPanicked { .. },
-                ) => true,
-            };
-            let is_failed = scenario_failed || after_hook_error.is_some();
-
-            if let Some(exec_error) = result.err() {
-                self.emit_failed_events(
-                    feature.clone(),
-                    rule.clone(),
-                    scenario.clone(),
-                    world.clone(),
-                    exec_error,
-                    retry_num,
+            if let Some(meta) = &after_hook_meta {
+                let after = meta.finished.outcome.map(|o| o.status).unwrap_or(
+                    if after_hook_error.is_some() {
+                        OutcomeStatus::Failed
+                    } else {
+                        OutcomeStatus::Passed
+                    },
                 );
+                status = status.max(after);
             }
-
+            if let Some(hooks) = &self.scenario_hooks {
+                hooks.finish_attempt(id);
+            }
+            for pending in deferred {
+                match pending {
+                    DeferredEvent::Native(event) => {
+                        drop(self.event_sender.unbounded_send(Ok(event)))
+                    }
+                    DeferredEvent::Failure(error) => self.emit_failed_events(
+                        feature.clone(),
+                        rule.clone(),
+                        scenario.clone(),
+                        world.clone(),
+                        error,
+                        retry_num,
+                    ),
+                }
+            }
             self.emit_after_hook_events(
                 feature.clone(),
                 rule.clone(),
@@ -1357,8 +1959,7 @@ where
                 after_hook_error,
                 retry_num,
             );
-
-            is_failed
+            self.execution_mode.outcome(self.outcome_policy, status)
         };
         #[cfg(feature = "tracing")]
         let (is_failed, span_id) = {
@@ -1374,16 +1975,20 @@ where
             waiter.wait_for_span_close(span_id).then_yield().await;
         }
 
-        self.send_event(event::Cucumber::scenario(
-            feature.clone(),
-            rule.clone(),
-            scenario.clone(),
-            event::Scenario::Finished.with_retries(retry_num),
-        ));
+        self.send_event_with_meta(
+            event::Cucumber::scenario(
+                feature.clone(),
+                rule.clone(),
+                scenario.clone(),
+                event::Scenario::Finished.with_retries(retry_num),
+            ),
+            self.outcome_meta(is_failed.status),
+        );
 
-        let next_try =
-            retries.filter(|_| is_failed).and_then(RetryOptions::next_try);
-        if let Some(next_try) = next_try {
+        let next_try = retries
+            .filter(|_| is_failed.retryable)
+            .and_then(RetryOptions::next_try);
+        if let Some(next_try) = next_try.filter(|_| matches!(retry_dispatch, RetryDispatch::Queue)) {
             self.storage
                 .insert_retried_scenario(
                     feature.clone(),
@@ -1399,9 +2004,10 @@ where
             id,
             feature,
             rule,
-            is_failed,
+            is_failed.fails_run,
             next_try.is_some(),
         );
+        next_try
     }
 
     /// Executes [`HookType::Before`], if present.
@@ -1419,87 +2025,240 @@ where
         scenario: &Source<gherkin::Scenario>,
         retries: Option<Retries>,
         scenario_id: ScenarioId,
+        attachment_context: &crate::attachment::AttachmentContext,
+        hook_attempt: &super::ScenarioHookAttempt,
+        runtime_context: &WorldContext,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<Option<W>, ExecutionFailure<W>> {
-        let init_world = async {
-            AssertUnwindSafe(async { W::new().await })
-                .catch_unwind()
-                .then_yield()
-                .await
-                .map_err(Info::from)
-                .and_then(|r| {
-                    r.map_err(|e| {
-                        coerce_into_info(format!(
-                            "failed to initialize World: {e}",
-                        ))
-                    })
+        if self.execution_mode == ExecutionMode::DryRun {
+            return self
+                .inspect_world(
+                    feature,
+                    rule,
+                    scenario,
+                    retries,
+                    hook_attempt,
+                    runtime_context,
+                )
+                .await;
+        }
+        let registry =
+            self.scenario_hooks.as_ref().filter(|hooks| hooks.has_before());
+        if self.before_hook.is_none() && registry.is_none() {
+            return Ok(None);
+        }
+        let mut attachment_scope = Some(
+            attachment_context.enter(crate::attachment::Target::BeforeScenario),
+        );
+        self.send_event(event::Cucumber::scenario(
+            feature.clone(),
+            rule.cloned(),
+            scenario.clone(),
+            event::Scenario::hook_started(HookType::Before)
+                .with_retries(retries),
+        ));
+        let run = async {
+            let started_at = std::time::SystemTime::now();
+            let initialized = AssertUnwindSafe(async {
+                W::new_with_runtime_context(runtime_context.clone()).await
+            })
+            .catch_unwind()
+            .then_yield()
+            .await
+            .map_err(Info::from)
+            .and_then(|r| {
+                r.map_err(|error| {
+                    coerce_into_info(format!(
+                        "failed to initialize World: {error}"
+                    ))
                 })
-                .map_err(|info| (info, None))
-        };
-
-        if let Some(hook) = self.before_hook.as_ref() {
-            self.send_event(event::Cucumber::scenario(
-                feature.clone(),
-                rule.cloned(),
-                scenario.clone(),
-                event::Scenario::hook_started(HookType::Before)
-                    .with_retries(retries),
-            ));
-
-            let fut = init_world.and_then(async |mut world| {
-                let fut = async {
-                    (hook)(
-                        feature.as_ref(),
-                        rule.as_ref().map(AsRef::as_ref),
-                        scenario.as_ref(),
+            });
+            if let Some(hooks) = registry {
+                hooks.initialized(
+                    hook_attempt,
+                    started_at,
+                    initialized.as_ref().map(|_| ()).map_err(|info| {
+                        super::step_hooks::panic_message(info.as_ref())
+                    }),
+                );
+                drop(attachment_scope.take());
+            }
+            let mut world = initialized
+                .map_err(|info| (info, None, OutcomeStatus::Failed))?;
+            let execution = runtime_context.execution();
+            let (status, error) = if let Some(hooks) = registry {
+                let summary = hooks
+                    .run_before(
+                        hook_attempt,
                         &mut world,
+                        attachment_context,
+                        &self.timeouts,
+                        &execution,
+                        self.outcome_policy,
                     )
                     .await;
-                };
-                match AssertUnwindSafe(fut).catch_unwind().await {
-                    Ok(()) => Ok(world),
-                    Err(i) => Err((Info::from(i), Some(world))),
-                }
-            });
-
-            #[cfg(feature = "tracing")]
-            let (fut, span_id) = {
-                let span = scenario_id.hook_span(HookType::Before);
-                let span_id = span.id();
-                let fut = tracing::Instrument::instrument(fut, span);
-                (fut, span_id)
+                let error =
+                    (summary.status != OutcomeStatus::Passed).then(|| {
+                        coerce_into_info(summary.diagnostic("Before hook"))
+                    });
+                (summary.status, error)
+            } else {
+                let control = execution.enter();
+                let callback_world = &mut world;
+                let result = self
+                    .timeouts
+                    .invoke_callback(
+                        move || -> LocalBoxFuture<'_, ()> {
+                            if let Some(hook) = &self.before_hook {
+                                hook(feature, rule.map(AsRef::as_ref), scenario, callback_world)
+                            } else { Box::pin(future::ready(())) }
+                        },
+                        None,
+                    )
+                    .await;
+                let completion = control.finish();
+                let status = super::outcomes::status(&result, completion);
+                let error = result
+                    .err()
+                    .map(|error| Info::from(super::timeout::into_panic(error)))
+                    .or_else(|| {
+                        (status != OutcomeStatus::Passed).then(|| {
+                            coerce_into_info(format!(
+                                "Before hook requested {status:?}"
+                            ))
+                        })
+                    });
+                (status, error)
             };
-            #[cfg(not(feature = "tracing"))]
-            let _: ScenarioId = scenario_id;
-
-            let result = fut.then_yield().await;
-
-            #[cfg(feature = "tracing")]
-            if let Some((waiter, id)) = waiter.zip(span_id) {
-                waiter.wait_for_span_close(id).then_yield().await;
+            match error {
+                Some(error) => Err((error, Some(world), status)),
+                None => Ok(world),
             }
-
-            match result {
-                Ok(world) => {
-                    self.send_event(event::Cucumber::scenario(
+        };
+        #[cfg(feature = "tracing")]
+        let (run, span_id) = {
+            let span = scenario_id.hook_span(HookType::Before);
+            let id = span.id();
+            (tracing::Instrument::instrument(run, span), id)
+        };
+        #[cfg(not(feature = "tracing"))]
+        let _ = scenario_id;
+        let result = run.then_yield().await;
+        drop(attachment_scope);
+        #[cfg(feature = "tracing")]
+        if let Some((waiter, id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(id).then_yield().await;
+        }
+        match result {
+            Ok(world) => {
+                self.send_event_with_meta(
+                    event::Cucumber::scenario(
                         feature.clone(),
                         rule.cloned(),
                         scenario.clone(),
                         event::Scenario::hook_passed(HookType::Before)
                             .with_retries(retries),
-                    ));
-                    Ok(Some(world))
-                }
-                Err((panic_info, world)) => {
-                    Err(ExecutionFailure::BeforeHookPanicked {
-                        world,
-                        panic_info,
-                        meta: event::Metadata::new(()),
-                    })
-                }
+                    ),
+                    self.outcome_meta(OutcomeStatus::Passed),
+                );
+                Ok(Some(world))
             }
-        } else {
-            Ok(None)
+            Err((panic_info, world, status)) => {
+                Err(ExecutionFailure::BeforeHookPanicked {
+                    world,
+                    panic_info,
+                    meta: self.outcome_meta(status),
+                })
+            }
+        }
+    }
+
+    /// Initializes a selected dry-run World without entering callback capabilities.
+    async fn inspect_world(
+        &self,
+        feature: &Source<gherkin::Feature>,
+        rule: Option<&Source<gherkin::Rule>>,
+        scenario: &Source<gherkin::Scenario>,
+        retries: Option<Retries>,
+        attempt: &super::ScenarioHookAttempt,
+        runtime: &WorldContext,
+    ) -> Result<Option<W>, ExecutionFailure<W>> {
+        let registry = self.scenario_hooks.as_ref().filter(|h| h.has_before());
+        let stage = self.before_hook.is_some() || registry.is_some();
+        let started = event::Metadata::new(());
+        if stage {
+            self.send_event_with_meta(
+                event::Cucumber::scenario(
+                    feature.clone(),
+                    rule.cloned(),
+                    scenario.clone(),
+                    event::Scenario::hook_started(HookType::Before)
+                        .with_retries(retries),
+                ),
+                started,
+            );
+        }
+        let initialized_at = std::time::SystemTime::now();
+        let result = AssertUnwindSafe(async {
+            W::new_with_runtime_context(runtime.clone()).await
+        })
+        .catch_unwind()
+        .then_yield()
+        .await
+        .map_err(Info::from)
+        .and_then(|r| {
+            r.map_err(|error| {
+                coerce_into_info(format!("failed to initialize World: {error}"))
+            })
+        });
+        if let Some(hooks) = registry {
+            hooks.initialized(
+                attempt,
+                initialized_at,
+                result.as_ref().map(|_| ()).map_err(|info| {
+                    super::step_hooks::panic_message(info.as_ref())
+                }),
+            );
+            if result.is_ok() {
+                hooks.skip_stage(
+                    attempt,
+                    super::ScenarioHookKind::Before,
+                    super::ScenarioHookSkipReason::DryRun,
+                );
+            }
+        }
+        match result {
+            Ok(world) if !stage => Ok(Some(world)),
+            Ok(world) => {
+                let mut meta = started;
+                meta.outcome = self.outcome_metadata(OutcomeStatus::Skipped);
+                Err(ExecutionFailure::BeforeHookPanicked {
+                    world: Some(world),
+                    panic_info: coerce_into_info(
+                        "Before hooks skipped during dry-run".to_owned(),
+                    ),
+                    meta,
+                })
+            }
+            Err(panic_info) => {
+                if !stage {
+                    self.send_event_with_meta(
+                        event::Cucumber::scenario(
+                            feature.clone(),
+                            rule.cloned(),
+                            scenario.clone(),
+                            event::Scenario::hook_started(HookType::Before)
+                                .with_retries(retries),
+                        ),
+                        started,
+                    );
+                }
+                Err(ExecutionFailure::BeforeHookPanicked {
+                    world: None,
+                    panic_info,
+                    meta: self.outcome_meta(OutcomeStatus::Failed),
+                })
+            }
         }
     }
 
@@ -1512,108 +2271,300 @@ where
     ///
     /// [`Step`]: gherkin::Step
     /// [`Step::Failed`]: event::Step::Failed
-    async fn run_step<St, Ps, Sk>(
+    async fn run_step(
         &self,
         world_opt: Option<W>,
         step: Source<gherkin::Step>,
         is_background: bool,
-        (started, passed, skipped): (St, Ps, Sk),
-        scenario_id: ScenarioId,
+        mode: StepMode,
+        attempt: &super::ScenarioHookAttempt,
+        retries: Option<Retries>,
+        attachments: &crate::attachment::AttachmentContext,
+        runtime: &WorldContext,
+        deferred: &mut Vec<DeferredEvent<W>>,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
-    ) -> Result<W, ExecutionFailure<W>>
-    where
-        St: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
-        Ps: FnOnce(
-            Source<gherkin::Step>,
-            CaptureLocations,
-            Option<step::Location>,
-        ) -> event::Cucumber<W>,
-        Sk: FnOnce(Source<gherkin::Step>) -> event::Cucumber<W>,
-    {
-        self.send_event(started(step.clone()));
-
+    ) -> Result<W, ExecutionFailure<W>> {
+        let started = event::Metadata::new(());
+        self.queue_step_event(
+            attempt,
+            step.clone(),
+            is_background,
+            event::Step::Started,
+            retries,
+            started,
+            deferred,
+        );
+        // Only a real invocation receives an attachment scope or timeout.
+        let mut attachment_scope =
+            (mode == StepMode::Execute).then(|| attachments.enter_step());
         let run = async {
-            let (step_fn, captures, loc, ctx) =
-                match self.collection.find(&step) {
-                    Ok(Some(f)) => f,
-                    Ok(None) => return Ok((None, None, world_opt)),
-                    Err(e) => {
-                        let e = event::StepError::AmbiguousMatch(e);
-                        return Err((e, None, None, world_opt));
+            if mode == StepMode::ExplicitSkip {
+                return Ok((OutcomeStatus::Skipped, None, None, world_opt));
+            }
+            let ((step_fn, captures, loc, ctx), options) =
+                match self.collection.find_with_options(&step) {
+                    Ok(Some(found)) => found,
+                    Ok(None) => {
+                        return Ok((
+                            OutcomeStatus::Undefined,
+                            None,
+                            None,
+                            world_opt,
+                        ));
+                    }
+                    Err(error) => {
+                        return Err((
+                            event::StepError::AmbiguousMatch(error),
+                            None,
+                            None,
+                            world_opt,
+                        ));
                     }
                 };
-
-            let mut world = if let Some(w) = world_opt {
-                w
+            if mode == StepMode::LookupOnly {
+                return Ok((
+                    OutcomeStatus::Skipped,
+                    Some(captures),
+                    loc,
+                    world_opt,
+                ));
+            }
+            let mut world = if let Some(world) = world_opt {
+                world
             } else {
-                match AssertUnwindSafe(async { W::new().await })
-                    .catch_unwind()
-                    .then_yield()
-                    .await
+                match AssertUnwindSafe(async {
+                    W::new_with_runtime_context(runtime.clone()).await
+                })
+                .catch_unwind()
+                .then_yield()
+                .await
                 {
-                    Ok(Ok(w)) => w,
-                    Ok(Err(e)) => {
-                        let e = event::StepError::Panic(coerce_into_info(
-                            format!("failed to initialize `World`: {e}"),
+                    Ok(Ok(world)) => world,
+                    Ok(Err(error)) => {
+                        return Err((
+                            event::StepError::Panic(coerce_into_info(format!(
+                                "failed to initialize `World`: {error}"
+                            ))),
+                            None,
+                            loc,
+                            None,
                         ));
-                        return Err((e, None, loc, None));
                     }
-                    Err(e) => {
-                        let e = event::StepError::Panic(e.into());
-                        return Err((e, None, loc, None));
+                    Err(error) => {
+                        return Err((
+                            event::StepError::Panic(error.into()),
+                            None,
+                            loc,
+                            None,
+                        ));
                     }
                 }
             };
-
-            match AssertUnwindSafe(async { step_fn(&mut world, ctx).await })
-                .catch_unwind()
-                .await
+            let scope = super::StepHookScope {
+                feature: attempt.feature.clone(),
+                rule: attempt.rule.clone(),
+                scenario: attempt.scenario.clone(),
+                step: step.clone(),
+                scenario_id: attempt.scenario_id,
+                attempt: attempt.attempt,
+                is_background,
+            };
+            let execution = runtime.execution();
+            let guard = attachment_scope
+                .as_mut()
+                .expect("executing step has attachment scope");
+            let mut summary = self
+                .step_hooks
+                .run_before(
+                    &scope,
+                    &mut world,
+                    &self.timeouts,
+                    guard,
+                    &execution,
+                    self.outcome_policy,
+                )
+                .await;
+            let (body, body_status) = if summary.status != OutcomeStatus::Failed
             {
-                Ok(()) => Ok((Some(captures), loc, Some(world))),
-                Err(e) => {
-                    let e = event::StepError::Panic(e.into());
-                    Err((e, Some(captures), loc, Some(world)))
+                let control = execution.enter();
+                let callback_world = &mut world;
+                let result = self
+                    .timeouts
+                    .invoke_callback(
+                        move || step_fn(callback_world, ctx),
+                        options.timeout_policy(),
+                    )
+                    .await;
+                let completion = control.finish();
+                if result
+                    .as_ref()
+                    .is_err_and(|error| error.is::<super::TimeoutError>())
+                {
+                    guard.renew();
                 }
+                let status = super::outcomes::status(&result, completion);
+                (Some(result.map_err(super::timeout::into_panic)), status)
+            } else {
+                (None, OutcomeStatus::Skipped)
+            };
+            let body_outcome = match &body {
+                None => super::StepBodyOutcome::NotRun,
+                Some(Err(error)) => super::StepBodyOutcome::Failed(
+                    super::step_hooks::panic_message(error.as_ref()),
+                ),
+                Some(Ok(())) => match body_status {
+                    OutcomeStatus::Pending => super::StepBodyOutcome::Pending,
+                    OutcomeStatus::Skipped => super::StepBodyOutcome::Skipped,
+                    _ => super::StepBodyOutcome::Passed,
+                },
+            };
+            if body.is_some() {
+                summary.status = summary.status.max(body_status);
             }
+            summary.merge(
+                self.step_hooks
+                    .run_after(
+                        &scope,
+                        &body_outcome,
+                        &mut world,
+                        &self.timeouts,
+                        guard,
+                        &execution,
+                        self.outcome_policy,
+                    )
+                    .await,
+            );
+            if !summary.failures.is_empty() {
+                if let super::StepBodyOutcome::Failed(message) = body_outcome {
+                    summary.failures.insert(0, format!("Step body: {message}"));
+                }
+                return Err((
+                    event::StepError::Panic(coerce_into_info(
+                        summary.failures.join("; "),
+                    )),
+                    Some(captures),
+                    loc,
+                    Some(world),
+                ));
+            }
+            if let Some(Err(error)) = body {
+                return Err((
+                    event::StepError::Panic(error.into()),
+                    Some(captures),
+                    loc,
+                    Some(world),
+                ));
+            }
+            Ok((summary.status, Some(captures), loc, Some(world)))
         };
-
         #[cfg(feature = "tracing")]
         let (run, span_id) = {
-            let span = scenario_id.step_span(is_background);
-            let span_id = span.id();
-            let run = tracing::Instrument::instrument(run, span);
-            (run, span_id)
+            let span = attempt.scenario_id.step_span(is_background);
+            let id = span.id();
+            (tracing::Instrument::instrument(run, span), id)
         };
         let result = run.then_yield().await;
-
+        drop(attachment_scope);
         #[cfg(feature = "tracing")]
         if let Some((waiter, id)) = waiter.zip(span_id) {
             waiter.wait_for_span_close(id).then_yield().await;
         }
-        #[cfg(not(feature = "tracing"))]
-        let _: ScenarioId = scenario_id;
-
+        let mut finished = if mode == StepMode::Execute {
+            event::Metadata::new(())
+        } else {
+            started
+        };
         match result {
-            Ok((Some(captures), loc, Some(world))) => {
-                self.send_event(passed(step, captures, loc));
+            Ok((OutcomeStatus::Passed, Some(captures), loc, Some(world))) => {
+                finished.outcome = self.outcome_metadata(OutcomeStatus::Passed);
+                self.queue_step_event(
+                    attempt,
+                    step,
+                    is_background,
+                    event::Step::Passed(captures, loc),
+                    retries,
+                    finished,
+                    deferred,
+                );
                 Ok(world)
             }
-            Ok((_, _, world)) => {
-                self.send_event(skipped(step));
-                Err(ExecutionFailure::StepSkipped(world))
+            Ok((status, _, _, world)) => {
+                finished.outcome = self.outcome_metadata(status);
+                self.queue_step_event(
+                    attempt,
+                    step,
+                    is_background,
+                    event::Step::Skipped,
+                    retries,
+                    finished,
+                    deferred,
+                );
+                Err(ExecutionFailure::StepSkipped {
+                    world,
+                    outcome: finished.outcome,
+                })
             }
             Err((err, captures, loc, world)) => {
+                let status =
+                    if matches!(err, event::StepError::AmbiguousMatch(_)) {
+                        OutcomeStatus::Ambiguous
+                    } else {
+                        OutcomeStatus::Failed
+                    };
+                finished.outcome = self.outcome_metadata(status);
                 Err(ExecutionFailure::StepPanicked {
                     world,
                     step,
                     captures,
                     loc,
                     err,
-                    meta: event::Metadata::new(()),
+                    meta: finished,
                     is_background,
                 })
             }
         }
+    }
+
+    fn queue_step_event(
+        &self,
+        attempt: &super::ScenarioHookAttempt,
+        step: Source<gherkin::Step>,
+        background: bool,
+        value: event::Step<W>,
+        retries: Option<Retries>,
+        meta: event::Metadata,
+        deferred: &mut Vec<DeferredEvent<W>>,
+    ) {
+        let value = if background {
+            event::Scenario::Background(step, value)
+        } else {
+            event::Scenario::Step(step, value)
+        };
+        let event = meta.wrap(event::Cucumber::scenario(
+            attempt.feature.clone(),
+            attempt.rule.clone(),
+            attempt.scenario.clone(),
+            value.with_retries(retries),
+        ));
+        if deferred.is_empty() {
+            drop(self.event_sender.unbounded_send(Ok(event)));
+        } else {
+            deferred.push(DeferredEvent::Native(event));
+        }
+    }
+
+    fn outcome_metadata(&self, status: OutcomeStatus) -> Option<Outcome> {
+        if self.execution_mode == ExecutionMode::DryRun {
+            Some(self.execution_mode.outcome(self.outcome_policy, status))
+        } else {
+            super::outcomes::metadata(self.outcome_policy, status)
+        }
+    }
+
+    fn outcome_meta(&self, status: OutcomeStatus) -> event::Metadata {
+        let mut meta = event::Metadata::new(());
+        meta.outcome = self.outcome_metadata(status);
+        meta
     }
 
     /// Emits all the failure events of [`HookType::Before`] or [`Step`] after
@@ -1644,7 +2595,7 @@ where
         retries: Option<Retries>,
     ) {
         match err {
-            ExecutionFailure::StepSkipped(_) => {}
+            ExecutionFailure::StepSkipped { .. } => {}
             ExecutionFailure::BeforeHookPanicked {
                 panic_info, meta, ..
             } => {
@@ -1723,52 +2674,116 @@ where
         scenario: &Source<gherkin::Scenario>,
         ev: event::ScenarioFinished,
         scenario_id: ScenarioId,
+        attachment_context: &crate::attachment::AttachmentContext,
+        attempt: &super::ScenarioHookAttempt,
+        runtime: &WorldContext,
+        body_outcome: Outcome,
         #[cfg(feature = "tracing")] waiter: Option<&SpanCloseWaiter>,
     ) -> Result<
         (Option<W>, Option<AfterHookEventsMeta>),
         (Option<W>, AfterHookEventsMeta, Info),
     > {
-        if let Some(hook) = self.after_hook.as_ref() {
-            let fut = async {
-                (hook)(
-                    feature.as_ref(),
-                    rule.as_ref().map(AsRef::as_ref),
-                    scenario.as_ref(),
-                    &ev,
-                    world.as_mut(),
-                )
-                .await;
-            };
-
+        if self.execution_mode == ExecutionMode::DryRun {
+            let registry =
+                self.scenario_hooks.as_ref().filter(|h| h.has_after());
+            if self.after_hook.is_none() && registry.is_none() {
+                return Ok((world, None));
+            }
+            if let Some(hooks) = registry {
+                hooks.skip_stage(
+                    attempt,
+                    super::ScenarioHookKind::After,
+                    super::ScenarioHookSkipReason::DryRun,
+                );
+            }
             let started = event::Metadata::new(());
-            let fut = AssertUnwindSafe(fut).catch_unwind();
-
-            #[cfg(feature = "tracing")]
-            let (fut, span_id) = {
-                let span = scenario_id.hook_span(HookType::After);
-                let span_id = span.id();
-                let fut = tracing::Instrument::instrument(fut, span);
-                (fut, span_id)
-            };
-            #[cfg(not(feature = "tracing"))]
-            let _: ScenarioId = scenario_id;
-
-            let res = fut.then_yield().await;
-
-            #[cfg(feature = "tracing")]
-            if let Some((waiter, id)) = waiter.zip(span_id) {
-                waiter.wait_for_span_close(id).then_yield().await;
+            let mut finished = started;
+            finished.outcome = self.outcome_metadata(OutcomeStatus::Skipped);
+            return Err((
+                world,
+                AfterHookEventsMeta { started, finished },
+                coerce_into_info("After hooks skipped during dry-run".to_owned()),
+            ));
+        }
+        let registry = self.scenario_hooks.as_ref().filter(|h| h.has_after());
+        if self.after_hook.is_none() && registry.is_none() {
+            return Ok((world, None));
+        }
+        let attachment_scope = registry.is_none().then(|| {
+            attachment_context.enter(crate::attachment::Target::AfterScenario)
+        });
+        let started = event::Metadata::new(());
+        let run = async {
+            let execution = runtime.execution();
+            if let Some(hooks) = registry {
+                let summary = hooks
+                    .run_after(
+                        attempt,
+                        &ev,
+                        world.as_mut(),
+                        attachment_context,
+                        &self.timeouts,
+                        &execution,
+                        self.outcome_policy,
+                        body_outcome,
+                    )
+                    .await;
+                let error =
+                    (summary.status != OutcomeStatus::Passed).then(|| {
+                        coerce_into_info(summary.diagnostic("After hook"))
+                    });
+                (summary.status, error)
+            } else {
+                let control = execution.enter();
+                let callback_world = world.as_mut();
+                let callback_event = &ev;
+                let result = self
+                    .timeouts
+                    .invoke_callback(
+                        move || -> LocalBoxFuture<'_, ()> {
+                            if let Some(hook) = &self.after_hook {
+                                hook(feature, rule.map(AsRef::as_ref), scenario, callback_event, callback_world)
+                            } else { Box::pin(future::ready(())) }
+                        },
+                        None,
+                    )
+                    .await;
+                let completion = control.finish();
+                let status = super::outcomes::status(&result, completion);
+                let error = result
+                    .err()
+                    .map(|error| Info::from(super::timeout::into_panic(error)))
+                    .or_else(|| {
+                        (status != OutcomeStatus::Passed).then(|| {
+                            coerce_into_info(format!(
+                                "After hook requested {status:?}"
+                            ))
+                        })
+                    });
+                (status, error)
             }
-
-            let finished = event::Metadata::new(());
-            let meta = AfterHookEventsMeta { started, finished };
-
-            match res {
-                Ok(()) => Ok((world, Some(meta))),
-                Err(info) => Err((world, meta, info.into())),
-            }
-        } else {
-            Ok((world, None))
+        };
+        #[cfg(feature = "tracing")]
+        let (run, span_id) = {
+            let span = scenario_id.hook_span(HookType::After);
+            let id = span.id();
+            (tracing::Instrument::instrument(run, span), id)
+        };
+        #[cfg(not(feature = "tracing"))]
+        let _ = scenario_id;
+        let (status, error) = run.then_yield().await;
+        drop(attachment_scope);
+        #[cfg(feature = "tracing")]
+        if let Some((waiter, id)) = waiter.zip(span_id) {
+            waiter.wait_for_span_close(id).then_yield().await;
+        }
+        let meta = AfterHookEventsMeta {
+            started,
+            finished: self.outcome_meta(status),
+        };
+        match error {
+            Some(error) => Err((world, meta, error)),
+            None => Ok((world, Some(meta))),
         }
     }
 
@@ -1789,7 +2804,8 @@ where
         retries: Option<Retries>,
     ) {
         debug_assert_eq!(
-            self.after_hook.is_some(),
+            self.after_hook.is_some()
+                || self.scenario_hooks.as_ref().is_some_and(|h| h.has_after()),
             meta.is_some(),
             "`AfterHookEventsMeta` is not passed, despite `self.after_hook` \
              being set",
@@ -2147,6 +3163,8 @@ type InsertedScenarios = HashMap<
 /// [`Scenario`]: gherkin::Scenario
 #[derive(Clone, Default)]
 struct Features {
+    ordered: bool,
+    plan: Arc<Mutex<Vec<PlannedCase>>>,
     /// Storage itself.
     scenarios: Arc<Mutex<Scenarios>>,
 
@@ -2178,30 +3196,20 @@ impl Features {
     {
         let feature = Source::new(feature);
 
-        let local = feature
-            .scenarios
-            .iter()
-            .map(|s| (None, s))
+        let mut cases = feature.scenarios.iter().map(|s| (None, s))
             .chain(feature.rules.iter().flat_map(|r| {
                 let rule = Some(Source::new(r.clone()));
-                r.scenarios
-                    .iter()
-                    .map(|s| (rule.clone(), s))
-                    .collect::<Vec<_>>()
-            }))
-            .map(|(rule, scenario)| {
-                let retries = retry(&feature, rule.as_deref(), scenario, cli);
-                (
-                    ScenarioId::new(),
-                    feature.clone(),
-                    rule,
-                    Source::new(scenario.clone()),
-                    retries,
-                )
-            })
-            .into_group_map_by(|(_, f, r, s, _)| {
-                which_scenario(f, r.as_ref().map(AsRef::as_ref), s)
-            });
+                r.scenarios.iter().map(|s| (rule.clone(), s)).collect::<Vec<_>>()
+            })).collect::<Vec<_>>();
+        if self.ordered { cases.sort_by_key(|(_, scenario)| scenario.position.line); }
+        let cases = cases.into_iter().map(|(rule, scenario)| {
+            let retries = retry(&feature, rule.as_deref(), scenario, cli);
+            let ty = which_scenario(&feature, rule.as_deref(), scenario);
+            (ScenarioId::new(), feature.clone(), rule, Source::new(scenario.clone()), ty, retries)
+        }).collect::<Vec<_>>();
+        if self.ordered { self.plan.lock().await.extend(cases); return; }
+        let local = cases.into_iter().map(|(id,f,r,s,ty,retry)| (ty,(id,f,r,s,retry)))
+            .into_group_map();
 
         self.insert_scenarios(local).await;
     }
@@ -2402,6 +3410,20 @@ fn coerce_into_info<T: Any + Send + 'static>(val: T) -> Info {
     Arc::new(val)
 }
 
+/// Classification-only slots never invoke a body, hooks or constructor.
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum StepMode {
+    Execute,
+    LookupOnly,
+    ExplicitSkip,
+}
+
+/// World-free events/failure descriptors queued behind a deferred terminal.
+enum DeferredEvent<W> {
+    Native(Event<event::Cucumber<W>>),
+    Failure(ExecutionFailure<W>),
+}
+
 /// Failure encountered during execution of [`HookType::Before`] or [`Step`].
 /// See [`Executor::emit_failed_events()`] for more info.
 ///
@@ -2426,7 +3448,7 @@ enum ExecutionFailure<World> {
     /// [`Step`] was skipped.
     ///
     /// [`Step`]: gherkin::Step.
-    StepSkipped(Option<World>),
+    StepSkipped { world: Option<World>, outcome: Option<Outcome> },
 
     /// [`Step`] failed.
     ///
@@ -2488,11 +3510,30 @@ struct AfterHookEventsMeta {
 }
 
 impl<W> ExecutionFailure<W> {
+    fn status(&self) -> OutcomeStatus {
+        match self {
+            Self::BeforeHookPanicked { meta, .. } => {
+                meta.outcome.map_or(OutcomeStatus::Failed, |o| o.status)
+            }
+            Self::StepSkipped { outcome, .. } => {
+                outcome.map_or(OutcomeStatus::Undefined, |o| o.status)
+            }
+            Self::StepPanicked { meta, err, .. } => meta.outcome.map_or(
+                if matches!(err, event::StepError::AmbiguousMatch(_)) {
+                    OutcomeStatus::Ambiguous
+                } else {
+                    OutcomeStatus::Failed
+                },
+                |o| o.status,
+            ),
+        }
+    }
+
     /// Takes the [`World`] leaving a [`None`] in its place.
     const fn take_world(&mut self) -> Option<W> {
         match self {
             Self::BeforeHookPanicked { world, .. }
-            | Self::StepSkipped(world)
+            | Self::StepSkipped { world, .. }
             | Self::StepPanicked { world, .. } => world.take(),
         }
     }
@@ -2507,7 +3548,7 @@ impl<W> ExecutionFailure<W> {
             Self::BeforeHookPanicked { panic_info, .. } => {
                 BeforeHookFailed(Arc::clone(panic_info))
             }
-            Self::StepSkipped(_) => StepSkipped,
+            Self::StepSkipped { .. } => StepSkipped,
             Self::StepPanicked { captures, loc, err, .. } => {
                 StepFailed(captures.clone(), *loc, err.clone())
             }

@@ -1,0 +1,7 @@
+/target/
+/dist/
+/.venv/
+__pycache__/
+*.py[cod]
+*.so
+*.pyd

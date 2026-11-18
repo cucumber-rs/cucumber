@@ -1,0 +1,9 @@
+(1:4)FeatureLine:()Feature/DataTables/
+(2:1)Empty://
+(3:5)ScenarioLine:()Scenario/minimalistic/
+(4:1)Empty://
+(5:3)StepLine:(Context)Given /a simple data table/
+(6:3)TableRow:()|//5:foo,11:bar
+(7:1)Empty://
+(8:3)TableRow:()|//5:boz,11:boo
+EOF

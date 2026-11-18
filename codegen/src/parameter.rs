@@ -38,6 +38,12 @@ struct Attrs {
     /// Value for a `Parameter::NAME` associated constant.
     #[parse(value)]
     name: Option<syn::LitStr>,
+
+    #[parse(value)]
+    use_for_snippets: Option<syn::LitBool>,
+
+    #[parse(value)]
+    prefer_for_regexp_match: Option<syn::LitBool>,
 }
 
 /// Representation of a type implementing a `Parameter` trait, used for code
@@ -56,6 +62,8 @@ struct Definition {
 
     /// Value for a `Parameter::Name` associated constant.
     name: String,
+
+    metadata: Option<(bool, bool)>,
 }
 
 impl TryFrom<syn::DeriveInput> for Definition {
@@ -73,7 +81,13 @@ impl TryFrom<syn::DeriveInput> for Definition {
             syn::LitStr::value,
         );
 
-        Ok(Self { ident: input.ident, generics: input.generics, regex, name })
+        let metadata = match (attrs.use_for_snippets, attrs.prefer_for_regexp_match) {
+            (None, None) => None,
+            (Some(snippets), Some(prefer)) => Some((snippets.value, prefer.value)),
+            (Some(partial), None) | (None, Some(partial)) => return Err(syn::Error::new(
+                partial.span, "custom metadata requires both use_for_snippets and prefer_for_regexp_match")),
+        };
+        Ok(Self { ident: input.ident, generics: input.generics, regex, name, metadata })
     }
 }
 
@@ -84,6 +98,16 @@ impl Definition {
         let ty = &self.ident;
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
         let (regex, name) = (self.regex.as_str(), &self.name);
+        let metadata = self.metadata.map(|(snippets, prefer)| quote! {
+            fn metadata() -> ::std::option::Option<::cucumber::support_code::ParameterDescriptor> {
+                ::std::option::Option::Some(::cucumber::support_code::ParameterDescriptor {
+                    name: Self::NAME.to_owned(),
+                    regular_expressions: ::std::vec![Self::REGEX.to_owned()],
+                    prefer_for_regular_expression_match: #prefer,
+                    use_for_snippets: #snippets,
+                })
+            }
+        });
 
         quote! {
             #[automatically_derived]
@@ -92,6 +116,7 @@ impl Definition {
             {
                 const REGEX: &'static str = #regex;
                 const NAME: &'static str = #name;
+                #metadata
             }
         }
     }

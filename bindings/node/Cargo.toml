@@ -1,0 +1,23 @@
+[package]
+name = "cucumber-sdk-node"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT OR Apache-2.0"
+description = "Local Node-API adapter for the shared Cucumber Rust SDK"
+repository = "https://github.com/GQAdonis/cucumber"
+publish = false
+
+[workspace]
+
+[lib]
+name = "cucumber_sdk_node"
+crate-type = ["cdylib"]
+
+[dependencies]
+cucumber-sdk = { path = "../../sdk" }
+napi = { version = "=3.16.2", default-features = false, features = ["napi8"] }
+napi-derive = "=3.7.0"
+
+[build-dependencies]
+napi-build = "=2.6.0"
