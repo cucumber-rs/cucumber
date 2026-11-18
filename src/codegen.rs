@@ -10,7 +10,7 @@
 
 //! Helper type-level glue for [`cucumber_codegen`] crate.
 
-use std::convert::Infallible;
+use std::{convert::Infallible, iter, slice};
 
 pub use anyhow;
 pub use cucumber_expressions::{
@@ -233,4 +233,44 @@ impl<W: World, E> IntoWorldResult for Result<W, E> {
     fn into_world_result(self) -> Self {
         self
     }
+}
+
+/// Takes the next [`Step`] function argument's value from the captured
+/// [`step::Context::matches`], merging all the capturing groups of a single
+/// `cucumber-expressions` `parameter`.
+///
+/// Returns [`None`] if there are no more captures left.
+#[doc(hidden)]
+#[must_use]
+pub fn take_capture<'m>(
+    iter: &mut iter::Skip<slice::Iter<'m, (step::CaptureName, String)>>,
+) -> Option<&'m str> {
+    let (cap_name, first) = iter.next()?;
+
+    // Special handling of `cucumber-expressions` `parameter` with multiple
+    // capturing groups.
+    let prefix = cap_name.as_ref().filter(|n| n.starts_with("__")).map(|n| {
+        let num_len = n
+            .chars()
+            .skip(2)
+            .take_while(|&c| c != '_')
+            .map(char::len_utf8)
+            .sum::<usize>();
+        let len = num_len + b"__".len();
+        n.split_at(len).0
+    });
+
+    let to_take = iter
+        .clone()
+        .take_while(|(n, _)| {
+            prefix.zip(n.as_ref()).is_some_and(|(p, n)| n.starts_with(p))
+        })
+        .count();
+
+    Some(
+        iter::once(first.as_str())
+            .chain(iter.by_ref().take(to_take).map(|(_, s)| s.as_str()))
+            .fold(None, |acc, s| acc.or_else(|| (!s.is_empty()).then_some(s)))
+            .unwrap_or_default(),
+    )
 }
