@@ -331,47 +331,10 @@ impl Step {
             );
 
             quote! {
-                let #ident = {
-                    let (cap_name, s) = __cucumber_iter
-                        .next()
-                        .expect(#not_found_err);
-                    // Special handling of `cucumber-expressions` `parameter`
-                    // with multiple capturing groups.
-                    let prefix = cap_name
-                        .as_ref()
-                        .filter(|n| n.starts_with("__"))
-                        .map(|n| {
-                            let num_len = n
-                                .chars()
-                                .skip(2)
-                                .take_while(|&c| c != '_')
-                                .map(char::len_utf8)
-                                .sum::<usize>();
-                            let len = num_len + b"__".len();
-                            n.split_at(len).0
-                        });
-
-                    let to_take = __cucumber_iter
-                        .clone()
-                        .take_while(|(n, _)| {
-                            prefix.zip(n.as_ref())
-                                .filter(|(prefix, n)| n.starts_with(prefix))
-                                .is_some()
-                        })
-                        .count();
-
-                    ::std::iter::once(s.as_str())
-                        .chain(
-                            __cucumber_iter
-                                .by_ref()
-                                .take(to_take)
-                                .map(|(_, s)| s.as_str()),
-                        )
-                        .fold(None, |acc, s| {
-                            acc.or_else(|| (!s.is_empty()).then_some(s))
-                        })
-                        .unwrap_or_default()
-                };
+                let #ident = ::cucumber::codegen::take_capture(
+                    &mut __cucumber_iter,
+                )
+                .expect(#not_found_err);
                 let #ident = #ident.parse::<#ty>().expect(#parsing_err);
             }
         };
@@ -444,6 +407,7 @@ impl Step {
         &self,
         expr: &syn::LitStr,
     ) -> syn::Result<TokenStream> {
+        let lit_span = expr.span();
         let expr = expr.value();
         let params = Parameters::new(
             &expr,
@@ -451,9 +415,22 @@ impl Step {
             self.arg_name_of_step_context.as_ref(),
         )?;
 
+        let const_assertions = params.gen_const_assertions();
+
+        if params.has_only_default_parameters() {
+            let re = Expression::regex(&expr)
+                .map_err(|e| syn::Error::new(lit_span, format!("{e}")))?;
+            let re = syn::LitStr::new(re.as_str(), lit_span);
+
+            return Ok(quote! {{
+                #const_assertions
+
+                ::cucumber::codegen::Regex::new(#re).unwrap()
+            }});
+        }
+
         let provider_impl =
             params.gen_provider_impl(&parse_quote! { Provider });
-        let const_assertions = params.gen_const_assertions();
 
         Ok(quote! {{
             #const_assertions
@@ -563,6 +540,14 @@ impl<'p> Parameters<'p> {
             })
             .collect::<syn::Result<Vec<_>>>()
             .map(Self)
+    }
+
+    /// Indicates whether all the [`ParameterProvider::param`]s are
+    /// [`DEFAULT_PARAMETERS`], so the [`Regex`] can be built at expansion time.
+    fn has_only_default_parameters(&self) -> bool {
+        self.0
+            .iter()
+            .all(|par| DEFAULT_PARAMETERS.contains(par.param.input.fragment()))
     }
 
     /// Generates code asserting that all the corresponding
