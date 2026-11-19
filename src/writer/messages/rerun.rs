@@ -2,10 +2,13 @@
 //!
 //! Matches the Cucumber.js 13.3 formatter's non-PASSED/not-retried selection.
 //! Original attempt history remains separate from the derived source selection.
-//! This consumer does not rerun code, rewrite reports, or infer native positions.
-use crate::{filter::LineSelectors, parser::SourcePaths};
-use serde_json::Value;
+//! This consumer does not rerun code, rewrite reports, or infer native
+//! positions.
 use std::{collections::HashMap, fmt, path::PathBuf};
+
+use serde_json::Value;
+
+use crate::{filter::LineSelectors, parser::SourcePaths};
 
 /// Protocol status in the pinned Messages severity order.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -60,12 +63,15 @@ pub struct Attempt {
     pub status: Status,
     /// Whether TestCaseFinished was actually received.
     pub completed: bool,
-    /// Actual retry decision, defaulting to false for interrupted started cases.
+    /// Actual retry decision, defaulting to false for interrupted started
+    /// cases.
     pub will_be_retried: bool,
 }
 impl Attempt {
-    /// Whether this attempt contributes a location to the pinned rerun formatter.
-    /// This is independent of run success, pending strictness and dry-run policy.
+    /// Whether this attempt contributes a location to the pinned rerun
+    /// formatter.
+    /// This is independent of run success, pending strictness and dry-run
+    /// policy.
     #[must_use]
     pub const fn is_selected(&self) -> bool {
         !matches!(self.status, Status::Passed) && !self.will_be_retried
@@ -77,7 +83,8 @@ impl Attempt {
 pub struct Entry {
     /// Exact original URI, not normalized or split on colons.
     pub uri: String,
-    /// One original line for each selected attempt, preserving duplicate entries.
+    /// One original line for each selected attempt, preserving duplicate
+    /// entries.
     pub lines: Vec<usize>,
 }
 /// An immutable projection of one explicitly finished protocol run.
@@ -94,7 +101,8 @@ impl Plan {
     pub fn run_id(&self) -> Option<&str> {
         self.run_id.as_deref()
     }
-    /// Returns actual run success, even when no scenario location is selectable.
+    /// Returns actual run success, even when no scenario location is
+    /// selectable.
     #[must_use]
     pub const fn run_success(&self) -> bool {
         self.success
@@ -110,7 +118,8 @@ impl Plan {
         &self.entries
     }
     /// Formats URI:line:line groups with the requested separator and no suffix.
-    /// Use "\n" for the pinned formatter's default. Paths are not shell-escaped.
+    /// Use "\n" for the pinned formatter's default. Paths are not
+    /// shell-escaped.
     #[must_use]
     pub fn format(&self, separator: &str) -> String {
         self.entries
@@ -130,11 +139,13 @@ impl Plan {
             .collect::<Vec<_>>()
             .join(separator)
     }
-    /// Resolves a nonempty rerun plan to explicit discovery and source selectors.
+    /// Resolves a nonempty rerun plan to explicit discovery and source
+    /// selectors.
     ///
     /// None means nothing to rerun; the resolver is never called in that case.
     /// Apply both returned components to preserve the finite source selection.
-    /// URI interpretation belongs to the application; no fallback path is guessed.
+    /// URI interpretation belongs to the application; no fallback path is
+    /// guessed.
     ///
     /// # Errors
     /// Reports URI resolution failures or invalid line-selector configuration.
@@ -165,7 +176,8 @@ impl Plan {
         Ok(Some(LocalSelection { paths, lines }))
     }
 }
-/// Nonempty local rerun selection, pairing finite discovery with line filtering.
+/// Nonempty local rerun selection, pairing finite discovery with line
+/// filtering.
 #[derive(Clone, Debug)]
 pub struct LocalSelection {
     paths: SourcePaths,
@@ -190,7 +202,8 @@ pub enum Error {
     InvalidEnvelope(&'static str),
     /// A referenced identity or source AST node is absent.
     MissingReference {
-        /// Referenced object type, such as testCase, pickle, document or astNode.
+        /// Referenced object type, such as testCase, pickle, document or
+        /// astNode.
         kind: &'static str,
         /// Missing original identity.
         id: String,
@@ -465,7 +478,8 @@ impl Collector {
             }
             attempts.push(attempt);
         }
-        // JavaScript Object.keys orders canonical uint32 index keys before other
+        // JavaScript Object.keys orders canonical uint32 index keys before
+        // other
         // URI keys. Ordinary path URIs remain in insertion order.
         entries.sort_by_key(|entry| {
             object_index(&entry.uri).map_or((1, 0), |index| (0, index))

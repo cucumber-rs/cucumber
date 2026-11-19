@@ -57,7 +57,9 @@ pub trait StepConstructor<W> {
     /// Optional per-registration metadata and execution policy.
     ///
     /// The default preserves manual implementations of the original contract.
-    fn options(&self) -> step::DefinitionOptions { step::DefinitionOptions::default() }
+    fn options(&self) -> step::DefinitionOptions {
+        step::DefinitionOptions::default()
+    }
 }
 
 /// Custom parameter of a [Cucumber Expression].
@@ -83,12 +85,18 @@ pub trait Parameter {
     /// [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
     const NAME: &'static str;
 
-    /// Complete declared reporting metadata, if snippet/preference flags are known.
+    /// Complete declared reporting metadata, if snippet/preference flags are
+    /// known.
     ///
-    /// Defaults to omission for existing custom types. Returned names and regexes
-    /// must describe the actual [`Self::NAME`] and [`Self::REGEX`]. This does not
-    /// add snippet generation or raw-regex transformer lookup to native execution.
-    fn metadata() -> Option<crate::support_code::ParameterDescriptor> { None }
+    /// Defaults to omission for existing custom types. Returned names and
+    /// regexes
+    /// must describe the actual [`Self::NAME`] and [`Self::REGEX`]. This does
+    /// not
+    /// add snippet generation or raw-regex transformer lookup to native
+    /// execution.
+    fn metadata() -> Option<crate::support_code::ParameterDescriptor> {
+        None
+    }
 }
 
 /// Compares two strings in a `const` context.

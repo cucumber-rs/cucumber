@@ -489,7 +489,8 @@ pub enum Status {
 }
 
 impl RunResult {
-    /// Native event variants are a compatibility projection when metadata exists.
+    /// Native event variants are a compatibility projection when metadata
+    /// exists.
     fn apply_outcome(&mut self, outcome: Option<crate::execution::Outcome>) {
         use crate::execution::OutcomeStatus;
         let Some(outcome) = outcome else { return };
@@ -501,7 +502,12 @@ impl RunResult {
             OutcomeStatus::Ambiguous => Status::Ambiguous,
             OutcomeStatus::Failed => Status::Failed,
         };
-        if matches!(outcome.status, OutcomeStatus::Passed | OutcomeStatus::Skipped | OutcomeStatus::Pending) {
+        if matches!(
+            outcome.status,
+            OutcomeStatus::Passed
+                | OutcomeStatus::Skipped
+                | OutcomeStatus::Pending
+        ) {
             self.error_message = None;
         }
     }

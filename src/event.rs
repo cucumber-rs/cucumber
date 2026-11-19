@@ -51,7 +51,8 @@ pub struct Event<T: ?Sized> {
     pub at: SystemTime,
 
     /// Authoritative completion status in explicitly selected outcome mode.
-    /// Existing native variants remain a conservative projection; None retains legacy semantics.
+    /// Existing native variants remain a conservative projection; None retains
+    /// legacy semantics.
     pub outcome: Option<crate::execution::Outcome>,
 
     /// Actual value of this [`Event`].
@@ -77,7 +78,8 @@ impl<T> Event<T> {
         }
     }
 
-    /// Attaches an observed status without changing the compatible native variant.
+    /// Attaches an observed status without changing the compatible native
+    /// variant.
     #[must_use]
     pub fn with_outcome(mut self, outcome: crate::execution::Outcome) -> Self {
         self.outcome = Some(outcome);

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "phaseId": "phase-47-contribution-readiness",
+  "predecessorSha256": "eb87aac1fce83896683c065390f4f6deae80d3727d9f949a83a1dbb212e47ff9",
+  "files": {
+    "tests/messages_corpus.rs": "f3b22b2987e736f8191a6c66c0ed1bd141cd65046c5bd36cdf5d620af50342e4",
+    "tests/messages_markdown.rs": "edcadbd4ac80bcd7079b7815fdad1de55c11835819a2a4540eceb11bec3c9589",
+    "tests/messages_rerun.rs": "ff34ea48365427bfba3f32d885ffe4ef60ae001a1e6fc0a204bd0dd5386c4ed4"
+  }
+}

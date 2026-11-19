@@ -114,7 +114,10 @@ where
     /// Options survive cloning and parser, runner or writer replacement.
     /// The public CLI layout and its existing name/tag conflict are unchanged.
     #[must_use]
-    pub fn with_filter_options(mut self, options: crate::filter::FilterOptions) -> Self {
+    pub fn with_filter_options(
+        mut self,
+        options: crate::filter::FilterOptions,
+    ) -> Self {
         self.filter_options = Some(options);
         self
     }
@@ -729,7 +732,8 @@ where
     /// [`Scenario`]: gherkin::Scenario
     ///
     /// By default a CLI name or tag selector overrides `filter`, preserving the
-    /// documented legacy CLI precedence. [`Self::with_filter_options`] opts into
+    /// documented legacy CLI precedence. [`Self::with_filter_options`] opts
+    /// into
     /// composition: selectors and this predicate must all accept the scenario.
     pub async fn filter_run<F>(self, input: I, filter: F) -> Wr
     where
@@ -754,8 +758,13 @@ where
                            rule: Option<&gherkin::Rule>,
                            scenario: &gherkin::Scenario| {
             if let Some(options) = &filter_options {
-                return options.matches_with_cli(feat, rule, scenario, re_filter.as_ref(), tags_filter.as_ref())
-                    && filter(feat, rule, scenario);
+                return options.matches_with_cli(
+                    feat,
+                    rule,
+                    scenario,
+                    re_filter.as_ref(),
+                    tags_filter.as_ref(),
+                ) && filter(feat, rule, scenario);
             }
             re_filter.as_ref().map_or_else(
                 || {
@@ -889,7 +898,8 @@ where
     }
 }
 
-impl<W, I, Wr, Cli, F, B, A> Cucumber<W, parser::Basic, I, runner::Basic<W, F, B, A>, Wr, Cli>
+impl<W, I, Wr, Cli, F, B, A>
+    Cucumber<W, parser::Basic, I, runner::Basic<W, F, B, A>, Wr, Cli>
 where
     W: World,
     runner::Basic<W, F, B, A>: Runner<W>,
@@ -900,14 +910,20 @@ where
     /// Selects the adopted Gherkin 43 parser policies and background execution.
     ///
     /// Valid featureless documents produce no scenarios. Empty scenarios omit
-    /// background steps while preserving hooks. Step-definition matching remains
-    /// its separately selected policy; this is not a Cucumber.js support bridge.
+    /// background steps while preserving hooks. Step-definition matching
+    /// remains
+    /// its separately selected policy; this is not a Cucumber.js support
+    /// bridge.
     ///
     /// # Errors
     /// Rejects a configured fallback language absent from the latest catalogue.
-    pub fn with_gherkin43(mut self) -> Result<Self, parser::basic::UnsupportedLanguageError> {
+    pub fn with_gherkin43(
+        mut self,
+    ) -> Result<Self, parser::basic::UnsupportedLanguageError> {
         self.parser = self.parser.with_gherkin43()?;
-        self.runner = self.runner.with_background_semantics(runner::BackgroundSemantics::Gherkin43);
+        self.runner = self
+            .runner
+            .with_background_semantics(runner::BackgroundSemantics::Gherkin43);
         Ok(self)
     }
 }
@@ -920,10 +936,12 @@ where
     Cli: clap::Args,
     I: AsRef<Path>,
 {
-    /// Selects a complete ordered source plan instead of the run input/CLI glob.
+    /// Selects a complete ordered source plan instead of the run input/CLI
+    /// glob.
     #[must_use]
     pub fn with_source_paths(mut self, paths: parser::SourcePaths) -> Self {
-        self.parser = self.parser.with_source_paths(paths); self
+        self.parser = self.parser.with_source_paths(paths);
+        self
     }
 
     /// Selects original source lines and composes all selection predicates.
@@ -932,7 +950,10 @@ where
     /// exist, so line selectors, name/tag selectors and the caller predicate
     /// all apply. Does not add files to the parser's independent discovery.
     #[must_use]
-    pub fn with_line_selectors(mut self, selectors: crate::filter::LineSelectors) -> Self {
+    pub fn with_line_selectors(
+        mut self,
+        selectors: crate::filter::LineSelectors,
+    ) -> Self {
         self.parser = self.parser.with_line_selectors(selectors);
         self.filter_options.get_or_insert_with(crate::FilterOptions::new);
         self
@@ -940,12 +961,16 @@ where
 
     /// Selects classic token whitespace and trimming without changing defaults.
     #[must_use]
-    pub fn with_lexical_semantics(mut self, semantics: gherkin::LexicalSemantics) -> Self {
+    pub fn with_lexical_semantics(
+        mut self,
+        semantics: gherkin::LexicalSemantics,
+    ) -> Self {
         self.parser = self.parser.with_lexical_semantics(semantics);
         self
     }
 
-    /// Selects source syntax while preserving existing classic compatibility policies.
+    /// Selects source syntax while preserving existing classic compatibility
+    /// policies.
     ///
     /// Plain is the default. Markdown and Auto are explicit opt-ins; see
     /// [`parser::Basic::with_source_format`] for directory discovery behavior.
@@ -965,7 +990,8 @@ where
         self
     }
 
-    /// Installs source-aware standard Messages reporting with a fresh source store.
+    /// Installs source-aware standard Messages reporting with a fresh source
+    /// store.
     ///
     /// The Basic parser and Messages writer share exact parsed bytes and the
     /// raw AST. See [`writer::Messages`] for supported protocol semantics and
@@ -977,42 +1003,73 @@ where
     pub fn with_messages<O: std::io::Write>(
         mut self,
         output: O,
-    ) -> Cucumber<W, parser::Basic, I, R, writer::Normalize<W, writer::Messages<O>>, Cli> {
+    ) -> Cucumber<
+        W,
+        parser::Basic,
+        I,
+        R,
+        writer::Normalize<W, writer::Messages<O>>,
+        Cli,
+    > {
         let sources = parser::SourceStore::new();
         let support_code = crate::support_code::Store::new();
         self.runner = self.runner.with_support_code_store(support_code.clone());
         self.with_source_store(sources.clone()).with_writer(
             writer::Messages::raw_with_source_store(output, sources)
-                .with_support_code_store(support_code).normalized::<W>())
+                .with_support_code_store(support_code)
+                .normalized::<W>(),
+        )
     }
 
     /// Selects table row sizing while preserving the legacy default.
     ///
     /// Gherkin43 rejects inconsistent step and Examples rows before execution.
-    /// This selection leaves dialect, doc-string and interpolation policies intact.
+    /// This selection leaves dialect, doc-string and interpolation policies
+    /// intact.
     #[must_use]
-    pub fn with_table_semantics(mut self, semantics: gherkin::TableSemantics) -> Self {
+    pub fn with_table_semantics(
+        mut self,
+        semantics: gherkin::TableSemantics,
+    ) -> Self {
         self.parser = self.parser.with_table_semantics(semantics);
         self
     }
 
-    /// Installs source-aware Messages reporting with an explicit protocol version.
+    /// Installs source-aware Messages reporting with an explicit protocol
+    /// version.
     #[cfg(feature = "output-messages")]
     #[must_use]
-    pub fn with_messages_protocol<O: std::io::Write>(mut self, output: O,
+    pub fn with_messages_protocol<O: std::io::Write>(
+        mut self,
+        output: O,
         protocol: writer::messages::ProtocolVersion,
-    ) -> Cucumber<W, parser::Basic, I, R, writer::Normalize<W, writer::Messages<O>>, Cli> {
+    ) -> Cucumber<
+        W,
+        parser::Basic,
+        I,
+        R,
+        writer::Normalize<W, writer::Messages<O>>,
+        Cli,
+    > {
         let sources = parser::SourceStore::new();
         let support_code = crate::support_code::Store::new();
         self.runner = self.runner.with_support_code_store(support_code.clone());
         self.with_source_store(sources.clone()).with_writer(
-            writer::Messages::raw_with_source_store_and_protocol(output, sources, protocol)
-                .with_support_code_store(support_code).normalized::<W>())
+            writer::Messages::raw_with_source_store_and_protocol(
+                output, sources, protocol,
+            )
+            .with_support_code_store(support_code)
+            .normalized::<W>(),
+        )
     }
 
-    /// Selects Scenario Outline interpolation while preserving the legacy default.
+    /// Selects Scenario Outline interpolation while preserving the legacy
+    /// default.
     #[must_use]
-    pub fn with_example_semantics(mut self, semantics: crate::feature::ExampleSemantics) -> Self {
+    pub fn with_example_semantics(
+        mut self,
+        semantics: crate::feature::ExampleSemantics,
+    ) -> Self {
         self.parser = self.parser.with_example_semantics(semantics);
         self
     }
@@ -1023,7 +1080,10 @@ where
     /// excludes media-type/header lines, dedents body lines, and unescapes the
     /// active delimiter before Scenario Outline values are substituted.
     #[must_use]
-    pub fn with_docstring_semantics(mut self, semantics: gherkin::DocStringSemantics) -> Self {
+    pub fn with_docstring_semantics(
+        mut self,
+        semantics: gherkin::DocStringSemantics,
+    ) -> Self {
         self.parser = self.parser.with_docstring_semantics(semantics);
         self
     }
@@ -1034,9 +1094,10 @@ where
     ///
     /// # Errors
     /// Returns an error if the current language is absent from the catalogue.
-    pub fn with_dialect_catalog(mut self, catalog: parser::DialectCatalog)
-        -> Result<Self, parser::basic::UnsupportedLanguageError>
-    {
+    pub fn with_dialect_catalog(
+        mut self,
+        catalog: parser::DialectCatalog,
+    ) -> Result<Self, parser::basic::UnsupportedLanguageError> {
         self.parser = self.parser.with_dialect_catalog(catalog)?;
         Ok(self)
     }
@@ -1280,12 +1341,23 @@ where
     pub fn with_hooks(
         self,
         hooks: runner::Hooks<W>,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, runner::hooks::Before<W>, runner::hooks::After<W>>, Wr, Cli>
-    {
+    ) -> Cucumber<
+        W,
+        P,
+        I,
+        runner::Basic<W, F, runner::hooks::Before<W>, runner::hooks::After<W>>,
+        Wr,
+        Cli,
+    > {
         let Self { parser, runner, writer, cli, filter_options, .. } = self;
         Cucumber {
-            parser, runner: runner.with_hooks(hooks), writer, cli, filter_options,
-            _world: PhantomData, _parser_input: PhantomData,
+            parser,
+            runner: runner.with_hooks(hooks),
+            writer,
+            cli,
+            filter_options,
+            _world: PhantomData,
+            _parser_input: PhantomData,
         }
     }
 
@@ -1305,12 +1377,16 @@ where
     /// Existing World constructors remain compatible; attachment-aware Worlds
     /// override World::new_with_context to retain their per-attempt context.
     #[must_use]
-    pub fn with_attachments(mut self, store: crate::attachment::AttachmentStore) -> Self {
+    pub fn with_attachments(
+        mut self,
+        store: crate::attachment::AttachmentStore,
+    ) -> Self {
         self.runner = self.runner.with_attachments(store);
         self
     }
 
-    /// Installs global setup/cleanup and counts their failures in run statistics.
+    /// Installs global setup/cleanup and counts their failures in run
+    /// statistics.
     ///
     /// Select a custom writer before calling this method: replacing the writer
     /// afterward removes its statistics adapter. Protocol writers additionally
@@ -1319,7 +1395,8 @@ where
     pub fn with_run_hooks(
         self,
         hooks: runner::RunHooks,
-    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, A>, writer::RunHooks<Wr>, Cli> {
+    ) -> Cucumber<W, P, I, runner::Basic<W, F, B, A>, writer::RunHooks<Wr>, Cli>
+    {
         let store = hooks.store();
         let Self { parser, runner, writer, cli, filter_options, .. } = self;
         Cucumber {
@@ -1335,33 +1412,45 @@ where
 
     /// Enables buffered global case ordering and retained retry reservations.
     #[must_use]
-    pub fn scheduling_options(mut self, options: runner::SchedulingOptions) -> Self {
+    pub fn scheduling_options(
+        mut self,
+        options: runner::SchedulingOptions,
+    ) -> Self {
         self.runner = self.runner.with_scheduling_options(options);
         self
     }
 
     /// Selects run success rules for explicit pending and skipped outcomes.
     #[must_use]
-    pub fn outcome_policy(mut self, policy: crate::execution::OutcomePolicy) -> Self {
+    pub fn outcome_policy(
+        mut self,
+        policy: crate::execution::OutcomePolicy,
+    ) -> Self {
         self.runner = self.runner.with_outcome_policy(policy);
         self
     }
 
-    /// Selects execution or dry-run planning while preserving the legacy default.
+    /// Selects execution or dry-run planning while preserving the legacy
+    /// default.
     #[must_use]
-    pub fn execution_mode(mut self, mode: crate::execution::ExecutionMode) -> Self {
+    pub fn execution_mode(
+        mut self,
+        mode: crate::execution::ExecutionMode,
+    ) -> Self {
         self.runner = self.runner.with_execution_mode(mode);
         self
     }
 
-    /// Sets opt-in independent callback and step-body deadlines; the default is unlimited.
+    /// Sets opt-in independent callback and step-body deadlines; the default
+    /// is unlimited.
     #[must_use]
     pub fn with_timeouts(mut self, timeouts: runner::Timeouts) -> Self {
         self.runner = self.runner.with_timeouts(timeouts);
         self
     }
 
-    /// Installs ordered per-step lifecycle callbacks without replacing scenario hooks.
+    /// Installs ordered per-step lifecycle callbacks without replacing
+    /// scenario hooks.
     #[must_use]
     pub fn with_step_hooks(mut self, hooks: runner::StepHooks<W>) -> Self {
         self.runner = self.runner.with_step_hooks(hooks);
@@ -1370,10 +1459,14 @@ where
 
     /// Selects background execution for scenarios without their own steps.
     ///
-    /// [`runner::BackgroundSemantics::Gherkin43`] matches official empty Pickles
+    /// [`runner::BackgroundSemantics::Gherkin43`] matches official empty
+    /// Pickles
     /// while preserving scenario hooks. The default retains legacy execution.
     #[must_use]
-    pub fn with_background_semantics(mut self, semantics: runner::BackgroundSemantics) -> Self {
+    pub fn with_background_semantics(
+        mut self,
+        semantics: runner::BackgroundSemantics,
+    ) -> Self {
         self.runner = self.runner.with_background_semantics(semantics);
         self
     }
@@ -1519,7 +1612,8 @@ where
             let pending_failures = writer.pending_failures();
             if pending_failures > 0 {
                 msg.push(format!(
-                    "{pending_failures} scenario{} failed because pending is strict",
+                    "{pending_failures} scenario{} failed because pending is \
+                        strict",
                     if pending_failures > 1 { "s" } else { "" },
                 ));
             }

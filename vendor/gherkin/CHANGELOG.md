@@ -6,6 +6,15 @@ All user visible changes to `gherkin` crate will be documented in this file. Thi
 
 
 
+## main — unreleased draft
+
+### Added
+
+- Added opt-in Gherkin43 dialect, lexical, table and docstring semantics while preserving legacy defaults.
+- Added Document and source-preserving Markdown parsing, retaining official fixture provenance and focused BDD coverage.
+
+These changes are proposals on the fork contribution branch, not published releases.
+
 ## [0.16.0] · 2026-04-23
 [0.16.0]: https://github.com/cucumber-rs/gherkin/tree/v0.16.0
 

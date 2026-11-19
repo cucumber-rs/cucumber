@@ -178,7 +178,8 @@ impl<W, Wr> Repeat<W, Wr> {
                 if let Ok(event) = ev {
                     if let Some(outcome) = event.outcome {
                         return terminal_outcome(&event.value)
-                            && outcome.status == crate::execution::OutcomeStatus::Skipped;
+                            && outcome.status
+                                == crate::execution::OutcomeStatus::Skipped;
                     }
                 }
                 matches!(
@@ -229,7 +230,8 @@ impl<W, Wr> Repeat<W, Wr> {
             filter: |ev| {
                 if let Ok(event) = ev {
                     if let Some(outcome) = event.outcome {
-                        return terminal_outcome(&event.value) && outcome.fails_run;
+                        return terminal_outcome(&event.value)
+                            && outcome.fails_run;
                     }
                 }
                 matches!(
@@ -274,14 +276,21 @@ impl<W, Wr> Repeat<W, Wr> {
 }
 
 fn terminal_outcome<W>(event: &event::Cucumber<W>) -> bool {
-    use event::{Cucumber, Feature, Rule, Scenario, Step, Hook};
+    use event::{Cucumber, Feature, Hook, Rule, Scenario, Step};
     let scenario = match event {
         Cucumber::Feature(_, Feature::Scenario(_, event))
-        | Cucumber::Feature(_, Feature::Rule(_, Rule::Scenario(_, event))) => &event.event,
+        | Cucumber::Feature(_, Feature::Rule(_, Rule::Scenario(_, event))) => {
+            &event.event
+        }
         _ => return false,
     };
-    matches!(scenario,
+    matches!(
+        scenario,
         Scenario::Step(_, Step::Passed(..) | Step::Skipped | Step::Failed(..))
-        | Scenario::Background(_, Step::Passed(..) | Step::Skipped | Step::Failed(..))
-        | Scenario::Hook(_, Hook::Passed | Hook::Failed(..)))
+            | Scenario::Background(
+                _,
+                Step::Passed(..) | Step::Skipped | Step::Failed(..)
+            )
+            | Scenario::Hook(_, Hook::Passed | Hook::Failed(..))
+    )
 }

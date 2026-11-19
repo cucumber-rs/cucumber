@@ -15,8 +15,6 @@
 
 mod options;
 
-pub use options::DefinitionOptions;
-
 use std::{
     cmp::Ordering,
     collections::HashMap,
@@ -29,6 +27,7 @@ use derive_more::with_trait::{Debug, Deref, DerefMut, Display, Error};
 use futures::future::LocalBoxFuture;
 use gherkin::StepType;
 use itertools::Itertools as _;
+pub use options::DefinitionOptions;
 use regex::Regex;
 
 /// Alias for a [`gherkin::Step`] function that returns a [`LocalBoxFuture`].
@@ -52,7 +51,8 @@ pub enum Matching {
     /// Search all Given, When and Then definitions, regardless of keyword.
     ///
     /// Like Cucumber.js, multiple matching definitions are ambiguous even when
-    /// registered under different keywords. This enables matching compatibility,
+    /// registered under different keywords. This enables matching
+    /// compatibility,
     /// not complete Cucumber.js runtime compatibility.
     KeywordIndependent,
 }
@@ -62,7 +62,9 @@ struct Registration<W> {
     options: DefinitionOptions,
 }
 impl<W> Clone for Registration<W> {
-    fn clone(&self) -> Self { Self { function: self.function, options: self.options.clone() } }
+    fn clone(&self) -> Self {
+        Self { function: self.function, options: self.options.clone() }
+    }
 }
 
 /// Collection of [`Step`]s.
@@ -144,19 +146,35 @@ impl<World> Collection<World> {
         self
     }
 
-    /// Captures the actual final registrations and matching policy for reporting.
+    /// Captures the actual final registrations and matching policy for
+    /// reporting.
     ///
     /// Duplicate map keys have already been replaced by the collection's normal
     /// insertion semantics. No handler is executed and no source is inferred.
     #[must_use]
     pub fn support_code(&self) -> crate::support_code::Snapshot {
-        crate::support_code::Snapshot::new(self.matching,
-            [(StepType::Given, &self.given), (StepType::When, &self.when),
-                (StepType::Then, &self.then)].into_iter().flat_map(|(keyword, collection)| {
-                    collection.iter().map(move |((regex, location), registration)|
-                        (keyword, regex.0.clone(), *location, registration.options.expression.clone(),
-                            registration.options.regular_expression.clone()))
-                }))
+        crate::support_code::Snapshot::new(
+            self.matching,
+            [
+                (StepType::Given, &self.given),
+                (StepType::When, &self.when),
+                (StepType::Then, &self.then),
+            ]
+            .into_iter()
+            .flat_map(|(keyword, collection)| {
+                collection.iter().map(
+                    move |((regex, location), registration)| {
+                        (
+                            keyword,
+                            regex.0.clone(),
+                            *location,
+                            registration.options.expression.clone(),
+                            registration.options.regular_expression.clone(),
+                        )
+                    },
+                )
+            }),
+        )
     }
 
     /// Adds a [Given] [`Step`] matching the given `regex`.
@@ -176,10 +194,17 @@ impl<World> Collection<World> {
     ///
     /// Replacing the same regex/location key replaces both handler and options.
     #[must_use]
-    pub fn given_with_options(mut self, loc: Option<Location>, regex: Regex,
-        step: Step<World>, options: DefinitionOptions) -> Self
-    {
-        drop(self.given.insert((regex.into(), loc), Registration { function: step, options }));
+    pub fn given_with_options(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+        options: DefinitionOptions,
+    ) -> Self {
+        drop(self.given.insert(
+            (regex.into(), loc),
+            Registration { function: step, options },
+        ));
         self
     }
 
@@ -200,10 +225,17 @@ impl<World> Collection<World> {
     ///
     /// Replacing the same regex/location key replaces both handler and options.
     #[must_use]
-    pub fn when_with_options(mut self, loc: Option<Location>, regex: Regex,
-        step: Step<World>, options: DefinitionOptions) -> Self
-    {
-        drop(self.when.insert((regex.into(), loc), Registration { function: step, options }));
+    pub fn when_with_options(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+        options: DefinitionOptions,
+    ) -> Self {
+        drop(self.when.insert(
+            (regex.into(), loc),
+            Registration { function: step, options },
+        ));
         self
     }
 
@@ -224,10 +256,17 @@ impl<World> Collection<World> {
     ///
     /// Replacing the same regex/location key replaces both handler and options.
     #[must_use]
-    pub fn then_with_options(mut self, loc: Option<Location>, regex: Regex,
-        step: Step<World>, options: DefinitionOptions) -> Self
-    {
-        drop(self.then.insert((regex.into(), loc), Registration { function: step, options }));
+    pub fn then_with_options(
+        mut self,
+        loc: Option<Location>,
+        regex: Regex,
+        step: Step<World>,
+        options: DefinitionOptions,
+    ) -> Self {
+        drop(self.then.insert(
+            (regex.into(), loc),
+            Registration { function: step, options },
+        ));
         self
     }
 
@@ -241,16 +280,21 @@ impl<World> Collection<World> {
         &self,
         step: &gherkin::Step,
     ) -> Result<Option<WithContext<'_, World>>, AmbiguousMatchError> {
-        self.find_with_options(step).map(|matched| matched.map(|(context, _)| context))
+        self.find_with_options(step)
+            .map(|matched| matched.map(|(context, _)| context))
     }
 
     /// Resolves one registration and its options in the same matching pass.
     ///
     /// # Errors
     /// Returns the same ambiguity error as [`Self::find`].
-    pub fn find_with_options(&self, step: &gherkin::Step)
-        -> Result<Option<(WithContext<'_, World>, &DefinitionOptions)>, AmbiguousMatchError>
-    {
+    pub fn find_with_options(
+        &self,
+        step: &gherkin::Step,
+    ) -> Result<
+        Option<(WithContext<'_, World>, &DefinitionOptions)>,
+        AmbiguousMatchError,
+    > {
         let collections = match self.matching {
             Matching::KeywordSpecific => [
                 Some(match step.ty {
@@ -310,12 +354,15 @@ impl<World> Collection<World> {
             ))
             .collect();
 
-        Ok(Some(((
-            &step_fn.function,
-            captures,
-            *loc,
-            Context { step: step.clone(), matches },
-        ), &step_fn.options)))
+        Ok(Some((
+            (
+                &step_fn.function,
+                captures,
+                *loc,
+                Context { step: step.clone(), matches },
+            ),
+            &step_fn.options,
+        )))
     }
 }
 

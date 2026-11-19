@@ -15,7 +15,8 @@ pub struct RunHooks<Wr> {
     finished_failures: Option<usize>,
 }
 impl<Wr> RunHooks<Wr> {
-    /// Wraps a writer with statistics from the runner's shared global-hook store.
+    /// Wraps a writer with statistics from the runner's shared global-hook
+    /// store.
     #[must_use]
     pub fn new(writer: Wr, store: RunHookStore) -> Self {
         Self { writer, store, run_id: None, finished_failures: None }

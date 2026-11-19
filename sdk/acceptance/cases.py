@@ -24,7 +24,29 @@ EVIDENCE = Path(RUNTIME['evidence']) / (CASE + '-' + MODE)
 EVIDENCE.mkdir()  # Refuse reuse rather than truncate a previous execution.
 PHASE = ROOT / '.kbd-orchestrator/phases/phase-46-native-sdk'
 SCHEMA = json.loads((PHASE / 'sdk-contract.schema.json').read_text())
-IDENTITIES = json.loads((PHASE / 'oracle-identities.json').read_text())['files']
+PREDECESSOR_IDENTITIES = PHASE / 'oracle-identities.json'
+IDENTITIES = json.loads(PREDECESSOR_IDENTITIES.read_text())['files']
+SUCCESSOR_IDENTITIES = RUNTIME.get('successorSourceIdentities')
+if SUCCESSOR_IDENTITIES is not None:
+    # Only the explicitly adopted successor may change local harness provenance.
+    # Official fixture/package/license expectations remain the predecessor bytes.
+    map_path = Path(SUCCESSOR_IDENTITIES['path'])
+    map_bytes = map_path.read_bytes()
+    if hashlib.sha256(map_bytes).hexdigest() != SUCCESSOR_IDENTITIES['sha256']:
+        raise AssertionError('successor identity map digest differs from frozen phase source')
+    successor = json.loads(map_bytes)
+    allowed = {'tests/messages_corpus.rs', 'tests/messages_markdown.rs', 'tests/messages_rerun.rs'}
+    if successor.get('schemaVersion') != 1 or successor.get('phaseId') != 'phase-47-contribution-readiness':
+        raise AssertionError('unknown successor source identity contract')
+    if successor.get('predecessorSha256') != hashlib.sha256(PREDECESSOR_IDENTITIES.read_bytes()).hexdigest():
+        raise AssertionError('predecessor oracle identity artifact changed')
+    if set(successor.get('files', {})) != allowed or not allowed.issubset(IDENTITIES):
+        raise AssertionError('successor override must contain exactly the three adopted local harness sources')
+    for name, expected in successor['files'].items():
+        if not isinstance(expected, str) or len(expected) != 64 or any(ch not in '0123456789abcdef' for ch in expected):
+            raise AssertionError('invalid frozen successor source digest')
+        IDENTITIES[name] = expected
+
 OBSERVATIONS = []
 COUNT = 0
 
@@ -576,7 +598,7 @@ try:
     demand(not ROOT.is_relative_to(CONSUMER) and not CONSUMER.is_relative_to(ROOT), 'consumer root must be outside checkout')
     globals()['sdk' + CASE.split('-')[1]](MODE == 'control')
     demand(identities() == before, 'original fixture altered by acceptance')
-    receipt = {'case':CASE,'mode':MODE,'status':'PASS','observations':OBSERVATIONS,'oracleArtifactsUnchanged':True}
+    receipt = {'case':CASE,'mode':MODE,'status':'PASS','observations':OBSERVATIONS,'oracleArtifactsUnchanged':True,'successorSourceIdentities':SUCCESSOR_IDENTITIES}
     dump('receipt.json',receipt)
     print(json.dumps(receipt))
 except Exception as exc:

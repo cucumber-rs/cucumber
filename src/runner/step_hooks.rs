@@ -1,15 +1,12 @@
 //! Ordered per-step lifecycle callbacks and records of actual invocations.
 //!
-//! Step hooks follow the Cucumber.js 13.3 execution contract: all selected setup
+//! Step hooks follow the Cucumber.js 13.3 execution contract: all selected
+//! setup
 //! callbacks run, then the body runs unless setup failed, then all selected
 //! cleanup callbacks run in reverse order. Cleanup sees the same body outcome.
 //! In opt-in outcome mode, pending/skipped setup still permits the body.
 //! Undefined, ambiguous, and unexecuted steps do not invoke these callbacks.
 
-use super::basic::ScenarioId;
-use crate::{event::Source, tag::Ext as _};
-use futures::future::LocalBoxFuture;
-use gherkin::{Feature, Rule, Scenario, Step, tagexpr::TagOperation};
 use std::{
     any::Any,
     fmt,
@@ -19,6 +16,12 @@ use std::{
     },
     time::SystemTime,
 };
+
+use futures::future::LocalBoxFuture;
+use gherkin::{Feature, Rule, Scenario, Step, tagexpr::TagOperation};
+
+use super::basic::ScenarioId;
+use crate::{event::Source, tag::Ext as _};
 
 /// Which per-step lifecycle stage registered a callback.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,8 +52,10 @@ pub enum StepBodyOutcome {
 
 /// Native source and execution identity of a resolved step invocation.
 ///
-/// `Source` values retain the actual runner identity, including expanded outline
-/// rows. Each retry has a fresh `scenario_id`; `attempt` is its zero-based index.
+/// `Source` values retain the actual runner identity, including expanded
+/// outline
+/// rows. Each retry has a fresh `scenario_id`; `attempt` is its zero-based
+/// index.
 #[derive(Clone, Debug)]
 pub struct StepHookScope {
     /// Actual runner source identity of the containing feature.

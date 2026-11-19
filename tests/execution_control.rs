@@ -1,4 +1,15 @@
-//! Phase30b: scoped completion through the real native runner and lifecycle registries.
+//! Phase30b: scoped completion through the real native runner and lifecycle
+//! registries.
+use std::{
+    collections::HashSet,
+    convert::Infallible,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
+
 use cucumber::{
     Event, StatsWriter as _, World as _, WriterExt as _, event,
     execution::{
@@ -16,15 +27,6 @@ use cucumber::{
 };
 use futures::future::LocalBoxFuture;
 use regex::Regex;
-use std::{
-    collections::HashSet,
-    convert::Infallible,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Duration,
-};
 #[derive(Debug, Default)]
 struct Seen {
     trace: Vec<(String, usize, String)>,
@@ -156,7 +158,8 @@ impl cucumber::Writer<Application> for Recorder {
             ) => (s, e),
             _ => return,
         };
-        // Deliberately exhaustive old native variants: source compatibility is part of this contract.
+        // Deliberately exhaustive old native variants: source compatibility is
+        // part of this contract.
         let (kind, projection) = match event.event {
             event::Scenario::Step(step, result)
             | event::Scenario::Background(step, result) => {
@@ -549,7 +552,8 @@ fn retry_pending(w: &mut Acceptance) {
     assert!(second.result.as_ref().unwrap().previous_hook_failures.is_empty());
 }
 #[then(
-    "closed handles reject requests and concurrent cases retain their own outcome"
+    "closed handles reject requests and concurrent cases retain their own \
+        outcome"
 )]
 fn concurrency(w: &mut Acceptance) {
     assert_closed(w);
@@ -685,7 +689,8 @@ fn attachment_step(
     })
 }
 #[given(
-    "original and attachment-aware World implementations with no execution-control override"
+    "original and attachment-aware World implementations with no \
+        execution-control override"
 )]
 fn constructors(_: &mut Acceptance) {}
 #[when("each application runs using its existing constructors")]

@@ -28,7 +28,8 @@ pub enum ExampleSemantics {
     /// Single-pass interpolation with errors for unknown placeholders.
     #[default]
     Legacy,
-    /// Official Gherkin 43 header-order substitution; unknown tokens stay literal.
+    /// Official Gherkin 43 header-order substitution; unknown tokens stay
+    /// literal.
     Gherkin43,
 }
 
@@ -94,7 +95,10 @@ pub trait Ext: Sized {
     ///
     /// # Errors
     /// Legacy semantics report unknown placeholders as expansion errors.
-    fn expand_examples_with(self, semantics: ExampleSemantics) -> Result<Self, ExpandExamplesError>;
+    fn expand_examples_with(
+        self,
+        semantics: ExampleSemantics,
+    ) -> Result<Self, ExpandExamplesError>;
 
     /// Counts all the [`Feature`]'s [`Scenario`]s, including [`Rule`]s inside.
     ///
@@ -118,7 +122,10 @@ impl Ext for gherkin::Feature {
         self.expand_examples_with(ExampleSemantics::Legacy)
     }
 
-    fn expand_examples_with(mut self, semantics: ExampleSemantics) -> Result<Self, ExpandExamplesError> {
+    fn expand_examples_with(
+        mut self,
+        semantics: ExampleSemantics,
+    ) -> Result<Self, ExpandExamplesError> {
         let path = self.path.clone();
         let expand = |scenarios: Vec<gherkin::Scenario>| -> Result<_, _> {
             scenarios
@@ -200,8 +207,12 @@ fn expand_scenario(
 
             let replace_templates = |str: &str, pos| {
                 if semantics == ExampleSemantics::Gherkin43 {
-                    return Ok(row.clone().fold(str.to_owned(), |value, (header, replacement)|
-                        value.replace(&format!("<{header}>"), replacement)));
+                    return Ok(row.clone().fold(
+                        str.to_owned(),
+                        |value, (header, replacement)| {
+                            value.replace(&format!("<{header}>"), replacement)
+                        },
+                    ));
                 }
                 let mut err = None;
                 let replaced = TEMPLATE_REGEX
@@ -290,17 +301,32 @@ pub struct ExpandExamplesError {
 
 /// Compares a Rule's immutable source identity across outline expansion.
 /// Child scenarios are execution projections and are deliberately excluded.
-pub(crate) fn same_rule_identity(left: Option<&gherkin::Rule>, right: Option<&gherkin::Rule>) -> bool {
+pub(crate) fn same_rule_identity(
+    left: Option<&gherkin::Rule>,
+    right: Option<&gherkin::Rule>,
+) -> bool {
     match (left, right) {
         (None, None) => true,
-        (Some(a), Some(b)) => a.keyword == b.keyword && a.name == b.name
-            && a.tags == b.tags && a.description == b.description
-            && a.background == b.background && a.span == b.span && a.position == b.position,
+        (Some(a), Some(b)) => {
+            a.keyword == b.keyword
+                && a.name == b.name
+                && a.tags == b.tags
+                && a.description == b.description
+                && a.background == b.background
+                && a.span == b.span
+                && a.position == b.position
+        }
         _ => false,
     }
 }
 
-/// Hashable copy of the same stable Rule identity, without expanded descendants.
-pub(crate) fn rule_identity(rule: Option<&gherkin::Rule>) -> Option<gherkin::Rule> {
-    rule.cloned().map(|mut rule| { rule.scenarios.clear(); rule })
+/// Hashable copy of the same stable Rule identity, without expanded
+/// descendants.
+pub(crate) fn rule_identity(
+    rule: Option<&gherkin::Rule>,
+) -> Option<gherkin::Rule> {
+    rule.cloned().map(|mut rule| {
+        rule.scenarios.clear();
+        rule
+    })
 }

@@ -1,10 +1,13 @@
-//! Phase 1 acceptance: exercise the public parser/runner pipeline with features.
+//! Phase 1 acceptance: exercise the public parser/runner pipeline with
+//! features.
 use std::sync::{Arc, Mutex};
 
 use cucumber::{
-    StatsWriter as _, World as _, WriterExt as _, given, then, when,
+    StatsWriter as _, World as _, WriterExt as _,
     gherkin::Step as GherkinStep,
+    given,
     step::{Collection, Context, Matching},
+    then, when,
     writer::{self, Coloring},
 };
 use regex::Regex;
@@ -28,18 +31,20 @@ struct Account {
     payments: Vec<(String, String)>,
 }
 
-fn balance<'a>(world: &'a mut Account, ctx: Context)
-    -> futures::future::LocalBoxFuture<'a, ()>
-{
+fn balance<'a>(
+    world: &'a mut Account,
+    ctx: Context,
+) -> futures::future::LocalBoxFuture<'a, ()> {
     Box::pin(async move {
         assert_eq!(ctx.matches[1].0.as_deref(), Some("balance"));
         world.balances.push(ctx.matches[1].1.clone());
     })
 }
 
-fn payment<'a>(world: &'a mut Account, ctx: Context)
-    -> futures::future::LocalBoxFuture<'a, ()>
-{
+fn payment<'a>(
+    world: &'a mut Account,
+    ctx: Context,
+) -> futures::future::LocalBoxFuture<'a, ()> {
     Box::pin(async move {
         let doc = ctx.step.docstring.expect("document reaches step body");
         let table = ctx.step.table.expect("table reaches step body");
@@ -60,7 +65,8 @@ fn legacy(world: &mut Compatibility) {
 
 #[given(regex = r"^a (Given|When|Then) definition for an account balance$")]
 fn definition(world: &mut Compatibility, keyword: String) {
-    let regex = Regex::new(r"^the account balance is (?P<balance>\d+)$").unwrap();
+    let regex =
+        Regex::new(r"^the account balance is (?P<balance>\d+)$").unwrap();
     let definitions = std::mem::take(&mut world.definitions);
     world.definitions = match keyword.as_str() {
         "Given" => definitions.given(None, regex, balance),
@@ -83,7 +89,9 @@ async fn execute(world: &mut Compatibility) {
     let observations = Arc::new(Mutex::new(Account::default()));
     let collected = Arc::clone(&observations);
     let definitions = world.definitions.clone().given(
-        None, Regex::new("^the payment is submitted$").unwrap(), payment,
+        None,
+        Regex::new("^the payment is submitted$").unwrap(),
+        payment,
     );
     let mut output = Vec::new();
     let report = Account::cucumber()
@@ -100,7 +108,9 @@ async fn execute(world: &mut Compatibility) {
                 }
             })
         })
-        .with_writer(writer::Basic::new(&mut output, Coloring::Never, 0).summarized())
+        .with_writer(
+            writer::Basic::new(&mut output, Coloring::Never, 0).summarized(),
+        )
         .with_default_cli()
         .run(feature_path)
         .await;
@@ -114,10 +124,22 @@ async fn execute(world: &mut Compatibility) {
     world.observed = observations.lock().unwrap().clone();
 }
 
-#[then(regex = r"^(\d+) steps pass, (\d+) steps fail and (\d+) steps are skipped$")]
-fn outcomes(world: &mut Compatibility, passed: usize, failed: usize, skipped: usize) {
+#[then(
+    regex = r"^(\d+) steps pass, (\d+) steps fail and (\d+) steps are skipped$"
+)]
+fn outcomes(
+    world: &mut Compatibility,
+    passed: usize,
+    failed: usize,
+    skipped: usize,
+) {
     assert_eq!(world.parsing_errors, 0, "{}", world.output);
-    assert_eq!((world.passed, world.failed, world.skipped), (passed, failed, skipped), "{}", world.output);
+    assert_eq!(
+        (world.passed, world.failed, world.skipped),
+        (passed, failed, skipped),
+        "{}",
+        world.output
+    );
 }
 
 #[then(regex = r#"^the observed balances are "([^"]*)"$"#)]
@@ -127,14 +149,25 @@ fn balances(world: &mut Compatibility, expected: String) {
 
 #[then("the output reports an ambiguous match")]
 fn ambiguous(world: &mut Compatibility) {
-    assert!(world.output.to_lowercase().contains("ambiguous"), "{}", world.output);
+    assert!(
+        world.output.to_lowercase().contains("ambiguous"),
+        "{}",
+        world.output
+    );
 }
 
 #[then(regex = r#"^the observed payment is "([^"]*)" with amount "([^"]*)"$"#)]
-fn observed_payment(world: &mut Compatibility, document: String, amount: String) {
+fn observed_payment(
+    world: &mut Compatibility,
+    document: String,
+    amount: String,
+) {
     // Preserve the native parser's existing delimiter-adjacent newlines.
     // Argument ordering must not silently change existing consumers' values.
-    assert_eq!(world.observed.payments, vec![(format!("\n{document}\n"), amount)]);
+    assert_eq!(
+        world.observed.payments,
+        vec![(format!("\n{document}\n"), amount)]
+    );
 }
 
 #[then("the feature is rejected before steps execute")]

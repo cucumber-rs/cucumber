@@ -1,6 +1,21 @@
-//! Phase35 acceptance through the real native runner, Messages35 and official Query.
+//! Phase35 acceptance through the real native runner, Messages35 and official
+//! Query.
+#[path = "support/oracle.rs"]
+mod oracle;
+
+use std::{
+    convert::Infallible,
+    io::Write as _,
+    process::Stdio,
+    sync::{
+        Arc, LazyLock, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
+
 use cucumber::{
-    Event, StatsWriter as _, Runner as _, World as _, WriterExt as _,
+    Event, Runner as _, StatsWriter as _, World as _, WriterExt as _,
     attachment::{AttachmentError, AttachmentStore},
     event,
     execution::{
@@ -20,16 +35,6 @@ use cucumber::{
 use futures::future::{BoxFuture, LocalBoxFuture};
 use regex::Regex;
 use serde_json::Value;
-use std::{
-    convert::Infallible,
-    io::Write as _,
-    process::{Command, Stdio},
-    sync::{
-        Arc, LazyLock, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Duration,
-};
 static MODE: LazyLock<Mutex<String>> = LazyLock::new(Default::default);
 static WORLDS: AtomicUsize = AtomicUsize::new(0);
 static BODIES: AtomicUsize = AtomicUsize::new(0);
@@ -135,8 +140,7 @@ fn configured(w: &mut Acceptance, mode: String) {
     w.mode = mode;
 }
 fn query(messages: &[Value], script: &str) -> Value {
-    let mut child = Command::new("node")
-        .arg(script)
+    let mut child = oracle::command(script)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -244,7 +248,17 @@ async fn inspect(w: &mut Acceptance) {
         });
     let mut source =
         "Feature: Inspect application\n Scenario: selected\n".to_owned();
-    match w.mode.as_str(){"empty"=>{},"undefined"=>source.push_str("  Given undefined\n"),"ambiguous"=>source.push_str("  Given ambiguous\n"),"mixed"=>source.push_str("  Given known\n  Given undefined\n  Given known\n  Given ambiguous\n"),_=>source.push_str("  Given known\n")}
+    match w.mode.as_str() {
+        "empty" => {}
+        "undefined" => source.push_str("  Given undefined\n"),
+        "ambiguous" => source.push_str("  Given ambiguous\n"),
+        "mixed" => source.push_str(
+            "  Given known\n  Given undefined\n  Given \
+            known\n  Given ambiguous\n",
+        ),
+        _ => source.push_str("  Given known\n"),
+    }
+
     if w.mode == "selection" {
         source.push_str(" Scenario: excluded\n  Given known\n");
     }
@@ -271,7 +285,8 @@ async fn inspect(w: &mut Acceptance) {
         .tee::<Application, _>(w.recorder.clone().discard_arbitrary_writes())
         .normalized()
         .summarized();
-    let runner = Basic::<Application>::default().with_support_code_store(support_code);
+    let runner =
+        Basic::<Application>::default().with_support_code_store(support_code);
     let runner = if w.mode == "default run" {
         runner
     } else {
@@ -286,7 +301,8 @@ async fn inspect(w: &mut Acceptance) {
     } else {
         runner
     };
-    // The actual config survives a clone and a type-changing classifier builder.
+    // The actual config survives a clone and a type-changing classifier
+    // builder.
     let runner = runner
         .clone()
         .which_scenario(|_, _, _| cucumber::runner::ScenarioType::Concurrent);
@@ -371,7 +387,8 @@ fn succeeds(w: &mut Acceptance) {
     );
 }
 #[then(
-    "schema-valid Messages preserve the classification and successful run in the official Query"
+    "schema-valid Messages preserve the classification and successful run in \
+        the official Query"
 )]
 fn schema_query(w: &mut Acceptance) {
     let schema: Value = serde_json::from_str(include_str!(
@@ -388,7 +405,11 @@ fn schema_query(w: &mut Acceptance) {
     assert_eq!(result["observedAttempts"], 1);
     assert_eq!(w.query["success"], true);
     if matches!(w.mode.as_str(), "mixed" | "ambiguous") {
-        assert_eq!(w.failed_steps, if w.mode == "mixed" { 2 } else { 1 }, "undefined and ambiguity remain visible in counters");
+        assert_eq!(
+            w.failed_steps,
+            if w.mode == "mixed" { 2 } else { 1 },
+            "undefined and ambiguity remain visible in counters"
+        );
         assert!(!w.failed);
     }
     let definitions: std::collections::HashSet<_> = w
@@ -436,7 +457,8 @@ fn schema_query(w: &mut Acceptance) {
     }
 }
 #[then(
-    "selected scenario callbacks have dry-run skip decisions and excluded callbacks are absent"
+    "selected scenario callbacks have dry-run skip decisions and excluded \
+        callbacks are absent"
 )]
 fn scenario_decisions(w: &mut Acceptance) {
     let records = w.scenario.records();
@@ -456,7 +478,8 @@ fn scenario_decisions(w: &mut Acceptance) {
     assert!(w.scenario.initializations()[0].result.is_ok());
 }
 #[then(
-    "Messages contain skipped callback slots and the real native World initialization"
+    "Messages contain skipped callback slots and the real native World \
+        initialization"
 )]
 fn scenario_messages(w: &mut Acceptance) {
     let steps = w.query["attempts"][0]["steps"].as_array().unwrap();
@@ -472,7 +495,8 @@ fn scenario_messages(w: &mut Acceptance) {
     }
 }
 #[then(
-    "native setup and cleanup retain skipped metadata without invocation records"
+    "native setup and cleanup retain skipped metadata without invocation \
+        records"
 )]
 fn legacy(w: &mut Acceptance) {
     assert!(w.scenario.records().is_empty());
@@ -483,7 +507,8 @@ fn legacy(w: &mut Acceptance) {
     assert!(hooks.iter().all(|r| r["status"] == "SKIPPED"));
 }
 #[then(
-    "global selections are skipped in setup and reverse cleanup order without actual invocation records"
+    "global selections are skipped in setup and reverse cleanup order \
+        without actual invocation records"
 )]
 fn global_decisions(w: &mut Acceptance) {
     assert!(w.globals.records().is_empty());
@@ -502,7 +527,8 @@ fn global_decisions(w: &mut Acceptance) {
     assert_eq!(ids.len(), 4);
 }
 #[then(
-    "Messages contain zero-duration skipped global decisions with real definition identities"
+    "Messages contain zero-duration skipped global decisions with real \
+        definition identities"
 )]
 fn global_messages(w: &mut Acceptance) {
     let rows = query(&w.messages, "tests/interop/run-hooks.mjs");
@@ -545,7 +571,8 @@ fn capabilities(_: &mut Acceptance) {
     assert_eq!(CAPABILITIES.load(Ordering::SeqCst), 1);
 }
 #[then(
-    "the actual initialization failure is reported without retry or callback invocation"
+    "the actual initialization failure is reported without retry or callback \
+        invocation"
 )]
 fn constructor_failure(w: &mut Acceptance) {
     assert!(w.failed);
@@ -576,7 +603,8 @@ fn selected(w: &mut Acceptance) {
     assert_eq!(w.query["attempts"][0]["name"], "selected");
 }
 #[then(
-    "ordinary invocation resumes and its configured pending outcome remains authoritative"
+    "ordinary invocation resumes and its configured pending outcome remains \
+        authoritative"
 )]
 fn restored(w: &mut Acceptance) {
     assert_eq!(BODIES.load(Ordering::SeqCst), 1);

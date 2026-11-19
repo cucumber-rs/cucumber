@@ -1,9 +1,4 @@
 //! Actual scenario-hook selections, invocations and native cleanup context.
-use super::basic::ScenarioId;
-use crate::{
-    event::{ScenarioFinished, Source, StepError},
-    step,
-};
 use std::{
     path::Path,
     sync::{
@@ -11,6 +6,12 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
     time::SystemTime,
+};
+
+use super::basic::ScenarioId;
+use crate::{
+    event::{ScenarioFinished, Source, StepError},
+    step,
 };
 
 /// Stage assigned at registration, independent of empty-scenario compatibility.
@@ -21,16 +22,19 @@ pub enum ScenarioHookKind {
     /// Cleanup in reverse registration order.
     After,
 }
-/// Handling of registered cleanup when the scenario execution plan has no steps.
+/// Handling of registered cleanup when the scenario execution plan has no
+/// steps.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum EmptyScenarioHooks {
-    /// Preserve native cleanup and its body snapshot, including after setup failure.
+    /// Preserve native cleanup and its body snapshot, including after setup
+    /// failure.
     #[default]
     Native,
     /// Follow Cucumber.js 13.3's empty-Pickle setup classification for cleanup.
     CucumberJs13_3,
 }
-/// Stable registration metadata; source identifies the real Rust registration call.
+/// Stable registration metadata; source identifies the real Rust registration
+/// call.
 #[derive(Clone, Debug)]
 pub struct ScenarioHookDefinition {
     /// Process-local registration identity, also identifying its selected slot.
@@ -42,7 +46,8 @@ pub struct ScenarioHookDefinition {
     /// Actual registration location, rather than a guessed callback definition.
     pub location: step::Location,
 }
-/// Actual native scenario attempt containing an invocation or selection decision.
+/// Actual native scenario attempt containing an invocation or selection
+/// decision.
 #[derive(Clone, Debug)]
 pub struct ScenarioHookAttempt {
     /// Native feature, including its input path.
@@ -60,14 +65,17 @@ pub struct ScenarioHookAttempt {
     /// Whether the actual native plan contains background or scenario steps.
     pub has_steps: bool,
 }
-/// Explicit selected slots, including empty selection and legacy stage replacement.
+/// Explicit selected slots, including empty selection and legacy stage
+/// replacement.
 #[derive(Clone, Debug)]
 pub struct ScenarioHookPlan {
     /// Actual attempt owning this selection.
     pub attempt: ScenarioHookAttempt,
-    /// Whether a registry setup stage exists, even if its filters select nothing.
+    /// Whether a registry setup stage exists, even if its filters select
+    /// nothing.
     pub before_stage: bool,
-    /// Whether a registry cleanup stage exists, even if its filters select nothing.
+    /// Whether a registry cleanup stage exists, even if its filters select
+    /// nothing.
     pub after_stage: bool,
     /// Selected setup slots in execution order.
     pub before: Vec<ScenarioHookDefinition>,
@@ -82,7 +90,8 @@ pub struct ScenarioHookFailure {
     /// Captured panic diagnostic.
     pub message: String,
 }
-/// Honest classification of the native result, without an invented JS error object.
+/// Honest classification of the native result, without an invented JS error
+/// object.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScenarioHookStatus {
     /// The invocation explicitly skipped its work.
@@ -110,7 +119,8 @@ pub struct ScenarioHookResult {
     pub primary_failure: Option<String>,
     /// Each earlier callback failure, retained independently.
     pub previous_hook_failures: Vec<ScenarioHookFailure>,
-    /// Whether a retry is available and native policy would retry this outcome now.
+    /// Whether a retry is available and native policy would retry this outcome
+    /// now.
     pub retry_if_finished_now: bool,
 }
 impl ScenarioHookResult {
@@ -193,7 +203,8 @@ pub struct ScenarioHookScope {
     pub invocation_id: u64,
     /// Original pre-cleanup native result, absent during setup.
     pub body_snapshot: Option<ScenarioFinished>,
-    /// Evolving prior result; absent during setup and JS13.3 empty-Pickle cleanup.
+    /// Evolving prior result; absent during setup and JS13.3 empty-Pickle
+    /// cleanup.
     pub result: Option<ScenarioHookResult>,
     /// Authoritative prior result under an explicitly selected outcome policy.
     pub outcome: Option<crate::execution::Outcome>,
@@ -203,7 +214,8 @@ pub struct ScenarioHookScope {
 pub enum ScenarioHookSkipReason {
     /// Explicit inspection selected the slot without invoking application code.
     DryRun,
-    /// A prior pending or skipped callback prevented this setup-classified slot.
+    /// A prior pending or skipped callback prevented this setup-classified
+    /// slot.
     PreviousNonPassing,
     /// An earlier selected callback prevented this setup-classified invocation.
     PreviousFailure,
@@ -264,7 +276,8 @@ struct State {
 }
 /// Explicit shared observation for one run; create a fresh store for each run.
 ///
-/// Snapshots retain actual native identities. Consumers can join a selected plan
+/// Snapshots retain actual native identities. Consumers can join a selected
+/// plan
 /// using its URI, Rule/scenario value and attempt, then use its ScenarioId for
 /// records. No mutable global current-scenario pointer is used.
 #[derive(Clone, Debug, Default)]
@@ -275,7 +288,8 @@ impl ScenarioHookStore {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Snapshots all explicit selection plans, including empty stage selections.
+    /// Snapshots all explicit selection plans, including empty stage
+    /// selections.
     #[must_use]
     pub fn plans(&self) -> Vec<ScenarioHookPlan> {
         self.0.lock().expect("scenario hook store poisoned").plans.clone()

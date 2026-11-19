@@ -45,7 +45,8 @@ impl Ext for TagOperation {
 /// Unlike legacy [`TagOperation`], this accepts empty expressions (true), bare
 /// literals, and JavaScript whitespace/escaping. [`Self::evaluate`] consumes
 /// complete tag strings such as `@smoke`. [`Self::matches`] adapts the native
-/// AST's marker-free tags and includes inherited feature, Rule and Examples tags.
+/// AST's marker-free tags and includes inherited feature, Rule and Examples
+/// tags.
 /// Use it with `Cucumber::filter_run` or `runner::Hooks::before_matching`.
 #[derive(Clone, Debug)]
 pub struct Expression(Node);
@@ -74,11 +75,15 @@ impl std::str::FromStr for Expression {
     type Err = ExpressionError;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let tokens = tokenize(input)?;
-        if tokens.is_empty() { return Ok(Self(Node::True)); }
+        if tokens.is_empty() {
+            return Ok(Self(Node::True));
+        }
         let mut parser = ExpressionParser { tokens, next: 0 };
         let expression = parser.or()?;
         if parser.next != parser.tokens.len() {
-            return Err(ExpressionError("expected an operator or a matching parenthesis".into()));
+            return Err(ExpressionError(
+                "expected an operator or a matching parenthesis".into(),
+            ));
         }
         Ok(Self(expression))
     }
@@ -88,19 +93,37 @@ impl Expression {
     /// Evaluates the expression against complete, marker-preserving literals.
     #[must_use]
     pub fn evaluate<I, S>(&self, tags: I) -> bool
-    where I: IntoIterator<Item = S>, S: AsRef<str> {
-        let tags = tags.into_iter().map(|tag| tag.as_ref().to_owned()).collect::<Vec<_>>();
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let tags = tags
+            .into_iter()
+            .map(|tag| tag.as_ref().to_owned())
+            .collect::<Vec<_>>();
         self.0.evaluate(&tags)
     }
 
     /// Selects a native scenario using its own and inherited tags.
     ///
-    /// Basic parser expansion already incorporates each selected Examples block's
+    /// Basic parser expansion already incorporates each selected Examples
+    /// block's
     /// tags into the scenario. This method adds feature and Rule inheritance.
     #[must_use]
-    pub fn matches(&self, feature: &gherkin::Feature, rule: Option<&gherkin::Rule>, scenario: &gherkin::Scenario) -> bool {
-        self.evaluate(feature.tags.iter().chain(rule.into_iter().flat_map(|rule| &rule.tags))
-            .chain(&scenario.tags).map(|tag| format!("@{tag}")))
+    pub fn matches(
+        &self,
+        feature: &gherkin::Feature,
+        rule: Option<&gherkin::Rule>,
+        scenario: &gherkin::Scenario,
+    ) -> bool {
+        self.evaluate(
+            feature
+                .tags
+                .iter()
+                .chain(rule.into_iter().flat_map(|rule| &rule.tags))
+                .chain(&scenario.tags)
+                .map(|tag| format!("@{tag}")),
+        )
     }
 }
 
@@ -110,15 +133,20 @@ impl Node {
             Self::True => true,
             Self::Literal(value) => tags.contains(value),
             Self::Not(inner) => !inner.evaluate(tags),
-            Self::And(left, right) => left.evaluate(tags) && right.evaluate(tags),
-            Self::Or(left, right) => left.evaluate(tags) || right.evaluate(tags),
+            Self::And(left, right) => {
+                left.evaluate(tags) && right.evaluate(tags)
+            }
+            Self::Or(left, right) => {
+                left.evaluate(tags) || right.evaluate(tags)
+            }
         }
     }
 }
 
 // ECMAScript WhiteSpace + LineTerminator used by the pinned tokenizer's /\s/.
 fn javascript_whitespace(value: char) -> bool {
-    matches!(value, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}'
+    matches!(value,
+         '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}'
         | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
 
@@ -128,49 +156,88 @@ fn tokenize(input: &str) -> Result<Vec<String>, ExpressionError> {
     let mut escaped = false;
     for character in input.chars() {
         if escaped {
-            if matches!(character, '(' | ')' | '\\') || javascript_whitespace(character) {
+            if matches!(character, '(' | ')' | '\\')
+                || javascript_whitespace(character)
+            {
                 token.push(character);
                 escaped = false;
-            } else { return Err(ExpressionError(format!("illegal escape before {character:?}"))); }
+            } else {
+                return Err(ExpressionError(format!(
+                    "illegal escape before {character:?}"
+                )));
+            }
         } else if character == '\\' {
             escaped = true;
-        } else if matches!(character, '(' | ')') || javascript_whitespace(character) {
-            if !token.is_empty() { tokens.push(std::mem::take(&mut token)); }
-            if !javascript_whitespace(character) { tokens.push(character.to_string()); }
-        } else { token.push(character); }
+        } else if matches!(character, '(' | ')')
+            || javascript_whitespace(character)
+        {
+            if !token.is_empty() {
+                tokens.push(std::mem::take(&mut token));
+            }
+            if !javascript_whitespace(character) {
+                tokens.push(character.to_string());
+            }
+        } else {
+            token.push(character);
+        }
     }
     // The pinned JS tokenizer ignores a final escape marker; preserve that
     // observed contract rather than silently substituting a stricter grammar.
-    if !token.is_empty() { tokens.push(token); }
+    if !token.is_empty() {
+        tokens.push(token);
+    }
     Ok(tokens)
 }
 
-struct ExpressionParser { tokens: Vec<String>, next: usize }
+struct ExpressionParser {
+    tokens: Vec<String>,
+    next: usize,
+}
 impl ExpressionParser {
     fn accept(&mut self, token: &str) -> bool {
         if self.tokens.get(self.next).is_some_and(|value| value == token) {
-            self.next += 1; true
-        } else { false }
+            self.next += 1;
+            true
+        } else {
+            false
+        }
     }
     fn or(&mut self) -> Result<Node, ExpressionError> {
         let mut node = self.and()?;
-        while self.accept("or") { node = Node::Or(Box::new(node), Box::new(self.and()?)); }
+        while self.accept("or") {
+            node = Node::Or(Box::new(node), Box::new(self.and()?));
+        }
         Ok(node)
     }
     fn and(&mut self) -> Result<Node, ExpressionError> {
         let mut node = self.operand()?;
-        while self.accept("and") { node = Node::And(Box::new(node), Box::new(self.operand()?)); }
+        while self.accept("and") {
+            node = Node::And(Box::new(node), Box::new(self.operand()?));
+        }
         Ok(node)
     }
     fn operand(&mut self) -> Result<Node, ExpressionError> {
-        if self.accept("not") { return Ok(Node::Not(Box::new(self.operand()?))); }
+        if self.accept("not") {
+            return Ok(Node::Not(Box::new(self.operand()?)));
+        }
         if self.accept("(") {
             let node = self.or()?;
-            if !self.accept(")") { return Err(ExpressionError("unmatched opening parenthesis".into())); }
+            if !self.accept(")") {
+                return Err(ExpressionError(
+                    "unmatched opening parenthesis".into(),
+                ));
+            }
             return Ok(node);
         }
-        let token = self.tokens.get(self.next).ok_or_else(|| ExpressionError("expected an operand".into()))?;
-        if matches!(token.as_str(), ")" | "and" | "or") { return Err(ExpressionError("expected an operand".into())); }
-        let node = Node::Literal(token.clone()); self.next += 1; Ok(node)
+        let token = self
+            .tokens
+            .get(self.next)
+            .ok_or_else(|| ExpressionError("expected an operand".into()))?;
+        if matches!(token.as_str(), ")" | "and" | "or") {
+            return Err(ExpressionError("expected an operand".into()));
+        }
+        let node = Node::Literal(token.clone());
+        self.next += 1;
+        Ok(node)
     }
 }

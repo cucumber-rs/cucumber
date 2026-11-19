@@ -1,4 +1,10 @@
 //! Phase24 BDD for native run-level setup/cleanup and process failure.
+use std::{
+    collections::HashSet,
+    process::Command,
+    sync::{Arc, Mutex},
+};
+
 use cucumber::{
     StatsWriter as _, World as _, WriterExt as _, given,
     runner::{RunHookKind, RunHookScope, RunHookStore, RunHooks},
@@ -8,11 +14,6 @@ use cucumber::{
 };
 use futures::future::LocalBoxFuture;
 use regex::Regex;
-use std::{
-    collections::HashSet,
-    process::Command,
-    sync::{Arc, Mutex},
-};
 #[derive(Debug, Default)]
 struct Seen {
     trace: Vec<String>,
@@ -48,9 +49,11 @@ fn callback(
             {
                 let mut state = seen.lock().unwrap();
                 state.trace.push(name.into());
-                state
-                    .scopes
-                    .push((scope.run_id, scope.invocation_id, scope.definition.id));
+                state.scopes.push((
+                    scope.run_id,
+                    scope.invocation_id,
+                    scope.definition.id,
+                ));
                 if name.starts_with("before") {
                     state.setup += 1;
                 }
@@ -63,9 +66,11 @@ fn callback(
             {
                 let mut state = seen.lock().unwrap();
                 state.trace.push(name.into());
-                state
-                    .scopes
-                    .push((scope.run_id, scope.invocation_id, scope.definition.id));
+                state.scopes.push((
+                    scope.run_id,
+                    scope.invocation_id,
+                    scope.definition.id,
+                ));
                 if name.starts_with("before") {
                     state.setup += 1;
                 }
@@ -111,7 +116,8 @@ fn body(world: &mut Application, _: Context) -> LocalBoxFuture<'_, ()> {
             state.bodies
         };
         assert!(
-            world.config != "body fails" && !(world.config == "retry" && count == 1),
+            world.config != "body fails"
+                && !(world.config == "retry" && count == 1),
             "native body failure"
         );
     })
@@ -120,7 +126,9 @@ fn feature(kind: &str) -> String {
     if kind == "empty" {
         "Feature: Global lifecycle\n".into()
     } else if kind == "parallel" {
-        "Feature: Global lifecycle\n  Scenario: First\n    Given work\n  Scenario: Second\n    Given work\n".into()
+        "Feature: Global lifecycle\n  Scenario: First\n    Given work\n  \
+            Scenario: Second\n    Given work\n"
+            .into()
     } else {
         "Feature: Global lifecycle\n  Scenario: Work\n    Given work\n".into()
     }
@@ -139,7 +147,11 @@ async fn execute(world: &mut Acceptance) {
     let config = world.config.clone();
     let mut output = Vec::new();
     let result = Application::cucumber()
-        .steps(Collection::new().given(None, Regex::new("^work$").unwrap(), body))
+        .steps(Collection::new().given(
+            None,
+            Regex::new("^work$").unwrap(),
+            body,
+        ))
         .before(move |_, _, _, world| {
             world.seen = seen.clone();
             world.config = config.clone();
@@ -147,7 +159,9 @@ async fn execute(world: &mut Acceptance) {
         })
         .max_concurrent_scenarios(2)
         .retries(if world.config == "retry" { 1 } else { 0 })
-        .with_writer(writer::Basic::new(&mut output, Coloring::Never, 0).summarized())
+        .with_writer(
+            writer::Basic::new(&mut output, Coloring::Never, 0).summarized(),
+        )
         .with_run_hooks(hooks)
         .with_default_cli()
         .run(&path)
@@ -196,9 +210,13 @@ fn records(world: &mut Acceptance) {
             }
         );
         let expected = match world.config.as_str() {
-            "before fails" | "before construct fails" => record.definition.name == "before-one",
+            "before fails" | "before construct fails" => {
+                record.definition.name == "before-one"
+            }
             "before both" => record.definition.kind == RunHookKind::BeforeAll,
-            "after fails" | "after construct fails" => record.definition.name == "after-two",
+            "after fails" | "after construct fails" => {
+                record.definition.name == "after-two"
+            }
             "all fail" => true,
             _ => false,
         };
@@ -241,9 +259,9 @@ async fn reuse(world: &mut Acceptance) {
     std::fs::write(&path, "Feature: Reuse\n").unwrap();
     let failing = Arc::new(std::sync::atomic::AtomicBool::new(true));
     let flag = failing.clone();
-    let hooks = RunHooks::new()
-        .with_store(world.store.clone())
-        .after("cleanup", move |_| {
+    let hooks = RunHooks::new().with_store(world.store.clone()).after(
+        "cleanup",
+        move |_| {
             let flag = flag.clone();
             Box::pin(async move {
                 assert!(
@@ -251,10 +269,14 @@ async fn reuse(world: &mut Acceptance) {
                     "first run cleanup failed"
                 );
             })
-        });
+        },
+    );
     let mut first_output = Vec::new();
     let first = Application::cucumber()
-        .with_writer(writer::Basic::new(&mut first_output, Coloring::Never, 0).summarized())
+        .with_writer(
+            writer::Basic::new(&mut first_output, Coloring::Never, 0)
+                .summarized(),
+        )
         .with_run_hooks(hooks.clone())
         .with_default_cli()
         .run(&path)
@@ -263,7 +285,10 @@ async fn reuse(world: &mut Acceptance) {
     failing.store(false, std::sync::atomic::Ordering::SeqCst);
     let mut second_output = Vec::new();
     let second = Application::cucumber()
-        .with_writer(writer::Basic::new(&mut second_output, Coloring::Never, 0).summarized())
+        .with_writer(
+            writer::Basic::new(&mut second_output, Coloring::Never, 0)
+                .summarized(),
+        )
         .with_run_hooks(hooks)
         .with_default_cli()
         .run(&path)
@@ -285,14 +310,15 @@ fn separated(world: &mut Acceptance) {
     assert!(world.separate);
 }
 async fn child(config: String) {
-    let world = Acceptance {
-        config: config.clone(),
-        ..Default::default()
-    };
+    let world = Acceptance { config: config.clone(), ..Default::default() };
     let hooks = hooks(&world);
     let seen = world.seen.clone();
     Application::cucumber()
-        .steps(Collection::new().given(None, Regex::new("^work$").unwrap(), body))
+        .steps(Collection::new().given(
+            None,
+            Regex::new("^work$").unwrap(),
+            body,
+        ))
         .before(move |_, _, _, world| {
             world.seen = seen.clone();
             world.config = config.clone();

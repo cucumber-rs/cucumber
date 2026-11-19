@@ -85,10 +85,35 @@ impl Definition {
         panic!("expected exactly 3 step names");
     };
 
+    /// Selects the concrete default instantiation for static step inventory.
+    ///
+    /// A static inventory cannot be generic over a handler's World type. When
+    /// every parameter has a default, the registry stores handlers for that
+    /// concrete default World. Other instantiations retain their generic World
+    /// implementation and can register steps manually.
+    fn inventory_generics(&self) -> syn::Generics {
+        if !self.generics.params.is_empty()
+            && self.generics.params.iter().all(|parameter| match parameter {
+                syn::GenericParam::Type(parameter) => {
+                    parameter.default.is_some()
+                }
+                syn::GenericParam::Const(parameter) => {
+                    parameter.default.is_some()
+                }
+                syn::GenericParam::Lifetime(_) => false,
+            })
+        {
+            syn::Generics::default()
+        } else {
+            self.generics.clone()
+        }
+    }
+
     /// Generates code of implementing a `WorldInventory` trait.
     fn impl_world_inventory(&self) -> TokenStream {
         let world = &self.ident;
-        let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
+        let generics = self.inventory_generics();
+        let (impl_gens, ty_gens, where_clause) = generics.split_for_impl();
 
         let (given_ty, when_step_ty, then_ty) = self
             .step_types()
@@ -149,7 +174,8 @@ impl Definition {
     fn impl_step_constructors(&self) -> TokenStream {
         let world = &self.ident;
         let world_vis = &self.vis;
-        let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
+        let generics = self.inventory_generics();
+        let (impl_gens, ty_gens, where_clause) = generics.split_for_impl();
 
         self.step_types()
             .map(|ty| {
@@ -167,7 +193,8 @@ impl Definition {
                         #world_vis func: ::cucumber::Step<#world>,
 
                         #[doc(hidden)]
-                        #world_vis options: fn() -> ::cucumber::step::DefinitionOptions,
+                        #world_vis options:
+                            fn() -> ::cucumber::step::DefinitionOptions,
                     }
 
                     #[automatically_derived]
@@ -183,7 +210,9 @@ impl Definition {
                             (self.loc, self.regex, self.func)
                         }
 
-                        fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                        fn options(&self)
+                            -> ::cucumber::step::DefinitionOptions
+                        {
                             (self.options)()
                         }
                     }
@@ -256,6 +285,9 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
@@ -268,6 +300,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -285,6 +321,9 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
@@ -297,6 +336,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -314,6 +357,9 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
@@ -326,6 +372,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -342,12 +392,12 @@ mod spec {
     #[test]
     fn derives_impl_with_generics() {
         let input = parse_quote! {
-            pub struct World<T>(T);
+            pub struct World<T = usize>(T);
         };
 
         let output = quote! {
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::WorldInventory for World<T> {
+            impl ::cucumber::codegen::WorldInventory for World {
                 type Given = CucumberGivenWorld;
                 type When = CucumberWhenWorld;
                 type Then = CucumberThenWorld;
@@ -385,10 +435,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberGivenWorld
             {
                 fn inner(&self) -> (
@@ -397,6 +450,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -414,10 +471,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberWhenWorld
             {
                 fn inner(&self) -> (
@@ -426,6 +486,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -443,10 +507,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberThenWorld
             {
                 fn inner(&self) -> (
@@ -455,6 +522,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -472,12 +543,12 @@ mod spec {
     fn derives_impl_with_init_fn() {
         let input = parse_quote! {
             #[world(init = Self::custom)]
-            pub struct World<T>(T);
+            pub struct World<T = usize>(T);
         };
 
         let output = quote! {
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::WorldInventory for World<T> {
+            impl ::cucumber::codegen::WorldInventory for World {
                 type Given = CucumberGivenWorld;
                 type When = CucumberWhenWorld;
                 type Then = CucumberThenWorld;
@@ -515,10 +586,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberGivenWorld
             {
                 fn inner(&self) -> (
@@ -527,6 +601,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -544,10 +622,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberWhenWorld
             {
                 fn inner(&self) -> (
@@ -556,6 +637,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 
@@ -573,10 +658,13 @@ mod spec {
 
                  #[doc(hidden)]
                  pub func: ::cucumber::Step<World>,
+
+                 #[doc(hidden)]
+                 pub options: fn() -> ::cucumber::step::DefinitionOptions,
             }
 
             #[automatically_derived]
-            impl<T> ::cucumber::codegen::StepConstructor<World<T> > for
+            impl ::cucumber::codegen::StepConstructor<World> for
                 CucumberThenWorld
             {
                 fn inner(&self) -> (
@@ -585,6 +673,10 @@ mod spec {
                     ::cucumber::Step<World>,
                 ) {
                     (self.loc, self.regex, self.func)
+                }
+
+                fn options(&self) -> ::cucumber::step::DefinitionOptions {
+                    (self.options)()
                 }
             }
 

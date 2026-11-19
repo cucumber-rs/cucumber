@@ -1,4 +1,11 @@
-//! Phase29 acceptance: real retained scenario registries and scoped observations.
+//! Phase29 acceptance: real retained scenario registries and scoped
+//! observations.
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+    sync::{Arc, Mutex},
+};
+
 use cucumber::{
     StatsWriter as _, World as _, WriterExt as _,
     attachment::{
@@ -19,11 +26,6 @@ use cucumber::{
 use futures::future::LocalBoxFuture;
 use regex::Regex;
 use serde_json::Value;
-use std::{
-    collections::{HashMap, HashSet},
-    convert::Infallible,
-    sync::{Arc, Mutex},
-};
 #[derive(Debug, Default)]
 struct Seen {
     trace: Vec<String>,
@@ -243,7 +245,8 @@ fn configured(world: &mut Acceptance, mode: String) {
     world.mode = mode;
 }
 #[given(
-    "an observed scenario-hook registry selected by inherited feature Rule and scenario tags"
+    "an observed scenario-hook registry selected by inherited feature Rule \
+        and scenario tags"
 )]
 fn tags(w: &mut Acceptance) {
     w.mode = "tags".into();
@@ -253,25 +256,29 @@ fn concurrent(w: &mut Acceptance) {
     w.mode = "concurrent".into();
 }
 #[given(
-    "an observed registry whose before stage is replaced using the legacy builder"
+    "an observed registry whose before stage is replaced using the legacy \
+        builder"
 )]
 fn replaced(w: &mut Acceptance) {
     w.mode = "replaced".into();
 }
 #[given(
-    "an observed registry with failing setup and an empty scenario under native policy"
+    "an observed registry with failing setup and an empty scenario under \
+        native policy"
 )]
 fn empty_native(w: &mut Acceptance) {
     w.mode = "empty native".into();
 }
 #[given(
-    "an observed registry with failing setup and an empty scenario under JS13.3 policy"
+    "an observed registry with failing setup and an empty scenario under \
+        JS13.3 policy"
 )]
 fn empty_js(w: &mut Acceptance) {
     w.mode = "empty js failure".into();
 }
 #[given(
-    "an observed registry with passing setup and an empty scenario under JS13.3 policy"
+    "an observed registry with passing setup and an empty scenario under \
+        JS13.3 policy"
 )]
 fn empty_js_pass(w: &mut Acceptance) {
     w.mode = "empty js passing".into();
@@ -429,7 +436,8 @@ fn actual_names(world: &Acceptance) -> Vec<String> {
         .collect()
 }
 #[then(
-    "selected callbacks execute in registration order and reverse cleanup order"
+    "selected callbacks execute in registration order and reverse cleanup \
+        order"
 )]
 fn order(w: &mut Acceptance) {
     assert_eq!(
@@ -483,7 +491,8 @@ fn setup_cleanup(w: &mut Acceptance) {
     assert_eq!(w.hook_errors, 1);
 }
 #[then(
-    "later selected setup is recorded as skipped without an invocation identity"
+    "later selected setup is recorded as skipped without an invocation \
+        identity"
 )]
 fn skipped_setup(w: &mut Acceptance) {
     let r = w.store.records();
@@ -507,7 +516,11 @@ fn cleanup(w: &mut Acceptance) {
 }
 #[then("the actual failing callback has its own diagnostic")]
 fn diagnostic(w: &mut Acceptance) {
-    assert!(w.store.records().iter().any(|r|matches!(&r.disposition,ScenarioHookDisposition::Executed{result:Err(message),..}if message.contains("callback construction failure"))));
+    assert!(w.store.records().iter().any(|r| matches!(&r.disposition,
+        ScenarioHookDisposition::Executed{
+        result:Err(message),
+        ..}
+        if message.contains("callback construction failure"))));
 }
 #[then("the first cleanup callback observes a passing body")]
 fn first_pass(w: &mut Acceptance) {
@@ -579,7 +592,8 @@ fn selected(w: &mut Acceptance) {
     assert_eq!(p[0].after.len(), 1);
 }
 #[then(
-    "excluded callbacks have neither skipped records nor invocation identities"
+    "excluded callbacks have neither skipped records nor invocation \
+        identities"
 )]
 fn excluded(w: &mut Acceptance) {
     assert!(
@@ -615,7 +629,8 @@ fn fresh(w: &mut Acceptance) {
     assert_eq!(ids.len(), 8);
 }
 #[then(
-    "scoped cleanup observes failure with retry availability only on the first attempt"
+    "scoped cleanup observes failure with retry availability only on the \
+        first attempt"
 )]
 fn retry(w: &mut Acceptance) {
     for s in after_scopes(w) {
@@ -632,7 +647,8 @@ fn retry(w: &mut Acceptance) {
     }
 }
 #[then(
-    "each callback scope and record belongs to its actual scenario and attempt"
+    "each callback scope and record belongs to its actual scenario and \
+        attempt"
 )]
 fn isolated(w: &mut Acceptance) {
     let p = w.store.plans();

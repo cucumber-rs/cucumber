@@ -156,8 +156,12 @@ where
             ) => Ok(()),
             Ok(Cucumber::Feature(f, ev)) => match ev {
                 Feature::Started => self.feature_started(&f),
-                Feature::Scenario(sc, ev) => self.scenario_with_outcome(&f, &sc, &ev, outcome),
-                Feature::Rule(r, ev) => self.rule_with_outcome(&f, &r, ev, outcome),
+                Feature::Scenario(sc, ev) => {
+                    self.scenario_with_outcome(&f, &sc, &ev, outcome)
+                }
+                Feature::Rule(r, ev) => {
+                    self.rule_with_outcome(&f, &r, ev, outcome)
+                }
                 Feature::Finished => Ok(()),
             },
         }
@@ -282,8 +286,11 @@ impl<Out: io::Write> Basic<Out> {
     /// [started]: event::Rule::Started
     /// [`Rule`]: gherkin::Rule
     pub(crate) fn rule_with_outcome<W: Debug>(
-        &mut self, feat: &gherkin::Feature, rule: &gherkin::Rule,
-        ev: event::Rule<W>, outcome: Option<crate::execution::Outcome>,
+        &mut self,
+        feat: &gherkin::Feature,
+        rule: &gherkin::Rule,
+        ev: event::Rule<W>,
+        outcome: Option<crate::execution::Outcome>,
     ) -> io::Result<()> {
         use event::Rule;
 
@@ -326,27 +333,43 @@ impl<Out: io::Write> Basic<Out> {
     /// [step]: event::Step
     /// [`Scenario`]: gherkin::Scenario
     pub(crate) fn scenario_with_outcome<W: Debug>(
-        &mut self, feat: &gherkin::Feature, scenario: &gherkin::Scenario,
-        ev: &event::RetryableScenario<W>, outcome: Option<crate::execution::Outcome>,
+        &mut self,
+        feat: &gherkin::Feature,
+        scenario: &gherkin::Scenario,
+        ev: &event::RetryableScenario<W>,
+        outcome: Option<crate::execution::Outcome>,
     ) -> io::Result<()> {
         use event::{Hook, Scenario};
 
         if let Some(outcome) = outcome {
-            use crate::execution::OutcomeStatus::{Pending, Skipped, Undefined};
+            use crate::execution::OutcomeStatus::{
+                Pending, Skipped, Undefined,
+            };
             if matches!(outcome.status, Pending | Skipped | Undefined) {
                 let label = format!("{:?}", outcome.status).to_uppercase();
                 let text = match &ev.event {
-                    Scenario::Step(step, event::Step::Skipped | event::Step::Failed(..))
-                    | Scenario::Background(step, event::Step::Skipped | event::Step::Failed(..)) =>
-                        Some(format!("{}{} [{label}]", step.keyword, step.value)),
-                    Scenario::Hook(which, Hook::Passed | Hook::Failed(..)) =>
-                        Some(format!("Scenario's {which} hook [{label}]")),
+                    Scenario::Step(
+                        step,
+                        event::Step::Skipped | event::Step::Failed(..),
+                    )
+                    | Scenario::Background(
+                        step,
+                        event::Step::Skipped | event::Step::Failed(..),
+                    ) => Some(format!(
+                        "{}{} [{label}]",
+                        step.keyword, step.value
+                    )),
+                    Scenario::Hook(which, Hook::Passed | Hook::Failed(..)) => {
+                        Some(format!("Scenario's {which} hook [{label}]"))
+                    }
                     _ => None,
                 };
                 if let Some(text) = text {
                     self.clear_last_lines_if_term_present()?;
-                    self.output.write_line(self.styles.skipped(format!("{}?  {text}",
-                        " ".repeat(self.indent.saturating_sub(3)))))?;
+                    self.output.write_line(self.styles.skipped(format!(
+                        "{}?  {text}",
+                        " ".repeat(self.indent.saturating_sub(3))
+                    )))?;
                     self.indent = self.indent.saturating_sub(4);
                     return Ok(());
                 }

@@ -4,7 +4,6 @@
 //! All cleanup callbacks run in reverse order, including after setup failure.
 //! This is the single-executor Cucumber.js 13.3 contract, not process workers.
 
-use futures::future::LocalBoxFuture;
 use std::{
     fmt,
     sync::{
@@ -13,6 +12,8 @@ use std::{
     },
     time::SystemTime,
 };
+
+use futures::future::LocalBoxFuture;
 
 /// Global lifecycle stage for a registered callback.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -157,8 +158,10 @@ struct Registered {
 }
 /// Named callbacks that wrap all scenarios in one native run.
 ///
-/// Callbacks receive no scenario World. Capture shared application configuration
-/// explicitly in their closures. Panics from construction or polling are recorded
+/// Callbacks receive no scenario World. Capture shared application
+/// configuration
+/// explicitly in their closures. Panics from construction or polling are
+/// recorded
 /// individually and do not prevent subsequent callbacks from running. This
 /// cleanup guarantee applies to awaited runs; dropping/cancelling the runner
 /// future cannot synchronously execute asynchronous cleanup.
@@ -212,7 +215,8 @@ impl RunHooks {
             .map(|h| h.definition.clone())
             .collect()
     }
-    /// Registers global setup in registration order; failures do not stop later setup.
+    /// Registers global setup in registration order; failures do not stop
+    /// later setup.
     #[must_use]
     pub fn before<F>(mut self, name: impl Into<String>, callback: F) -> Self
     where
@@ -229,7 +233,8 @@ impl RunHooks {
         }));
         self
     }
-    /// Registers global cleanup, invoked in reverse order despite earlier failures.
+    /// Registers global cleanup, invoked in reverse order despite earlier
+    /// failures.
     #[must_use]
     pub fn after<F>(mut self, name: impl Into<String>, callback: F) -> Self
     where

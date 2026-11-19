@@ -23,11 +23,17 @@ pub enum LexicalSemantics {
 impl LexicalSemantics {
     /// Whether a character is whitespace under this policy's value/tag rules.
     pub fn is_whitespace(self, character: char) -> bool {
-        match self { Self::Legacy => character.is_whitespace(), Self::Gherkin43 => official_docstring_whitespace(character) }
+        match self {
+            Self::Legacy => character.is_whitespace(),
+            Self::Gherkin43 => official_docstring_whitespace(character),
+        }
     }
     /// Whether a character is token padding on one source line (never LF).
     pub fn is_padding(self, character: char) -> bool {
-        match self { Self::Legacy => matches!(character, ' ' | '\t'), Self::Gherkin43 => character != '\n' && self.is_whitespace(character) }
+        match self {
+            Self::Legacy => matches!(character, ' ' | '\t'),
+            Self::Gherkin43 => character != '\n' && self.is_whitespace(character),
+        }
     }
 }
 
@@ -43,13 +49,13 @@ pub enum DocStringSemantics {
     Gherkin43,
 }
 
-/// Selects table row sizing independently from dialect and doc-string behavior.
+/// Selects table row sizing and escapes independently from dialect and doc-string behavior.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum TableSemantics {
-    /// Preserve legacy truncation of later rows longer than the first row.
+    /// Preserve legacy row truncation and reject unrecognized backslash escapes.
     #[default]
     Legacy,
-    /// Reject any row whose cell count differs from the first row.
+    /// Reject unequal row widths and preserve unrecognized backslash escapes literally.
     Gherkin43,
 }
 
@@ -137,7 +143,8 @@ impl GherkinEnv {
             Keywords::get_latest(language)
         } else {
             Keywords::get(language)
-        }.ok_or_else(|| {
+        }
+        .ok_or_else(|| {
             self.set_fatal_error(EnvError::UnsupportedLanguage(language.into()));
             "Unsupported language"
         })?;
@@ -209,8 +216,10 @@ impl GherkinEnv {
     fn position(&self, source: &str, offset: usize) -> LineCol {
         if self.lexical_semantics == LexicalSemantics::Gherkin43 {
             let prefix = &source[..offset];
-            return LineCol { line: prefix.bytes().filter(|byte| *byte == b'\n').count() + 1,
-                col: prefix.rsplit('\n').next().unwrap_or("").chars().count() + 1 };
+            return LineCol {
+                line: prefix.bytes().filter(|byte| *byte == b'\n').count() + 1,
+                col: prefix.rsplit('\n').next().unwrap_or("").chars().count() + 1,
+            };
         }
         let line_offsets = self.line_offsets.borrow();
         let line = line_offsets
@@ -263,15 +272,26 @@ fn official_docstring_whitespace(character: char) -> bool {
 /// opening indentation, unescape the active separator on each line, and join
 /// only content lines. Delimiter/header lines never become payload text.
 fn official_docstring_content(lines: Vec<&str>, indent: usize, delimiter: &str) -> String {
-    let escaped = if delimiter == "\"\"\"" { "\\\"\\\"\\\"" } else { "\\`\\`\\`" };
-    lines.into_iter().map(|line| {
-        let remove = line.chars().take(indent)
-            .take_while(|character| official_docstring_whitespace(*character)).count();
-        let content: String = line.chars().skip(remove).collect();
-        // The tagged official JavaScript token matcher replaces the first
-        // active escaped delimiter occurrence on each content line.
-        content.replacen(escaped, delimiter, 1)
-    }).collect::<Vec<_>>().join("\n")
+    let escaped = if delimiter == "\"\"\"" {
+        "\\\"\\\"\\\""
+    } else {
+        "\\`\\`\\`"
+    };
+    lines
+        .into_iter()
+        .map(|line| {
+            let remove = line
+                .chars()
+                .take(indent)
+                .take_while(|character| official_docstring_whitespace(*character))
+                .count();
+            let content: String = line.chars().skip(remove).collect();
+            // The tagged official JavaScript token matcher replaces the first
+            // active escaped delimiter occurrence on each content line.
+            content.replacen(escaped, delimiter, 1)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn official_table_cells(line: &str) -> Vec<String> {
@@ -282,14 +302,25 @@ fn official_table_cells(line: &str) -> Vec<String> {
     while let Some(character) = chars.next() {
         match character {
             '|' => {
-                cells.push(cell.trim_matches(|c| matches!(c, ' ' | '\t' | '\u{000b}' | '\u{000c}' | '\r' | '\u{0085}' | '\u{00a0}')).to_owned());
+                cells.push(
+                    cell.trim_matches(|c| {
+                        matches!(
+                            c,
+                            ' ' | '\t' | '\u{000b}' | '\u{000c}' | '\r' | '\u{0085}' | '\u{00a0}'
+                        )
+                    })
+                    .to_owned(),
+                );
                 cell.clear();
             }
             '\\' => match chars.next() {
                 Some('n') => cell.push('\n'),
-                Some('|' ) => cell.push('|'),
+                Some('|') => cell.push('|'),
                 Some('\\') => cell.push('\\'),
-                Some(other) => { cell.push('\\'); cell.push(other); }
+                Some(other) => {
+                    cell.push('\\');
+                    cell.push(other);
+                }
                 None => cell.push('\\'),
             },
             other => cell.push(other),
@@ -414,7 +445,7 @@ rule escaped_cell_char() -> &'input str
     = "\\n" { "\n" } / "\\|" { "|" } / "\\\\" { "\\" }
 
 rule table_cell() -> Vec<&'input str>
-    = "|" _ !(nl0() / eof()) n:((escaped_cell_char() / $(!("|" / nl0())[_]))*) { n }
+    = "|" _ !(nl0() / eof()) n:((escaped_cell_char() / $(!("|" / "\\" / nl0())[_]))*) { n }
 
 rule official_tables_enabled()
     = {? if env.table_semantics == TableSemantics::Gherkin43 { Ok(()) } else { Err("official table semantics not selected") } }

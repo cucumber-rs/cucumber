@@ -2,11 +2,13 @@
 //!
 //! Legacy callbacks retain their signatures and pre-cleanup snapshot. Scoped
 //! callbacks additionally observe native attempt identity and evolving cleanup.
-use super::scenario_hooks::*;
-use crate::{event::ScenarioFinished, tag::Ext as _};
+use std::{fmt, panic::Location, sync::Arc, time::SystemTime};
+
 use futures::future::LocalBoxFuture;
 use gherkin::{Feature, Rule, Scenario, tagexpr::TagOperation};
-use std::{fmt, panic::Location, sync::Arc, time::SystemTime};
+
+use super::scenario_hooks::*;
+use crate::{event::ScenarioFinished, tag::Ext as _};
 
 /// A legacy before-scenario callback.
 pub type Before<W> = Box<
@@ -67,13 +69,17 @@ impl<F> Registered<F> {
         })
     }
 }
-/// Named setup and reverse cleanup, preserving native stage event compatibility.
+/// Named setup and reverse cleanup, preserving native stage event
+/// compatibility.
 ///
 /// Setup stops after failure; cleanup continues after each panic. Legacy After
-/// callbacks keep the original ScenarioFinished. Additive scoped After callbacks
-/// also receive evolving native outcome and individual earlier callback failures.
+/// callbacks keep the original ScenarioFinished. Additive scoped After
+/// callbacks
+/// also receive evolving native outcome and individual earlier callback
+/// failures.
 /// Only with_store enables individual attachment targets; without it, fresh
-/// callback handles retain composite before/after targets for existing reporters.
+/// callback handles retain composite before/after targets for existing
+/// reporters.
 pub struct Hooks<W> {
     before: Vec<Arc<Registered<BeforeCallback<W>>>>,
     after: Vec<Arc<Registered<AfterCallback<W>>>>,
@@ -120,12 +126,14 @@ impl<W> fmt::Debug for Hooks<W> {
     }
 }
 impl<W: 'static> Hooks<W> {
-    /// Creates an empty registry. Empty stages preserve lazy World initialization.
+    /// Creates an empty registry. Empty stages preserve lazy World
+    /// initialization.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
-    /// Enables shared invocation observation and per-callback attachment targets.
+    /// Enables shared invocation observation and per-callback attachment
+    /// targets.
     /// Configure a compatible Messages writer with this same store.
     #[must_use]
     pub fn with_store(mut self, store: ScenarioHookStore) -> Self {
@@ -147,7 +155,8 @@ impl<W: 'static> Hooks<W> {
             .chain(self.after.iter().map(|h| h.definition.clone()))
             .collect()
     }
-    /// Selects explicit empty-plan behavior; native cleanup remains the default.
+    /// Selects explicit empty-plan behavior; native cleanup remains the
+    /// default.
     #[must_use]
     pub fn empty_scenario_policy(mut self, policy: EmptyScenarioHooks) -> Self {
         self.empty = policy;
@@ -355,7 +364,8 @@ impl<W: 'static> Hooks<W> {
         }));
         self
     }
-    /// Registers legacy cleanup in reverse registration order selected by inherited tags.
+    /// Registers legacy cleanup in reverse registration order selected by
+    /// inherited tags.
     #[must_use]
     #[track_caller]
     pub fn after_if<F>(
@@ -392,7 +402,8 @@ impl<W: 'static> Hooks<W> {
         }));
         self
     }
-    /// Registers legacy cleanup in reverse registration order selected by inherited tags.
+    /// Registers legacy cleanup in reverse registration order selected by
+    /// inherited tags.
     #[must_use]
     #[track_caller]
     pub fn after_matching<F>(
@@ -462,7 +473,8 @@ impl<W: 'static> Hooks<W> {
         }));
         self
     }
-    /// Registers scoped cleanup in reverse registration order selected by inherited tags.
+    /// Registers scoped cleanup in reverse registration order selected by
+    /// inherited tags.
     #[must_use]
     #[track_caller]
     pub fn after_scoped_matching<F>(
@@ -497,7 +509,8 @@ impl<W: 'static> Hooks<W> {
         self
     }
 
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn before_with_timeout<F>(
@@ -521,7 +534,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn before_if_with_timeout<F>(
@@ -546,7 +560,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn before_matching_with_timeout<F>(
@@ -571,7 +586,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn before_scoped_with_timeout<F>(
@@ -593,7 +609,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn before_scoped_matching_with_timeout<F>(
@@ -616,7 +633,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn after_with_timeout<F>(
@@ -641,7 +659,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn after_if_with_timeout<F>(
@@ -667,7 +686,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn after_matching_with_timeout<F>(
@@ -693,7 +713,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn after_scoped_with_timeout<F>(
@@ -715,7 +736,8 @@ impl<W: 'static> Hooks<W> {
             .timeout = Some(timeout);
         hooks
     }
-    /// Registers this callback with an explicit per-invocation deadline override.
+    /// Registers this callback with an explicit per-invocation deadline
+    /// override.
     #[must_use]
     #[track_caller]
     pub fn after_scoped_matching_with_timeout<F>(
@@ -938,19 +960,15 @@ impl<W: 'static> Hooks<W> {
             let callback_scope = &scope;
             let result = timeouts
                 .invoke_callback(
-                    move || {
-                        match &hook.callback {
-                            BeforeCallback::Legacy(callback) => {
-                                callback(
-                                    &attempt.feature,
-                                    attempt.rule.as_deref(),
-                                    &attempt.scenario,
-                                    callback_world,
-                                )
-                            }
-                            BeforeCallback::Scoped(callback) => {
-                                callback(callback_scope, callback_world)
-                            }
+                    move || match &hook.callback {
+                        BeforeCallback::Legacy(callback) => callback(
+                            &attempt.feature,
+                            attempt.rule.as_deref(),
+                            &attempt.scenario,
+                            callback_world,
+                        ),
+                        BeforeCallback::Scoped(callback) => {
+                            callback(callback_scope, callback_world)
                         }
                     },
                     hook.timeout,
@@ -1038,20 +1056,16 @@ impl<W: 'static> Hooks<W> {
             let callback_scope = &scope;
             let result = timeouts
                 .invoke_callback(
-                    move || {
-                        match &hook.callback {
-                            AfterCallback::Legacy(callback) => {
-                                callback(
-                                    &attempt.feature,
-                                    attempt.rule.as_deref(),
-                                    &attempt.scenario,
-                                    body,
-                                    callback_world,
-                                )
-                            }
-                            AfterCallback::Scoped(callback) => {
-                                callback(callback_scope, callback_world)
-                            }
+                    move || match &hook.callback {
+                        AfterCallback::Legacy(callback) => callback(
+                            &attempt.feature,
+                            attempt.rule.as_deref(),
+                            &attempt.scenario,
+                            body,
+                            callback_world,
+                        ),
+                        AfterCallback::Scoped(callback) => {
+                            callback(callback_scope, callback_world)
                         }
                     },
                     hook.timeout,

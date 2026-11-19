@@ -10,7 +10,8 @@
 
 #![doc(
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
-    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
+    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=25\
+        6"
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
@@ -244,19 +245,22 @@ pub trait World: Sized + 'static {
     ///
     /// Existing implementations retain their original constructor by default.
     /// Attachment-aware Worlds can override this method and retain the context.
-    fn new_with_context(_context: attachment::AttachmentContext)
-        -> impl Future<Output = Result<Self, Self::Error>>
-    {
+    fn new_with_context(
+        _context: attachment::AttachmentContext,
+    ) -> impl Future<Output = Result<Self, Self::Error>> {
         Self::new()
     }
 
-    /// Creates a World with attachment and explicitly enabled completion contexts.
+    /// Creates a World with attachment and explicitly enabled completion
+    /// contexts.
     ///
-    /// Existing implementations keep their attachment-aware or original constructor.
-    /// Completion-aware Worlds can override this method and retain `context.execution()`.
-    fn new_with_runtime_context(context: execution::WorldContext)
-        -> impl Future<Output = Result<Self, Self::Error>>
-    {
+    /// Existing implementations keep their attachment-aware or original
+    /// constructor.
+    /// Completion-aware Worlds can override this method and retain
+    /// `context.execution()`.
+    fn new_with_runtime_context(
+        context: execution::WorldContext,
+    ) -> impl Future<Output = Result<Self, Self::Error>> {
         Self::new_with_context(context.attachments())
     }
 
@@ -272,17 +276,24 @@ pub trait World: Sized + 'static {
 
         for given in inventory::iter::<Self::Given> {
             let (loc, regex, fun) = given.inner();
-            out = out.given_with_options(Some(loc), regex(), fun, given.options());
+            out = out.given_with_options(
+                Some(loc),
+                regex(),
+                fun,
+                given.options(),
+            );
         }
 
         for when in inventory::iter::<Self::When> {
             let (loc, regex, fun) = when.inner();
-            out = out.when_with_options(Some(loc), regex(), fun, when.options());
+            out =
+                out.when_with_options(Some(loc), regex(), fun, when.options());
         }
 
         for then in inventory::iter::<Self::Then> {
             let (loc, regex, fun) = then.inner();
-            out = out.then_with_options(Some(loc), regex(), fun, then.options());
+            out =
+                out.then_with_options(Some(loc), regex(), fun, then.options());
         }
 
         out

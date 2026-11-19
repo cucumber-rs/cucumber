@@ -61,7 +61,11 @@ use crate::{
 pub struct Cli {
     /// Number of scenarios to run concurrently. If not specified, uses the
     /// value configured in tests runner, or 64 by default.
-    #[arg(long, short, value_name = "int", global = true, value_parser = positive_concurrency)]
+    #[arg(long,
+         short,
+         value_name = "int",
+         global = true,
+         value_parser = positive_concurrency)]
     pub concurrency: Option<usize>,
 
     /// Run tests until the first failure.
@@ -96,7 +100,10 @@ pub struct Cli {
 }
 
 fn positive_concurrency(value: &str) -> Result<usize, String> {
-    value.parse::<usize>().ok().filter(|n| *n > 0)
+    value
+        .parse::<usize>()
+        .ok()
+        .filter(|n| *n > 0)
         .ok_or_else(|| "concurrency must be a positive integer".to_owned())
 }
 
@@ -108,7 +115,8 @@ pub enum BackgroundSemantics {
     /// Preserve existing behavior: run backgrounds even for empty scenarios.
     #[default]
     Legacy,
-    /// Match official Gherkin 43 Pickles: empty scenarios have no background steps.
+    /// Match official Gherkin 43 Pickles: empty scenarios have no background
+    /// steps.
     /// Scenario hooks still run, including on expanded empty outline rows.
     Gherkin43,
 }
@@ -505,7 +513,8 @@ impl<World> Default for Basic<World> {
 }
 
 impl<World, Which, Before, After> Basic<World, Which, Before, After> {
-    /// Enables authoritative completion semantics explicitly; Legacy is default.
+    /// Enables authoritative completion semantics explicitly; Legacy is
+    /// default.
     #[must_use]
     pub fn with_outcome_policy(mut self, policy: OutcomePolicy) -> Self {
         self.outcome_policy = policy;
@@ -521,7 +530,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
 
     /// Buffers the selected application and schedules its global case plan.
     #[must_use]
-    pub fn with_scheduling_options(mut self, options: super::SchedulingOptions) -> Self {
+    pub fn with_scheduling_options(
+        mut self,
+        options: super::SchedulingOptions,
+    ) -> Self {
         self.scheduling = Some(options);
         self
     }
@@ -898,7 +910,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Selects background execution for scenarios with no own steps.
     ///
     /// [`BackgroundSemantics::Gherkin43`] skips feature and Rule backgrounds
-    /// for empty scenarios only, preserving before/after hooks. Legacy is default.
+    /// for empty scenarios only, preserving before/after hooks. Legacy is
+    /// default.
     #[must_use]
     pub fn with_background_semantics(
         mut self,
@@ -908,8 +921,10 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
         self
     }
 
-    /// Configures independent deadlines for actual callback and step-body invocations.
-    /// World initialization is outside these deadlines. Defaults remain unlimited.
+    /// Configures independent deadlines for actual callback and step-body
+    /// invocations.
+    /// World initialization is outside these deadlines. Defaults remain
+    /// unlimited.
     #[must_use]
     pub fn with_timeouts(mut self, timeouts: super::Timeouts) -> Self {
         self.timeouts = timeouts;
@@ -927,7 +942,8 @@ impl<World, Which, Before, After> Basic<World, Which, Before, After> {
     /// Installs callbacks around one complete executor invocation.
     ///
     /// Custom writers can observe failures through the registry's shared store.
-    /// [`crate::Cucumber::with_run_hooks`] installs failure statistics automatically.
+    /// [`crate::Cucumber::with_run_hooks`] installs failure statistics
+    /// automatically.
     #[must_use]
     pub fn with_run_hooks(mut self, hooks: super::RunHooks) -> Self {
         self.run_hooks = hooks;
@@ -1065,12 +1081,17 @@ where
         cli.retry_after = cli.retry_after.or(retry_after);
         cli.retry_tag_filter = cli.retry_tag_filter.or(retry_filter);
         let fail_fast = cli.fail_fast || fail_fast;
-        let concurrency = cli.concurrency
+        let concurrency = cli
+            .concurrency
             .or_else(|| scheduling.as_ref().and_then(|s| s.concurrency))
             .or(max_concurrent_scenarios);
-        assert!(concurrency != Some(0), "concurrency must be a positive integer");
+        assert!(
+            concurrency != Some(0),
+            "concurrency must be a positive integer"
+        );
 
-        let buffer = Features { ordered: scheduling.is_some(), ..Features::default() };
+        let buffer =
+            Features { ordered: scheduling.is_some(), ..Features::default() };
         let (parsed_sender, parsed_receiver) = oneshot::channel();
         let (sender, receiver) = mpsc::unbounded();
 
@@ -1082,7 +1103,10 @@ where
             sender.clone(),
             cli,
             fail_fast,
-        ).map(move |()| { let _ = parsed_sender.send(()); });
+        )
+        .map(move |()| {
+            let _ = parsed_sender.send(());
+        });
         let execute = execute(
             buffer,
             concurrency,
@@ -1243,7 +1267,9 @@ async fn execute<W, Before, After>(
     //    down the line to the Writer, which will print it at a right time.
     // 3. We restore original panic hook, because suppressing all panics doesn't
     //    sound like a very good idea.
-    if scheduling.is_some() { let _ = parsed.await; }
+    if scheduling.is_some() {
+        let _ = parsed.await;
+    }
     let hook = panic::take_hook();
     panic::set_hook(Box::new(|_| {}));
 
@@ -1280,10 +1306,17 @@ async fn execute<W, Before, After>(
         .map(TracingCollector::scenario_span_event_waiter);
 
     if setup_passed && let Some(options) = scheduling {
-        execute_ordered(&executor, &mut storage, &features, max_concurrent_scenarios,
-            fail_fast, &options,
-            #[cfg(feature = "tracing")] logs_collector.take(),
-        ).await;
+        execute_ordered(
+            &executor,
+            &mut storage,
+            &features,
+            max_concurrent_scenarios,
+            fail_fast,
+            &options,
+            #[cfg(feature = "tracing")]
+            logs_collector.take(),
+        )
+        .await;
     } else if setup_passed {
         let mut started_scenarios =
             ControlFlow::Continue(max_concurrent_scenarios);
@@ -1297,11 +1330,14 @@ async fn execute<W, Before, After>(
                     break;
                 }
 
-                // To avoid busy-polling of `Features::get()`, in case there are no
-                // scenarios that are running or scheduled for execution, we spawn a
+                // To avoid busy-polling of `Features::get()`, in case there are
+                // no
+                // scenarios that are running or scheduled for execution, we
+                // spawn a
                 // thread, that sleeps for minimal deadline of all retried
                 // scenarios.
-                // TODO: Replace `thread::spawn` with async runtime agnostic sleep,
+                // TODO: Replace `thread::spawn` with async runtime agnostic
+                // sleep,
                 //       once it's available.
                 if let Some(dur) = sleep {
                     let (sender, receiver) = oneshot::channel();
@@ -1411,7 +1447,8 @@ async fn execute<W, Before, After>(
         }
     } else {
         // The parser runs concurrently. Let it finish forwarding source errors
-        // and ParsingFinished before closing this run, without scheduling cases.
+        // and ParsingFinished before closing this run, without scheduling
+        // cases.
         while !features.is_finished(true).await {
             future::ready(()).then_yield().await;
         }
@@ -1435,14 +1472,22 @@ async fn execute<W, Before, After>(
 /// Retry placement is private: the legacy queue and an ordered logical slot
 /// share exactly the same attempt lifecycle and outcome reporting.
 #[derive(Clone, Copy)]
-enum RetryDispatch { Queue, ReturnToSlot }
+enum RetryDispatch {
+    Queue,
+    ReturnToSlot,
+}
 
 type PlannedCase = (
-    ScenarioId, Source<gherkin::Feature>, Option<Source<gherkin::Rule>>,
-    Source<gherkin::Scenario>, ScenarioType, Option<RetryOptions>,
+    ScenarioId,
+    Source<gherkin::Feature>,
+    Option<Source<gherkin::Rule>>,
+    Source<gherkin::Scenario>,
+    ScenarioType,
+    Option<RetryOptions>,
 );
 
-/// Executes a globally permuted plan, retaining one reservation through retries.
+/// Executes a globally permuted plan, retaining one reservation through
+/// retries.
 async fn execute_ordered<W, Before, After>(
     executor: &Executor<W, Before, After>,
     storage: &mut FinishedRulesAndFeatures,
@@ -1453,19 +1498,43 @@ async fn execute_ordered<W, Before, After>(
     #[cfg(feature = "tracing")] logs: Option<TracingCollector>,
 ) where
     W: World,
-    Before: 'static + for<'a> Fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a mut W) -> LocalBoxFuture<'a, ()>,
-    After: 'static + for<'a> Fn(&'a gherkin::Feature, Option<&'a gherkin::Rule>, &'a gherkin::Scenario, &'a event::ScenarioFinished, Option<&'a mut W>) -> LocalBoxFuture<'a, ()>,
+    Before: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a mut W,
+        ) -> LocalBoxFuture<'a, ()>,
+    After: 'static
+        + for<'a> Fn(
+            &'a gherkin::Feature,
+            Option<&'a gherkin::Rule>,
+            &'a gherkin::Scenario,
+            &'a event::ScenarioFinished,
+            Option<&'a mut W>,
+        ) -> LocalBoxFuture<'a, ()>,
 {
     let mut initial = mem::take(&mut *features.plan.lock().await);
     options.order(&mut initial);
-    let mut queue = VecDeque::from(initial.into_iter().enumerate().map(|(plan_index, case)| {
-        let identity = super::AssignmentCase {
-            case_id: plan_index as u64, plan_index, feature: case.1.clone(),
-            rule: case.2.clone(), scenario: case.3.clone(), kind: case.4,
-        };
-        (case, identity)
-    }).collect::<Vec<_>>());
-    let assignment = options.assignment.as_ref().map(|policy| (policy, policy.begin()));
+    let mut queue = VecDeque::from(
+        initial
+            .into_iter()
+            .enumerate()
+            .map(|(plan_index, case)| {
+                let identity = super::AssignmentCase {
+                    case_id: plan_index as u64,
+                    plan_index,
+                    feature: case.1.clone(),
+                    rule: case.2.clone(),
+                    scenario: case.3.clone(),
+                    kind: case.4,
+                };
+                (case, identity)
+            })
+            .collect::<Vec<_>>(),
+    );
+    let assignment =
+        options.assignment.as_ref().map(|policy| (policy, policy.begin()));
     let mut reservations = Vec::<super::AssignmentCase>::new();
     let mut revision = 0usize;
     let mut blocked_revision = None;
@@ -1473,141 +1542,252 @@ async fn execute_ordered<W, Before, After>(
     let mut stopped = false;
     let mut serial_active = false;
     #[cfg(feature = "tracing")]
-    let waiter = logs.as_ref().map(TracingCollector::scenario_span_event_waiter);
+    let waiter =
+        logs.as_ref().map(TracingCollector::scenario_span_event_waiter);
     #[cfg(feature = "tracing")]
     let logs = std::rc::Rc::new(std::cell::RefCell::new(logs));
-    let mut running = stream::FuturesUnordered::<LocalBoxFuture<'_, u64>>::new();
+    let mut running =
+        stream::FuturesUnordered::<LocalBoxFuture<'_, u64>>::new();
 
     loop {
         // Drain every attempt, including retries while its logical slot remains
-        // occupied. This also closes trace registrations promptly during delays.
-        while let Ok((id, feature, rule, failed, retried)) = storage.finished_receiver.try_recv() {
+        // occupied. This also closes trace registrations promptly during
+        // delays.
+        while let Ok((id, feature, rule, failed, retried)) =
+            storage.finished_receiver.try_recv()
+        {
             if let Some(rule) = rule
-                && let Some(event) = storage.rule_scenario_finished(feature.clone(), rule, retried) {
+                && let Some(event) = storage.rule_scenario_finished(
+                    feature.clone(),
+                    rule,
+                    retried,
+                )
+            {
                 executor.send_event(event);
             }
-            if let Some(event) = storage.feature_scenario_finished(feature, retried) { executor.send_event(event); }
+            if let Some(event) =
+                storage.feature_scenario_finished(feature, retried)
+            {
+                executor.send_event(event);
+            }
             #[cfg(feature = "tracing")]
-            if let Some(collector) = logs.borrow_mut().as_mut() { collector.finish_scenario(id); }
+            if let Some(collector) = logs.borrow_mut().as_mut() {
+                collector.finish_scenario(id);
+            }
             #[cfg(not(feature = "tracing"))]
             let _ = id;
-            if fail_fast && failed && !retried { stopped = true; }
+            if fail_fast && failed && !retried {
+                stopped = true;
+            }
         }
-        while !stopped && !serial_active && running.len() < limit.unwrap_or(usize::MAX) {
-            let Some((_, next)) = queue.front() else { break; };
+        while !stopped
+            && !serial_active
+            && running.len() < limit.unwrap_or(usize::MAX)
+        {
+            let Some((_, next)) = queue.front() else {
+                break;
+            };
             // Retry/trace notices do not change the assigned logical set. A
-            // blocked snapshot must not re-evaluate or grow records on those notices.
-            if blocked_revision == Some(revision) { break; }
+            // blocked snapshot must not re-evaluate or grow records on those
+            // notices.
+            if blocked_revision == Some(revision) {
+                break;
+            }
             let serial_front = next.kind == ScenarioType::Serial;
             if serial_front && !reservations.is_empty() {
-                if let Some((policy, run_id)) = assignment { policy.waiting(run_id, super::AssignmentWait::SerialBarrier, &reservations); }
+                if let Some((policy, run_id)) = assignment {
+                    policy.waiting(
+                        run_id,
+                        super::AssignmentWait::SerialBarrier,
+                        &reservations,
+                    );
+                }
                 blocked_revision = Some(revision);
                 break;
             }
-            let accessible = if serial_front { 1 } else {
-                queue.iter().take_while(|(_, case)| case.kind != ScenarioType::Serial).count()
+            let accessible = if serial_front {
+                1
+            } else {
+                queue
+                    .iter()
+                    .take_while(|(_, case)| case.kind != ScenarioType::Serial)
+                    .count()
             };
             let mut reason = super::AssignmentAdmission::Eligible;
             let selected = if let Some((policy, run_id)) = assignment {
-                let eligible = queue.iter().take(accessible).position(|(_, candidate)| policy.evaluate(run_id, candidate, &reservations));
-                if let Some(index) = eligible { index }
-                else if reservations.is_empty() {
+                let eligible =
+                    queue.iter().take(accessible).position(|(_, candidate)| {
+                        policy.evaluate(run_id, candidate, &reservations)
+                    });
+                if let Some(index) = eligible {
+                    index
+                } else if reservations.is_empty() {
                     idle_interventions += 1;
                     reason = super::AssignmentAdmission::IdleFallback;
                     0
                 } else {
-                    policy.waiting(run_id, super::AssignmentWait::NoEligible, &reservations);
+                    policy.waiting(
+                        run_id,
+                        super::AssignmentWait::NoEligible,
+                        &reservations,
+                    );
                     blocked_revision = Some(revision);
                     break;
                 }
-            } else { 0 };
-            let (case, identity) = queue.remove(selected).expect("selected queue entry exists");
+            } else {
+                0
+            };
+            let (case, identity) =
+                queue.remove(selected).expect("selected queue entry exists");
             let case_id = identity.case_id;
             serial_active = identity.kind == ScenarioType::Serial;
             reservations.push(identity.clone());
             revision += 1;
-            if let Some((policy, run_id)) = assignment { policy.admitted(run_id, &identity, reason); }
+            if let Some((policy, run_id)) = assignment {
+                policy.admitted(run_id, &identity, reason);
+            }
             executor.send_all_events(storage.start_scenarios([case.clone()]));
             #[cfg(feature = "tracing")]
             let attempt_logs = logs.clone();
             #[cfg(feature = "tracing")]
             let attempt_waiter = waiter.as_ref();
-            running.push(async move {
-                let (mut id, feature, rule, scenario, ty, mut retries) = case;
-                loop {
-                    #[cfg(feature = "tracing")]
-                    if let Some(collector) = attempt_logs.borrow_mut().as_mut() {
-                        collector.start_scenarios([(id, feature.clone(), rule.clone(), scenario.clone(), ty, retries)]);
+            running.push(
+                async move {
+                    let (mut id, feature, rule, scenario, ty, mut retries) =
+                        case;
+                    loop {
+                        #[cfg(feature = "tracing")]
+                        if let Some(collector) =
+                            attempt_logs.borrow_mut().as_mut()
+                        {
+                            collector.start_scenarios([(
+                                id,
+                                feature.clone(),
+                                rule.clone(),
+                                scenario.clone(),
+                                ty,
+                                retries,
+                            )]);
+                        }
+                        let next = executor
+                            .run_scenario(
+                                id,
+                                feature.clone(),
+                                rule.clone(),
+                                scenario.clone(),
+                                ty,
+                                retries,
+                                RetryDispatch::ReturnToSlot,
+                                #[cfg(feature = "tracing")]
+                                attempt_waiter,
+                            )
+                            .await;
+                        let Some(next) = next else {
+                            break;
+                        };
+                        if let Some(delay) = next.after {
+                            options.delay(delay).await;
+                        }
+                        // Yield even for an immediate retry, permitting the
+                        // dispatcher
+                        // to consume the previous attempt's finish and trace
+                        // records.
+                        future::ready(()).then_yield().await;
+                        id = ScenarioId::new();
+                        retries = Some(next);
                     }
-                    let next = executor.run_scenario(id, feature.clone(), rule.clone(), scenario.clone(), ty, retries,
-                        RetryDispatch::ReturnToSlot,
-                        #[cfg(feature = "tracing")] attempt_waiter,
-                    ).await;
-                    let Some(next) = next else { break; };
-                    if let Some(delay) = next.after { options.delay(delay).await; }
-                    // Yield even for an immediate retry, permitting the dispatcher
-                    // to consume the previous attempt's finish and trace records.
-                    future::ready(()).then_yield().await;
-                    id = ScenarioId::new();
-                    retries = Some(next);
+                    case_id
                 }
-                case_id
-            }.boxed_local());
+                .boxed_local(),
+            );
         }
-        if running.is_empty() { break; }
+        if running.is_empty() {
+            break;
+        }
 
         // Notifications wake the scheduler even while all slots await a retry
         // delay. No polling of a potentially unfinished parser is necessary.
         let progress_result = {
-        let progress = async {
-            let completed = running.next();
-            let notice = storage.finished_receiver.next();
-            pin_mut!(completed, notice);
-            match future::select(completed, notice).await {
-                Either::Left((completed, _)) => Either::Left(completed),
-                Either::Right((notice, _)) => Either::Right(notice),
-            }
-        };
-        #[cfg(feature = "tracing")]
-        let forward = async {
-            loop {
-                while let Some(events) = logs.borrow_mut().as_mut().and_then(TracingCollector::emitted_logs) {
-                    executor.send_all_events(events);
+            let progress = async {
+                let completed = running.next();
+                let notice = storage.finished_receiver.next();
+                pin_mut!(completed, notice);
+                match future::select(completed, notice).await {
+                    Either::Left((completed, _)) => Either::Left(completed),
+                    Either::Right((notice, _)) => Either::Right(notice),
                 }
-                future::ready(()).then_yield().await;
-            }
-        };
-        #[cfg(not(feature = "tracing"))]
-        let forward = future::pending::<()>();
-        pin_mut!(progress, forward);
-        let result = match select_with_biased_first(forward, progress).await {
-            Either::Right((result, _)) => result,
-            Either::Left(_) => unreachable!("log forwarding does not complete"),
-        };
-        result
+            };
+            #[cfg(feature = "tracing")]
+            let forward = async {
+                loop {
+                    while let Some(events) = logs
+                        .borrow_mut()
+                        .as_mut()
+                        .and_then(TracingCollector::emitted_logs)
+                    {
+                        executor.send_all_events(events);
+                    }
+                    future::ready(()).then_yield().await;
+                }
+            };
+            #[cfg(not(feature = "tracing"))]
+            let forward = future::pending::<()>();
+            pin_mut!(progress, forward);
+            let result = match select_with_biased_first(forward, progress).await
+            {
+                Either::Right((result, _)) => result,
+                Either::Left(_) => {
+                    unreachable!("log forwarding does not complete")
+                }
+            };
+            result
         };
         match progress_result {
-        Either::Left(Some(case_id)) => {
-            let index = reservations.iter().position(|case| case.case_id == case_id).expect("completed logical reservation exists");
-            let released = reservations.remove(index);
-            if released.kind == ScenarioType::Serial { serial_active = false; }
-            revision += 1;
-            if let Some((policy, run_id)) = assignment { policy.released(run_id, case_id); }
-        }
-        Either::Right(Some((id, feature, rule, failed, retried))) => {
-            if let Some(rule) = rule
-                && let Some(event) = storage.rule_scenario_finished(feature.clone(), rule, retried) { executor.send_event(event); }
-            if let Some(event) = storage.feature_scenario_finished(feature, retried) { executor.send_event(event); }
-            #[cfg(feature = "tracing")]
-            if let Some(collector) = logs.borrow_mut().as_mut() { collector.finish_scenario(id); }
-            #[cfg(not(feature = "tracing"))]
-            let _ = id;
-            if fail_fast && failed && !retried { stopped = true; }
-        }
-        Either::Left(None) | Either::Right(None) => break,
+            Either::Left(Some(case_id)) => {
+                let index = reservations
+                    .iter()
+                    .position(|case| case.case_id == case_id)
+                    .expect("completed logical reservation exists");
+                let released = reservations.remove(index);
+                if released.kind == ScenarioType::Serial {
+                    serial_active = false;
+                }
+                revision += 1;
+                if let Some((policy, run_id)) = assignment {
+                    policy.released(run_id, case_id);
+                }
+            }
+            Either::Right(Some((id, feature, rule, failed, retried))) => {
+                if let Some(rule) = rule
+                    && let Some(event) = storage.rule_scenario_finished(
+                        feature.clone(),
+                        rule,
+                        retried,
+                    )
+                {
+                    executor.send_event(event);
+                }
+                if let Some(event) =
+                    storage.feature_scenario_finished(feature, retried)
+                {
+                    executor.send_event(event);
+                }
+                #[cfg(feature = "tracing")]
+                if let Some(collector) = logs.borrow_mut().as_mut() {
+                    collector.finish_scenario(id);
+                }
+                #[cfg(not(feature = "tracing"))]
+                let _ = id;
+                if fail_fast && failed && !retried {
+                    stopped = true;
+                }
+            }
+            Either::Left(None) | Either::Right(None) => break,
         }
     }
-    if let Some((policy, run_id)) = assignment { policy.finish(run_id, idle_interventions); }
+    if let Some((policy, run_id)) = assignment {
+        policy.finish(run_id, idle_interventions);
+    }
 }
 
 /// Runs [`Scenario`]s and notifies about their state of completion.
@@ -1988,7 +2168,9 @@ where
         let next_try = retries
             .filter(|_| is_failed.retryable)
             .and_then(RetryOptions::next_try);
-        if let Some(next_try) = next_try.filter(|_| matches!(retry_dispatch, RetryDispatch::Queue)) {
+        if let Some(next_try) =
+            next_try.filter(|_| matches!(retry_dispatch, RetryDispatch::Queue))
+        {
             self.storage
                 .insert_retried_scenario(
                     feature.clone(),
@@ -2110,8 +2292,15 @@ where
                     .invoke_callback(
                         move || -> LocalBoxFuture<'_, ()> {
                             if let Some(hook) = &self.before_hook {
-                                hook(feature, rule.map(AsRef::as_ref), scenario, callback_world)
-                            } else { Box::pin(future::ready(())) }
+                                hook(
+                                    feature,
+                                    rule.map(AsRef::as_ref),
+                                    scenario,
+                                    callback_world,
+                                )
+                            } else {
+                                Box::pin(future::ready(()))
+                            }
                         },
                         None,
                     )
@@ -2173,7 +2362,8 @@ where
         }
     }
 
-    /// Initializes a selected dry-run World without entering callback capabilities.
+    /// Initializes a selected dry-run World without entering callback
+    /// capabilities.
     async fn inspect_world(
         &self,
         feature: &Source<gherkin::Feature>,
@@ -2702,7 +2892,9 @@ where
             return Err((
                 world,
                 AfterHookEventsMeta { started, finished },
-                coerce_into_info("After hooks skipped during dry-run".to_owned()),
+                coerce_into_info(
+                    "After hooks skipped during dry-run".to_owned(),
+                ),
             ));
         }
         let registry = self.scenario_hooks.as_ref().filter(|h| h.has_after());
@@ -2742,8 +2934,16 @@ where
                     .invoke_callback(
                         move || -> LocalBoxFuture<'_, ()> {
                             if let Some(hook) = &self.after_hook {
-                                hook(feature, rule.map(AsRef::as_ref), scenario, callback_event, callback_world)
-                            } else { Box::pin(future::ready(())) }
+                                hook(
+                                    feature,
+                                    rule.map(AsRef::as_ref),
+                                    scenario,
+                                    callback_event,
+                                    callback_world,
+                                )
+                            } else {
+                                Box::pin(future::ready(()))
+                            }
                         },
                         None,
                     )
@@ -3196,19 +3396,43 @@ impl Features {
     {
         let feature = Source::new(feature);
 
-        let mut cases = feature.scenarios.iter().map(|s| (None, s))
+        let mut cases = feature
+            .scenarios
+            .iter()
+            .map(|s| (None, s))
             .chain(feature.rules.iter().flat_map(|r| {
                 let rule = Some(Source::new(r.clone()));
-                r.scenarios.iter().map(|s| (rule.clone(), s)).collect::<Vec<_>>()
-            })).collect::<Vec<_>>();
-        if self.ordered { cases.sort_by_key(|(_, scenario)| scenario.position.line); }
-        let cases = cases.into_iter().map(|(rule, scenario)| {
-            let retries = retry(&feature, rule.as_deref(), scenario, cli);
-            let ty = which_scenario(&feature, rule.as_deref(), scenario);
-            (ScenarioId::new(), feature.clone(), rule, Source::new(scenario.clone()), ty, retries)
-        }).collect::<Vec<_>>();
-        if self.ordered { self.plan.lock().await.extend(cases); return; }
-        let local = cases.into_iter().map(|(id,f,r,s,ty,retry)| (ty,(id,f,r,s,retry)))
+                r.scenarios
+                    .iter()
+                    .map(|s| (rule.clone(), s))
+                    .collect::<Vec<_>>()
+            }))
+            .collect::<Vec<_>>();
+        if self.ordered {
+            cases.sort_by_key(|(_, scenario)| scenario.position.line);
+        }
+        let cases = cases
+            .into_iter()
+            .map(|(rule, scenario)| {
+                let retries = retry(&feature, rule.as_deref(), scenario, cli);
+                let ty = which_scenario(&feature, rule.as_deref(), scenario);
+                (
+                    ScenarioId::new(),
+                    feature.clone(),
+                    rule,
+                    Source::new(scenario.clone()),
+                    ty,
+                    retries,
+                )
+            })
+            .collect::<Vec<_>>();
+        if self.ordered {
+            self.plan.lock().await.extend(cases);
+            return;
+        }
+        let local = cases
+            .into_iter()
+            .map(|(id, f, r, s, ty, retry)| (ty, (id, f, r, s, retry)))
             .into_group_map();
 
         self.insert_scenarios(local).await;

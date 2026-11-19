@@ -1,4 +1,18 @@
 //! Phase31 actual per-callback protocol lifecycle and evidence navigation.
+#[path = "support/oracle.rs"]
+mod oracle;
+
+use std::{
+    convert::Infallible,
+    io::Write as _,
+    process::Stdio,
+    sync::{
+        Arc, LazyLock, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::{SystemTime, UNIX_EPOCH},
+};
+
 use cucumber::{
     World as _, WriterExt as _,
     attachment::{
@@ -16,16 +30,6 @@ use cucumber::{
 use futures::future::LocalBoxFuture;
 use regex::Regex;
 use serde_json::Value;
-use std::{
-    convert::Infallible,
-    io::Write as _,
-    process::{Command, Stdio},
-    sync::{
-        Arc, LazyLock, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::{SystemTime, UNIX_EPOCH},
-};
 static MODE: LazyLock<Mutex<String>> = LazyLock::new(Default::default);
 static GATE: LazyLock<Mutex<Option<Arc<tokio::sync::Barrier>>>> =
     LazyLock::new(Default::default);
@@ -107,7 +111,10 @@ fn before<'a>(
             !(scope.definition.name == "setup-one"
                 && matches!(
                     world.mode.as_str(),
-                    "first setup fails" | "both stages fail" | "empty js setup"
+                    "first setup fails"
+                        | "both stages fail"
+                        | "empty js \
+                        setup"
                 )),
             "actual setup failure"
         );
@@ -159,8 +166,7 @@ fn validate(messages: &[Value]) {
     }
 }
 fn query(messages: &[Value]) -> Value {
-    let mut child = Command::new("node")
-        .arg("tests/interop/scenario-hooks.mjs")
+    let mut child = oracle::command("tests/interop/scenario-hooks.mjs")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -209,11 +215,15 @@ async fn run(world: &mut Acceptance) {
         hooks = hooks.empty_scenario_policy(EmptyScenarioHooks::CucumberJs13_3);
     }
     let source = if world.mode == "concurrent outline" {
-        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  Scenario Outline: row <value>\n   Given action <value>\n   Examples:\n    | value |\n    | A |\n    | B |\n"
+        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  \
+            Scenario Outline: row <value>\n   Given action <value>\n   \
+            Examples:\n    | value |\n    | A |\n    | B |\n"
     } else if world.mode.starts_with("empty ") {
-        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  Scenario: Work\n"
+        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  \
+            Scenario: Work\n"
     } else {
-        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  Scenario: Work\n   Given action\n"
+        "@feature\nFeature: Callbacks\n @rule\n Rule: Shared\n  @scenario\n  \
+            Scenario: Work\n   Given action\n"
     };
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("callbacks.feature");
@@ -384,7 +394,8 @@ fn skipped(world: &mut Acceptance) {
     }
 }
 #[then(
-    expr = "the official Query resolves callback results and final success {string}"
+    expr = "the official Query resolves callback results and final success \
+        {string}"
 )]
 fn outcomes(world: &mut Acceptance, success: String) {
     assert_eq!(world.query["success"], success == "true");
@@ -471,7 +482,8 @@ fn concurrent(world: &mut Acceptance) {
     }
 }
 #[then(
-    "selected registry callbacks are individual and the replaced stage is composite"
+    "selected registry callbacks are individual and the replaced stage is \
+        composite"
 )]
 fn replaced(world: &mut Acceptance) {
     let hooks = all(&world.messages, "hook");
@@ -481,7 +493,8 @@ fn replaced(world: &mut Acceptance) {
     assert_eq!(world.store.records().len(), 2);
 }
 #[then(
-    "constructor evidence is not attributed to a callback that has not started"
+    "constructor evidence is not attributed to a callback that has not \
+        started"
 )]
 fn constructor(world: &mut Acceptance) {
     let attempts = world.query["attempts"].as_array().unwrap();

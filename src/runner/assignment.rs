@@ -1,9 +1,8 @@
-//! Opt-in logical-case eligibility and observations of real dispatcher decisions.
+//! Opt-in logical-case eligibility and observations of real dispatcher
+//! decisions.
 //!
 //! Reservations include retry delay. This is not worker/process isolation or an
 //! external lease guard: an entirely idle dispatcher deliberately falls back.
-use super::ScenarioType;
-use crate::event::Source;
 use std::{
     collections::HashMap,
     fmt,
@@ -14,11 +13,15 @@ use std::{
     time::SystemTime,
 };
 
+use super::ScenarioType;
+use crate::event::Source;
+
 /// Immutable selected native case presented to an assignment predicate.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct AssignmentCase {
-    /// Logical identity within this assignment run, retained through every retry.
+    /// Logical identity within this assignment run, retained through every
+    /// retry.
     pub case_id: u64,
     /// Position after the configured global permutation, before queue removals.
     pub plan_index: usize,
@@ -36,7 +39,8 @@ pub struct AssignmentCase {
 pub enum AssignmentAdmission {
     /// The predicate accepted this candidate against the actual running set.
     Eligible,
-    /// All accessible candidates were rejected while no logical case was assigned.
+    /// All accessible candidates were rejected while no logical case was
+    /// assigned.
     IdleFallback,
 }
 /// Why the dispatcher stopped filling available capacity and awaited progress.
@@ -47,7 +51,8 @@ pub enum AssignmentWait {
     /// A queued Serial barrier must wait for existing reservations to release.
     SerialBarrier,
 }
-/// Aggregate warning emitted once on normal completion after idle interventions.
+/// Aggregate warning emitted once on normal completion after idle
+/// interventions.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct AssignmentWarning {
@@ -73,14 +78,16 @@ pub enum AssignmentDecisionKind {
         /// Actual predicate return value.
         eligible: bool,
     },
-    /// A logical reservation was installed before dispatching its first attempt.
+    /// A logical reservation was installed before dispatching its first
+    /// attempt.
     Admitted {
         /// Actual admitted case.
         case: AssignmentCase,
         /// Predicate acceptance or explicitly observed idle fallback.
         reason: AssignmentAdmission,
     },
-    /// The entire logical retry-loop future completed and released its reservation.
+    /// The entire logical retry-loop future completed and released its
+    /// reservation.
     Released {
         /// Logical identity that was released.
         case_id: u64,
@@ -205,7 +212,8 @@ impl fmt::Debug for AssignmentPolicy {
     }
 }
 impl AssignmentPolicy {
-    /// Creates an explicit policy with a fresh store and aggregate stderr warnings.
+    /// Creates an explicit policy with a fresh store and aggregate stderr
+    /// warnings.
     #[must_use]
     pub fn new<F>(name: impl Into<String>, predicate: F) -> Self
     where
@@ -296,7 +304,8 @@ impl AssignmentPolicy {
             policy: self.name.clone(),
             idle_interventions: count,
             message: format!(
-                "WARNING: assignment policy `{}` required {count} idle fallback(s); consider revising its predicate.",
+                "WARNING: assignment policy `{}` required {count} idle \
+                    fallback(s); consider revising its predicate.",
                 self.name
             ),
         };

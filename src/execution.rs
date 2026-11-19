@@ -49,7 +49,8 @@ struct Scope {
 struct State {
     active: Mutex<Option<Arc<Mutex<Scope>>>>,
 }
-/// Access to the current invocation; acquire a bound handle inside each callback.
+/// Access to the current invocation; acquire a bound handle inside each
+/// callback.
 #[derive(Clone, Debug, Default)]
 pub struct ExecutionControl(Option<Arc<State>>);
 impl ExecutionControl {
@@ -137,12 +138,14 @@ impl WorldContext {
     ) -> Self {
         Self { attachments, execution }
     }
-    /// Existing typed evidence context, preserving attachment-aware constructors.
+    /// Existing typed evidence context, preserving attachment-aware
+    /// constructors.
     #[must_use]
     pub fn attachments(&self) -> crate::attachment::AttachmentContext {
         self.attachments.clone()
     }
-    /// Current-invocation completion access, disabled unless explicitly selected.
+    /// Current-invocation completion access, disabled unless explicitly
+    /// selected.
     #[must_use]
     pub fn execution(&self) -> ExecutionControl {
         self.execution.clone()
@@ -180,9 +183,11 @@ impl From<Completion> for OutcomeStatus {
 pub struct Outcome {
     /// Actual completion status; native event variants are only a projection.
     pub status: OutcomeStatus,
-    /// Whether this status makes the final attempt unsuccessful under its policy.
+    /// Whether this status makes the final attempt unsuccessful under its
+    /// policy.
     pub fails_run: bool,
-    /// Whether the status is retry-eligible; a retry also requires attempts left.
+    /// Whether the status is retry-eligible; a retry also requires attempts
+    /// left.
     pub retryable: bool,
 }
 /// Explicit outcome behavior; existing native semantics remain the default.

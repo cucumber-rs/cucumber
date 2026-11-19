@@ -3,8 +3,6 @@
 //! Random order reproduces the string-seed permutation of Cucumber.js 13.3's
 //! knuth-shuffle-seeded 1.0.6 / seed-random 2.2.0. It is not cryptographic.
 
-use super::{ThreadTimer, TimeoutClock};
-use futures::future::BoxFuture;
 use std::{
     collections::hash_map::RandomState,
     fmt,
@@ -16,6 +14,10 @@ use std::{
     },
     time::{Duration, SystemTime},
 };
+
+use futures::future::BoxFuture;
+
+use super::{ThreadTimer, TimeoutClock};
 
 /// Permutation of the complete selected initial case sequence.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -39,7 +41,8 @@ pub enum ScenarioOrder {
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct OrderingRecord {
-    /// Identity of this actual permutation; seeds themselves are not identities.
+    /// Identity of this actual permutation; seeds themselves are not
+    /// identities.
     pub run_id: u64,
     /// Requested order, distinguishing generated and explicit random seeds.
     pub requested_order: ScenarioOrder,
@@ -140,8 +143,10 @@ impl SchedulingOptions {
         self.seed_report = Some(Arc::new(report));
         self
     }
-    /// Adds candidate/running-set eligibility to this explicit ordered dispatcher.
-    /// Mandatory Serial barriers remain in force and idle fallback is observable.
+    /// Adds candidate/running-set eligibility to this explicit ordered
+    /// dispatcher.
+    /// Mandatory Serial barriers remain in force and idle fallback is
+    /// observable.
     #[must_use]
     pub fn with_assignment(mut self, policy: super::AssignmentPolicy) -> Self {
         self.assignment = Some(policy);
@@ -153,14 +158,16 @@ impl SchedulingOptions {
         self.concurrency = Some(limit.get());
         self
     }
-    /// Uses JavaScript parallel-number semantics: zero means serial, not no work.
+    /// Uses JavaScript parallel-number semantics: zero means serial, not no
+    /// work.
     /// This still uses native async cases, not worker processes.
     #[must_use]
     pub fn parallel(mut self, parallel: usize) -> Self {
         self.concurrency = Some(parallel.max(1));
         self
     }
-    /// Supplies runtime-independent retry delays, independently of callback timeouts.
+    /// Supplies runtime-independent retry delays, independently of callback
+    /// timeouts.
     #[must_use]
     pub fn with_retry_clock(mut self, clock: Arc<dyn TimeoutClock>) -> Self {
         self.clock = clock;
@@ -174,7 +181,8 @@ impl SchedulingOptions {
         let run_id = NEXT.fetch_add(1, Ordering::Relaxed);
         let seed = match &self.order {
             ScenarioOrder::RandomGenerated => {
-                // Native noncryptographic entropy; replay uses the exact realized
+                // Native noncryptographic entropy; replay uses the exact
+                // realized
                 // decimal, not a claim to match JavaScript's entropy generator.
                 Some(
                     (RandomState::new().hash_one(run_id) % 1_000_000)

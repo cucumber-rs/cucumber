@@ -45,10 +45,17 @@ fn generate(source: &str, prefix: &str, latest: bool) {
             // Official Gherkin's compareStepKeywords prefers the longest prefix.
             // Keep legacy ordering untouched for existing parser consumers.
             for words in [
-                &mut data.feature, &mut data.background, &mut data.rule,
-                &mut data.scenario, &mut data.scenario_outline, &mut data.examples,
-                &mut data.given, &mut data.when, &mut data.then,
-                &mut data.and, &mut data.but,
+                &mut data.feature,
+                &mut data.background,
+                &mut data.rule,
+                &mut data.scenario,
+                &mut data.scenario_outline,
+                &mut data.examples,
+                &mut data.given,
+                &mut data.when,
+                &mut data.then,
+                &mut data.and,
+                &mut data.but,
             ] {
                 words.sort_by_key(|word| std::cmp::Reverse(word.chars().count()));
             }
@@ -109,6 +116,10 @@ fn generate(source: &str, prefix: &str, latest: bool) {
     }
     .to_string();
 
-    std::fs::write(out_dir.join(format!("{}keywords.gen.rs", prefix)), keyword_defs).unwrap();
+    std::fs::write(
+        out_dir.join(format!("{}keywords.gen.rs", prefix)),
+        keyword_defs,
+    )
+    .unwrap();
     std::fs::write(out_dir.join(format!("{}match.gen.rs", prefix)), match_arms).unwrap();
 }

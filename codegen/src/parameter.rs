@@ -39,9 +39,11 @@ struct Attrs {
     #[parse(value)]
     name: Option<syn::LitStr>,
 
+    /// Whether this parameter participates in generated snippets.
     #[parse(value)]
     use_for_snippets: Option<syn::LitBool>,
 
+    /// Whether this parameter takes precedence for regular-expression matches.
     #[parse(value)]
     prefer_for_regexp_match: Option<syn::LitBool>,
 }
@@ -63,6 +65,7 @@ struct Definition {
     /// Value for a `Parameter::Name` associated constant.
     name: String,
 
+    /// Optional snippet and regular-expression preference flags, respectively.
     metadata: Option<(bool, bool)>,
 }
 
@@ -81,13 +84,27 @@ impl TryFrom<syn::DeriveInput> for Definition {
             syn::LitStr::value,
         );
 
-        let metadata = match (attrs.use_for_snippets, attrs.prefer_for_regexp_match) {
-            (None, None) => None,
-            (Some(snippets), Some(prefer)) => Some((snippets.value, prefer.value)),
-            (Some(partial), None) | (None, Some(partial)) => return Err(syn::Error::new(
-                partial.span, "custom metadata requires both use_for_snippets and prefer_for_regexp_match")),
-        };
-        Ok(Self { ident: input.ident, generics: input.generics, regex, name, metadata })
+        let metadata =
+            match (attrs.use_for_snippets, attrs.prefer_for_regexp_match) {
+                (None, None) => None,
+                (Some(snippets), Some(prefer)) => {
+                    Some((snippets.value, prefer.value))
+                }
+                (Some(partial), None) | (None, Some(partial)) => {
+                    return Err(syn::Error::new(
+                        partial.span,
+                        "custom metadata requires both use_for_snippets and \
+                        prefer_for_regexp_match",
+                    ));
+                }
+            };
+        Ok(Self {
+            ident: input.ident,
+            generics: input.generics,
+            regex,
+            name,
+            metadata,
+        })
     }
 }
 
@@ -99,13 +116,17 @@ impl Definition {
         let (impl_gens, ty_gens, where_clause) = self.generics.split_for_impl();
         let (regex, name) = (self.regex.as_str(), &self.name);
         let metadata = self.metadata.map(|(snippets, prefer)| quote! {
-            fn metadata() -> ::std::option::Option<::cucumber::support_code::ParameterDescriptor> {
-                ::std::option::Option::Some(::cucumber::support_code::ParameterDescriptor {
+            fn metadata() -> ::std::option::Option<
+                ::cucumber::support_code::ParameterDescriptor
+            > {
+                ::std::option::Option::Some(
+                    ::cucumber::support_code::ParameterDescriptor {
                     name: Self::NAME.to_owned(),
                     regular_expressions: ::std::vec![Self::REGEX.to_owned()],
                     prefer_for_regular_expression_match: #prefer,
                     use_for_snippets: #snippets,
-                })
+                    }
+                )
             }
         });
 

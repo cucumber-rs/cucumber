@@ -1,0 +1,3 @@
+# Preserve the maintained Gherkin crate default formatting policy.
+# A local config prevents inheritance of Cucumber-specific settings.
+max_width = 100

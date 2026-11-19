@@ -181,3 +181,18 @@ passed106/460 across8 targets and the maintained sibling step_arguments BDD
 passed73/241 on Rust1.88. Evidence is retained in cucumber docs/compatibility/
 evidence/phase43-45-first-bdd.log, phase43-45-affected-bdd.log and
 phase45-parser-affected-bdd.log. No production correction or publication followed.
+
+## Phase47 contribution-readiness source checkpoint
+
+Legacy table escapes again reject unrecognized backslashes; explicit Gherkin43
+semantics remain independent. Private diagnostic storage is boxed without
+changing public error variants. The maintained parser source is copied after
+applying its default formatter. A local `.rustfmt.toml` preserves those defaults
+when Cucumber's existing formatter traverses path dependencies; no upstream
+workflow or formatting policy was changed. All production sources and metadata
+listed in SHA256SUMS identify this unverified source checkpoint.
+
+Original maintained Cargo.toml SHA256: `de007075fe8ec00384321fa5b07671ee9d48265cedbac9e9eb4d54e967c90de0`.
+The vendor manifest still excludes dev-only acceptance dependencies/targets.
+Phase47 behavioral proof and independent audit are pending; historical results
+above are not acceptance of this changed source.

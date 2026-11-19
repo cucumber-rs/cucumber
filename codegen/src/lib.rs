@@ -10,7 +10,8 @@
 
 #![doc(
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
-    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
+    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=25\
+        6"
 )]
 #![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
 #![cfg_attr(not(any(doc, test)), doc = env!("CARGO_PKG_NAME"))]
@@ -221,8 +222,9 @@ macro_rules! step_attribute {
         ///
         /// - `#[given(expr = "cucumber-expression")]`
         /// - `#[given(expr_js = "cucumber-expression")]` explicitly selects the
-        ///   cucumber-expressions 20.1.0 JavaScript built-in patterns and quoted
-        ///   string unescaping. Rust argument types still use `FromStr`; numeric
+        ///   cucumber-expressions 20.1.0 `JavaScript` built-in patterns and
+        ///   quoted string unescaping. Rust argument types use `FromStr`;
+        /// numeric
         ///   ranges/precision follow the selected Rust type. Legacy `expr` is
         ///   unchanged. Additional built-ins: double, bigdecimal, byte, short,
         ///   long, biginteger. Custom parameters remain supported.
@@ -235,8 +237,8 @@ macro_rules! step_attribute {
         ///   Matches the step with an **exact** literal only. Doesn't allow any
         ///   values capturing to use as function arguments.
         ///
-        /// Append `prepare_before_timeout` to any form to convert owned arguments
-        /// when the registered callback is constructed. The handler stays lazy,
+        /// Append `prepare_before_timeout` to convert owned arguments when the
+        /// registered callback is constructed. The handler stays lazy,
         /// and borrowed Step/slice bindings stay inside its owning future.
         /// Combine with `Timeouts::with_callback_construction(BeforeDeadline)`
         /// to exclude that preparation from an active asynchronous deadline.
@@ -322,6 +324,14 @@ steps!(given, when, then);
 ///     }
 /// }
 /// ```
+///
+/// # Generic Worlds
+///
+/// When every type or const parameter has an explicit default, derived step
+/// inventory registers handlers for that concrete default instantiation only.
+/// The `World` implementation remains generic; use manual step registration for
+/// other instantiations. Arbitrary generic or lifetime-parameterized automatic
+/// step inventory is not supported.
 ///
 /// # Attribute arguments
 ///

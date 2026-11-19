@@ -1,4 +1,13 @@
 //! Phase41: observed generated seeds and actual application replay.
+use std::{
+    io::Write as _,
+    process::{Command, Stdio},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+
 use cucumber::{
     StatsWriter as _, World as _, WriterExt as _,
     feature::Ext as _,
@@ -13,14 +22,6 @@ use cucumber::{
 use futures::{StreamExt as _, future::LocalBoxFuture};
 use regex::Regex;
 use serde_json::{Value, json};
-use std::{
-    io::Write as _,
-    process::{Command, Stdio},
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-};
 
 static WORLDS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Debug, Default)]
@@ -48,9 +49,29 @@ impl cucumber::Parser<()> for InputParser {
 }
 fn fixtures() -> Vec<gherkin::Feature> {
     [
-        "Feature: First\n Scenario: first\n  Given work\n Rule: Accounts\n  Scenario Outline: row <number>\n   Given work\n   Examples:\n    | number |\n    | one |\n    | two |\n    | three |\n",
-        "Feature: Second\n Scenario: last\n  Given work\n Rule: Final\n  Scenario: final\n   Given work\n",
-    ].into_iter().map(|source| gherkin::Feature::parse(source, Default::default()).unwrap().expand_examples().unwrap()).collect()
+        "\
+            Feature: First\n\
+            \x20Scenario: first\n\
+            \x20 Given work\n\
+            \x20Rule: Accounts\n\
+            \x20 Scenario Outline: row <number>\n\
+            \x20  Given work\n\
+            \x20  Examples:\n\
+            \x20   | number |\n\
+            \x20   | one |\n\
+            \x20   | two |\n\
+            \x20   | three |\n",
+        "Feature: Second\n Scenario: last\n  Given work\n Rule: Final\n  \
+            Scenario: final\n   Given work\n",
+    ]
+    .into_iter()
+    .map(|source| {
+        gherkin::Feature::parse(source, Default::default())
+            .unwrap()
+            .expand_examples()
+            .unwrap()
+    })
+    .collect()
 }
 fn baseline(filtered: bool) -> Vec<String> {
     fixtures()
@@ -74,7 +95,14 @@ fn record_json(record: &OrderingRecord) -> Value {
         _ => panic!("unexpected requested order"),
     };
     json!({"run_id":record.run_id, "order":order, "seed":record.realized_seed,
-        "count":record.case_count, "at":record.at.duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos().to_string()})
+    "count":record.case_count,
+         "at":record
+             .at
+             .duration_since(std::time::UNIX_EPOCH)
+             .unwrap()
+             .as_nanos()
+             .to_string()}
+        )
 }
 async fn application(
     options: Option<SchedulingOptions>,
@@ -87,14 +115,25 @@ async fn application(
     let starts = Arc::new(Mutex::new(Vec::<String>::new()));
     let started = starts.clone();
     let expected_record = options.is_some();
-    let hooks = Hooks::new().before("observe actual dispatch", move |_, _, scenario, _: &mut Application| {
-        let record = store.latest();
-        assert_eq!(record.is_some(), expected_record, "ordering must complete before the first callback");
-        started.lock().unwrap().push(scenario.name.clone());
-        timeline.lock().unwrap().push(json!({"kind":"start", "name":scenario.name, "run_id":record.as_ref().map(|r|r.run_id)}));
-        eprintln!("CASE_START:{}", scenario.name);
-        Box::pin(async {})
-    });
+    let hooks = Hooks::new().before(
+        "observe actual dispatch",
+        move |_, _, scenario, _: &mut Application| {
+            let record = store.latest();
+            assert_eq!(
+                record.is_some(),
+                expected_record,
+                "ordering must complete before the first callback"
+            );
+            started.lock().unwrap().push(scenario.name.clone());
+            timeline.lock().unwrap().push(json!({
+            "kind":"start",
+             "name":scenario.name,
+             "run_id":record.as_ref().map(|r|r.run_id)}
+            ));
+            eprintln!("CASE_START:{}", scenario.name);
+            Box::pin(async {})
+        },
+    );
     let mut app =
         cucumber::Cucumber::<Application, _, std::path::PathBuf, _, _>::new()
             .with_parser(InputParser(fixtures()))
@@ -120,7 +159,14 @@ async fn application(
         })
         .await;
     let names = starts.lock().unwrap().clone();
-    json!({"worlds": WORLDS.load(Ordering::SeqCst) - worlds_before, "names":names, "passed":report.passed_steps(), "failed":report.failed_steps(), "errors":report.parsing_errors(), "failed_run":report.execution_has_failed()})
+    json!({
+    "worlds": WORLDS.load(Ordering::SeqCst) - worlds_before,
+     "names":names,
+     "passed":report.passed_steps(),
+     "failed":report.failed_steps(),
+     "errors":report.parsing_errors(),
+     "failed_run":report.execution_has_failed()}
+    )
 }
 async fn child(request: Value) -> Value {
     let mode = request["mode"].as_str().unwrap();
@@ -170,7 +216,16 @@ async fn child(request: Value) -> Value {
     }
     let records: Vec<_> = store.records().iter().map(record_json).collect();
     let timeline = timeline.lock().unwrap().clone();
-    json!({"records":records, "runs":runs, "timeline":timeline, "baseline":if empty_plan { Vec::new() } else { baseline(filtered) }})
+    json!({
+    "records":records,
+     "runs":runs,
+     "timeline":timeline,
+     "baseline":if empty_plan {
+     Vec::new() }
+     else {
+     baseline(filtered) }
+    }
+    )
 }
 fn invoke(mode: &str, seed: Option<&str>) -> (Value, String) {
     let output = Command::new(std::env::current_exe().unwrap())
@@ -321,7 +376,8 @@ fn report_before(w: &mut Acceptance) {
     "both executions match the pinned JavaScript shuffle oracle for that seed"
 )]
 #[then(
-    "both executions match the pinned JavaScript shuffle oracle for that selected plan"
+    "both executions match the pinned JavaScript shuffle oracle for that \
+        selected plan"
 )]
 fn replayed(w: &mut Acceptance) {
     let expected = oracle(&w.result["baseline"], seed(&w.result));

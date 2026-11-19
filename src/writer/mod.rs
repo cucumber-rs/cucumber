@@ -149,17 +149,25 @@ pub trait Stats<World>: Writer<World> {
     #[must_use]
     fn hook_errors(&self) -> usize;
 
-    /// Returns the number of actual pending steps, excluding retried attempts where supported.
+    /// Returns the number of actual pending steps, excluding retried attempts
+    /// where supported.
     #[must_use]
-    fn pending_steps(&self) -> usize { 0 }
+    fn pending_steps(&self) -> usize {
+        0
+    }
 
     /// Returns the number of actual pending scenario hook stages.
     #[must_use]
-    fn pending_hooks(&self) -> usize { 0 }
+    fn pending_hooks(&self) -> usize {
+        0
+    }
 
-    /// Returns terminal scenarios failing specifically because pending is strict.
+    /// Returns terminal scenarios failing specifically because pending is
+    /// strict.
     #[must_use]
-    fn pending_failures(&self) -> usize { 0 }
+    fn pending_failures(&self) -> usize {
+        0
+    }
 
     /// Indicates whether there were failures/errors during execution.
     #[must_use]

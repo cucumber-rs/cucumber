@@ -13,9 +13,12 @@ pub struct DefinitionOptions {
 }
 
 impl DefinitionOptions {
-    /// Creates options inheriting runner timeout policy and without expression metadata.
+    /// Creates options inheriting runner timeout policy and without expression
+    /// metadata.
     #[must_use]
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Overrides the runner timeout for this registration.
     #[must_use]
@@ -24,13 +27,20 @@ impl DefinitionOptions {
         self
     }
 
-    /// Returns the explicit timeout policy, or `None` to inherit the runner policy.
+    /// Returns the explicit timeout policy, or `None` to inherit the runner
+    /// policy.
     #[must_use]
-    pub const fn timeout_policy(&self) -> Option<crate::runner::TimeoutPolicy> { self.timeout }
+    pub const fn timeout_policy(&self) -> Option<crate::runner::TimeoutPolicy> {
+        self.timeout
+    }
 
-    /// Retains actual original expression and validated capture-layout metadata.
+    /// Retains actual original expression and validated capture-layout
+    /// metadata.
     #[must_use]
-    pub fn expression(mut self, metadata: crate::support_code::ExpressionMetadata) -> Self {
+    pub fn expression(
+        mut self,
+        metadata: crate::support_code::ExpressionMetadata,
+    ) -> Self {
         self.expression = Some(metadata);
         self.regular_expression = None;
         self
@@ -40,7 +50,10 @@ impl DefinitionOptions {
     ///
     /// Selecting raw metadata replaces any retained expression metadata.
     #[must_use]
-    pub fn regular_expression(mut self, metadata: crate::support_code::RegexMetadata) -> Self {
+    pub fn regular_expression(
+        mut self,
+        metadata: crate::support_code::RegexMetadata,
+    ) -> Self {
         self.regular_expression = Some(metadata);
         self.expression = None;
         self
@@ -48,13 +61,17 @@ impl DefinitionOptions {
 
     /// Returns an explicit raw capture mapping, if supplied.
     #[must_use]
-    pub fn regular_expression_metadata(&self) -> Option<&crate::support_code::RegexMetadata> {
+    pub fn regular_expression_metadata(
+        &self,
+    ) -> Option<&crate::support_code::RegexMetadata> {
         self.regular_expression.as_ref()
     }
 
     /// Returns the retained original expression metadata, if available.
     #[must_use]
-    pub fn expression_metadata(&self) -> Option<&crate::support_code::ExpressionMetadata> {
+    pub fn expression_metadata(
+        &self,
+    ) -> Option<&crate::support_code::ExpressionMetadata> {
         self.expression.as_ref()
     }
 }

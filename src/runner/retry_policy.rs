@@ -21,10 +21,12 @@ impl std::fmt::Display for RetryPolicyError {
 }
 impl std::error::Error for RetryPolicyError {}
 
-/// Explicit retry budget selected by the official inherited tag-expression grammar.
+/// Explicit retry budget selected by the official inherited tag-expression
+/// grammar.
 ///
 /// Native `@retry` magic tags and legacy retry CLI fields do not override this
-/// policy. A later `retry_options` callback replaces the policy callback normally.
+/// policy. A later `retry_options` callback replaces the policy callback
+/// normally.
 /// Configuration does not silently change the separate outcome policy.
 #[derive(Clone, Debug)]
 pub struct RetryPolicy {
@@ -34,12 +36,14 @@ pub struct RetryPolicy {
 impl RetryPolicy {
     /// Validates a retry count and optional official tag gate.
     ///
-    /// Zero without a gate disables retry. `Some(expression)` is an explicit gate,
+    /// Zero without a gate disables retry. `Some(expression)` is an explicit
+    /// gate,
     /// even when the expression matches everything. Applications translating a
     /// JavaScript configuration's empty filter string should pass `None`.
     ///
     /// # Errors
-    /// Returns [`RetryPolicyError::TagGateWithoutPositiveBudget`] for zero with a gate.
+    /// Returns [`RetryPolicyError::TagGateWithoutPositiveBudget`] for zero
+    /// with a gate.
     pub fn new(
         count: usize,
         tags: Option<Expression>,
@@ -51,10 +55,13 @@ impl RetryPolicy {
         }
     }
 
-    /// Resolves this budget for a selected scenario, including inherited Examples tags.
+    /// Resolves this budget for a selected scenario, including inherited
+    /// Examples tags.
     ///
-    /// No magic tags are interpreted and no delay is added. This selects available
-    /// retries; the executor's outcome policy independently decides eligibility.
+    /// No magic tags are interpreted and no delay is added. This selects
+    /// available
+    /// retries; the executor's outcome policy independently decides
+    /// eligibility.
     #[must_use]
     pub fn options(
         &self,
@@ -75,8 +82,10 @@ impl RetryPolicy {
 
     /// Adapts this validated policy to the existing `retry_options` builder.
     ///
-    /// The callback deliberately ignores merged legacy CLI retry settings. Parse
-    /// and validate application-owned typed CLI inputs before creating the policy
+    /// The callback deliberately ignores merged legacy CLI retry settings.
+    /// Parse
+    /// and validate application-owned typed CLI inputs before creating the
+    /// policy
     /// when those inputs should control its budget or official tag gate.
     #[must_use]
     pub fn into_options(

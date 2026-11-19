@@ -1,4 +1,5 @@
 use std::fmt;
+
 use cucumber::writer::messages::rerun;
 use serde::Serialize;
 
@@ -39,8 +40,14 @@ pub struct SdkError {
 impl SdkError {
     /// Creates an error without context; extensions may add their own context.
     pub fn new(code: ErrorCode, message: impl Into<String>) -> Self {
-        Self { code, message: message.into(), uri: None, line: None,
-            reference_kind: None, reference_id: None }
+        Self {
+            code,
+            message: message.into(),
+            uri: None,
+            line: None,
+            reference_kind: None,
+            reference_id: None,
+        }
     }
 }
 
@@ -57,7 +64,9 @@ impl From<rerun::Error> for SdkError {
         let code = match &error {
             rerun::Error::IncompleteRun => ErrorCode::IncompleteRun,
             rerun::Error::RunAlreadyFinished => ErrorCode::RunAlreadyFinished,
-            rerun::Error::MissingReference { .. } => ErrorCode::MissingReference,
+            rerun::Error::MissingReference { .. } => {
+                ErrorCode::MissingReference
+            }
             rerun::Error::InvalidEnvelope(_) => ErrorCode::InvalidMessages,
             _ => ErrorCode::InternalError,
         };

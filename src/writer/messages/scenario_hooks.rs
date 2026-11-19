@@ -1,4 +1,5 @@
-//! Exact callback observations substituted for native composite stage envelopes.
+//! Exact callback observations substituted for native composite stage
+//! envelopes.
 use super::*;
 use crate::runner::{
     ScenarioHookDefinition, ScenarioHookDisposition, ScenarioHookKind,
@@ -75,12 +76,18 @@ impl<O: io::Write> Messages<O> {
             let mut steps = Vec::new();
             let mut events = Vec::new();
             if index == 0 {
-                // Initialization is observed every registry setup attempt. Keeping its
-                // actual slot in each plan also keeps retry TestCase shape stable.
+                // Initialization is observed every registry setup attempt.
+                // Keeping its
+                // actual slot in each plan also keeps retry TestCase shape
+                // stable.
                 if let Some(initialization) = initializations.first() {
                     observed.initialization = true;
                     if !self.emitted_initialization {
-                        self.emit(json!({"hook":{"id":INITIALIZATION_ID,"name":"Native World initialization",
+                        self.emit(json!({
+                            "hook":{
+                            "id":INITIALIZATION_ID,
+                            "name":"Native World initialization",
+
                             "type":"BEFORE_TEST_CASE","sourceReference":{}}}))?;
                         self.emitted_initialization = true;
                     }
@@ -96,7 +103,8 @@ impl<O: io::Write> Messages<O> {
                     )?);
                 } else {
                     return Err(Error::InvalidEvent(
-                        "observed registry setup has no World initialization record",
+                        "observed registry setup has no World initialization \
+                            record",
                     ));
                 }
             }
@@ -121,7 +129,8 @@ impl<O: io::Write> Messages<O> {
                     || record.definition.location != definition.location
                 {
                     return Err(Error::InvalidEvent(
-                        "scenario callback registration changed during execution",
+                        "scenario callback registration changed during \
+                            execution",
                     ));
                 }
                 self.scenario_hook_definition(definition)?;
@@ -144,9 +153,25 @@ impl<O: io::Write> Messages<O> {
                         *outcome,
                     )?),
                     ScenarioHookDisposition::Skipped { at, .. } => {
-                        events.push(json!({"testStepStarted":{"testCaseStartedId":case.started_id,"testStepId":id,"timestamp":timestamp(*at)?}}));
-                        events.push(json!({"testStepFinished":{"testCaseStartedId":case.started_id,"testStepId":id,"timestamp":timestamp(*at)?,
-                            "testStepResult":{"status":"SKIPPED","duration":duration(Duration::ZERO)}}}));
+                        events.push(json!({
+                        "testStepStarted":{
+                        "testCaseStartedId":case.started_id,
+                        "testStepId":id,
+                        "timestamp":timestamp(*at)?}
+                        }
+                        ));
+                        events.push(json!({
+                        "testStepFinished":{
+                        "testCaseStartedId":case.started_id,
+                        "testStepId":id,
+                        "timestamp":timestamp(*at)?,
+
+                        "testStepResult":{
+                            "status":"SKIPPED",
+                            "duration":duration(Duration::ZERO)}
+                            }
+                            }
+                            ));
                     }
                 }
             }
@@ -201,9 +226,25 @@ impl<O: io::Write> Messages<O> {
         definition: &ScenarioHookDefinition,
     ) -> Result<(), Error> {
         if self.emitted_scenario_hooks.insert(definition.id) {
-            self.emit(json!({"hook":{"id":callback_id(definition.id),"name":definition.name,
-                "type":match definition.kind{ScenarioHookKind::Before=>"BEFORE_TEST_CASE",ScenarioHookKind::After=>"AFTER_TEST_CASE"},
-                "sourceReference":{"uri":definition.location.path,"location":{"line":definition.location.line,"column":definition.location.column}}}}))?;
+            self.emit(json!({
+            "hook":{
+            "id":callback_id(definition.id),
+            "name":definition.name,
+
+            "type":match definition.kind{
+                ScenarioHookKind::Before=>"BEFORE_TEST_CASE",
+                ScenarioHookKind::After=>"AFTER_TEST_CASE"}
+                ,
+
+            "sourceReference":{
+                "uri":definition.location.path,
+                "location":{
+                "line":definition.location.line,
+                "column":definition.location.column}
+                }
+                }
+                }
+                ))?;
         }
         Ok(())
     }
@@ -219,12 +260,33 @@ fn observed_events(
     let elapsed = end.duration_since(start).map_err(|_| {
         Error::InvalidEvent("observed callback finished before it started")
     })?;
-    let mut outcome = json!({"status":outcome.map_or(if result.is_ok(){"PASSED"}else{"FAILED"}, |value| outcome_status(value.status)),"duration":duration(elapsed)});
+    let mut outcome = json!({
+    "status":outcome.map_or(if result.is_ok(){
+    "PASSED"}
+    else{
+    "FAILED"}
+    ,
+     |value| outcome_status(value.status)),
+    "duration":duration(elapsed)}
+    );
     if let Err(message) = result {
         outcome["message"] = json!(message)
     }
     Ok(vec![
-        json!({"testStepStarted":{"testCaseStartedId":case.started_id,"testStepId":id,"timestamp":timestamp(start)?}}),
-        json!({"testStepFinished":{"testCaseStartedId":case.started_id,"testStepId":id,"timestamp":timestamp(end)?,"testStepResult":outcome}}),
+        json!({
+        "testStepStarted":{
+        "testCaseStartedId":case.started_id,
+        "testStepId":id,
+        "timestamp":timestamp(start)?}
+        }
+        ),
+        json!({
+        "testStepFinished":{
+        "testCaseStartedId":case.started_id,
+        "testStepId":id,
+        "timestamp":timestamp(end)?,
+        "testStepResult":outcome}
+        }
+        ),
     ])
 }

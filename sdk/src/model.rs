@@ -4,7 +4,10 @@ use serde_json::Value;
 /// Explicit parser selection, independent of URI suffix or filesystem state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum SourceFormat { Gherkin, Markdown }
+pub enum SourceFormat {
+    Gherkin,
+    Markdown,
+}
 
 /// Borrowed source compilation request with an explicit default dialect.
 #[derive(Clone, Copy, Debug)]

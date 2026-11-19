@@ -72,7 +72,8 @@ where
         };
 
         // An explicit completion is not an undefined legacy step. Its actual
-        // policy is authoritative, including non-strict pending and deliberate skip.
+        // policy is authoritative, including non-strict pending and deliberate
+        // skip.
         if event.as_ref().is_ok_and(|event| event.outcome.is_some()) {
             self.writer.handle_event(event, cli).await;
             return;

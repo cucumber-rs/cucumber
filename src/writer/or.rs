@@ -124,7 +124,6 @@ where
     fn execution_has_failed(&self) -> bool {
         self.left.execution_has_failed() || self.right.execution_has_failed()
     }
-
 }
 
 #[warn(clippy::missing_trait_methods)]

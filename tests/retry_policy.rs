@@ -1,4 +1,20 @@
-//! Phase36 acceptance for validated budget/gate selection through the native runner.
+//! Phase36 acceptance for validated budget/gate selection through the native
+//! runner.
+#[path = "support/oracle.rs"]
+mod oracle;
+
+use std::{
+    collections::HashSet,
+    convert::Infallible,
+    io::Write as _,
+    process::Stdio,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
+
 use cucumber::{
     World as _,
     execution::{Completion, ExecutionControl, OutcomePolicy, WorldContext},
@@ -11,17 +27,6 @@ use cucumber::{
 use futures::future::LocalBoxFuture;
 use regex::Regex;
 use serde_json::Value;
-use std::{
-    collections::HashSet,
-    convert::Infallible,
-    io::Write as _,
-    process::{Command, Stdio},
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Duration,
-};
 static CONSTRUCTIONS: AtomicUsize = AtomicUsize::new(0);
 static NEXT_WORLD: AtomicUsize = AtomicUsize::new(0);
 #[derive(Debug, Default)]
@@ -103,7 +108,8 @@ fn validate(w: &mut Acceptance) {
     }
 }
 #[then(
-    "validation rejects the configuration before parsing or constructing a World"
+    "validation rejects the configuration before parsing or constructing a \
+        World"
 )]
 fn rejected(w: &mut Acceptance) {
     assert_eq!(
@@ -124,19 +130,41 @@ fn configure(w: &mut Acceptance, mode: String) {
     CONSTRUCTIONS.store(0, Ordering::SeqCst);
 }
 fn source(mode: &str) -> String {
-    match mode{
-        "feature tag"=>"@retryable\nFeature: Retry selection\n Scenario: application\n  Given work\n".into(),
-        "Rule tag"=>"Feature: Retry selection\n @retryable\n Rule: inherited\n  Scenario: application\n   Given work\n".into(),
-        "scenario tag"=>"Feature: Retry selection\n @retryable\n Scenario: application\n  Given work\n".into(),
-        "Examples tag"=>"Feature: Retry selection\n Scenario Outline: application <value>\n  Given work\n  @retryable\n  Examples: inherited\n   | value |\n   | one   |\n".into(),
-        "unmatched magic tag"=>"Feature: Retry selection\n @retry(7)\n Scenario: application\n  Given work\n".into(),
-        "matched magic tag"=>"Feature: Retry selection\n @retryable @retry(7)\n Scenario: application\n  Given work\n".into(),
-        _=>format!("Feature: Retry selection\n Scenario: application\n  Given {}\n",if mode=="undefined"{"undefined"}else{"work"}),
+    match mode {
+        "feature tag" => "@retryable\nFeature: Retry selection\n Scenario: \
+            application\n  Given work\n"
+            .into(),
+
+        "Rule tag" => "Feature: Retry selection\n @retryable\n Rule: \
+            inherited\n  Scenario: application\n   Given work\n"
+            .into(),
+
+        "scenario tag" => "Feature: Retry selection\n @retryable\n Scenario: \
+            application\n  Given work\n"
+            .into(),
+
+        "Examples tag" => "Feature: Retry selection\n Scenario Outline: \
+            application <value>\n  Given work\n  @retryable\n  Examples: \
+            inherited\n   | value |\n   | one   |\n"
+            .into(),
+
+        "unmatched magic tag" => "Feature: Retry selection\n @retry(7)\n \
+            Scenario: application\n  Given work\n"
+            .into(),
+
+        "matched magic tag" => "Feature: Retry selection\n @retryable \
+            @retry(7)\n Scenario: application\n  Given work\n"
+            .into(),
+
+        _ => format!(
+            "Feature: Retry selection\n Scenario: application\n  \
+            Given {}\n",
+            if mode == "undefined" { "undefined" } else { "work" }
+        ),
     }
 }
 fn query(messages: &[Value], script: &str) -> Value {
-    let mut child = Command::new("node")
-        .arg(script)
+    let mut child = oracle::command(script)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -225,7 +253,8 @@ async fn run(w: &mut Acceptance) {
         cli.runner.retry_tag_filter = Some("@absent".parse().unwrap());
         cli.runner.retry_after = Some(Duration::from_secs(3600));
     }
-    // Bound the real runner so a delay-precedence regression is reported by BDD.
+    // Bound the real runner so a delay-precedence regression is reported by
+    // BDD.
     let result = tokio::time::timeout(
         Duration::from_secs(10),
         app.with_cli(cli).run(&path),
@@ -246,12 +275,10 @@ async fn run(w: &mut Acceptance) {
 fn messages<'a>(w: &'a Acceptance, kind: &str) -> Vec<&'a Value> {
     w.messages.iter().filter_map(|m| m.get(kind)).collect()
 }
-#[then(
-    expr = "exactly {int} attempt is reported and its final status is {string}"
-)]
-#[then(
-    expr = "exactly {int} attempts are reported and its final status is {string}"
-)]
+#[then(expr = "exactly {int} attempt is reported and its final status is \
+        {string}")]
+#[then(expr = "exactly {int} attempts are reported and its final status is \
+        {string}")]
 fn attempts(w: &mut Acceptance, count: usize, expected: String) {
     let starts = messages(w, "testCaseStarted");
     let ends = messages(w, "testCaseFinished");
@@ -270,9 +297,14 @@ fn attempts(w: &mut Acceptance, count: usize, expected: String) {
     }
     let outcomes = w.query["outcomes"].as_array().unwrap();
     // Query's final-case view intentionally excludes attempts marked for retry.
-    // Raw envelopes above still verify every actual attempt and its fresh World.
+    // Raw envelopes above still verify every actual attempt and its fresh
+    // World.
     assert_eq!(w.query["observedAttempts"], count);
-    assert_eq!(outcomes.len(), 1, "one terminal case remains in official Query");
+    assert_eq!(
+        outcomes.len(),
+        1,
+        "one terminal case remains in official Query"
+    );
     assert_eq!(outcomes[0]["attempt"], count - 1);
     assert_eq!(outcomes[0]["status"], expected);
     if matches!(w.mode.as_str(), "ambiguous" | "undefined") {
@@ -300,9 +332,8 @@ fn fresh(w: &mut Acceptance) {
     );
     assert_eq!(seen.body, (0..attempts).collect::<Vec<_>>());
 }
-#[then(
-    expr = "schema-valid Messages and official Query retain the final success {string}"
-)]
+#[then(expr = "schema-valid Messages and official Query retain the final \
+        success {string}")]
 fn protocol(w: &mut Acceptance, success: String) {
     let schema: Value = serde_json::from_str(include_str!(
         "fixtures/messages/messages-35.0.0.schema.json"

@@ -1,4 +1,18 @@
 //! Phase44 actual Messages rerun collection and native second execution.
+#[path = "support/oracle.rs"]
+mod oracle;
+
+use std::{
+    collections::HashMap,
+    io::Write as _,
+    path::PathBuf,
+    process::Stdio,
+    sync::{
+        LazyLock, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+};
+
 use cucumber::{
     World as _, given,
     step::{Collection, Context},
@@ -11,16 +25,6 @@ use cucumber::{
 use futures::future::LocalBoxFuture;
 use regex::Regex;
 use serde_json::{Value, json};
-use std::{
-    collections::HashMap,
-    io::Write as _,
-    path::PathBuf,
-    process::{Command, Stdio},
-    sync::{
-        LazyLock, Mutex,
-        atomic::{AtomicBool, Ordering},
-    },
-};
 static COUNTS: LazyLock<Mutex<HashMap<String, usize>>> =
     LazyLock::new(Default::default);
 static EXECUTED: Mutex<Vec<String>> = Mutex::new(Vec::new());
@@ -83,12 +87,27 @@ fn parse(bytes: Vec<u8>) -> Vec<Value> {
         .collect()
 }
 fn begin() -> Vec<Value> {
-    vec![
-        json!({"testRunStarted":{"id":"run","timestamp":{"seconds":0,"nanos":0}}}),
-    ]
+    vec![json!({
+    "testRunStarted":{
+    "id":"run",
+    "timestamp":{
+    "seconds":0,
+    "nanos":0}
+    }
+    }
+    )]
 }
 fn finish(messages: &mut Vec<Value>, success: bool) {
-    messages.push(json!({"testRunFinished":{"testRunStartedId":"run","success":success,"timestamp":{"seconds":1,"nanos":0}}}));
+    messages.push(json!({
+    "testRunFinished":{
+    "testRunStartedId":"run",
+    "success":success,
+    "timestamp":{
+    "seconds":1,
+    "nanos":0}
+    }
+    }
+    ));
 }
 fn add_case(
     messages: &mut Vec<Value>,
@@ -106,19 +125,72 @@ fn add_case(
     messages.push(json!({"gherkinDocument":graph.gherkin_document()}));
     let mut pickle = graph.pickles()[0].clone();
     pickle["id"] = json!(format!("pickle-{label}"));
-    let step_ids: Vec<_> = pickle["steps"].as_array().unwrap().iter().enumerate().map(|(index,step)|json!({"id":format!("step-{label}-{index}"),"pickleStepId":step["id"]})).collect();
+    let step_ids: Vec<_> = pickle["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .map(|(index, step)| {
+            json!({
+            "id":format!("step-{label}-{index}"),
+            "pickleStepId":step["id"]}
+            )
+        })
+        .collect();
     messages.push(json!({"pickle":pickle}));
-    messages.push(json!({"testCase":{"id":format!("case-{label}"),"pickleId":format!("pickle-{label}"),"testSteps":step_ids}}));
-    messages.push(json!({"testCaseStarted":{"id":format!("start-{label}"),"testCaseId":format!("case-{label}"),"attempt":0,"timestamp":{"seconds":0,"nanos":0}}}));
+    messages.push(json!({
+    "testCase":{
+    "id":format!("case-{label}"),
+    "pickleId":format!("pickle-{label}"),
+    "testSteps":step_ids}
+    }
+    ));
+    messages.push(json!({
+    "testCaseStarted":{
+    "id":format!("start-{label}"),
+    "testCaseId":format!("case-{label}"),
+    "attempt":0,
+    "timestamp":{
+    "seconds":0,
+    "nanos":0}
+    }
+    }
+    ));
     if completed {
         for step in step_ids {
-            messages.push(json!({"testStepFinished":{"testCaseStartedId":format!("start-{label}"),"testStepId":step["id"],"timestamp":{"seconds":0,"nanos":0},"testStepResult":{"status":status,"duration":{"seconds":0,"nanos":0}}}}));
+            messages.push(json!({
+            "testStepFinished":{
+            "testCaseStartedId":format!("start-{label}"),
+            "testStepId":step["id"],
+            "timestamp":{
+            "seconds":0,
+            "nanos":0}
+            ,
+            "testStepResult":{
+            "status":status,
+            "duration":{
+            "seconds":0,
+            "nanos":0}
+            }
+            }
+            }
+            ));
         }
-        messages.push(json!({"testCaseFinished":{"testCaseStartedId":format!("start-{label}"),"willBeRetried":false,"timestamp":{"seconds":0,"nanos":0}}}));
+        messages.push(json!({
+        "testCaseFinished":{
+        "testCaseStartedId":format!("start-{label}"),
+        "willBeRetried":false,
+        "timestamp":{
+        "seconds":0,
+        "nanos":0}
+        }
+        }
+        ));
     }
 }
 #[given(
-    expr = "a completed protocol case with status {string} and run success {string}"
+    expr = "a completed protocol case with status {string} and run success \
+        {string}"
 )]
 fn protocol(w: &mut Acceptance, status: String, success: String) {
     w.status = status.clone();
@@ -146,7 +218,8 @@ async fn retries(w: &mut Acceptance) {
     EXECUTED.lock().unwrap().clear();
     file(
         w,
-        "Feature: Actual retry hooks\n Scenario: recovered\n  Given work\n Scenario: exhausted\n  Given work\n",
+        "Feature: Actual retry hooks\n Scenario: recovered\n  Given work\n \
+            Scenario: exhausted\n  Given work\n",
     );
     let mut output = Vec::new();
     Application::cucumber()
@@ -166,7 +239,10 @@ async fn outline(w: &mut Acceptance) {
     EXECUTED.lock().unwrap().clear();
     file(
         w,
-        "Feature: Actual rows\n Rule: resources\n  Scenario Outline: result <outcome>\n   Given <outcome>\n   Examples: selected\n    | outcome |\n    | fail |\n    | pass |\n    | fail |\n    | excluded |\n",
+        "Feature: Actual rows\n Rule: resources\n  Scenario Outline: result \
+            <outcome>\n   Given <outcome>\n   Examples: selected\n    | \
+            outcome |\n    | fail |\n    | pass |\n    | fail |\n    | \
+            excluded |\n",
     );
     let mut output = Vec::new();
     Application::cucumber()
@@ -228,21 +304,70 @@ fn missing(w: &mut Acceptance, reference: String) {
         }
         "document" => w.messages.retain(|e| e.get("gherkinDocument").is_none()),
         "astNode" => {
-            w.messages.iter_mut().find_map(|e| e.get_mut("pickle")).unwrap()["astNodeIds"] =
-                json!(["missing-node"])
+            let pickle = w
+                .messages
+                .iter_mut()
+                .find_map(|envelope| envelope.get_mut("pickle"))
+                .unwrap();
+            pickle["astNodeIds"] = json!(["missing-node"])
         }
         _ => panic!("unexpected missing reference"),
     }
 }
 #[given(
-    "a failed protocol run with parse and global-hook failures but no case attempts"
+    "a failed protocol run with parse and global-hook failures but no case \
+        attempts"
 )]
 fn run_failure(w: &mut Acceptance) {
     w.messages = begin();
-    w.messages.push(json!({"parseError":{"source":{"uri":"broken.feature","location":{"line":1,"column":1}},"message":"invalid source"}}));
-    w.messages.push(json!({"hook":{"id":"global-hook","type":"BEFORE_TEST_RUN","sourceReference":{}}}));
-    w.messages.push(json!({"testRunHookStarted":{"id":"global","testRunStartedId":"run","hookId":"global-hook","timestamp":{"seconds":0,"nanos":0}}}));
-    w.messages.push(json!({"testRunHookFinished":{"testRunHookStartedId":"global","result":{"status":"FAILED","duration":{"seconds":0,"nanos":0}},"timestamp":{"seconds":0,"nanos":0}}}));
+    w.messages.push(json!({
+    "parseError":{
+    "source":{
+    "uri":"broken.feature",
+    "location":{
+    "line":1,
+    "column":1}
+    }
+    ,
+    "message":"invalid source"}
+    }
+    ));
+    w.messages.push(json!({
+    "hook":{
+    "id":"global-hook",
+    "type":"BEFORE_TEST_RUN",
+    "sourceReference":{
+    }
+    }
+    }
+    ));
+    w.messages.push(json!({
+    "testRunHookStarted":{
+    "id":"global",
+    "testRunStartedId":"run",
+    "hookId":"global-hook",
+    "timestamp":{
+    "seconds":0,
+    "nanos":0}
+    }
+    }
+    ));
+    w.messages.push(json!({
+    "testRunHookFinished":{
+    "testRunHookStartedId":"global",
+    "result":{
+    "status":"FAILED",
+    "duration":{
+    "seconds":0,
+    "nanos":0}
+    }
+    ,
+    "timestamp":{
+    "seconds":0,
+    "nanos":0}
+    }
+    }
+    ));
     finish(&mut w.messages, false);
 }
 #[given("a real application whose selected cases all pass")]
@@ -250,7 +375,8 @@ async fn passing(w: &mut Acceptance) {
     RECOVER.store(true, Ordering::SeqCst);
     file(
         w,
-        "Feature: Passing\n Scenario: first\n  Given pass\n Scenario: second\n  Given pass\n",
+        "Feature: Passing\n Scenario: first\n  Given pass\n Scenario: \
+            second\n  Given pass\n",
     );
     let mut output = Vec::new();
     Application::cucumber()
@@ -280,16 +406,15 @@ fn plan(w: &Acceptance) -> &Plan {
     w.plan.as_ref().unwrap()
 }
 fn oracle(w: &Acceptance, separator: &str) -> Value {
-    let mut child = Command::new("node")
-        .arg(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/interop/rerun/oracle.mjs"
-        ))
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("official rerun oracle requires Node");
+    let mut child = oracle::command(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/interop/rerun/oracle.mjs"
+    ))
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("official rerun oracle requires Node");
     child
         .stdin
         .take()
@@ -465,13 +590,14 @@ fn no_finish(w: &mut Acceptance) {
     assert_eq!(w.error, Some(Error::IncompleteRun));
     assert!(w.plan.is_none());
 }
-#[then(
-    expr = "collection reports the missing {string} reference without guessed locations"
-)]
+#[then(expr = "collection reports the missing {string} reference without \
+        guessed locations")]
 fn bad_reference(w: &mut Acceptance, expected: String) {
-    assert!(
-        matches!(&w.error,Some(Error::MissingReference{kind,..}) if *kind==expected)
-    );
+    assert!(matches!(&w.error,
+            Some(Error::MissingReference{
+            kind,
+            ..}
+            ) if *kind==expected));
     assert!(w.plan.is_none());
 }
 #[then("run failure remains visible and no scenario selection is invented")]

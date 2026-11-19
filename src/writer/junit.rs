@@ -295,11 +295,14 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             Scenario::Finished => {
                 let dur = self.scenario_duration(meta.at, sc);
                 let events = mem::take(&mut self.events);
-                if meta.outcome.is_some_and(|outcome| outcome.retryable
-                    && ev.retries.is_some_and(|retry| retry.left > 0)) {
+                if meta.outcome.is_some_and(|outcome| {
+                    outcome.retryable
+                        && ev.retries.is_some_and(|retry| retry.left > 0)
+                }) {
                     return;
                 }
-                let case = self.test_case(feat, rule, sc, &events, dur, meta.outcome);
+                let case =
+                    self.test_case(feat, rule, sc, &events, dur, meta.outcome);
 
                 self.suit
                     .as_mut()
@@ -403,13 +406,35 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             if outcome.status != OutcomeStatus::Passed {
                 let status = format!("{:?}", outcome.status);
                 case = if outcome.fails_run {
-                    let diagnostic = events.iter().rev().filter(|event| event.outcome.is_none_or(|actual| actual.status == outcome.status)).find_map(|event| match &event.event {
-                        Scenario::Hook(_, Hook::Failed(_, error)) => Some(coerce_error(error).into_owned()),
-                        Scenario::Step(_, Step::Failed(_, _, _, error))
-                        | Scenario::Background(_, Step::Failed(_, _, _, error)) => Some(error.to_string()),
-                        _ => None,
-                    }).unwrap_or_else(|| format!("Execution completed with {status}"));
-                    TestCaseBuilder::failure(&case_name, duration, &status, &diagnostic).build()
+                    let diagnostic = events
+                        .iter()
+                        .rev()
+                        .filter(|event| {
+                            event.outcome.is_none_or(|actual| {
+                                actual.status == outcome.status
+                            })
+                        })
+                        .find_map(|event| match &event.event {
+                            Scenario::Hook(_, Hook::Failed(_, error)) => {
+                                Some(coerce_error(error).into_owned())
+                            }
+                            Scenario::Step(_, Step::Failed(_, _, _, error))
+                            | Scenario::Background(
+                                _,
+                                Step::Failed(_, _, _, error),
+                            ) => Some(error.to_string()),
+                            _ => None,
+                        })
+                        .unwrap_or_else(|| {
+                            format!("Execution completed with {status}")
+                        });
+                    TestCaseBuilder::failure(
+                        &case_name,
+                        duration,
+                        &status,
+                        &diagnostic,
+                    )
+                    .build()
                 } else {
                     TestCaseBuilder::skipped(&case_name).build()
                 };
@@ -426,7 +451,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let output = events
             .iter()
             .map(|ev| {
-                basic_wr.scenario_with_outcome(feat, sc, &ev.value, ev.outcome)?;
+                basic_wr
+                    .scenario_with_outcome(feat, sc, &ev.value, ev.outcome)?;
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()

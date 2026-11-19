@@ -1,11 +1,22 @@
-//! Phase37b actual assignment, resource reservations, idle diagnostics and panic propagation.
+//! Phase37b actual assignment, resource reservations, idle diagnostics and
+//! panic propagation.
+use std::{
+    collections::{BTreeSet, HashMap},
+    convert::Infallible,
+    process::Command,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
+
 use cucumber::{
     Event, StatsWriter as _, World as _, WriterExt as _, event, given,
     runner::{
-        AssignmentCase,
-        AssignmentDecisionKind as Decision, AssignmentPolicy, AssignmentStore,
-        Basic, Hooks, ScenarioOrder, ScenarioType, SchedulingOptions,
-        TimeoutClock,
+        AssignmentCase, AssignmentDecisionKind as Decision, AssignmentPolicy,
+        AssignmentStore, Basic, Hooks, ScenarioOrder, ScenarioType,
+        SchedulingOptions, TimeoutClock,
     },
     step::{Collection, Context},
     then, when,
@@ -17,16 +28,6 @@ use futures::{
 };
 use regex::Regex;
 use serde_json::{Value, json};
-use std::{
-    collections::{BTreeSet, HashMap},
-    convert::Infallible,
-    process::Command,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::Duration,
-};
 use tokio::sync::{Barrier, Semaphore};
 #[derive(Debug, Default)]
 struct Seen {
@@ -169,31 +170,102 @@ fn source(mode: &str) -> String {
         )
     };
     let mut source = "Feature: Assignment resources\n".to_owned();
-    match mode{
-        "outline resource tags"=>return "@resource.workspace-X\nFeature: Assignment resources\n @rule\n Rule: Browser resource\n  Scenario Outline: row <id>\n   Given work\n   @resource.browser-X\n   Examples: selected\n    | id |\n    | one |\n    | two |\n".into(),
-        "independent resources"=>{source+=&case("A","browser-X",false);source+=&case("B","browser-Y",false);},
-        "queued Serial barrier"=>{source+=&case("A","browser-X",false);source+=&case("S","browser-Y",true);source+=&case("C","browser-Z",false);},
-        "active Serial"=>{source+=&case("A","browser-X",true);source+=&case("B","browser-Y",false);source+=&case("C","browser-Z",false);},
-        "rejected Serial"=>{source+=&case("S","browser-X",true);source+=&case("B","browser-Y",false);},
-        "default native"=>{source+=&case("A","browser-X",false);source+=&case("S","browser-Y",true);source+=&case("B","browser-Z",false);},
-        _=>{source+=&case("A","browser-X",false);source+=&case("B","browser-X",false);if mode!="wait for release"{source+=&case("C","browser-Y",false);}},
+    match mode {
+        "outline resource tags" => {
+            return "@resource.workspace-X\nFeature: \
+            Assignment resources\n @rule\n Rule: Browser resource\n  \
+            Scenario Outline: row <id>\n   Given work\n   \
+            @resource.browser-X\n   Examples: selected\n    | id |\n    | \
+            one |\n    | two |\n"
+                .into();
+        }
+
+        "independent resources" => {
+            source += &case("A", "browser-X", false);
+            source += &case("B", "browser-Y", false);
+        }
+        "queued Serial barrier" => {
+            source += &case("A", "browser-X", false);
+            source += &case("S", "browser-Y", true);
+            source += &case("C", "browser-Z", false);
+        }
+        "active Serial" => {
+            source += &case("A", "browser-X", true);
+            source += &case("B", "browser-Y", false);
+            source += &case("C", "browser-Z", false);
+        }
+        "rejected Serial" => {
+            source += &case("S", "browser-X", true);
+            source += &case("B", "browser-Y", false);
+        }
+        "default native" => {
+            source += &case("A", "browser-X", false);
+            source += &case("S", "browser-Y", true);
+            source += &case("B", "browser-Z", false);
+        }
+        _ => {
+            source += &case("A", "browser-X", false);
+            source += &case("B", "browser-X", false);
+            if mode != "wait for release" {
+                source += &case("C", "browser-Y", false);
+            }
+        }
     }
     source
 }
 fn case_json(case: &AssignmentCase) -> Value {
-    json!({"id":case.case_id,"index":case.plan_index,"name":case.scenario.name,"path":case.feature.path,"line":case.scenario.position.line,"rule":case.rule.as_ref().map(|r|r.name.clone()),"resources":resources(&case.feature,case.rule.as_deref(),&case.scenario),"serial":case.kind==ScenarioType::Serial})
+    json!({
+    "id":case.case_id,
+    "index":case.plan_index,
+    "name":case.scenario.name,
+    "path":case.feature.path,
+    "line":case.scenario.position.line,
+    "rule":case.rule.as_ref().map(|r|r.name.clone()),
+    "resources":resources(&case.feature,
+    case.rule.as_deref(),
+    &case.scenario),
+    "serial":case.kind==ScenarioType::Serial}
+    )
 }
 fn records(store: &AssignmentStore) -> Vec<Value> {
-    store.records().into_iter().map(|r|{
-    let content=match r.kind{
-        Decision::Evaluated{candidate,running,eligible}=>json!({"kind":"evaluated","case":case_json(&candidate),"running":running.iter().map(case_json).collect::<Vec<_>>(),"eligible":eligible}),
-        Decision::Admitted{case,reason}=>json!({"kind":"admitted","case":case_json(&case),"reason":format!("{reason:?}")}),
-        Decision::Released{case_id}=>json!({"kind":"released","id":case_id}),
-        Decision::Waiting{reason,running}=>json!({"kind":"waiting","reason":format!("{reason:?}"),"running":running.iter().map(case_json).collect::<Vec<_>>()}),
-        Decision::Warning(warning)=>json!({"kind":"warning","count":warning.idle_interventions,"message":warning.message}),
-        _=>panic!("unexpected assignment decision"),
-    };json!({"run":r.run_id,"sequence":r.sequence,"decision":content})
-}).collect()
+    store
+        .records()
+        .into_iter()
+        .map(|r| {
+            let content = match r.kind {
+                Decision::Evaluated { candidate, running, eligible } => json!({
+                "kind":"evaluated",
+                "case":case_json(&candidate),
+                "running":running.iter().map(case_json).collect::<Vec<_>>(),
+                "eligible":eligible}
+                ),
+
+                Decision::Admitted { case, reason } => json!({
+                "kind":"admitted",
+                "case":case_json(&case),
+                "reason":format!("{reason:?}")}
+                ),
+
+                Decision::Released { case_id } => {
+                    json!({"kind":"released","id":case_id})
+                }
+                Decision::Waiting { reason, running } => json!({
+                "kind":"waiting",
+                "reason":format!("{reason:?}"),
+                "running":running.iter().map(case_json).collect::<Vec<_>>()}
+                ),
+
+                Decision::Warning(warning) => json!({
+                "kind":"warning",
+                "count":warning.idle_interventions,
+                "message":warning.message}
+                ),
+
+                _ => panic!("unexpected assignment decision"),
+            };
+            json!({"run":r.run_id,"sequence":r.sequence,"decision":content})
+        })
+        .collect()
 }
 async fn execute(mode: String) -> Value {
     let seen = Arc::new(Mutex::new(Seen::default()));
@@ -361,7 +433,8 @@ async fn execute(mode: String) -> Value {
             assert_eq!(
                 store.records().len(),
                 count,
-                "blocked dispatcher must not repeatedly evaluate the same reservation set"
+                "blocked dispatcher must not repeatedly evaluate the same \
+                    reservation set"
             );
             seen.lock().unwrap().bounded = true;
             seen.lock().unwrap().midpoint = true;
@@ -383,7 +456,11 @@ async fn execute(mode: String) -> Value {
             for _ in 0..32 {
                 tokio::task::yield_now().await;
             }
-            assert!(store.records().iter().any(|r|matches!(&r.kind,Decision::Waiting{running,..}if running.iter().any(|c|c.scenario.name=="A"))));
+            assert!(store.records().iter().any(|r| matches!(&r.kind,
+                Decision::Waiting{
+                running,
+                ..}
+                if running.iter().any(|c|c.scenario.name=="A"))));
             assert!(
                 !seen
                     .lock()
@@ -415,7 +492,23 @@ async fn execute(mode: String) -> Value {
         }
     };
     let state = seen.lock().unwrap();
-    json!({"records":records(&store),"warnings":warnings.lock().unwrap().clone(),"current_run":store.current_run(),"starts":state.starts,"finishes":state.finishes,"bodies":state.bodies,"identities":state.identities,"peak":state.peak,"overlap":state.overlap,"finished":state.finished,"midpoint":state.midpoint,"bounded":state.bounded,"passed":passed,"failed":failed,"panic":panic})
+    json!({
+    "records":records(&store),
+    "warnings":warnings.lock().unwrap().clone(),
+    "current_run":store.current_run(),
+    "starts":state.starts,
+    "finishes":state.finishes,
+    "bodies":state.bodies,
+    "identities":state.identities,
+    "peak":state.peak,
+    "overlap":state.overlap,
+    "finished":state.finished,
+    "midpoint":state.midpoint,
+    "bounded":state.bounded,
+    "passed":passed,
+    "failed":failed,
+    "panic":panic}
+    )
 }
 #[derive(Debug, Default, cucumber::World)]
 struct Acceptance {
@@ -460,7 +553,10 @@ fn admissions(w: &Acceptance) -> Vec<&Value> {
     decisions(w).into_iter().filter(|r| r["kind"] == "admitted").collect()
 }
 fn names(w: &Acceptance) -> Vec<&str> {
-    admissions(w).into_iter().map(|r| r["case"]["name"].as_str().unwrap()).collect()
+    admissions(w)
+        .into_iter()
+        .map(|r| r["case"]["name"].as_str().unwrap())
+        .collect()
 }
 #[then("cases sharing a browser resource execute exclusively")]
 fn exclusive(w: &mut Acceptance) {
@@ -469,7 +565,8 @@ fn exclusive(w: &mut Acceptance) {
     assert_eq!(names(w), vec!["A", "C", "B"]);
 }
 #[then(
-    "observed decisions refer to actual logical cases rather than worker identities"
+    "observed decisions refer to actual logical cases rather than worker \
+        identities"
 )]
 fn identities(w: &mut Acceptance) {
     let records = w.result["records"].as_array().unwrap();
@@ -523,7 +620,8 @@ fn later(w: &mut Acceptance) {
     assert_eq!(b.last().unwrap()["case"]["index"], 1);
 }
 #[then(
-    "blocked cases remain unassigned until the active case releases its reservation"
+    "blocked cases remain unassigned until the active case releases its \
+        reservation"
 )]
 fn waiting(w: &mut Acceptance) {
     assert_eq!(w.result["midpoint"], true);
@@ -531,7 +629,8 @@ fn waiting(w: &mut Acceptance) {
     assert_eq!(w.result["overlap"], false);
 }
 #[then(
-    "the dispatcher waits without repeated idle decisions or unbounded record growth"
+    "the dispatcher waits without repeated idle decisions or unbounded \
+        record growth"
 )]
 fn bounded(w: &mut Acceptance) {
     assert_eq!(w.result["bounded"], true);
@@ -568,7 +667,8 @@ fn retry_identity(w: &mut Acceptance) {
     assert_ne!(actual[0][3], actual[1][3]);
 }
 #[then(
-    "independent resources can proceed while conflicting resources remain blocked"
+    "independent resources can proceed while conflicting resources remain \
+        blocked"
 )]
 fn delayed_parallel(w: &mut Acceptance) {
     let starts = w.result["starts"].as_array().unwrap();
@@ -579,7 +679,8 @@ fn delayed_parallel(w: &mut Acceptance) {
     assert_eq!(w.result["overlap"], false);
 }
 #[then(
-    "no candidate after the first Serial barrier is evaluated or admitted early"
+    "no candidate after the first Serial barrier is evaluated or admitted \
+        early"
 )]
 fn serial_prefix(w: &mut Acceptance) {
     let rows = decisions(w);
@@ -627,7 +728,8 @@ fn serial_fallback(w: &mut Acceptance) {
     assert_eq!(w.result["passed"], 2);
 }
 #[then(
-    "each idle fallback admits the queue head without claiming predicate eligibility"
+    "each idle fallback admits the queue head without claiming predicate \
+        eligibility"
 )]
 fn fallback(w: &mut Acceptance) {
     assert_eq!(names(w), vec!["A", "B", "C"]);
@@ -640,7 +742,8 @@ fn fallback(w: &mut Acceptance) {
     );
 }
 #[then(
-    "a single aggregate warning reports the actual idle intervention count on stderr"
+    "a single aggregate warning reports the actual idle intervention count \
+        on stderr"
 )]
 fn stderr_warning(w: &mut Acceptance) {
     assert_eq!(w.stderr.matches("WARNING:").count(), 1);
@@ -648,7 +751,8 @@ fn stderr_warning(w: &mut Acceptance) {
     assert!(w.result["warnings"].as_array().unwrap().is_empty());
 }
 #[then(
-    "skipped predicate choices are not fabricated callback or worker execution records"
+    "skipped predicate choices are not fabricated callback or worker \
+        execution records"
 )]
 fn honest(w: &mut Acceptance) {
     assert_eq!(w.result["bodies"].as_array().unwrap().len(), 3);
@@ -674,7 +778,8 @@ fn no_stderr(w: &mut Acceptance) {
     assert!(!w.stderr.contains("WARNING:"), "{}", w.stderr);
 }
 #[then(
-    "the predicate observes expanded native source identities and inherited resource tags"
+    "the predicate observes expanded native source identities and inherited \
+        resource tags"
 )]
 fn outline(w: &mut Acceptance) {
     assert_eq!(names(w), vec!["row one", "row two"]);
@@ -707,7 +812,8 @@ fn retained(w: &mut Acceptance) {
     assert_eq!(w.result["overlap"], false);
 }
 #[then(
-    "ordinary native scheduling executes without assignment callbacks or warnings"
+    "ordinary native scheduling executes without assignment callbacks or \
+        warnings"
 )]
 fn native(w: &mut Acceptance) {
     assert!(w.result["records"].as_array().unwrap().is_empty());
