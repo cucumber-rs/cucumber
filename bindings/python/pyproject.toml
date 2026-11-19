@@ -1,0 +1,28 @@
+[build-system]
+requires = ["maturin==1.12.6"]
+build-backend = "maturin"
+
+[project]
+name = "cucumber-native-local"
+version = "0.0.0"
+description = "Unpublished native Python adapter for the GQAdonis Cucumber Rust SDK"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-MIT", "LICENSE-APACHE", "NOTICE", "licenses/*"]
+classifiers = [
+    "Private :: Do Not Upload",
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Repository = "https://github.com/GQAdonis/cucumber"
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+bindings = "pyo3"
+python-source = "python"
+module-name = "cucumber_native_local._native"

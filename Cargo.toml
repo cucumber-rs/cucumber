@@ -20,7 +20,134 @@ readme = "README.md"
 categories = ["asynchronous", "development-tools::testing"]
 keywords = ["cucumber", "testing", "bdd", "atdd", "async"]
 include = [
+    "/tests/messages_markdown_precedence.rs",
+    "/tests/features/messages_markdown_precedence/",
+    "/tests/expression_names.rs",
+    "/tests/features/expression_names/",
+    "/tests/interop/expressions/parameter-names.mjs",
+    "/tests/source_paths.rs",
+    "/tests/features/source_paths/",
+    "/scripts/messages-to-boundary-results.mjs",
+    "/tests/vlbv_adapter.rs",
+    "/tests/features/vlbv_adapter/",
+    "/tests/interop/vlbv/",
+    "/tests/fixtures/vlbv/",
+    "/docs/compatibility/phase39-receipts.schema.json",
     "/src/",
+    "/tests/messages_table_columns.rs",
+    "/tests/features/messages_table_columns/",
+    "/tests/lexical_semantics.rs",
+    "/tests/features/lexical_semantics/",
+    "/tests/line_selection.rs",
+    "/tests/features/line_selection/",
+    "/tests/composable_filters.rs",
+    "/tests/features/composable_filters/",
+    "/vendor/gherkin/",
+    "/tests/portability.rs",
+    "/tests/features/portability/",
+    "/tests/sources.rs",
+    "/tests/features/sources/",
+    "/tests/messages_source.rs",
+    "/tests/features/messages_source/",
+    "/tests/fixtures/gherkin43/",
+    "/tests/messages_retries.rs",
+    "/tests/messages_hooks.rs",
+    "/tests/messages_docstrings.rs",
+    "/tests/messages_backgrounds.rs",
+    "/tests/messages_corpus.rs",
+    "/tests/messages_documents.rs",
+    "/tests/messages_markdown.rs",
+    "/tests/messages_markdown_runtime.rs",
+    "/tests/features/messages_markdown_runtime/",
+    "/tests/features/messages_markdown/",
+    "/tests/fixtures/gherkin43-markdown/",
+    "/tests/interop/gherkin43/markdown-oracle.mjs",
+    "/tests/features/messages_documents/",
+    "/tests/features/messages_corpus/",
+    "/tests/fixtures/gherkin43-corpus/",
+    "/tests/features/messages_backgrounds/",
+    "/tests/features/messages_docstrings/",
+    "/tests/interop/gherkin43/package.json",
+    "/tests/interop/gherkin43/package-lock.json",
+    "/tests/interop/gherkin43/oracle.mjs",
+    "/tests/features/messages_hooks/",
+    "/tests/features/messages_retries/",
+    "/tests/messages_consumer.rs",
+    "/tests/features/messages_consumer/",
+    "/tests/interop/package.json",
+    "/tests/interop/package-lock.json",
+    "/tests/interop/consume.mjs",
+    "/tests/interop/ordered-logs.mjs",
+    "/tests/interpolation.rs",
+    "/tests/features/interpolation/",
+    "/tests/messages_attachments.rs",
+    "/tests/features/messages_attachments/",
+    "/tests/interop/attachments.mjs",
+    "/tests/messages_logs.rs",
+    "/tests/features/messages_logs/",
+    "/tests/messages_errors.rs",
+    "/tests/features/messages_errors/",
+    "/tests/messages_custom_metadata.rs",
+    "/tests/features/messages_custom_metadata/",
+    "/tests/interop/expressions/custom-metadata.mjs",
+    "/tests/dry_run_formats.rs",
+    "/tests/features/dry_run_formats/",
+    "/tests/messages_expression_metadata.rs",
+    "/tests/features/messages_expression_metadata/",
+    "/tests/interop/expressions/metadata.mjs",
+    "/tests/timeouts.rs",
+    "/tests/features/timeouts/",
+    "/tests/messages_support_code.rs",
+    "/tests/features/messages_support_code/",
+    "/tests/interop/support-code.mjs",
+    "/tests/messages_versions.rs",
+    "/tests/features/messages_versions/",
+    "/tests/interop/rerun/package.json",
+    "/tests/interop/rerun/package-lock.json",
+    "/tests/interop/rerun/oracle.mjs",
+    "/tests/interop/rerun/README.md",
+    "/tests/interop/rerun/CUCUMBER-JS-LICENSE",
+    "/tests/interop/rerun/provenance.json",
+    "/tests/messages_rerun.rs",
+    "/tests/features/messages_rerun/",
+    "/tests/generated_ordering.rs",
+    "/tests/features/generated_ordering/",
+    "/tests/dynamic_assignment.rs",
+    "/tests/features/dynamic_assignment/",
+    "/tests/retry_policy.rs",
+    "/tests/features/retry_policy/",
+    "/tests/dry_run.rs",
+    "/tests/features/dry_run/",
+    "/tests/execution_control.rs",
+    "/tests/features/execution_control/",
+    "/tests/execution_control_formats.rs",
+    "/tests/features/execution_control_formats/",
+    "/tests/messages_scenario_hooks.rs",
+    "/tests/features/messages_scenario_hooks/",
+    "/tests/interop/scenario-hooks.mjs",
+    "/tests/messages_run_hooks.rs",
+    "/tests/features/messages_run_hooks/",
+    "/tests/interop/run-hooks.mjs",
+    "/tests/scenario_hook_records.rs",
+    "/tests/features/scenario_hook_records/",
+    "/tests/run_hooks.rs",
+    "/tests/features/run_hooks/",
+    "/tests/step_hooks.rs",
+    "/tests/features/step_hooks/",
+    "/tests/expression_compat.rs",
+    "/tests/features/expression_compat/",
+    "/tests/interop/expressions/package.json",
+    "/tests/interop/expressions/package-lock.json",
+    "/tests/interop/expressions/oracle.mjs",
+    "/tests/messages.rs",
+    "/tests/features/messages/",
+    "/tests/fixtures/messages/",
+    "/tests/scheduling.rs",
+    "/tests/features/scheduling/",
+    "/tests/hooks.rs",
+    "/tests/features/hooks/",
+    "/tests/compatibility.rs",
+    "/tests/features/compatibility/",
     "/tests/json.rs",
     "/tests/junit.rs",
     "/tests/libtest.rs",
@@ -29,6 +156,9 @@ include = [
     "/CHANGELOG.md",
     "/LICENSE-*",
     "/README.md",
+    "tests/ordered_scheduling.rs", "tests/features/ordered_scheduling/**/*.feature",
+    "tests/fixtures/shuffle37/**/*",
+    "/tests/timeout_preparation.rs", "/tests/features/timeout_preparation/",
 ]
 
 [package.metadata.docs.rs]
@@ -56,6 +186,8 @@ output-json = [
     "dep:serde_with",
     "timestamps",
 ]
+# Enables the explicitly bounded Cucumber Messages 34.2.1 NDJSON writer.
+output-messages = ["dep:serde_json", "dep:base64", "timestamps"]
 # Enables support for outputting JUnit XML report.
 output-junit = ["dep:junit-report", "timestamps"]
 # Enables timestamps collecting for all events.
@@ -69,7 +201,8 @@ console = "0.16"
 derive_more = { version = "2.0", features = ["as_ref", "debug", "deref", "deref_mut", "display", "error", "from", "from_str", "into"] }
 either = "1.6"
 futures = "0.3.32"
-gherkin = "0.16"
+futures-timer = "=3.0.4"
+gherkin = { version = "0.16", path = "vendor/gherkin" }
 globwalk = "0.9"
 humantime = "2.1"
 itertools = "0.15"
@@ -77,6 +210,7 @@ linked-hash-map = "0.5.3"
 pin-project = "1.0"
 ref-cast = "1.0.16"
 regex = "1.9"
+regex-syntax = "0.8"
 sealed = "0.6"
 smart-default = "0.7.1"
 
@@ -103,6 +237,14 @@ tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3.16", optional = true }
 
 [dev-dependencies]
+# Keep jsonschema's minimum IDNA graph on ICU 2: ICU 1.4's zerovec 0.10
+# allows yoke 0.6 beside its required yoke 0.7, which cannot share Yokeable.
+# Both bounds are needed: older idna bypasses the adapter entirely.
+idna = "1.0.3"
+idna_adapter = "1.2.1"
+# Earlier bigint releases conflict with modern integer div_ceil methods.
+num-bigint = { version = "0.4.3", default-features = false }
+jsonschema = { version = "=0.33.0", default-features = false }
 rand = "0.10"
 serial_test = "3.0"
 tempfile = "3.2"
@@ -130,5 +272,251 @@ name = "wait"
 required-features = ["libtest"]
 harness = false
 
+[[test]]
+name = "compatibility"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "portability"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "hooks"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "messages"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "scheduling"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "sources"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "messages_source"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_retries"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_hooks"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_consumer"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_docstrings"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "interpolation"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_errors"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_backgrounds"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_logs"
+required-features = ["output-messages", "macros", "tracing"]
+harness = false
+
+[[test]]
+name = "messages_versions"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "step_hooks"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "expression_compat"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_corpus"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_attachments"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_documents"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "run_hooks"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "scenario_hook_records"
+required-features = ["output-messages", "macros"]
+harness = false
+
 [workspace]
 members = ["codegen"]
+exclude = ["vendor/gherkin"]
+
+[[test]]
+name = "messages_support_code"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_run_hooks"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_markdown"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_markdown_runtime"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_scenario_hooks"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "messages_expression_metadata"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "timeouts"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "execution_control_formats"
+required-features = ["macros", "output-messages", "output-json", "output-junit", "libtest"]
+harness = false
+
+[[test]]
+name = "composable_filters"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "execution_control"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "dry_run"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "line_selection"
+required-features = ["macros"]
+harness = false
+
+[[test]]
+name = "messages_custom_metadata"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "dry_run_formats"
+required-features = ["macros", "output-json", "output-junit", "libtest"]
+harness = false
+
+[[test]]
+name = "retry_policy"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "ordered_scheduling"
+harness = false
+required-features = ["macros", "output-messages"]
+
+[[test]]
+name = "lexical_semantics"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "vlbv_adapter"
+required-features = ["macros", "output-messages"]
+harness = false
+
+[[test]]
+name = "source_paths"
+harness = false
+required-features = ["macros"]
+
+[[test]]
+name = "dynamic_assignment"
+required-features = ["macros", "output-messages"]
+harness = false
+
+[[test]]
+name = "messages_table_columns"
+required-features = ["output-messages", "macros"]
+harness = false
+
+[[test]]
+name = "timeout_preparation"
+harness = false
+required-features = ["macros"]
+
+[[test]]
+name = "expression_names"
+required-features = ["macros", "output-messages"]
+harness = false
+
+[[test]]
+name = "generated_ordering"
+required-features = ["macros", "output-messages"]
+harness = false
+
+[[test]]
+name = "messages_rerun"
+required-features = ["macros", "output-messages"]
+harness = false
+
+[[test]]
+name = "messages_markdown_precedence"
+required-features = ["macros", "output-messages"]
+harness = false

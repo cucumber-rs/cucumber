@@ -1,0 +1,17 @@
+[
+  {
+    "source": "/Volumes/T7/Projects/prometheus/prometheus-skill-pack/skills/process/kbd-process-orchestrator/references/schemas/adopted-contract.v2.schema.json",
+    "copy": "tests/fixtures/vlbv/adopted-contract.v2.schema.json",
+    "sha256": "5307cb383c06ff624b014954c54bded50d331a69947c9e1c27d98d1f010a10cc"
+  },
+  {
+    "source": "/Volumes/T7/Projects/prometheus/prometheus-skill-pack/shared/scripts/kbd-phase-close-eval.sh",
+    "copy": "tests/fixtures/vlbv/kbd-phase-close-eval.sh",
+    "sha256": "e5b7d9e2f20a5b2352b877271b576b9cd5b9ef45de7481e17068a02320f7f403"
+  },
+  {
+    "source": "/Volumes/T7/Projects/prometheus/prometheus-skill-pack/shared/scripts/kbd-closure-packet.mjs",
+    "copy": "tests/fixtures/vlbv/kbd-closure-packet.mjs",
+    "sha256": "eca555fd84de9d2486f1c64249e6b3e8a003c3a18e332c8fb4f6103590e72a1a"
+  }
+]

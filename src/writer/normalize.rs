@@ -177,6 +177,18 @@ where
         self.writer.retried_steps()
     }
 
+    fn pending_steps(&self) -> usize {
+        self.writer.pending_steps()
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.writer.pending_hooks()
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.writer.pending_failures()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }
@@ -292,6 +304,18 @@ where
 
     fn retried_steps(&self) -> usize {
         self.0.retried_steps()
+    }
+
+    fn pending_steps(&self) -> usize {
+        self.0.pending_steps()
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.0.pending_hooks()
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.0.pending_failures()
     }
 
     fn parsing_errors(&self) -> usize {

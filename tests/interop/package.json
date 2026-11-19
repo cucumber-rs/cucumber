@@ -1,0 +1,10 @@
+{
+  "name": "cucumber-rs-official-consumer-acceptance",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cucumber/junit-xml-formatter": "0.15.0",
+    "@cucumber/messages": "34.2.1",
+    "@cucumber/query": "16.0.0"
+  }
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "knuth-shuffle-seeded",
+    "version": "1.0.6",
+    "metadata_url": "https://registry.npmjs.org/knuth-shuffle-seeded/1.0.6",
+    "tarball_url": "https://registry.npmjs.org/knuth-shuffle-seeded/-/knuth-shuffle-seeded-1.0.6.tgz",
+    "registry_integrity": "sha512-9pFH0SplrfyKyojCLxZfMcvkhf5hH0d+UwR9nTVJ/DDQJGuzcXjTwB7TP7sDfehSudlGGaOLblmEWqv04ERVWg==",
+    "registry_sha1": "01f1b65733aa7540ee08d8b0174164d22081e4e1",
+    "tarball_sha256": "bf538cad813e67e47f39820119ad87eb40a11e904ef4e2d9d6e5cb6d0d2d670c",
+    "git_head": "a883adf56b81652a6f487843d44ab2da47338a1e",
+    "files": [
+      {
+        "path": "knuth-shuffle-seeded-1.0.6/package.json",
+        "sha256": "5aa647f38ff88c3537554e7a6ae6ea69f64f7c4d8df5b2d1f5ea13a2c01610e6"
+      },
+      {
+        "path": "knuth-shuffle-seeded-1.0.6/LICENSE",
+        "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+      },
+      {
+        "path": "knuth-shuffle-seeded-1.0.6/index.js",
+        "sha256": "508cf8b767b8ce8cfc0d63cfc409e889243ba421404e6ab5d6045c0152334254"
+      }
+    ]
+  },
+  {
+    "name": "seed-random",
+    "version": "2.2.0",
+    "metadata_url": "https://registry.npmjs.org/seed-random/2.2.0",
+    "tarball_url": "https://registry.npmjs.org/seed-random/-/seed-random-2.2.0.tgz",
+    "registry_integrity": "sha512-34EQV6AAHQGhoc0tn/96a9Fsi6v2xdqe/dMUwljGRaFOzR3EgRmECvD0O8vi8X+/uQ50LGHfkNu/Eue5TPKZkQ==",
+    "registry_sha1": "2a9b19e250a817099231a5b99a4daf80b7fbed54",
+    "tarball_sha256": "3ffd9f9c52f10cf6cd8475831281a84a6a5171c583ccc2aa594a348e8dc33ead",
+    "git_head": null,
+    "files": [
+      {
+        "path": "seed-random-2.2.0/package.json",
+        "sha256": "b0da638940c8898b1078b98aac1c38f78dfc5095a633a3fefda1838bb143fc18"
+      },
+      {
+        "path": "seed-random-2.2.0/LICENSE",
+        "sha256": "baf7fe78bbf14d9d9de76279ad246c9a347208d55707192a6bfbb83b519e24c9"
+      },
+      {
+        "path": "seed-random-2.2.0/index.js",
+        "sha256": "9269f00a5c610ea6d8d527ca1ea5dbfd917b136d54b1fc4a5ce652571ea29755"
+      }
+    ]
+  }
+]

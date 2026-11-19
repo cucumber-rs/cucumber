@@ -1,0 +1,43 @@
+(1:1)TagLine://2:@feature_tag1,18:@feature_tag2
+(2:3)TagLine://4:@feature_tag3
+(3:3)FeatureLine:()Feature/Minimal Scenario Outline/
+(4:1)Empty://
+(5:1)TagLine://2:@scenario_tag1,19:@scenario_tag2
+(6:3)TagLine://4:@scenario_tag3
+(7:4)ScenarioLine:()Scenario/minimalistic/
+(8:3)StepLine:(Context)Given /the minimalism/
+(9:1)Empty://
+(10:1)TagLine://2:@so_tag1,14:@so_tag2
+(11:3)TagLine://4:@so_tag3
+(12:4)ScenarioLine:()Scenario Outline/minimalistic outline/
+(13:3)StepLine:(Context)Given /the <what>/
+(14:1)Empty://
+(15:1)TagLine://2:@ex_tag1,13:@ex_tag2
+(16:3)TagLine://4:@ex_tag3
+(17:5)ExamplesLine:()Examples//
+(18:3)TableRow:()|//5:what
+(19:1)Empty://
+(20:3)TableRow:()|//5:minimalism
+(21:1)Empty://
+(22:1)TagLine://2:@ex_tag4,13:@ex_tag5
+(23:3)TagLine://4:@ex_tag6
+(24:5)ExamplesLine:()Examples//
+(25:3)TableRow:()|//5:what
+(26:1)Empty://
+(27:3)TableRow:()|//5:more minimalism
+(28:1)Empty://
+(29:1)TagLine://2:@comment_tag1
+(30:4)ScenarioLine:()Scenario/comments/
+(31:1)Empty://
+(32:1)Empty://
+(33:1)TagLine://2:@comment_tag#2
+(34:4)ScenarioLine:()Scenario/hash in tags/
+(35:1)Empty://
+(36:1)Empty://
+(37:1)TagLine://2:@rule_tag
+(38:4)RuleLine:()Rule//
+(39:1)Empty://
+(40:1)TagLine://2:@joined_tag3,16:@joined_tag4
+(41:5)ScenarioLine:()Scenario/joined tags/
+(42:1)Empty://
+EOF

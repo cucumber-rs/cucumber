@@ -80,7 +80,7 @@ pub struct JUnit<W, Out: io::Write> {
     ///
     /// [`Scenario`]: gherkin::Scenario
     /// [1]: event::Scenario
-    events: Vec<event::RetryableScenario<W>>,
+    events: Vec<Event<event::RetryableScenario<W>>>,
 
     /// [`Verbosity`] of this [`Writer`].
     verbosity: Verbosity,
@@ -284,18 +284,25 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         match &ev.event {
             Scenario::Started => {
                 self.scenario_started_at = Some(meta.at);
-                self.events.push(ev);
+                self.events.push(meta.insert(ev));
             }
             Scenario::Log(_)
             | Scenario::Hook(..)
             | Scenario::Background(..)
             | Scenario::Step(..) => {
-                self.events.push(ev);
+                self.events.push(meta.insert(ev));
             }
             Scenario::Finished => {
                 let dur = self.scenario_duration(meta.at, sc);
                 let events = mem::take(&mut self.events);
-                let case = self.test_case(feat, rule, sc, &events, dur);
+                if meta.outcome.is_some_and(|outcome| {
+                    outcome.retryable
+                        && ev.retries.is_some_and(|retry| retry.left > 0)
+                }) {
+                    return;
+                }
+                let case =
+                    self.test_case(feat, rule, sc, &events, dur, meta.outcome);
 
                 self.suit
                     .as_mut()
@@ -317,8 +324,9 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         feat: &gherkin::Feature,
         rule: Option<&gherkin::Rule>,
         sc: &gherkin::Scenario,
-        events: &[event::RetryableScenario<W>],
+        events: &[Event<event::RetryableScenario<W>>],
         duration: Duration,
+        outcome: Option<crate::execution::Outcome>,
     ) -> TestCase {
         use event::{Hook, HookType, Scenario, Step};
 
@@ -393,6 +401,46 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
             }
         };
 
+        if let Some(outcome) = outcome {
+            use crate::execution::OutcomeStatus;
+            if outcome.status != OutcomeStatus::Passed {
+                let status = format!("{:?}", outcome.status);
+                case = if outcome.fails_run {
+                    let diagnostic = events
+                        .iter()
+                        .rev()
+                        .filter(|event| {
+                            event.outcome.is_none_or(|actual| {
+                                actual.status == outcome.status
+                            })
+                        })
+                        .find_map(|event| match &event.event {
+                            Scenario::Hook(_, Hook::Failed(_, error)) => {
+                                Some(coerce_error(error).into_owned())
+                            }
+                            Scenario::Step(_, Step::Failed(_, _, _, error))
+                            | Scenario::Background(
+                                _,
+                                Step::Failed(_, _, _, error),
+                            ) => Some(error.to_string()),
+                            _ => None,
+                        })
+                        .unwrap_or_else(|| {
+                            format!("Execution completed with {status}")
+                        });
+                    TestCaseBuilder::failure(
+                        &case_name,
+                        duration,
+                        &status,
+                        &diagnostic,
+                    )
+                    .build()
+                } else {
+                    TestCaseBuilder::skipped(&case_name).build()
+                };
+            }
+        }
+
         // We should be passing normalized events here,
         // so using `writer::Basic::raw()` is OK.
         let mut basic_wr = writer::Basic::raw(
@@ -403,7 +451,8 @@ impl<W: Debug, Out: io::Write> JUnit<W, Out> {
         let output = events
             .iter()
             .map(|ev| {
-                basic_wr.scenario(feat, sc, ev)?;
+                basic_wr
+                    .scenario_with_outcome(feat, sc, &ev.value, ev.outcome)?;
                 Ok(mem::take(&mut **basic_wr))
             })
             .collect::<io::Result<String>>()

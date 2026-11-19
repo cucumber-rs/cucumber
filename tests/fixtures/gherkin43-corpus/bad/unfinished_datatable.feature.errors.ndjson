@@ -1,0 +1,1 @@
+{"parseError":{"message":"(5:3): inconsistent cell count within the table","source":{"location":{"column":3,"line":5},"uri":"../testdata/bad/unfinished_datatable.feature"}}}

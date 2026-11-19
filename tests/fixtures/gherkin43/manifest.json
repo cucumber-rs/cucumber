@@ -1,0 +1,182 @@
+{
+  "repository": "cucumber/gherkin",
+  "tag": "v43.0.0",
+  "commit": "3d70e2bb4e0f16a568ee539a5ce0b03fb247a777",
+  "source_directory": "testdata/good",
+  "downloaded_at": "2026-11-17",
+  "files": [
+    {
+      "file": "rule_with_tag.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/rule_with_tag.feature",
+      "git_blob_sha1": "f512463c999077b2418ed96b21ebe786b4b2f9f1",
+      "sha256": "996cf4b89591fd13feaacd3db79298a1e432a8c80972099f21981bb886506ec7",
+      "bytes": 531
+    },
+    {
+      "file": "rule_with_tag.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/rule_with_tag.feature.ast.ndjson",
+      "git_blob_sha1": "b174a8d787da48cd0b101dd1cadef4199be8417d",
+      "sha256": "310940348fa9d236d479b359832db00239df36e515686bf091ce90c18c7a7256",
+      "bytes": 2332
+    },
+    {
+      "file": "rule_with_tag.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/rule_with_tag.feature.pickles.ndjson",
+      "git_blob_sha1": "29c5ed847ed238c1d2378b456d63ffc088fab6e9",
+      "sha256": "320bed16016f1647c34d53361f989c67517ebd1f8f761b6024a6ffd6b1662a56",
+      "bytes": 1455
+    },
+    {
+      "file": "complex_background.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/complex_background.feature",
+      "git_blob_sha1": "fde7c94d9b18d26db0e65bbb1ad6591ba40d4799",
+      "sha256": "3228151bc4c3c2309b63d012ed77cd41b02732a67e64ded126c244628c08e8f5",
+      "bytes": 467
+    },
+    {
+      "file": "complex_background.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/complex_background.feature.ast.ndjson",
+      "git_blob_sha1": "1c8d7f74593997a34da045347fbeb74908285234",
+      "sha256": "a207a4bb053aa1b700608a6bf53de6d53f1653bc238a8ea1781623ccdc7b21e2",
+      "bytes": 2179
+    },
+    {
+      "file": "complex_background.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/complex_background.feature.pickles.ndjson",
+      "git_blob_sha1": "2c2967a6ca98a8a1525e3f794d8f50c51f0bf9e3",
+      "sha256": "64d815833325e10e61ca29f5b734506fd6053a9b3d40c0cb33585cc06d09bc4d",
+      "bytes": 1592
+    },
+    {
+      "file": "descriptions.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/descriptions.feature",
+      "git_blob_sha1": "0487648cdd163f70238646604adf0b8a53ce734d",
+      "sha256": "ccd68237b8aaa192b35795e10c747119202a9c59fda34ea2bac8404002909d5b",
+      "bytes": 1138
+    },
+    {
+      "file": "descriptions.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/descriptions.feature.ast.ndjson",
+      "git_blob_sha1": "95f9ae6a923d4ff7328a4dfc8921f66a7d122909",
+      "sha256": "7e8c883c3f6ef17cae1e63f9f47f6714411323fd5bec4063c93900ef2d257825",
+      "bytes": 3443
+    },
+    {
+      "file": "descriptions.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/descriptions.feature.pickles.ndjson",
+      "git_blob_sha1": "7aed059765af393d0bbf59511c5c0c013f6a4f92",
+      "sha256": "48f225315118e85cd8122fca59c53ee185619b4d7947cbab37abc5e2be90c609",
+      "bytes": 2140
+    },
+    {
+      "file": "several_examples.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/several_examples.feature",
+      "git_blob_sha1": "dcd6426db80bec3a0d407e12b9381f765a32a754",
+      "sha256": "1cfe0b128832ec549fbef32ad2322ccd907b9d96f2ab13e1a72c4831e1a6053b",
+      "bytes": 214
+    },
+    {
+      "file": "several_examples.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/several_examples.feature.ast.ndjson",
+      "git_blob_sha1": "daf13ae8eaf92672e4df3258b0abfe80bf8c3c1e",
+      "sha256": "66c521700899330ebaaacba4c1ff9592612546dd67155c3a9ae6d976e82a6c9f",
+      "bytes": 1497
+    },
+    {
+      "file": "several_examples.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/several_examples.feature.pickles.ndjson",
+      "git_blob_sha1": "73f91fc20ebc4acf4f2023574843153c52fa6084",
+      "sha256": "48004396aac577d86f538d90433a76df3af1ad2c79ef5452ebc48addebbc80c3",
+      "bytes": 786
+    },
+    {
+      "file": "escaped_pipes.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/escaped_pipes.feature",
+      "git_blob_sha1": "489a145d709f64fdb46b9490a92e354c3a45b3bc",
+      "sha256": "d72d3bfa4a4b100ceefe3d28020bd640486d7981681f2cc8ac756033313a6c9c",
+      "bytes": 341
+    },
+    {
+      "file": "escaped_pipes.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/escaped_pipes.feature.ast.ndjson",
+      "git_blob_sha1": "036070f5bef5604939174e66ae922f07629a7843",
+      "sha256": "8e3a5e571877668734c715fbce3972bd734dfd595dd182ad1f4e834533017882",
+      "bytes": 1491
+    },
+    {
+      "file": "escaped_pipes.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/escaped_pipes.feature.pickles.ndjson",
+      "git_blob_sha1": "b07c90e3ee4ac855d585ed115caeeec2a5cbad8d",
+      "sha256": "35cb4361659a47d950a7ebf57746ccb7619f802c15801aaa47346212188d750c",
+      "bytes": 597
+    },
+    {
+      "file": "docstrings.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/docstrings.feature",
+      "git_blob_sha1": "13897651d18e248ece74f4cb9da3678c0bdb2bfe",
+      "sha256": "decebbc3249c1961502bdfb2edd4bb354acf0347f604a752f1b4800abc6a752f",
+      "bytes": 983
+    },
+    {
+      "file": "docstrings.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/docstrings.feature.ast.ndjson",
+      "git_blob_sha1": "bcfa0382943ae77ffad155d7fb9de2611c70d8f2",
+      "sha256": "5c3e76ea0adce9d47a6f71bf15cd19b54c96a0a8fbbc321d96cb77f3d95abd0c",
+      "bytes": 2412
+    },
+    {
+      "file": "docstrings.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/docstrings.feature.pickles.ndjson",
+      "git_blob_sha1": "1e1d1871359c80c1eb4b03bf483be4ba36379fed",
+      "sha256": "14eade31cdd90299c13c9a02732374f516422c037b98e8db5d4e368a6099bf60",
+      "bytes": 1549
+    },
+    {
+      "file": "step_with_datatable_and_docstring.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/step_with_datatable_and_docstring.feature",
+      "git_blob_sha1": "1fd9d20053ba38a0da578c2520b21e2fa5594cf9",
+      "sha256": "340563e165b3ffab402c14cc13b2a7063a26506da817639e313c35c582bc6c85",
+      "bytes": 351
+    },
+    {
+      "file": "step_with_datatable_and_docstring.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/step_with_datatable_and_docstring.feature.ast.ndjson",
+      "git_blob_sha1": "6c7be56429dbeff00ce7c13c556cf599d12f5547",
+      "sha256": "b3017d34252c1a688078bfd4fc57df0d4ad518c789f2fe86df161f0c30930a40",
+      "bytes": 1755
+    },
+    {
+      "file": "step_with_datatable_and_docstring.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/step_with_datatable_and_docstring.feature.pickles.ndjson",
+      "git_blob_sha1": "0c32a59f614e9b05289f47aaaedfc6e9799d322a",
+      "sha256": "ff3e5ea3f76532dd37d4e4a91ded4953904e9ee782afbaedce14be0b7aa377a9",
+      "bytes": 985
+    },
+    {
+      "file": "example_tokens_everywhere.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/example_tokens_everywhere.feature",
+      "git_blob_sha1": "edeefd076020ee8261c60a0be6de04c6dad5b233",
+      "sha256": "938c3bff904d126cf038a6a14d091f0472ed1215b08bd5db74a64cc006b90daf",
+      "bytes": 313
+    },
+    {
+      "file": "example_tokens_everywhere.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/example_tokens_everywhere.feature.ast.ndjson",
+      "git_blob_sha1": "83a1f0becc47b309de66c36d5d45ae79f8d641cb",
+      "sha256": "7c13d3f51b12aa4da3745b10d8af62d0e2df9ce4042dabb9cbe2272895336b20",
+      "bytes": 1945
+    },
+    {
+      "file": "example_tokens_everywhere.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/example_tokens_everywhere.feature.pickles.ndjson",
+      "git_blob_sha1": "09a9d68b27eb391049177f3140f9dfa979664389",
+      "sha256": "14879dda9893d30265a20ae89f5955b9263faf7f7998fb1a7c654d8c618b83cd",
+      "bytes": 888
+    }
+  ],
+  "license": {
+    "file": "LICENSE",
+    "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/LICENSE",
+    "sha256": "042bda2882d793c42fcd5f4d272579a432d1d52a0e5436202e5e823eae4771b6"
+  }
+}

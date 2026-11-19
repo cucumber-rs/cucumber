@@ -53,6 +53,13 @@ pub type LazyRegex = fn() -> Regex;
 pub trait StepConstructor<W> {
     /// Returns an inner [`Step`] with the corresponding [`Regex`].
     fn inner(&self) -> (step::Location, LazyRegex, Step<W>);
+
+    /// Optional per-registration metadata and execution policy.
+    ///
+    /// The default preserves manual implementations of the original contract.
+    fn options(&self) -> step::DefinitionOptions {
+        step::DefinitionOptions::default()
+    }
 }
 
 /// Custom parameter of a [Cucumber Expression].
@@ -64,10 +71,12 @@ pub trait StepConstructor<W> {
 pub trait Parameter {
     /// [`Regex`] matching this [`Parameter`].
     ///
-    /// Shouldn't contain any capturing groups.
+    /// Nested captures are accepted by the expression matcher. Existing Rust
+    /// handler conversion selects the first nonempty capture for the parameter;
+    /// this is not a JavaScript multi-argument transformer.
     ///
-    /// Validated during [`Parameter`](macro@crate::Parameter) derive macro
-    /// expansion.
+    /// Regex validity is checked during [`Parameter`](macro@crate::Parameter)
+    /// derive expansion.
     const REGEX: &'static str;
 
     /// Name of this [`Parameter`] to be referenced by in
@@ -75,6 +84,19 @@ pub trait Parameter {
     ///
     /// [Cucumber Expressions]: https://cucumber.github.io/cucumber-expressions
     const NAME: &'static str;
+
+    /// Complete declared reporting metadata, if snippet/preference flags are
+    /// known.
+    ///
+    /// Defaults to omission for existing custom types. Returned names and
+    /// regexes
+    /// must describe the actual [`Self::NAME`] and [`Self::REGEX`]. This does
+    /// not
+    /// add snippet generation or raw-regex transformer lookup to native
+    /// execution.
+    fn metadata() -> Option<crate::support_code::ParameterDescriptor> {
+        None
+    }
 }
 
 /// Compares two strings in a `const` context.

@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gqadonis:cucumber:sdk:proposal:1",
+  "title": "Proposed native SDK request/response contract; unadopted and unimplemented",
+  "$comment": "Planning artifact only. Open source graphs intentionally preserve upstream optional fields, including the Markdown keyword conflict. Baselines are target identities, not complete schema validation claims.",
+  "$defs": {
+    "request": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "operation": {
+              "const": "capabilities"
+            },
+            "input": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "version",
+            "operation",
+            "input"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "operation": {
+              "const": "compile"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "uri": {
+                  "type": "string"
+                },
+                "format": {
+                  "enum": [
+                    "gherkin",
+                    "markdown"
+                  ]
+                },
+                "defaultLanguage": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "source",
+                "uri",
+                "format",
+                "defaultLanguage"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "version",
+            "operation",
+            "input"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "operation": {
+              "const": "rerun"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "ndjson": {
+                  "type": "string"
+                },
+                "separator": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ndjson",
+                "separator"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "version",
+            "operation",
+            "input"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "attempt": {
+      "type": "object",
+      "properties": {
+        "startedId": {
+          "type": "string"
+        },
+        "testCaseId": {
+          "type": "string"
+        },
+        "pickleId": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "line": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "status": {
+          "enum": [
+            "UNKNOWN",
+            "PASSED",
+            "SKIPPED",
+            "PENDING",
+            "UNDEFINED",
+            "AMBIGUOUS",
+            "FAILED"
+          ]
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "willBeRetried": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "startedId",
+        "testCaseId",
+        "pickleId",
+        "attempt",
+        "uri",
+        "line",
+        "status",
+        "completed",
+        "willBeRetried"
+      ],
+      "additionalProperties": false
+    },
+    "entry": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
+          }
+        }
+      },
+      "required": [
+        "uri",
+        "lines"
+      ],
+      "additionalProperties": false
+    },
+    "compiled": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "compiled"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "gherkin",
+            "markdown"
+          ]
+        },
+        "gherkinDocument": {
+          "type": "object"
+        },
+        "pickles": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "uri",
+        "format",
+        "gherkinDocument",
+        "pickles"
+      ],
+      "additionalProperties": false
+    },
+    "rerun": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "rerun"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "runSuccess": {
+          "type": "boolean"
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attempt"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        },
+        "formatted": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "runId",
+        "runSuccess",
+        "attempts",
+        "entries",
+        "formatted"
+      ],
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "capabilities"
+        },
+        "protocolVersions": {
+          "const": [
+            1
+          ]
+        },
+        "operations": {
+          "const": [
+            "capabilities",
+            "compile",
+            "rerun"
+          ]
+        },
+        "formats": {
+          "const": [
+            "gherkin",
+            "markdown"
+          ]
+        },
+        "baselines": {
+          "type": "object",
+          "properties": {
+            "gherkin": {
+              "const": "43.0.0"
+            },
+            "cucumberJs": {
+              "const": "13.3.0"
+            },
+            "messages": {
+              "const": [
+                "34.2.1",
+                "35.0.0"
+              ]
+            }
+          },
+          "required": [
+            "gherkin",
+            "cucumberJs",
+            "messages"
+          ],
+          "additionalProperties": false
+        },
+        "foreignStepExecution": {
+          "const": false
+        }
+      },
+      "required": [
+        "kind",
+        "protocolVersions",
+        "operations",
+        "formats",
+        "baselines",
+        "foreignStepExecution"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "INVALID_REQUEST",
+            "UNSUPPORTED_VERSION",
+            "UNKNOWN_OPERATION",
+            "SOURCE_ERROR",
+            "INVALID_MESSAGES",
+            "INCOMPLETE_RUN",
+            "RUN_ALREADY_FINISHED",
+            "MISSING_REFERENCE",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "line": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "referenceKind": {
+          "type": "string"
+        },
+        "referenceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "SOURCE_ERROR"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "uri"
+            ]
+          }
+        }
+      ]
+    },
+    "response": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "ok": {
+              "const": true
+            },
+            "result": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/compiled"
+                },
+                {
+                  "$ref": "#/$defs/rerun"
+                },
+                {
+                  "$ref": "#/$defs/capabilities"
+                }
+              ]
+            }
+          },
+          "required": [
+            "version",
+            "ok",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "ok": {
+              "const": false
+            },
+            "error": {
+              "$ref": "#/$defs/error"
+            }
+          },
+          "required": [
+            "version",
+            "ok",
+            "error"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/response"
+    }
+  ]
+}

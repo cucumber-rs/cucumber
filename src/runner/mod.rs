@@ -12,12 +12,51 @@
 //!
 //! [Gherkin]: https://cucumber.io/docs/gherkin/reference/
 
+pub mod assignment;
 pub mod basic;
+#[doc(inline)]
+pub use assignment::{
+    AssignmentAdmission, AssignmentCase, AssignmentDecision,
+    AssignmentDecisionKind, AssignmentPolicy, AssignmentStore, AssignmentWait,
+    AssignmentWarning,
+};
+pub mod scheduling;
+#[doc(inline)]
+pub use scheduling::{
+    OrderingRecord, OrderingStore, ScenarioOrder, SchedulingOptions,
+};
+pub mod hooks;
+pub mod retry_policy;
+
+#[doc(inline)]
+pub use self::retry_policy::{RetryPolicy, RetryPolicyError};
+mod outcomes;
+pub mod run_hooks;
+pub mod scenario_hooks;
+pub mod step_hooks;
+pub mod timeout;
 
 use futures::Stream;
 
 #[doc(inline)]
-pub use self::basic::{Basic, ScenarioType};
+pub use self::run_hooks::{
+    RunHookDefinition, RunHookKind, RunHookRecord, RunHookScope, RunHookSkip,
+    RunHookStore, RunHooks,
+};
+#[doc(inline)]
+pub use self::timeout::{
+    CallbackConstruction, ThreadTimer, TimeoutClock, TimeoutError,
+    TimeoutPolicy, Timeouts,
+};
+#[doc(inline)]
+pub use self::{
+    basic::{BackgroundSemantics, Basic, ScenarioType},
+    hooks::Hooks,
+    step_hooks::{
+        StepBodyOutcome, StepHookDefinition, StepHookKind, StepHookRecord,
+        StepHookScope, StepHookStore, StepHooks,
+    },
+};
 use crate::{Event, event, parser};
 #[cfg(doc)]
 use crate::{Step, event::Source};
@@ -81,6 +120,20 @@ pub trait Runner<World> {
         Item = parser::Result<Event<event::Cucumber<World>>>,
     >;
 
+    /// Accepts an optional handoff for actual step-definition metadata.
+    ///
+    /// Existing custom runners remain source-compatible and may ignore it.
+    /// Supporting runners publish their final collection before producing
+    /// events;
+    /// reporters distinguish an absent snapshot from an empty collection.
+    #[must_use]
+    fn with_support_code_store(self, _store: crate::support_code::Store) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+
     /// Executes the given [`Stream`] of [`Feature`]s transforming it into
     /// a [`Stream`] of executed [`Cucumber`] events.
     ///
@@ -90,3 +143,12 @@ pub trait Runner<World> {
     where
         S: Stream<Item = parser::Result<gherkin::Feature>> + 'static;
 }
+
+#[doc(inline)]
+pub use self::scenario_hooks::{
+    EmptyScenarioHooks, ScenarioHookAttempt, ScenarioHookDefinition,
+    ScenarioHookDisposition, ScenarioHookFailure, ScenarioHookInitialization,
+    ScenarioHookKind, ScenarioHookPlan, ScenarioHookRecord, ScenarioHookResult,
+    ScenarioHookScope, ScenarioHookSkipReason, ScenarioHookStatus,
+    ScenarioHookStore,
+};

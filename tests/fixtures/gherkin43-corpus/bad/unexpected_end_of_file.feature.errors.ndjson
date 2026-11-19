@@ -1,0 +1,1 @@
+{"parseError":{"message":"(3:0): unexpected end of file, expected: #TagLine, #RuleLine, #Comment, #Empty","source":{"location":{"line":3},"uri":"../testdata/bad/unexpected_end_of_file.feature"}}}

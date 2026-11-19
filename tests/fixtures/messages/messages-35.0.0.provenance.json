@@ -1,0 +1,5 @@
+{
+  "source": "https://raw.githubusercontent.com/cucumber/messages/v35.0.0/jsonschema/messages.schema.json",
+  "sha256": "f38d9465faaa2920290f6d659fd88f8aa02e3789473a97a08625aab49d285d62",
+  "license": "MIT; see LICENSE.messages in this directory"
+}

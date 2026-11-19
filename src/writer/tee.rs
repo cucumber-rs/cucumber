@@ -110,6 +110,21 @@ where
         cmp::max(self.left.retried_steps(), self.right.retried_steps())
     }
 
+    fn pending_steps(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.pending_steps(), self.right.pending_steps())
+    }
+
+    fn pending_hooks(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.pending_hooks(), self.right.pending_hooks())
+    }
+
+    fn pending_failures(&self) -> usize {
+        // Either one of them is zero, or both numbers are the same.
+        cmp::max(self.left.pending_failures(), self.right.pending_failures())
+    }
+
     fn parsing_errors(&self) -> usize {
         // Either one of them is zero, or both numbers are the same.
         cmp::max(self.left.parsing_errors(), self.right.parsing_errors())
@@ -118,6 +133,9 @@ where
     fn hook_errors(&self) -> usize {
         // Either one of them is zero, or both numbers are the same.
         cmp::max(self.left.hook_errors(), self.right.hook_errors())
+    }
+    fn execution_has_failed(&self) -> bool {
+        self.left.execution_has_failed() || self.right.execution_has_failed()
     }
 }
 

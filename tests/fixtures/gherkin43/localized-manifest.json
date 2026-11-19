@@ -1,0 +1,49 @@
+{
+  "repository": "cucumber/gherkin",
+  "tag": "v43.0.0",
+  "commit": "3d70e2bb4e0f16a568ee539a5ce0b03fb247a777",
+  "files": [
+    {
+      "file": "i18n_fr.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_fr.feature",
+      "git_blob_sha1": "ddeafa4cb507973268dc2e3fa3f261325273d71b",
+      "sha256": "7fd64dbb8854653903da26b4181cdf1489660c157fcca0dda5351ec7e09f1902",
+      "bytes": 1892
+    },
+    {
+      "file": "i18n_fr.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_fr.feature.ast.ndjson",
+      "git_blob_sha1": "c75f83b7e6d3c5cab8930318e8a178aa3e65cee9",
+      "sha256": "b4e6a6942e541b364905980a92f023dff87961a73e9087778323790ffdb9f10f",
+      "bytes": 6923
+    },
+    {
+      "file": "i18n_fr.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_fr.feature.pickles.ndjson",
+      "git_blob_sha1": "cdcb326fb7bbe487d075491694c1a9023f298974",
+      "sha256": "6feaba57e2d573826033ec2d47e5de6e82eaff4f14c1139617866b45911f3934",
+      "bytes": 5299
+    },
+    {
+      "file": "i18n_emoji.feature",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_emoji.feature",
+      "git_blob_sha1": "96c03ba97a80f0dca7b5775ab991a946277c2c49",
+      "sha256": "f0e2776a784db701d68b14e55688d2364ed56c48ebe2c0814b372841ced1e8f9",
+      "bytes": 61
+    },
+    {
+      "file": "i18n_emoji.feature.ast.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_emoji.feature.ast.ndjson",
+      "git_blob_sha1": "449d188a6d0a54623d422f48ee4a025bb6e50d50",
+      "sha256": "44438217d479da0f323211c63001c6ce40c6355b1a28158e163e279f48148e79",
+      "bytes": 458
+    },
+    {
+      "file": "i18n_emoji.feature.pickles.ndjson",
+      "url": "https://raw.githubusercontent.com/cucumber/gherkin/3d70e2bb4e0f16a568ee539a5ce0b03fb247a777/testdata/good/i18n_emoji.feature.pickles.ndjson",
+      "git_blob_sha1": "b62ca43cd6f7f751b8c308424d2ab3525f9774a0",
+      "sha256": "b36b45fc50d835dd6dd3df0b690bb73d2bd5a92903a33145e3897c279d0cde84",
+      "bytes": 229
+    }
+  ]
+}

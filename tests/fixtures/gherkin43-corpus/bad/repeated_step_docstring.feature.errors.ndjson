@@ -1,0 +1,3 @@
+{"parseError":{"message":"(8:1): expected: #EOF, #TableRow, #StepLine, #TagLine, #ExamplesLine, #ScenarioLine, #RuleLine, #Comment, #Empty, got '\"\"\"'","source":{"location":{"column":1,"line":8},"uri":"../testdata/bad/repeated_step_docstring.feature"}}}
+{"parseError":{"message":"(9:1): expected: #EOF, #TableRow, #StepLine, #TagLine, #ExamplesLine, #ScenarioLine, #RuleLine, #Comment, #Empty, got 'two'","source":{"location":{"column":1,"line":9},"uri":"../testdata/bad/repeated_step_docstring.feature"}}}
+{"parseError":{"message":"(10:1): expected: #EOF, #TableRow, #StepLine, #TagLine, #ExamplesLine, #ScenarioLine, #RuleLine, #Comment, #Empty, got '\"\"\"'","source":{"location":{"column":1,"line":10},"uri":"../testdata/bad/repeated_step_docstring.feature"}}}

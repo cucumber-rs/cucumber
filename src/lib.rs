@@ -10,7 +10,8 @@
 
 #![doc(
     html_logo_url = "https://avatars.githubusercontent.com/u/91469139?s=128",
-    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=256"
+    html_favicon_url = "https://avatars.githubusercontent.com/u/91469139?s=25\
+        6"
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
@@ -162,14 +163,18 @@
     variant_size_differences
 )]
 
+pub mod attachment;
 pub mod cli;
 mod cucumber;
 pub mod event;
+pub mod execution;
 pub mod feature;
+pub mod filter;
 pub(crate) mod future;
 pub mod parser;
 pub mod runner;
 pub mod step;
+pub mod support_code;
 pub mod tag;
 pub mod writer;
 
@@ -207,6 +212,7 @@ use self::{
 pub use self::{
     cucumber::Cucumber,
     event::Event,
+    filter::FilterOptions,
     parser::Parser,
     runner::{Runner, ScenarioType},
     step::Step,
@@ -235,6 +241,29 @@ pub trait World: Sized + 'static {
     /// Creates a new [`World`] instance.
     fn new() -> impl Future<Output = Result<Self, Self::Error>>;
 
+    /// Creates a World with access to runner-owned attachment scopes.
+    ///
+    /// Existing implementations retain their original constructor by default.
+    /// Attachment-aware Worlds can override this method and retain the context.
+    fn new_with_context(
+        _context: attachment::AttachmentContext,
+    ) -> impl Future<Output = Result<Self, Self::Error>> {
+        Self::new()
+    }
+
+    /// Creates a World with attachment and explicitly enabled completion
+    /// contexts.
+    ///
+    /// Existing implementations keep their attachment-aware or original
+    /// constructor.
+    /// Completion-aware Worlds can override this method and retain
+    /// `context.execution()`.
+    fn new_with_runtime_context(
+        context: execution::WorldContext,
+    ) -> impl Future<Output = Result<Self, Self::Error>> {
+        Self::new_with_context(context.attachments())
+    }
+
     #[cfg(feature = "macros")]
     /// Returns runner for tests with auto-wired steps marked by [`given`],
     /// [`when`] and [`then`] attributes.
@@ -247,17 +276,24 @@ pub trait World: Sized + 'static {
 
         for given in inventory::iter::<Self::Given> {
             let (loc, regex, fun) = given.inner();
-            out = out.given(Some(loc), regex(), fun);
+            out = out.given_with_options(
+                Some(loc),
+                regex(),
+                fun,
+                given.options(),
+            );
         }
 
         for when in inventory::iter::<Self::When> {
             let (loc, regex, fun) = when.inner();
-            out = out.when(Some(loc), regex(), fun);
+            out =
+                out.when_with_options(Some(loc), regex(), fun, when.options());
         }
 
         for then in inventory::iter::<Self::Then> {
             let (loc, regex, fun) = then.inner();
-            out = out.then(Some(loc), regex(), fun);
+            out =
+                out.then_with_options(Some(loc), regex(), fun, then.options());
         }
 
         out

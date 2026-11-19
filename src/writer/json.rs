@@ -226,7 +226,7 @@ impl<Out: io::Write> Json<Out> {
                 .as_nanos()
         };
 
-        let res = match event {
+        let mut res = match event {
             Hook::Started => {
                 self.started = Some(meta.at);
                 return;
@@ -255,6 +255,7 @@ impl<Out: io::Write> Json<Out> {
             },
         };
 
+        res.result.apply_outcome(meta.outcome);
         let el =
             self.mut_or_insert_element(feature, rule, scenario, "scenario");
         match hook_ty {
@@ -292,7 +293,7 @@ impl<Out: io::Write> Json<Out> {
                 .as_nanos()
         };
 
-        let result = match event {
+        let mut result = match event {
             event::Step::Started => {
                 self.started = Some(meta.at);
                 _ = self.mut_or_insert_element(feature, rule, scenario, ty);
@@ -329,6 +330,7 @@ impl<Out: io::Write> Json<Out> {
             },
         };
 
+        result.apply_outcome(meta.outcome);
         let step = Step {
             keyword: step.keyword.clone(),
             line: step.position.line,
@@ -480,10 +482,35 @@ pub enum Status {
     /// [`event::Step::Failed`] with an [`event::StepError::NotFound`].
     Undefined,
 
-    /// Never constructed and is here only to fully describe [JSON schema][1].
+    /// Work explicitly marked pending under an enabled execution policy.
     ///
     /// [1]: https://github.com/cucumber/cucumber-json-schema
     Pending,
+}
+
+impl RunResult {
+    /// Native event variants are a compatibility projection when metadata
+    /// exists.
+    fn apply_outcome(&mut self, outcome: Option<crate::execution::Outcome>) {
+        use crate::execution::OutcomeStatus;
+        let Some(outcome) = outcome else { return };
+        self.status = match outcome.status {
+            OutcomeStatus::Passed => Status::Passed,
+            OutcomeStatus::Skipped => Status::Skipped,
+            OutcomeStatus::Pending => Status::Pending,
+            OutcomeStatus::Undefined => Status::Undefined,
+            OutcomeStatus::Ambiguous => Status::Ambiguous,
+            OutcomeStatus::Failed => Status::Failed,
+        };
+        if matches!(
+            outcome.status,
+            OutcomeStatus::Passed
+                | OutcomeStatus::Skipped
+                | OutcomeStatus::Pending
+        ) {
+            self.error_message = None;
+        }
+    }
 }
 
 /// [`Serialize`]able result of running something.

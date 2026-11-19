@@ -71,6 +71,14 @@ where
             StepError::NotFound,
         };
 
+        // An explicit completion is not an undefined legacy step. Its actual
+        // policy is authoritative, including non-strict pending and deliberate
+        // skip.
+        if event.as_ref().is_ok_and(|event| event.outcome.is_some()) {
+            self.writer.handle_event(event, cli).await;
+            return;
+        }
+
         let map_failed = |f: &Source<_>, r: &Option<_>, sc: &Source<_>| {
             if (self.should_fail)(f, r.as_deref(), sc) {
                 Step::Failed(None, None, None, NotFound)
@@ -183,6 +191,18 @@ where
 
     fn retried_steps(&self) -> usize {
         self.writer.retried_steps()
+    }
+
+    fn pending_steps(&self) -> usize {
+        self.writer.pending_steps()
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.writer.pending_hooks()
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.writer.pending_failures()
     }
 
     fn parsing_errors(&self) -> usize {

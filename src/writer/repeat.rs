@@ -121,6 +121,18 @@ where
         self.writer.retried_steps()
     }
 
+    fn pending_steps(&self) -> usize {
+        self.writer.pending_steps()
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.writer.pending_hooks()
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.writer.pending_failures()
+    }
+
     fn parsing_errors(&self) -> usize {
         self.writer.parsing_errors()
     }
@@ -163,6 +175,13 @@ impl<W, Wr> Repeat<W, Wr> {
         Self {
             writer,
             filter: |ev| {
+                if let Ok(event) = ev {
+                    if let Some(outcome) = event.outcome {
+                        return terminal_outcome(&event.value)
+                            && outcome.status
+                                == crate::execution::OutcomeStatus::Skipped;
+                    }
+                }
                 matches!(
                     ev.as_deref(),
                     Ok(Cucumber::Feature(
@@ -209,6 +228,12 @@ impl<W, Wr> Repeat<W, Wr> {
         Self {
             writer,
             filter: |ev| {
+                if let Ok(event) = ev {
+                    if let Some(outcome) = event.outcome {
+                        return terminal_outcome(&event.value)
+                            && outcome.fails_run;
+                    }
+                }
                 matches!(
                     ev.as_deref(),
                     Ok(Cucumber::Feature(
@@ -248,4 +273,24 @@ impl<W, Wr> Repeat<W, Wr> {
     pub fn inner_writer(&self) -> &Wr {
         &self.writer
     }
+}
+
+fn terminal_outcome<W>(event: &event::Cucumber<W>) -> bool {
+    use event::{Cucumber, Feature, Hook, Rule, Scenario, Step};
+    let scenario = match event {
+        Cucumber::Feature(_, Feature::Scenario(_, event))
+        | Cucumber::Feature(_, Feature::Rule(_, Rule::Scenario(_, event))) => {
+            &event.event
+        }
+        _ => return false,
+    };
+    matches!(
+        scenario,
+        Scenario::Step(_, Step::Passed(..) | Step::Skipped | Step::Failed(..))
+            | Scenario::Background(
+                _,
+                Step::Passed(..) | Step::Skipped | Step::Failed(..)
+            )
+            | Scenario::Hook(_, Hook::Passed | Hook::Failed(..))
+    )
 }

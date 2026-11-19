@@ -1,0 +1,11 @@
+This unpublished local package is part of the GQAdonis fork of cucumber-rs/cucumber.
+It is not an official Cucumber Python distribution and implies no upstream
+endorsement. It exposes the shared Rust SDK through PyO3; it does not implement
+a Python Gherkin parser or execute Python step definitions.
+
+Cucumber core and this adapter: MIT OR Apache-2.0; retained texts are LICENSE-MIT
+and LICENSE-APACHE. Vendored Gherkin crate and upstream grammar notices are
+retained in licenses/. Native wheels also include transitive Rust dependencies;
+these notices are not a complete third-party license inventory. Complete that
+inventory and confirm package ownership, name and publication scope before any
+public distribution. No registry name is reserved by this local placeholder.

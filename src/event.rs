@@ -50,6 +50,11 @@ pub struct Event<T: ?Sized> {
     #[cfg(feature = "timestamps")]
     pub at: SystemTime,
 
+    /// Authoritative completion status in explicitly selected outcome mode.
+    /// Existing native variants remain a conservative projection; None retains
+    /// legacy semantics.
+    pub outcome: Option<crate::execution::Outcome>,
+
     /// Actual value of this [`Event`].
     #[as_ref]
     #[deref]
@@ -68,8 +73,17 @@ impl<T> Event<T> {
         Self {
             #[cfg(feature = "timestamps")]
             at: SystemTime::now(),
+            outcome: None,
             value,
         }
+    }
+
+    /// Attaches an observed status without changing the compatible native
+    /// variant.
+    #[must_use]
+    pub fn with_outcome(mut self, outcome: crate::execution::Outcome) -> Self {
+        self.outcome = Some(outcome);
+        self
     }
 
     /// Unwraps the inner [`Event::value`] loosing all the attached metadata.
@@ -106,6 +120,7 @@ impl<T> Event<T> {
         let event = Event {
             #[cfg(feature = "timestamps")]
             at: self.at,
+            outcome: self.outcome,
             value,
         };
         (self.value, event)

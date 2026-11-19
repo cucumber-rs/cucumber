@@ -1,0 +1,233 @@
+{
+  "repository": "cucumber/gherkin",
+  "tag": "v43.0.0",
+  "commit": "3d70e2bb4e0f16a568ee539a5ce0b03fb247a777",
+  "scope": "All testdata/{good,bad}/*.feature.md and associated source/AST/Pickle/token expectations; 5 good, 0 bad",
+  "files": [
+    {
+      "path": "testdata/good/datatables.feature.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e02f155fc8e0ae877b5ff9970f6c203478368946",
+      "size": 129,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e02f155fc8e0ae877b5ff9970f6c203478368946",
+      "sha256": "0a0278a450d90c84424ba0256ecac521cb94ff0e572c665e805cd20d108c423e"
+    },
+    {
+      "path": "testdata/good/datatables.feature.md.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ff3747d205de7d41e58b5a476820939e21bf157a",
+      "size": 853,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/ff3747d205de7d41e58b5a476820939e21bf157a",
+      "sha256": "48aed26378b7a36ee923c85184daf4551a816bf635229beb74651fa0a3b67a7f"
+    },
+    {
+      "path": "testdata/good/datatables.feature.md.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f35fad6f51f1a8cdb6649c3e5267bfa7c54483c1",
+      "size": 379,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f35fad6f51f1a8cdb6649c3e5267bfa7c54483c1",
+      "sha256": "3cfc853d00bd74e230e6677f55d78404ee195b21796c16d666fcc87be9204205"
+    },
+    {
+      "path": "testdata/good/datatables.feature.md.source.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23b8121294fe04b499089ac54f89a53d4da80e70",
+      "size": 254,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/23b8121294fe04b499089ac54f89a53d4da80e70",
+      "sha256": "5a38d4004c4e765897b8fa1975d53b1adfc377859e5a9633bcdc4e489a39b73a"
+    },
+    {
+      "path": "testdata/good/datatables.feature.md.tokens",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f152af3c3f4ebb6959455981095122c05f89570a",
+      "size": 243,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f152af3c3f4ebb6959455981095122c05f89570a",
+      "sha256": "0ca3d0101bbc0d0d08ef665451898466e280793d05e532d580742ead0b332cae"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16ff9f82347586f58322af0ab25d02b2d673e987",
+      "size": 138,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/16ff9f82347586f58322af0ab25d02b2d673e987",
+      "sha256": "7dcc397d81b7626de5f01d0340c340f6649ee51639391102e55d7ac291c3b9e0"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.md.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7139bcd46fd1a8f2becb66d90192dafead7595aa",
+      "size": 621,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/7139bcd46fd1a8f2becb66d90192dafead7595aa",
+      "sha256": "1982f93a5013ae8768101adae5dc3dddda042e07b7d4b15781681ab903dae291"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.md.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "92c9fd835ea5d7f1483c47f71886626c9ef4caaf",
+      "size": 334,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/92c9fd835ea5d7f1483c47f71886626c9ef4caaf",
+      "sha256": "cf7343072e78a3f082f7131093bf5b1c175769bdfd541ff9dabcd52e634dafc7"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.md.source.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e9d4d7057ba6ea0cd0b12daf932b5af4b4f1407",
+      "size": 263,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/0e9d4d7057ba6ea0cd0b12daf932b5af4b4f1407",
+      "sha256": "b22bd32593fbbc4de4d35f8f90605840488090c2f0cdb1d3aebb6392f21ad2a1"
+    },
+    {
+      "path": "testdata/good/docstrings.feature.md.tokens",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41bce162123417df92af4ed630215ca860fa7f09",
+      "size": 296,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/41bce162123417df92af4ed630215ca860fa7f09",
+      "sha256": "a31a615e052f13b8c7f4427ce6c32240df636bfacd7b5baf7dec8a4ee271899d"
+    },
+    {
+      "path": "testdata/good/minimal.feature.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "887f6c72144430d2c8c8adddb8b914bdaeba586e",
+      "size": 73,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/887f6c72144430d2c8c8adddb8b914bdaeba586e",
+      "sha256": "03717d473a615fc29fafd8e8a05a6b1ee515983c20f6b2b0a2c9820378e7cc72"
+    },
+    {
+      "path": "testdata/good/minimal.feature.md.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7f7ddef24559ced858cb6a5943a7999738bfed1",
+      "size": 480,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/c7f7ddef24559ced858cb6a5943a7999738bfed1",
+      "sha256": "6c538cf43e23c830c6b95b3050a9123f011053b0afce169862be398cb45aee10"
+    },
+    {
+      "path": "testdata/good/minimal.feature.md.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba6ad71809bac248ea2ccb4ae630614ec429f762",
+      "size": 247,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/ba6ad71809bac248ea2ccb4ae630614ec429f762",
+      "sha256": "333ebd15a9abfab81d57572a8efc9efc07257787b999506ef57aa64762320b72"
+    },
+    {
+      "path": "testdata/good/minimal.feature.md.source.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6c82620ee5a11ff2b55358e58a272a2dc295c02",
+      "size": 192,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/e6c82620ee5a11ff2b55358e58a272a2dc295c02",
+      "sha256": "f4a4fb28f616f84b51a580a2f34a6c636b1ed1cef176372e94514996838d04c2"
+    },
+    {
+      "path": "testdata/good/minimal.feature.md.tokens",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d34320ee108c291e2e936aa43eb191e6ca3422d",
+      "size": 157,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/4d34320ee108c291e2e936aa43eb191e6ca3422d",
+      "sha256": "d3ae469ecb81ab70df044804ef7599bbfd1b859391f2a13c599d6d8943ee798b"
+    },
+    {
+      "path": "testdata/good/misc.feature.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95ed97a2a5a879d8f709856eef4a34a22aff4d42",
+      "size": 735,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/95ed97a2a5a879d8f709856eef4a34a22aff4d42",
+      "sha256": "dc5a47f332861f4b10ac355c34a9c8bcafe2fb2be892300356718a056baae0b2"
+    },
+    {
+      "path": "testdata/good/misc.feature.md.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f04397ef2b9e2ba98ebd5e437fe7436796c57fdd",
+      "size": 1192,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f04397ef2b9e2ba98ebd5e437fe7436796c57fdd",
+      "sha256": "cbc5f9119aa3caa392a0a2b787b6ac53362280a575f65e645c74201135669386"
+    },
+    {
+      "path": "testdata/good/misc.feature.md.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3308e0ddb8e06246eeaabd65cf56622b79d3f9c",
+      "size": 765,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b3308e0ddb8e06246eeaabd65cf56622b79d3f9c",
+      "sha256": "1e656f9541efc3fd8965796b187ee16c56371626dd91e3f4f50927c20332823e"
+    },
+    {
+      "path": "testdata/good/misc.feature.md.source.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b51781003bcfec9f0b743842265ca19856eff901",
+      "size": 873,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/b51781003bcfec9f0b743842265ca19856eff901",
+      "sha256": "7b407f214202cd199263a3523b1101cf143cc583b5a0716024b14c38ac325e01"
+    },
+    {
+      "path": "testdata/good/misc.feature.md.tokens",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f34c1973836ca477912724b7beb1edec094b2084",
+      "size": 652,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/f34c1973836ca477912724b7beb1edec094b2084",
+      "sha256": "b559d7963064a1d9418267463390241bbe2f0f5d7a2f48ab8a60639b8841f6ac"
+    },
+    {
+      "path": "testdata/good/tags.feature.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6df141d5b77a84a750d5fdbd4f06a37a5d4b4d7",
+      "size": 765,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/a6df141d5b77a84a750d5fdbd4f06a37a5d4b4d7",
+      "sha256": "3e8d1911196c034ec571b81f5fb333e1271fd8ab0b23d332e79d6df07bc676ff"
+    },
+    {
+      "path": "testdata/good/tags.feature.md.ast.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "26df9f842333fe87a23a56112a5c98abeaf2b759",
+      "size": 3375,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/26df9f842333fe87a23a56112a5c98abeaf2b759",
+      "sha256": "0295b3a634859c308ac570584a0062e2bf2fcfe3d63bdb9497ff53401fd4e02f"
+    },
+    {
+      "path": "testdata/good/tags.feature.md.pickles.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "08960e19e977837310a26883da3d4e0cf4c4dffb",
+      "size": 2830,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/08960e19e977837310a26883da3d4e0cf4c4dffb",
+      "sha256": "1ec91997c76a159e5f3e9f57df342ae11b40b70d73decac39c4671fff4e5606b"
+    },
+    {
+      "path": "testdata/good/tags.feature.md.source.ndjson",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9740f7db6b4b98ecd5504dfc5a885ccfe6c438ad",
+      "size": 918,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/9740f7db6b4b98ecd5504dfc5a885ccfe6c438ad",
+      "sha256": "200aeb9addbc5e9118444ba8b33ca0e3d29f72dbc2fde5587df30608afaaf6ab"
+    },
+    {
+      "path": "testdata/good/tags.feature.md.tokens",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bb27977e3da8c28ad4eca4dabd83e4861c589c94",
+      "size": 1281,
+      "url": "https://api.github.com/repos/cucumber/gherkin/git/blobs/bb27977e3da8c28ad4eca4dabd83e4861c589c94",
+      "sha256": "87815997ba823fa997bfef2fac40621c117eb54faec5cbba41a1e43076a76e51"
+    }
+  ]
+}

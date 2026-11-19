@@ -35,6 +35,21 @@ use crate::{
     },
 };
 
+/// Counters at the start of a normalized scenario, restored for an opt-in
+/// retry.
+#[derive(Clone, Copy, Debug)]
+struct ControlledSnapshot {
+    passed: usize,
+    failed: usize,
+    ignored: usize,
+    hook_errors: usize,
+    pending_steps: usize,
+    pending_hooks: usize,
+    pending_failed_events: usize,
+    pending_ignored_events: usize,
+    ignored_hooks: usize,
+}
+
 /// CLI options of a [`Libtest`] [`Writer`].
 #[derive(Clone, Debug, Default, clap::Args)]
 #[group(skip)]
@@ -146,6 +161,7 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     ///
     /// [`ParsingFinished`]: event::Cucumber::ParsingFinished
     parsed_all: bool,
+    controlled_snapshot: Option<ControlledSnapshot>,
 
     /// Number of passed [`Step`]s.
     ///
@@ -156,6 +172,19 @@ pub struct Libtest<W, Out: io::Write = io::Stdout> {
     ///
     /// [`Step`]: gherkin::Step
     failed: usize,
+
+    /// Actual pending steps, independent of the libtest projection.
+    pending_steps: usize,
+    /// Actual pending scenario stages.
+    pending_hooks: usize,
+    /// Final strict-pending scenario failures.
+    pending_failures: usize,
+    /// Pending invocations projected as libtest failures.
+    pending_failed_events: usize,
+    /// Pending invocations projected as ignored tests.
+    pending_ignored_events: usize,
+    /// Explicitly skipped scenario stages projected as ignored tests.
+    ignored_hooks: usize,
 
     /// Number of retried [`Step`]s.
     ///
@@ -207,8 +236,15 @@ impl<World, Out: Clone + io::Write> Clone for Libtest<World, Out> {
             output: self.output.clone(),
             events: self.events.clone(),
             parsed_all: self.parsed_all,
+            controlled_snapshot: self.controlled_snapshot,
             passed: self.passed,
             failed: self.failed,
+            ignored_hooks: self.ignored_hooks,
+            pending_ignored_events: self.pending_ignored_events,
+            pending_failed_events: self.pending_failed_events,
+            pending_failures: self.pending_failures,
+            pending_hooks: self.pending_hooks,
+            pending_steps: self.pending_steps,
             retried: self.retried,
             ignored: self.ignored,
             parsing_errors: self.parsing_errors,
@@ -317,8 +353,15 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             output,
             events: Vec::new(),
             parsed_all: false,
+            controlled_snapshot: None,
             passed: 0,
             failed: 0,
+            ignored_hooks: 0,
+            pending_ignored_events: 0,
+            pending_failed_events: 0,
+            pending_failures: 0,
+            pending_hooks: 0,
+            pending_steps: 0,
             retried: 0,
             parsing_errors: 0,
             hook_errors: 0,
@@ -405,12 +448,16 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
                     .as_ref()
                     .map(Duration::as_secs_f64);
 
-                let failed =
-                    self.failed + self.parsing_errors + self.hook_errors;
+                let failed = self.failed
+                    + self.parsing_errors
+                    + self.hook_errors
+                    + self.pending_failed_events;
                 let results = SuiteResults {
                     passed: self.passed,
                     failed,
-                    ignored: self.ignored,
+                    ignored: self.ignored
+                        + self.ignored_hooks
+                        + self.pending_ignored_events,
                     measured: 0,
                     filtered_out: 0,
                     exec_time,
@@ -497,7 +544,48 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
 
         let retries = ev.retries;
         match ev.event {
-            Scenario::Started | Scenario::Finished => Vec::new(),
+            Scenario::Started => {
+                self.controlled_snapshot = Some(ControlledSnapshot {
+                    passed: self.passed,
+                    failed: self.failed,
+                    ignored: self.ignored,
+                    hook_errors: self.hook_errors,
+                    pending_steps: self.pending_steps,
+                    pending_hooks: self.pending_hooks,
+                    pending_failed_events: self.pending_failed_events,
+                    pending_ignored_events: self.pending_ignored_events,
+                    ignored_hooks: self.ignored_hooks,
+                });
+                Vec::new()
+            }
+            Scenario::Finished => {
+                if let Some(outcome) = meta.outcome {
+                    if outcome.retryable
+                        && retries.is_some_and(|retry| retry.left > 0)
+                    {
+                        if let Some(snapshot) = self.controlled_snapshot {
+                            self.passed = snapshot.passed;
+                            self.failed = snapshot.failed;
+                            self.ignored = snapshot.ignored;
+                            self.hook_errors = snapshot.hook_errors;
+                            self.pending_steps = snapshot.pending_steps;
+                            self.pending_hooks = snapshot.pending_hooks;
+                            self.pending_failed_events =
+                                snapshot.pending_failed_events;
+                            self.pending_ignored_events =
+                                snapshot.pending_ignored_events;
+                            self.ignored_hooks = snapshot.ignored_hooks;
+                        }
+                    } else if outcome.status
+                        == crate::execution::OutcomeStatus::Pending
+                        && outcome.fails_run
+                    {
+                        self.pending_failures += 1;
+                    }
+                }
+                self.controlled_snapshot = None;
+                Vec::new()
+            }
             Scenario::Hook(ty, ev) => self.expand_hook_event(
                 feature, rule, scenario, ty, ev, retries, meta, cli,
             ),
@@ -537,6 +625,48 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
         meta: event::Metadata,
         cli: &Cli,
     ) -> Vec<LibTestJsonEvent> {
+        if !matches!(ev, event::Hook::Started) {
+            if let Some(outcome) = meta.outcome {
+                use crate::execution::OutcomeStatus;
+                if matches!(
+                    outcome.status,
+                    OutcomeStatus::Pending | OutcomeStatus::Skipped
+                ) {
+                    let name = self.test_case_name(
+                        feature,
+                        rule,
+                        scenario,
+                        Either::Left(hook),
+                        retries,
+                    );
+                    if outcome.status == OutcomeStatus::Pending {
+                        self.pending_hooks += 1;
+                    }
+                    let result = if outcome.fails_run {
+                        self.pending_failed_events += 1;
+                        TestEvent::failed(
+                            name.clone(),
+                            self.step_exec_time(meta, cli),
+                        )
+                    } else {
+                        if outcome.status == OutcomeStatus::Pending {
+                            self.pending_ignored_events += 1;
+                        } else {
+                            self.ignored_hooks += 1;
+                        }
+                        TestEvent::ignored(
+                            name.clone(),
+                            self.step_exec_time(meta, cli),
+                        )
+                    }
+                    .with_stdout(format!("{:?}", outcome.status));
+                    return vec![
+                        TestEvent::started(name).into(),
+                        result.into(),
+                    ];
+                }
+            }
+        }
         match ev {
             event::Hook::Started => {
                 self.step_started_at(meta, cli);
@@ -544,7 +674,12 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             }
             event::Hook::Passed => Vec::new(),
             event::Hook::Failed(world, info) => {
-                self.hook_errors += 1;
+                if !meta.outcome.is_some_and(|outcome| {
+                    outcome.retryable
+                        && retries.is_some_and(|retry| retry.left > 0)
+                }) {
+                    self.hook_errors += 1;
+                }
 
                 let name = self.test_case_name(
                     feature,
@@ -595,6 +730,45 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             retries,
         );
 
+        if !matches!(ev, Step::Started) {
+            if let Some(outcome) = meta.outcome {
+                use crate::execution::OutcomeStatus;
+                if matches!(
+                    outcome.status,
+                    OutcomeStatus::Pending
+                        | OutcomeStatus::Skipped
+                        | OutcomeStatus::Undefined
+                ) || (outcome.status == OutcomeStatus::Ambiguous
+                    && !outcome.fails_run)
+                {
+                    if outcome.status == OutcomeStatus::Pending {
+                        self.pending_steps += 1;
+                    }
+                    let event = if outcome.fails_run {
+                        if outcome.status == OutcomeStatus::Pending {
+                            self.pending_failed_events += 1;
+                        } else {
+                            self.failed += 1;
+                        }
+                        TestEvent::failed(name, self.step_exec_time(meta, cli))
+                    } else {
+                        if outcome.status == OutcomeStatus::Pending {
+                            self.pending_ignored_events += 1;
+                        } else {
+                            self.ignored += 1;
+                        }
+                        TestEvent::ignored(name, self.step_exec_time(meta, cli))
+                    }
+                    .with_stdout(match &ev {
+                        Step::Failed(_, _, _, error) => {
+                            format!("{:?}: {error}", outcome.status)
+                        }
+                        _ => format!("{:?}", outcome.status),
+                    });
+                    return vec![event.into()];
+                }
+            }
+        }
         let ev = match ev {
             Step::Started => {
                 self.step_started_at(meta, cli);
@@ -646,7 +820,11 @@ impl<W: Debug + World, Out: io::Write> Libtest<W, Out> {
             }
             Step::Failed(_, loc, world, err) => {
                 if retries.is_some_and(|r| {
-                    r.left > 0 && !matches!(err, event::StepError::NotFound)
+                    r.left > 0
+                        && meta.outcome.map_or(
+                            !matches!(err, event::StepError::NotFound),
+                            |outcome| outcome.retryable,
+                        )
                 }) {
                     self.retried += 1;
                 } else {
@@ -778,6 +956,18 @@ where
     O: io::Write,
     Self: Writer<W>,
 {
+    fn pending_steps(&self) -> usize {
+        self.pending_steps
+    }
+
+    fn pending_hooks(&self) -> usize {
+        self.pending_hooks
+    }
+
+    fn pending_failures(&self) -> usize {
+        self.pending_failures
+    }
+
     fn passed_steps(&self) -> usize {
         self.passed
     }

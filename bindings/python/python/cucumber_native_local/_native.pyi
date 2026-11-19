@@ -1,0 +1,3 @@
+"""Native Rust transport; intentionally has no Python fallback implementation."""
+
+def request(raw: str) -> str: ...

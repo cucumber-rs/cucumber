@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cucumber.vlbv-receipts/v1",
+  "title": "Explicit evidence input for the read-only Cucumber VLBV projection",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "cucumber.vlbv-receipts/v1"
+    },
+    "contract": {
+      "$ref": "#/$defs/file"
+    },
+    "canonicalStatus": {
+      "$ref": "#/$defs/file"
+    },
+    "canonicalDisposition": {
+      "$ref": "#/$defs/file"
+    },
+    "authorization": {
+      "$ref": "#/$defs/file"
+    },
+    "candidate": {
+      "$ref": "#/$defs/file"
+    },
+    "executedBy": {
+      "type": "object",
+      "properties": {
+        "harness": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "harness",
+        "version",
+        "model"
+      ]
+    },
+    "budgetConsumption": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "class": {
+                "enum": [
+                  "measured",
+                  "estimate",
+                  "unknown"
+                ]
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "class",
+              "value"
+            ]
+          }
+        }
+      },
+      "required": [
+        "source",
+        "values"
+      ]
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messages": {
+            "$ref": "#/$defs/file"
+          },
+          "process": {
+            "$ref": "#/$defs/file"
+          },
+          "candidate": {
+            "$ref": "#/$defs/file"
+          },
+          "authorizationIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "predecessor": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "messages",
+          "process",
+          "candidate",
+          "authorizationIndex"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "pickleId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "runId",
+                "pickleId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/file"
+            }
+          },
+          "negativeControls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/file"
+            }
+          },
+          "cleanup": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/file"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "bindings",
+          "assertions",
+          "negativeControls",
+          "cleanup"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "contract",
+    "canonicalStatus",
+    "canonicalDisposition",
+    "authorization",
+    "candidate",
+    "executedBy",
+    "budgetConsumption",
+    "runs",
+    "scenarios"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "file": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "sourceDigests": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "build": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        },
+        "configuration": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        },
+        "fixtures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        }
+      },
+      "required": [
+        "sourceDigests",
+        "build",
+        "configuration",
+        "fixtures",
+        "references"
+      ]
+    },
+    "process": {
+      "type": "object",
+      "properties": {
+        "messages": {"$ref": "#/$defs/file"},
+        "projectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contractDigest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidateDigest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cwd": {
+          "type": "string",
+          "minLength": 1
+        },
+        "startedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "finishedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "exitCode": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "messages",
+        "projectId",
+        "runId",
+        "phase",
+        "contractDigest",
+        "candidateDigest",
+        "commandId",
+        "cwd",
+        "startedAt",
+        "finishedAt",
+        "argv",
+        "exitCode"
+      ]
+    },
+    "assertion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenarioId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testCaseStartedId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testStepId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidateDigest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oracle": {
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "BLOCKED",
+            "NOT_EXERCISED"
+          ]
+        },
+        "exercised": {
+          "type": "boolean"
+        },
+        "realCollaborators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "substitutedBoundaries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "scenarioId",
+        "runId",
+        "testCaseStartedId",
+        "testStepId",
+        "candidateDigest",
+        "observed",
+        "oracle",
+        "status",
+        "exercised",
+        "realCollaborators",
+        "substitutedBoundaries",
+        "evidence"
+      ]
+    },
+    "negativeControl": {
+      "type": "object",
+      "properties": {
+        "scenarioId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assertionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidateDigest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedRejection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observedRejection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testCaseStartedId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testStepId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exercised": {
+          "type": "boolean"
+        },
+        "sensitive": {
+          "type": "boolean"
+        },
+        "messages": {
+          "$ref": "#/$defs/file"
+        },
+        "process": {
+          "$ref": "#/$defs/file"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        }
+      },
+      "required": [
+        "scenarioId",
+        "runId",
+        "assertionId",
+        "candidateDigest",
+        "commandRef",
+        "expectedRejection",
+        "observedRejection",
+        "testCaseStartedId",
+        "testStepId",
+        "exercised",
+        "sensitive",
+        "messages",
+        "process",
+        "evidence"
+      ]
+    },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "scenarioId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidateDigest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "BLOCKED",
+            "NOT_EXERCISED"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        }
+      },
+      "required": [
+        "scenarioId",
+        "runId",
+        "candidateDigest",
+        "requirement",
+        "observed",
+        "status",
+        "evidence"
+      ]
+    }
+  }
+}

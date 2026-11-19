@@ -1,0 +1,32 @@
+{
+  "name": "cucumber-native-local",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local native shared compiler and rerun SDK from the GQAdonis Cucumber fork",
+  "license": "(MIT OR Apache-2.0)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GQAdonis/cucumber.git",
+    "directory": "bindings/node"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "cucumber_sdk.node",
+    "README.md",
+    "NOTICE",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "licenses"
+  ]
+}

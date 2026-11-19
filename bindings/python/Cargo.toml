@@ -1,0 +1,20 @@
+[package]
+name = "cucumber-sdk-python"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Local Python native adapter for the shared Cucumber Rust SDK"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/GQAdonis/cucumber"
+readme = "README.md"
+publish = false
+
+[lib]
+name = "cucumber_sdk_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+cucumber-sdk = { path = "../../sdk" }
+pyo3 = { version = "=0.30.1", features = ["extension-module"] }
+
+[workspace]
